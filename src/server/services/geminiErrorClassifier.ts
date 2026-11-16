@@ -5,7 +5,7 @@ import _ from "lodash";
 import { GEMINI_DAILY_QUOTA_PATTERNS, GEMINI_NON_RETRYABLE_MODEL_PATTERNS, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX, GEMINI_RETRYABLE_ERROR_KEYWORDS, GEMINI_RETRYABLE_STATUSES, GEMINI_USER_MESSAGES, GEMINI_ZERO_QUOTA_PATTERNS } from "../../constants/index.js";
 import { GEMINI_REQUEST_POLICY } from "../../constants/config.js";
 export { GeminiErrorCategory };
-export interface GeminiErrorDecision {
+interface GeminiErrorDecision {
   category: GeminiErrorCategory;
   retryable: boolean;
   retryLimit: number;

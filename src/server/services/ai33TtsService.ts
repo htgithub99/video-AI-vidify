@@ -23,7 +23,7 @@ import { resolveApiKeys } from "./apiKeyResolver.js";
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const ABORTED = MOTION_TEXT_AI33_TTS_ABORTED;
-export interface Ai33TtsRequest {
+interface Ai33TtsRequest {
   text: string;
   voiceId: string;
   speed?: number;
@@ -31,7 +31,7 @@ export interface Ai33TtsRequest {
   withTranscript?: boolean;
   signal?: AbortSignal;
 }
-export interface Ai33TtsResult {
+interface Ai33TtsResult {
   buffer: Buffer;
   mimeType: string;
   metadata?: Record<string, unknown>;

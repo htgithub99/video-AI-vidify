@@ -67,7 +67,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
       onClick={() => handleCopy(value, key, t.copied)}
       title={copiedKey === key ? t.copied : titleText || t.copy}
       className={MR.MOTION_TEXT_BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX}
-      copiedIconClassName={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0}
+      copiedIconClassName={MR.W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0}
       iconClassName={MR.MOTION_TEXT_W_3_5_H_3_5_SHRINK_0}
     />
   );
@@ -79,13 +79,13 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
       })
     : [];
   return (
-    <StudioCard className={MR.MOTION_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800_80_B}>
+    <StudioCard className={MR.ROUNDED_2XL_BORDER_BORDER_SLATE_800_80_BG_SLATE_900_60_P}>
       <div className={MR.MOTION_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER}>
         <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
           <Sparkles className={MR.MOTION_TEXT_W_4_H_4_TEXT_FUCHSIA_500_SHRINK_0} />
-          <h3 className={MR.MOTION_TEXT_TEXT_SM_SM_TEXT_BASE_FONT_EXTRABOLD_TEXT_0F172A_DARK_TEXT_SLATE_1}>{t.title}</h3>
+          <h3 className={MR.TEXT_SM_SM_TEXT_BASE_FONT_EXTRABOLD_TEXT_SLATE_100_DB43EF}>{t.title}</h3>
           {seo && (
-            <span className={MR.MOTION_TEXT_TEXT_11PX_FONT_NORMAL_TEXT_64748B_DARK_TEXT_SLATE_400}>
+            <span className={MR.TEXT_11PX_FONT_NORMAL_TEXT_SLATE_400}>
               {MR.MOTION_TEXT_SYMBOL_15}
               {seo.timingFrom === MR.MOTION_TEXT_VOICE ? t.voice : t.estimate}
             </span>
@@ -94,7 +94,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
         <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP}>
           {seo && (
             <>
-              <span className={MR.MOTION_TEXT_TEXT_11PX_FONT_MONO_FONT_BOLD_TEXT_A21CAF_DARK_TEXT_FUCHSIA_300_B}>
+              <span className={MR.TEXT_11PX_FONT_MONO_FONT_BOLD_TEXT_FUCHSIA_300_BG_FUCHSI}>
                 {seo.options.length} {t.option.toLowerCase()}
               </span>
               <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} onClick={() => void handleExportText()} title={t.exportTxtTip} className={cn(MR.MOTION_TEXT_H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1, MR.MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_HOVER_FROM_PURPLE_50)}>
@@ -118,10 +118,10 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
         </div>
       </div>
       {onThumbnail && (
-        <div className={MR.MOTION_TEXT_ROUNDED_XL_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800_80_BG}>
+        <div className={MR.ROUNDED_XL_BORDER_BORDER_SLATE_800_80_BG_SLATE_950_50_P_}>
           <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_FLEX_WRAP}>
-            <span className={MR.MOTION_TEXT_FONT_BOLD_TEXT_0F172A_DARK_TEXT_SLATE_100_FLEX_ITEMS_CENTER_GAP_2}>
-              <ImageIcon className={MR.MOTION_TEXT_W_4_H_4_TEXT_PURPLE_600_DARK_TEXT_PURPLE_400} />
+            <span className={MR.FONT_BOLD_TEXT_SLATE_100_FLEX_ITEMS_CENTER_GAP_2_TEXT_XS}>
+              <ImageIcon className={MR.W_4_H_4_TEXT_PURPLE_400_DC51B4} />
               <span>{t.thumb}</span>
               {thumbList.length > 0 && (
                 <span className={MR.MOTION_TEXT_PX_2_PY_0_5_ROUNDED_FULL_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_50_2}>
@@ -161,7 +161,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
               ))}
             </div>
           ) : (
-            <p className={MR.MOTION_TEXT_TEXT_XS_TEXT_64748B_DARK_TEXT_SLATE_400_LEADING_RELAXED}>{t.thumbHint}</p>
+            <p className={MR.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_C3911C}>{t.thumbHint}</p>
           )}
           {zoomModal && (
             <Modal
@@ -170,7 +170,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
               maxWidth={MR.MOTION_TEXT_4XL}
               title={
                 <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
-                  <ImageIcon className={MR.MOTION_TEXT_W_4_H_4_TEXT_PURPLE_600_DARK_TEXT_PURPLE_400_SHRINK_0} />
+                  <ImageIcon className={MR.W_4_H_4_TEXT_PURPLE_400_SHRINK_0_18491D} />
                   <span className={MR.MOTION_TEXT_TRUNCATE}>
                     {t.thumb} {zoomModal.optionIndex !== undefined ? MR.MOTION_TEMPLATE_SYMBOL_45(t.thumbFor, zoomModal.optionIndex + 1) : ""}
                   </span>
@@ -181,18 +181,18 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                   <img src={zoomModal.image} alt={t.thumb} className={MR.MOTION_TEXT_MAX_W_FULL_MAX_H_65VH_OBJECT_CONTAIN_ROUNDED_XL_SELECT_NONE} />
                 </div>
                 {zoomModal.prompt && (
-                  <div className={MR.MOTION_TEXT_P_3_5_ROUNDED_XL_BG_SLATE_100_DARK_BG_SLATE_900_90_BORDER_BORDER__2}>
+                  <div className={MR.P_3_5_ROUNDED_XL_BG_SLATE_900_90_BORDER_BORDER_SLATE_800}>
                     <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
                       <span className={MR.MOTION_TEXT_TEXT_10PX_FONT_MONO_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_PURPL}>
-                        <Sparkles className={MR.MOTION_TEXT_W_3_H_3_TEXT_PURPLE_600_DARK_TEXT_PURPLE_400} />
+                        <Sparkles className={MR.W_3_H_3_TEXT_PURPLE_400_EFD173} />
                         <span>{t.prompt}</span>
                       </span>
-                      <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} onClick={() => handleCopy(zoomModal.prompt, MR.MOTION_TEXT_ZOOM_PROMPT, t.copied)} className={MR.MOTION_TEXT_TEXT_11PX_TEXT_SLATE_600_DARK_TEXT_SLATE_400_HOVER_TEXT_PURPLE_60_2}>
+                      <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} onClick={() => handleCopy(zoomModal.prompt, MR.MOTION_TEXT_ZOOM_PROMPT, t.copied)} className={MR.TEXT_11PX_TEXT_SLATE_400_HOVER_TEXT_PURPLE_300_INLINE_FL}>
                         <Copy className={MR.MOTION_TEXT_W_3_H_3} />
                         <span>{t.copy}</span>
                       </Button>
                     </div>
-                    <p className={MR.MOTION_TEXT_TEXT_XS_TEXT_1E293B_DARK_TEXT_SLATE_200_LEADING_RELAXED_FONT_SANS}>{zoomModal.prompt}</p>
+                    <p className={MR.TEXT_XS_TEXT_SLATE_200_LEADING_RELAXED_FONT_SANS}>{zoomModal.prompt}</p>
                   </div>
                 )}
                 <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_}>
@@ -210,7 +210,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
         </div>
       )}
       {!seo ? (
-        <p className={MR.MOTION_TEXT_TEXT_XS_TEXT_64748B_DARK_TEXT_SLATE_400}>{t.hint}</p>
+        <p className={MR.TEXT_XS_TEXT_SLATE_400_D24BBF}>{t.hint}</p>
       ) : (
         <div className={MR.MOTION_TEXT_SPACE_Y_4}>
           <div className={MR.MOTION_TEXT_GRID_GRID_COLS_1_MD_GRID_COLS_2_GAP_4_ITEMS_STRETCH}>
@@ -218,7 +218,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
               const description = renderSeoDescription(opt, seo);
               const hasThumb = Boolean(thumbnails?.[i] || (thumbnail?.optionIndex === i && thumbnail?.image));
               return (
-                <StudioCard key={i} className={MR.MOTION_TEXT_P_4_ROUNDED_2XL_BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_BORDER_SL}>
+                <StudioCard key={i} className={MR.P_4_ROUNDED_2XL_BG_SLATE_955_90_BORDER_BORDER_SLATE_800_}>
                   <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_SLATE_200}>
                     <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W_0_FLEX_WRAP}>
                       <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PX_2_5_PY_0_5_ROUNDED_LG_}>
@@ -226,7 +226,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                       </span>
                       {opt.sourceTitleBased && <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PX_2_5_PY_0_5_ROUNDED_LG_}>{t.sourceTitle}</span>}
                       <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_PX_2_5_PY_0_5_ROUNDED_LG_BG_EMERAL}>
-                        <Sparkles className={MR.MOTION_TEXT_W_3_H_3_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400} />
+                        <Sparkles className={MR.W_3_H_3_TEXT_EMERALD_400} />
                         <span>
                           {t.score} {opt.seoScore}
                         </span>
@@ -240,7 +240,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                           disabled={busy}
                           onClick={() => onThumbnail(i)}
                           title={hasThumb ? t.regenerateCover : t.thumbMake}
-                          className={cn(MR.MOTION_TEXT_H_7_PX_2_5_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP, hasThumb ? MR.MOTION_TEXT_BG_EMERALD_500_15_BORDER_BORDER_EMERALD_500_30_TEXT_EMERALD_700_D : MR.MOTION_TEXT_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_TEXT_PURPLE_700_DARK)}>
+                          className={cn(MR.MOTION_TEXT_H_7_PX_2_5_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP, hasThumb ? MR.MOTION_TEXT_BG_EMERALD_500_15_BORDER_BORDER_EMERALD_500_30_TEXT_EMERALD_700_D : MR.BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_TEXT_PURPLE)}>
                           {thumbnailBusy === i ? <MotionLoadingIcon className={MOTION_STYLES.W_3_H_3_ANIMATE_SPIN_SHRINK_0} /> : <ImageIcon className={MR.MOTION_TEXT_W_3_H_3} />}
                           <span>{hasThumb ? t.regenerateCover : t.thumbMake}</span>
                         </Button>
@@ -250,14 +250,14 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                         onClick={() => handleCopyFullOption(opt, i)}
                         className={MR.MOTION_TEXT_BTN_ICON_TINY_W_7_H_7_MIN_W_28PX_MAX_W_28PX_MIN_H_28PX_MAX_H_28PX}
                         title={copiedKey === MR.MOTION_TEMPLATE_SEO_FULL(i) ? t.copied : t.copy}
-                        copiedIconClassName={MR.MOTION_TEXT_W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0}
+                        copiedIconClassName={MR.W_4_H_4_TEXT_EMERALD_400_SHRINK_0_D3C71C}
                         iconClassName={MR.MOTION_TEXT_W_4_H_4_SHRINK_0}
                       />
                     </div>
                   </div>
                   <div className={MR.MOTION_TEXT_SPACE_Y_2_5_FLEX_1_FLEX_FLEX_COL_JUSTIFY_BETWEEN}>
                     <div className={MR.MOTION_TEXT_SPACE_Y_2_5}>
-                      <StudioCard className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_}>
+                      <StudioCard className={MR.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8}>
                         <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                           <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
                             <FileText className={MR.MOTION_TEXT_W_3_H_3_TEXT_PURPLE_500} />
@@ -265,9 +265,9 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                           </span>
                           {renderCopyField(opt.title, MR.MOTION_TEMPLATE_SEO_TITLE(i))}
                         </div>
-                        <h4 className={MR.MOTION_TEXT_TEXT_XS_SM_TEXT_13PX_FONT_BLACK_TEXT_0F172A_DARK_TEXT_SLATE_100_L}>{opt.title}</h4>
+                        <h4 className={MR.TEXT_XS_SM_TEXT_13PX_FONT_BLACK_TEXT_SLATE_100_LEADING_S}>{opt.title}</h4>
                       </StudioCard>
-                      <StudioCard className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_}>
+                      <StudioCard className={MR.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8}>
                         <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                           <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
                             <SlidersHorizontal className={MR.MOTION_TEXT_W_3_H_3_TEXT_SKY_500} />
@@ -275,15 +275,15 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                           </span>
                           {renderCopyField(description, MR.MOTION_TEMPLATE_SEO_DESC(i))}
                         </div>
-                        <p className={MR.MOTION_TEXT_TEXT_XS_TEXT_334155_DARK_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_32_}>{description}</p>
+                        <p className={MR.TEXT_XS_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_32_OVERFLOW}>{description}</p>
                       </StudioCard>
                     </div>
                     <div className={MR.MOTION_TEXT_GRID_GRID_COLS_1_XL_GRID_COLS_2_GAP_2_5_PT_1}>
-                      <StudioCard className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER__2}>
+                      <StudioCard className={MR.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8_3C462C}>
                         <div className={MR.MOTION_TEXT_SPACE_Y_2}>
                           <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                             <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
-                              <span className={MR.MOTION_TEXT_FONT_BOLD_TEXT_PURPLE_600_DARK_TEXT_PURPLE_400}>{MR.MOTION_TEXT_SYMBOL_44}</span>
+                              <span className={MR.FONT_BOLD_TEXT_PURPLE_400}>{MR.MOTION_TEXT_SYMBOL_44}</span>
                               <span>
                                 {t.hashL}
                                 {MR.MOTION_TEXT_SYMBOL_6}
@@ -295,14 +295,14 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                           </div>
                           <div className={MR.MOTION_TEXT_FLEX_FLEX_WRAP_GAP_X_2_GAP_Y_1_5_MAX_H_24_OVERFLOW_Y_AUTO_SCROLLB}>
                             {opt.hashtags.map((tag, hIdx) => (
-                              <span key={hIdx} className={MR.MOTION_TEXT_TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_7E22CE_DARK_TEXT_PURPLE_300_SE}>
+                              <span key={hIdx} className={MR.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_PURPLE_300_SELECT_ALL}>
                                 {tag}
                               </span>
                             ))}
                           </div>
                         </div>
                       </StudioCard>
-                      <StudioCard className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER__2}>
+                      <StudioCard className={MR.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8_3C462C}>
                         <div className={MR.MOTION_TEXT_SPACE_Y_2}>
                           <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
                             <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
@@ -316,7 +316,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                             </span>
                             {renderCopyField(opt.tags.join(MR.MOTION_TEXT_SYMBOL_14), MR.MOTION_TEMPLATE_SEO_TAG(i))}
                           </div>
-                          <p className={MR.MOTION_TEXT_TEXT_10PX_FONT_MONO_TEXT_475569_DARK_TEXT_SLATE_300_LEADING_RELAX}>{opt.tags.join(MR.MOTION_TEXT_SYMBOL_14)}</p>
+                          <p className={MR.TEXT_10PX_FONT_MONO_TEXT_SLATE_300_LEADING_RELAXED_MAX_H}>{opt.tags.join(MR.MOTION_TEXT_SYMBOL_14)}</p>
                         </div>
                       </StudioCard>
                     </div>

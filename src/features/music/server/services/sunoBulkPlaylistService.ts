@@ -4,7 +4,7 @@ import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.
 import type { Locator, Page } from "playwright";
 import { SUNO_AUTOMATION_CONFIG } from "../../../../constants/sunoAutomation.js";
 import { writeMusicDiagnostic } from "../../../../server/services/musicDiagnosticService.js";
-export interface SunoBulkSelection {
+interface SunoBulkSelection {
   nameInput: Locator;
   selectedIds: string[];
 }

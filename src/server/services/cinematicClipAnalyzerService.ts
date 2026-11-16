@@ -25,7 +25,7 @@ import _ from "lodash";
 import { jsonUtils } from "../../lib/json.js";
 import { CINEMATIC_EDIT_ANALYSIS_CONFIG } from "../../constants/config.js";
 import { getPythonCommand, getStaticResourcePath } from "../utils/paths.js";
-export interface CinematicLibraryClipInput {
+interface CinematicLibraryClipInput {
   sceneId: string;
   path: string;
   hasAudio: boolean;
@@ -46,7 +46,7 @@ interface CinematicLibrarySegment {
   containsDialogue: boolean;
   libraryScore?: number;
 }
-export interface CinematicLibraryDecision {
+interface CinematicLibraryDecision {
   sceneId: string;
   duration: number;
   width?: number;
@@ -81,7 +81,7 @@ export interface CinematicLibraryDecision {
   selectedDuration?: number;
   analysisProvenance?: string[];
 }
-export interface CinematicEditorialValidationResult {
+interface CinematicEditorialValidationResult {
   valid: boolean;
   error?: string;
 }
@@ -125,7 +125,7 @@ export const validateCinematicEditorialDecisions = (expected: CinematicLibraryDe
   }
   return { valid: true };
 };
-export interface CinematicLibraryAnalysisResult {
+interface CinematicLibraryAnalysisResult {
   success: boolean;
   libraryAnalysisAvailable: boolean;
   decisions: CinematicLibraryDecision[];

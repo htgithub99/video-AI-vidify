@@ -7,7 +7,7 @@ import { Button } from "../ui/Button.js";
 import { PageLoadingSpinner } from "../ui/Skeleton.js";
 import { StudioCard } from "../ui/Studio.js";
 type BoundaryProps = { children: ReactNode; feature: string; active: boolean; language: Lang };
-export class FeatureErrorBoundary extends Component<BoundaryProps, { failed: boolean }> {
+class FeatureErrorBoundary extends Component<BoundaryProps, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };

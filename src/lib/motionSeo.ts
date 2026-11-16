@@ -24,7 +24,7 @@ export const chapterStarts = (beats: MotionBeat[], chapters: Pick<MotionChapter,
   for (const c of chapters) if (starts[c.id] === undefined) starts[c.id] = t;
   return starts;
 };
-export const formatChapterTime = (seconds: number): string => {
+const formatChapterTime = (seconds: number): string => {
   const s = Math.max(0, Math.round(seconds));
   const h = Math.floor(s / 3600),
     m = Math.floor((s % 3600) / 60),

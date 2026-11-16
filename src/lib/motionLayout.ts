@@ -1,20 +1,18 @@
-import { MOTION_LAYOUTS, MOTION_LAYOUT_DEFAULT, type MotionLayoutId, type MotionLayoutSpec } from "../constants/motionLayouts/index.js";
+import { MOTION_CAMERA_SHOTS, MOTION_LAYOUTS, MOTION_LAYOUT_DEFAULT, type MotionCameraShot, type MotionLayoutId } from "../constants/motionLayouts/index.js";
 import { motionDrawStyle } from "./motionDrawStyle.js";
+import { motionSceneShot } from "./motionSceneBlueprint.js";
 export const motionIsLayout = (value: unknown): value is MotionLayoutId => typeof value === "string" && Object.hasOwn(MOTION_LAYOUTS, value);
-export const motionLayoutOf = (settings?: { profileId?: unknown; layout?: unknown }): MotionLayoutId => {
+// "Tự động" follows the drawing style's own layout in "Bộ vẽ chuẩn"; in "Dựng cảnh AI" (no drawing style) it is the AI's frame.
+export const motionLayoutOf = (settings?: { profileId?: unknown; layout?: unknown; figureKit?: unknown }): MotionLayoutId => {
   const own = motionIsLayout(settings?.layout) ? settings.layout : MOTION_LAYOUT_DEFAULT;
-  return own === MOTION_LAYOUT_DEFAULT ? motionDrawStyle(settings?.profileId).layout || MOTION_LAYOUT_DEFAULT : own;
+  return own === MOTION_LAYOUT_DEFAULT ? (settings?.figureKit === true && motionDrawStyle(settings.profileId).layout) || MOTION_LAYOUT_DEFAULT : own;
 };
-export const motionLayoutPlanner = (settings?: { profileId?: unknown; layout?: unknown }): string => MOTION_LAYOUTS[motionLayoutOf(settings)].planner;
-const SCALE_START = "SCALE: size people by shot and depth and never inflate them:";
-const SCALE_END = "not by a bigger body.";
-export const motionLayoutOutput = (output: string, layout?: MotionLayoutId): string => {
-  const scale = layout ? MOTION_LAYOUTS[layout]?.scale : undefined;
-  const start = output.indexOf(SCALE_START), end = output.indexOf(SCALE_END, start);
-  return scale && start >= 0 && end > start ? output.slice(0, start) + scale + output.slice(end + SCALE_END.length).trimStart() : output;
+// The camera's shot size for one scene: the layout's size for a medium scene, one size out for an establishing or wide
+// scene, one in for a close scene. "Toàn cảnh" (and a map, which is never cut) keeps the AI's whole frame.
+export const motionCameraShot = (layout: MotionLayoutId, scene: { shot?: string; kind?: string } = {}): MotionCameraShot => {
+  const base = MOTION_CAMERA_SHOTS.indexOf(MOTION_LAYOUTS[layout]?.shot || "wide");
+  if (base <= 0 || String(scene.kind || "").toLowerCase() === "map") return "wide";
+  const shot = motionSceneShot(scene.shot);
+  const step = shot === "close" ? 1 : shot === "medium" ? 0 : -1;
+  return MOTION_CAMERA_SHOTS[Math.max(0, Math.min(MOTION_CAMERA_SHOTS.length - 1, base + step))];
 };
-export const motionLayoutFocal = (layout: MotionLayoutId | undefined, wide: boolean, fallback: { focal: number; wide: number }): number => {
-  const spec = layout ? MOTION_LAYOUTS[layout] : undefined;
-  return (wide ? spec?.focalWide : spec?.focal) ?? (wide ? fallback.wide : fallback.focal);
-};
-export const motionLayoutShares = (layout: MotionLayoutId | undefined): MotionLayoutSpec["share"] => (layout ? MOTION_LAYOUTS[layout]?.share : undefined);

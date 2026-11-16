@@ -11,7 +11,7 @@ import type { MotionBeat, MotionStoryAnalysis, MotionUtterance, MotionWritingCha
 import { motionNarratorCastKey } from "../motionVoice.js";
 const S = X.SHOTS;
 const GENRE_VISUALS = new Set(Object.values(MOTION_GENRE_SPECS).flatMap((spec) => spec.GRAMMAR.visuals.filter((visual) => visual !== X.VISUALS.SCENE)));
-export interface MotionGenreAutofixResult {
+interface MotionGenreAutofixResult {
   beats: MotionBeat[];
   dropped: string[];
   visuals: number;
@@ -23,7 +23,7 @@ export const motionSpeakerNames = (member: { name?: string; alias?: string }): s
   const surname = words.length > 1 && words.at(-1)!.length >= A.SPEECH.SURNAME_MIN ? [words.at(-1)!] : [];
   return [member.name, member.alias, ...surname].filter((name): name is string => !!name);
 };
-export const motionSplitReportedSpeech = (beat: MotionBeat, analysis: Pick<MotionStoryAnalysis, "cast">): MotionBeat | undefined => {
+const motionSplitReportedSpeech = (beat: MotionBeat, analysis: Pick<MotionStoryAnalysis, "cast">): MotionBeat | undefined => {
   if ((beat.utterances || []).some((line) => line.role !== A.SPEECH.NARRATION)) return undefined;
   const match = A.SPEECH.PATTERN.exec(beat.narration || "");
   const groups = match?.groups;
@@ -41,7 +41,7 @@ export const motionSplitReportedSpeech = (beat: MotionBeat, analysis: Pick<Motio
   const utterances = [line(1, A.SPEECH.NARRATION, A.SPEECH.NARRATOR, groups.before.trim()), line(2, A.SPEECH.DIALOGUE, speaker.key, quote.trim()), ...(groups.after.trim() ? [line(3, A.SPEECH.NARRATION, A.SPEECH.NARRATOR, groups.after.trim())] : [])];
   return { ...beat, utterances, cast: (beat.cast || []).includes(speaker.key) ? beat.cast : [...(beat.cast || []), speaker.key] };
 };
-export const motionGenreInferShot = (beat: MotionBeat, allowed: readonly string[]): string => {
+const motionGenreInferShot = (beat: MotionBeat, allowed: readonly string[]): string => {
   const pick = (...candidates: string[]): string => candidates.find((candidate) => allowed.includes(candidate)) || allowed[0] || S.MEDIUM;
   const cast = beat.cast || [];
   const text = beat.narration || "";

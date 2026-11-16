@@ -5,7 +5,6 @@ const apply = (): void => {
   if (typeof document !== "undefined") document.documentElement.classList.toggle(L.CLASS, enabled);
 };
 apply();
-export const lowSpecEnabled = (): boolean => enabled;
 export const setLowSpecEnabled = (value: boolean): void => {
   if (value !== enabled) {
     enabled = value;

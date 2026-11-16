@@ -1,5 +1,5 @@
 import type { StorageJunkGroup } from "../constants/storage.js";
-export interface StorageJunkItem {
+interface StorageJunkItem {
   path: string;
   bytes: number;
 }

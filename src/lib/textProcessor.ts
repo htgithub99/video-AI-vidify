@@ -34,7 +34,7 @@ export const smartSplitSentences = (text: string): string[] => {
   }
   return sentences;
 };
-export const splitSentenceSafely = (sent: string, maxWords: number = TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE): string[] => {
+const splitSentenceSafely = (sent: string, maxWords: number = TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE): string[] => {
   const safeMaxWords = _.max([TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE, maxWords]) || TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE;
   const words = _.compact(_.split(sent, WHITESPACE_REGEX));
   if (_.lte(words.length, safeMaxWords)) {

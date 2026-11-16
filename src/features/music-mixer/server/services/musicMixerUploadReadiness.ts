@@ -37,7 +37,7 @@ import { MUSIC_MIXER_UPLOAD_POLICY } from "../../../../constants/musicMixer.js";
 type Attachment = { name: string; path?: string };
 type UploadState = { labels: string[]; busy: boolean; error: string; progress: string };
 type WaitPolicy = { maxWaitMs?: number; stallTimeoutMs?: number; pollMs?: number };
-export const readMusicMixerUploadState = (input: Locator): Promise<UploadState> =>
+const readMusicMixerUploadState = (input: Locator): Promise<UploadState> =>
   input.evaluate(
     (element, sharedBrowserPayload) => {
       const {

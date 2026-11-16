@@ -12,7 +12,7 @@ export const soundText = (value: unknown): string =>
     .replace(MP.VIETNAMESE_D_UPPER, MR.MOTION_TEXT_D)
     .toLowerCase()
     .replace(MP.WORD_SEPARATORS, MR.MOTION_TEXT_SYMBOL_13);
-export const soundKind = (value: unknown): string | undefined => {
+const soundKind = (value: unknown): string | undefined => {
   const text = soundText(value);
   return MOTION_SOUND_KINDS.find((item) => soundText(item.kind) === text)?.kind || MOTION_SOUND_KINDS.find((item) => item.pattern.test(text))?.kind;
 };
@@ -52,7 +52,7 @@ export const normalizeSoundEvents = (raw: unknown): MotionSoundEvent[] =>
       },
     ];
   });
-export const motionCueLimit = (duration: number): number => Math.max(C.MAX_CUES, Math.ceil((Number.isFinite(duration) ? duration : 0) / C.MINUTE_SECONDS) * C.CUES_PER_MINUTE);
+const motionCueLimit = (duration: number): number => Math.max(C.MAX_CUES, Math.ceil((Number.isFinite(duration) ? duration : 0) / C.MINUTE_SECONDS) * C.CUES_PER_MINUTE);
 export const normalizeSoundCues = (raw: unknown, duration: number = C.MAX_DURATION): MotionSoundCue[] =>
   (Array.isArray(raw) ? raw : []).slice(0, motionCueLimit(duration)).flatMap((value, index) => {
     if (!value || !Number.isFinite(Number(value.t)) || value.t < 0 || value.t >= duration) return [];
@@ -73,11 +73,6 @@ export const normalizeSoundCues = (raw: unknown, duration: number = C.MAX_DURATI
       },
     ];
   });
-export const motionAutoSoundEvents = (parts: unknown[]): MotionSoundEvent[] => {
-  const text = soundText(parts.filter(Boolean).join(C.SPACE));
-  const kinds = MOTION_SOUND_KINDS.filter((item) => item.pattern.test(text)).slice(0, C.AUTO_MAX_EVENTS);
-  return normalizeSoundEvents(kinds.map((item, index) => ({ id: item.kind, kind: item.kind, layer: item.layer, at: C.AUTO_AT[index] ?? C.AUTO_AT[0], description: item.kind, source: C.SOURCES[0] })));
-};
 export const motionNarratedSoundEvents = (narration: string): MotionSoundEvent[] => {
   const text = soundText(narration);
   const rules: [string, RegExp][] = [

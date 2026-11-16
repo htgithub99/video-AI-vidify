@@ -1,3 +1,4 @@
+import { motionProportionOf } from "../../../../lib/motionDrawStyle.js";
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { planMotionHtmlScenes, createMotionHtmlSceneStreamer } from "./html/scenePipeline.js";
 import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
@@ -79,7 +80,7 @@ import { isTerminalMotionAiError } from "../../../../server/services/chatSubmiss
 import { MOTION_EDITORIAL } from "../../../../constants/motionEditorial.js";
 import { generateMotionSeo, seoScriptKey, type MotionSeoDraft } from "./motionSeoService.js";
 import { motionTaskCheckpoint } from "./motionTaskCheckpoint.js";
-import { resolveSourceInput, withFetchInfo } from "./motionSourceFetchService.js";
+import { resolveSourceInput, withFetchInfo } from "../../../../server/services/linkSourceFetchService.js";
 import { motionAnalysisSettingsMessage } from "../../../../lib/motionSettingsCompatibility.js";
 import { cleanTranscriptInput } from "../../../../lib/motionSourceClean.js";
 const startInputJob = (body: Record<string, any>, keepBrowser: boolean, kind: MotionStoryJobKind, run: (ctx: StoryJobContext) => Promise<unknown>, editorial?: MotionEditorialSession) => startStoryJob(keepBrowser, kind, run, editorial, body.productionId || editorial?.id ? motionInputKey([body.productionId || editorial?.id, kind, body]) : undefined);
@@ -121,8 +122,8 @@ export const startMotionVideoRenderInput = (body: Record<string, any>) => {
   return { success: true, job };
 };
 export const storyLanguage = (v: unknown): string => motionLanguageCode(v);
-export const storyLength = (v: unknown): MotionStoryLength => (_.includes(_.values(MotionStoryLength), v) ? (v as MotionStoryLength) : MotionStoryLength.FULL);
-export const aiExec = (v: any): MotionAiExecution => ({
+const storyLength = (v: unknown): MotionStoryLength => (_.includes(_.values(MotionStoryLength), v) ? (v as MotionStoryLength) : MotionStoryLength.FULL);
+const aiExec = (v: any): MotionAiExecution => ({
   provider: _.toString(v?.provider || MR.MOTION_TEXT_EMPTY),
   model: _.toString(v?.model || MR.MOTION_TEXT_EMPTY),
   mode: _.toString(v?.mode || MR.MOTION_TEXT_EMPTY),
@@ -202,7 +203,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       visualSettings,
       stylePreset: undefined,
       ...(analysis.authoringSettings && visualSettings.mode === RT_MAINTENANCE.REMOTION
-        ? { authoringSettings: { ...analysis.authoringSettings, language: storyLanguage(body?.language), visualProfile: visualSettings.profileId, visualProportion: visualSettings.proportion, visualLayout: visualSettings.layout, picturePacing: visualSettings.pacing || analysis.authoringSettings.picturePacing, targetPictureSeconds: visualSettings.pacing ? MOTION_SCENE_PACING.SECONDS[visualSettings.pacing] : analysis.authoringSettings.targetPictureSeconds } }
+        ? { authoringSettings: { ...analysis.authoringSettings, language: storyLanguage(body?.language), visualProportion: motionProportionOf(visualSettings), picturePacing: visualSettings.pacing || analysis.authoringSettings.picturePacing, targetPictureSeconds: visualSettings.pacing ? MOTION_SCENE_PACING.SECONDS[visualSettings.pacing] : analysis.authoringSettings.targetPictureSeconds } }
         : {}),
     };
   if (!source?.segments?.length || !analysis?.chapters?.length) throw new Error(MOTION_TEXT_CAN_PHAN_TICH_CAU_CHUYEN_TRUOC);

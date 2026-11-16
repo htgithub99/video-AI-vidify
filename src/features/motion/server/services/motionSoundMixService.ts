@@ -233,7 +233,7 @@ export const buildMotionSoundTrack = async (duration: number, rawCues: unknown, 
   });
   return { sfxId, selections };
 };
-export const motionAudioMixGraph = (hasVoice: boolean, hasSfx: boolean, duration: number, voiceVolume = 1, sfxVolume = 0.5): string => {
+const motionAudioMixGraph = (hasVoice: boolean, hasSfx: boolean, duration: number, voiceVolume = 1, sfxVolume = 0.5): string => {
   const tail = MR.MOTION_TEMPLATE_APAD_ATRIM_DURATION_AFADE_T_OUT_ST_D_0_6_ALIMITER_LIMIT_0_89(duration.toFixed(3), Math.max(0, duration - 0.6).toFixed(3));
   if (hasVoice && hasSfx) return MR.MOTION_TEMPLATE_0_A_ARESAMPLE_48000_AFORMAT_CHANNEL_LAYOUTS_STEREO_VOLUME_AP(voiceVolume, sfxVolume, tail);
   return MR.MOTION_TEMPLATE_0_A_ARESAMPLE_48000_AFORMAT_CHANNEL_LAYOUTS_STEREO_VOLUME_MI(hasVoice ? voiceVolume : sfxVolume, tail);

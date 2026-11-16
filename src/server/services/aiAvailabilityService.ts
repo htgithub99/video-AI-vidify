@@ -10,7 +10,7 @@ import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import { appLog } from "../../lib/logger.js";
 import { getDataDirectory, getLogsDirectory } from "../utils/paths.js";
 export type AiUnavailableKind = (typeof A.KIND)[keyof typeof A.KIND];
-export interface AiUnavailability {
+interface AiUnavailability {
   chromeId: string;
   provider: string;
   kind: AiUnavailableKind;
@@ -69,7 +69,6 @@ export const aiUnavailableUntil = (chromeId: string, provider: string): number =
   const entry = entries.get(keyOf(chromeId, provider));
   return entry && entry.until > Date.now() ? entry.until : 0;
 };
-export const aiUnavailability = (chromeId: string, provider: string): AiUnavailability | undefined => (aiUnavailableUntil(chromeId, provider) ? entries.get(keyOf(chromeId, provider)) : undefined);
 export const clearAiUnavailability = (chromeId?: string, provider?: string): void => {
   for (const [key, entry] of entries) if ((!chromeId || entry.chromeId === chromeId) && (!provider || entry.provider === provider)) entries.delete(key);
   save();
@@ -86,7 +85,7 @@ export const markAiUnavailable = (chromeId: string, found: AiAvailabilityClass):
   appLog(A.LOG.MARK(chromeId, found.provider, A.KIND_LABEL[found.kind], formatAiUntil(found.until)));
   return entry;
 };
-export const parseAiResetAt = (text: string, now = Date.now()): number | undefined => {
+const parseAiResetAt = (text: string, now = Date.now()): number | undefined => {
   const relative = A.RESET.RELATIVE.exec(text);
   if (relative) {
     const amount = Number(relative[1].replace(A.COMMA, A.DOT));
@@ -111,7 +110,7 @@ export const parseAiResetAt = (text: string, now = Date.now()): number | undefin
   return undefined;
 };
 const codeMatch = (kind: string, text: string) => (A.CODES[kind] || []).some((code) => text.includes(code));
-export const readAiAvailabilityNotices = async (page: Page | undefined): Promise<{ url: string; notices: string[] }> => {
+const readAiAvailabilityNotices = async (page: Page | undefined): Promise<{ url: string; notices: string[] }> => {
   if (!page || page.isClosed()) return { url: A.EMPTY, notices: [] };
   try {
     const notices = await page.evaluate(
@@ -203,7 +202,4 @@ export const waitAiReset = async (until: number, signal?: AbortSignal): Promise<
       signal?.addEventListener(A.ABORT, abort, { once: true });
     });
   }
-};
-export const reloadAiAvailability = () => {
-  entries = load();
 };

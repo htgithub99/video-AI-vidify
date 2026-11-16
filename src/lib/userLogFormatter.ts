@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { USER_LOG_CONFIG, USER_LOG_MESSAGES } from "../constants/userLog";
-export type UserLogLanguage = keyof typeof USER_LOG_MESSAGES;
+type UserLogLanguage = keyof typeof USER_LOG_MESSAGES;
 const normalizeLanguage = (language?: string): UserLogLanguage => (_.startsWith(_.toLower(_.toString(language)), USER_LOG_CONFIG.LANGUAGE_PREFIX_EN) ? USER_LOG_CONFIG.LANGUAGE_PREFIX_EN : USER_LOG_CONFIG.LANGUAGE_PREFIX_VI);
 export const formatSceneNumber = (sceneIdOrScene: unknown): string => {
   if (!sceneIdOrScene) return USER_LOG_CONFIG.EMPTY_STRING;

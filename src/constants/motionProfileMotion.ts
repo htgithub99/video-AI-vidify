@@ -13,19 +13,19 @@ export interface MotionProfileCamera {
   PART_WEIGHT: number;
   HOLD_SUBJECT: MotionProfileCameraMode;
 }
-export interface MotionProfileSway {
+interface MotionProfileSway {
   degrees: number;
   seconds: number;
   maxHeight: number;
   stride: number;
 }
-export interface MotionProfileAnimal {
+interface MotionProfileAnimal {
   tail: number;
   head: number;
   rock: number;
   seconds: number;
 }
-export interface MotionProfileMotion {
+interface MotionProfileMotion {
   sway: MotionProfileSway;
   animal: MotionProfileAnimal;
   freeParts?: RegExp;

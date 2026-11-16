@@ -2,7 +2,7 @@ import { escapeRegExp as escapeId } from "./regexUtils.js";
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_CLIP as M } from "../constants/motionClip.js";
 import type { MotionClip, MotionClipBox, MotionClipScript, MotionRigPart } from "../types/motionClip.js";
-export interface MotionClipProgram {
+interface MotionClipProgram {
   issues: string[];
   frame: (seconds: number, base?: string) => string;
 }
@@ -15,7 +15,7 @@ const hash = (value: string): number => {
   seed = Math.imul(seed ^ (seed >>> 13), 0xc2b2ae35);
   return ((seed ^ (seed >>> 16)) >>> 0) / 4294967296;
 };
-export const motionClipJointPoint = (box: MotionClipBox, joint: string = RT_MAINTENANCE.CENTER): { x: number; y: number } => ({ x: joint === RT_MAINTENANCE.LEFT ? box.x : joint === RT_MAINTENANCE.RIGHT ? box.x + box.width : box.x + box.width / 2, y: joint === RT_MAINTENANCE.TOP ? box.y : joint === RT_MAINTENANCE.BOTTOM ? box.y + box.height : box.y + box.height / 2 });
+const motionClipJointPoint = (box: MotionClipBox, joint: string = RT_MAINTENANCE.CENTER): { x: number; y: number } => ({ x: joint === RT_MAINTENANCE.LEFT ? box.x : joint === RT_MAINTENANCE.RIGHT ? box.x + box.width : box.x + box.width / 2, y: joint === RT_MAINTENANCE.TOP ? box.y : joint === RT_MAINTENANCE.BOTTOM ? box.y + box.height : box.y + box.height / 2 });
 const targets = (clip: MotionClip): string[] => clip.group || (clip.target ? [clip.target] : []);
 const idsOf = (svg: string): Set<string> => new Set([...svg.matchAll(/\sid\s*=\s*["']([^"']+)["']/g)].map((match) => match[1]));
 const appendToGroup = (svg: string, id: string, markup: string): string => {
@@ -32,7 +32,7 @@ const appendToGroup = (svg: string, id: string, markup: string): string => {
 };
 const inRange = (value: unknown, min: number, max: number): boolean => value === undefined || (typeof value === "number" && Number.isFinite(value) && value >= min && value <= max);
 const inList = (value: unknown, list: readonly string[]): boolean => value === undefined || (typeof value === "string" && list.includes(value));
-export const validateMotionClips = (script: MotionClipScript, svg: string): string[] => {
+const validateMotionClips = (script: MotionClipScript, svg: string): string[] => {
   const ids = idsOf(svg);
   const rig = new Set(script.rig.parts.map((part) => part.id));
   const issues: string[] = [];
@@ -87,7 +87,7 @@ export const validateMotionClips = (script: MotionClipScript, svg: string): stri
   });
   return issues;
 };
-export const compileMotionClips = (script: MotionClipScript, svg: string, durationSeconds?: number, effects = true): MotionClipProgram => {
+const compileMotionClips = (script: MotionClipScript, svg: string, durationSeconds?: number, effects = true): MotionClipProgram => {
   const issues = validateMotionClips(script, svg);
   const clips = issues.length ? [] : script.clips.filter((clip) => effects || !M.EFFECT_OPS.includes(clip.op));
   const { width: W, height: H } = script.rig;

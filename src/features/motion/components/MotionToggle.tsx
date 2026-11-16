@@ -3,10 +3,9 @@ import { MOTION_STYLES as S } from "../constants/motionStyles.js";
 import { TOGGLE_ELEMENTS } from "../../../constants/toggleStyles.js";
 import { cn } from "../../../lib/utils.js";
 import { ToggleField } from "../../../components/common/ToggleField.js";
-import { ToggleIndicator as MotionToggleIndicator } from "../../../components/common/ToggleIndicator.js";
-export { MotionToggleIndicator };
-export type { ToggleIndicatorProps as MotionToggleIndicatorProps } from "../../../components/common/ToggleIndicator.js";
-export interface MotionToggleProps {
+;
+;
+interface MotionToggleProps {
   checked: boolean;
   label: string;
   title: string;

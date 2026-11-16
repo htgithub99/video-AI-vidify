@@ -5,11 +5,7 @@ export interface MotionDrawStyleSpec {
   family: MotionStyleFamily;
   label: { vi: string; en: string };
   hint: { vi: string; en: string };
-  planner: string;
-  title?: string;
-  look?: string;
   kitLook: MotionKitLook;
-  figure: MotionStyleFamily;
   proportion: MotionProportionId;
   layout?: import("../motionLayouts/index.js").MotionLayoutId;
   preview: string;

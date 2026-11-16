@@ -4,7 +4,6 @@ export interface ChatExecutionPolicy {
   allowFallback?: boolean;
 }
 export const chatRoomLanes = (policy?: ChatExecutionPolicy | null): number => (policy?.multiRoom === true ? P.MULTI_ROOMS : P.SINGLE_ROOMS);
-export const chatRoomWorkerIds = (base: string, policy?: ChatExecutionPolicy | null): string[] => Array.from({ length: chatRoomLanes(policy) }, (_value, index) => P.WORKER_ID(base, index));
 export const runInChatRoomLanes = async <T, R>(items: T[], policy: ChatExecutionPolicy | null | undefined, worker: (item: T, index: number, lane: number) => Promise<R>): Promise<R[]> => {
   const results: R[] = new Array(items.length);
   let cursor = 0;

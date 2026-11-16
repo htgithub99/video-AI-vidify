@@ -206,7 +206,7 @@ interface ChatPlanningRequest {
   submission?: ChatPlanningSubmission;
   reloadPendingResponse?: boolean;
 }
-export interface ChatPlanningRoomIdentity {
+interface ChatPlanningRoomIdentity {
   provider: AiPlanningFallbackProvider;
   projectId: string;
   workerId?: string;
@@ -281,7 +281,7 @@ const closesString = (rest: string, isKey: boolean): boolean => {
   if (tail[0] === MR.MOTION_TEXT_SYMBOL_36 || tail[0] === MR.MOTION_TEXT_SYMBOL_51) return JP.AFTER_CONTAINER.test(tail.slice(1));
   return false;
 };
-export const repairLooseJson = (text: string): string => {
+const repairLooseJson = (text: string): string => {
   let out: string = MR.MOTION_TEXT_EMPTY,
     inString = false,
     isKey = false,

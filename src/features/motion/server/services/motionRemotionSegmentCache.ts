@@ -11,12 +11,12 @@ import { renderRemotionSegments } from "./motionRemotionRenderService.js";
 import { validateMotionMedia } from "./motionMediaValidation.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import type { MotionRemotionSpec } from "../../../../types/motionVisual.js";
-export interface MotionSegmentEncoding {
+interface MotionSegmentEncoding {
   width: number;
   height: number;
   crf: number;
 }
-export const motionSegmentRoot = (): string => path.join(getMotionRootDirectory(), R.SEGMENT_FOLDER);
+const motionSegmentRoot = (): string => path.join(getMotionRootDirectory(), R.SEGMENT_FOLDER);
 export const motionSegmentFile = (segment: Pick<MotionRemotionSegment, "key">): string => path.join(motionSegmentRoot(), R.SEGMENT_FILE(segment.key));
 const frames = (segment: MotionRemotionSegment) => segment.end - segment.start + 1;
 export const motionCachedSegments = async (spec: MotionRemotionSpec, segments: MotionRemotionSegment[], encoding: MotionSegmentEncoding, signal?: AbortSignal): Promise<Set<string>> => {

@@ -36,7 +36,7 @@ const cleanText = (value: unknown): string =>
 const cleanGender = (value: unknown): string => (([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE] as readonly string[]).includes(String(value)) ? String(value) : MR.MOTION_TEXT_EMPTY);
 const cleanAge = (value: unknown): string => ((L.AGES as readonly string[]).includes(String(value)) ? String(value) : MR.MOTION_TEXT_EMPTY);
 export const readVoiceLibrary = (): VoiceLibrary => readMotionVoiceLibraryJson<VoiceLibrary>(L.LIBRARY_FILE, {});
-export const isCustomVoice = (id: string): boolean => id.startsWith(MR.MOTION_TEXT_CUSTOM);
+const isCustomVoice = (id: string): boolean => id.startsWith(MR.MOTION_TEXT_CUSTOM);
 export const applyVoiceLibrary = (voices: MotionVoicePreset[]): MotionVoicePreset[] => {
   const library = readVoiceLibrary();
   return voices

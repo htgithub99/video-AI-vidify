@@ -9,7 +9,7 @@ import ffmpeg from "fluent-ffmpeg";
 import { FLOW_VIDEO_MEDIA_CONFIG, GEMINI_VIDEO_PROCESS_CONFIG, REFACTOR_CONSTANTS } from "../../constants/index.js";
 import { getStaticResourcePath, getTempDirectory } from "./paths.js";
 const execFileAsync = promisify(execFile);
-export interface VideoAssetInspection {
+interface VideoAssetInspection {
   durationSeconds: number;
   width: number;
   height: number;

@@ -39,7 +39,7 @@ import { ProjectSettingsSection } from "./ProjectSettingsSection";
 import { SeoPanelSection } from "./SeoPanelSection";
 import { ThumbnailsPreviewSection } from "./ThumbnailsPreviewSection";
 import { VoiceSelectionSection } from "./VoiceSelectionSection";
-import type { CinematicSetupProps } from "../types/cinematicSetup.js";
+import type { CinematicSetupProps } from "../../../types/cinematicSetup.js";
 import type { ComponentType } from "react";
 import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSettingsBlock";
 import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy";

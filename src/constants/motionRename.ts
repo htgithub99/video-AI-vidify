@@ -20,7 +20,7 @@ export const MOTION_RENAME = {
   HONORIFIC: /^(?:anh|chị|ông|bà|cô|chú|bác|cậu|dì|thầy|cụ|lão|em|the|a|an|mr|mrs|ms|old|young)\s+/iu,
   MIN_ECHO_CHARS: 4,
   TEXT: {
-    vi: { LABEL: "Đổi tên tránh bản quyền", ON: "Đổi toàn bộ tên", OFF: "Giữ tên gốc", HINT: "Bật để đặt tên mới cho mọi nhân vật, gia đình, địa danh, tổ chức và vật có tên riêng trong nguồn, dùng thống nhất cho kịch bản, SEO, ảnh bìa và phụ đề. Sự kiện, mốc thời gian và con số giữ nguyên." },
+    vi: { LABEL: "Đổi tên tránh bản quyền", ON: "Đổi toàn bộ tên", OFF: "Giữ tên gốc", HINT: "Đặt tên mới cho người, địa danh, tổ chức trong nguồn; dùng chung cho kịch bản, SEO, ảnh bìa, phụ đề. Sự kiện và con số giữ nguyên." },
     en: { LABEL: "Rename to avoid copyright", ON: "Rename everything", OFF: "Keep source names", HINT: "Rename every person, family, place, organisation and named object of the source and use the new names consistently in the script, SEO, thumbnail and subtitles. Events, dates and numbers stay unchanged." },
   },
   PROMPT: {

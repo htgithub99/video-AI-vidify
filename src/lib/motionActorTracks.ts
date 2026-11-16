@@ -4,7 +4,7 @@ import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneCompositi
 import type { MotionSceneAnimation, MotionSceneComposition, MotionSceneLayer } from "../types/motionVisual.js";
 const cache = new WeakMap<MotionSceneComposition, MotionSceneAnimation[]>();
 export const motionAnimationTracks = (animations: MotionSceneAnimation[]): MotionSceneAnimation[] => animations.flatMap((animation) => (animation.targets?.length ? [animation.target, ...animation.targets].map((target) => ({ ...animation, target, targets: undefined })) : [animation]));
-export const motionAnonymousLayer = (layer?: MotionSceneLayer): boolean => layer?.anonymous === true;
+const motionAnonymousLayer = (layer?: MotionSceneLayer): boolean => layer?.anonymous === true;
 const offsets = (animation: MotionSceneAnimation): { x: number; y: number }[] | undefined => {
   const points = animation.keyframes.map((frame) => String(frame.value).match(C.GUARD.TRANSLATE));
   if (points.some((point) => !point)) return undefined;

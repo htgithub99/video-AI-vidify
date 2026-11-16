@@ -1,4 +1,4 @@
-import { fetchLinkSource } from "../../../motion/server/services/motionSourceFetchService.js";
+import { fetchLinkSource } from "../../../../server/services/linkSourceFetchService.js";
 import { MUSIC_REFERENCE_SOURCE as S } from "../../../../constants/musicPlanning.js";
 const cache = new Map<string, string>();
 const clip = (text: string, max: number): string => (text.length > max ? text.slice(0, max) : text);

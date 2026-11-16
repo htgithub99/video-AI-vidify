@@ -4,15 +4,15 @@ import { motionVideoGenre } from "../constants/motionGenre.js";
 import { motionNarratorCastKey } from "./motionVoice.js";
 import { MOTION_STORY_TIMELINE as T } from "../constants/motionStoryTimeline.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../types/motionVideo.js";
-export interface MotionGenreStageFinding {
+interface MotionGenreStageFinding {
   id: string;
   issue: string;
 }
 const C = S.CHECK;
 const M = S.MOTIF;
 const words = (text: string): string[] => (text.toLowerCase().match(M.WORD) || []).filter((word) => word.length >= M.MIN_WORD);
-export const motionMotifWords = (motif: string): Set<string> => new Set(words(motif));
-export const motionHasMotif = (text: string, motif: string): boolean => {
+const motionMotifWords = (motif: string): Set<string> => new Set(words(motif));
+const motionHasMotif = (text: string, motif: string): boolean => {
   const need = motionMotifWords(motif);
   if (!need.size) return false;
   const have = new Set(words(text));

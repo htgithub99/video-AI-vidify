@@ -81,6 +81,23 @@ export const STUDIO_CONTROL_CONTENT = {
   ROLES: ["switch", "checkbox", "radio", "combobox"],
   HIDDEN_LABEL: /(?:^|\s)sr-only(?:\s|$)/,
   ICON_NAME: /Icon$/,
-  ICON_APPEARANCE: /(?:^|:)!?(?:bg-|from-|via-|to-|border(?:-|$)|shadow(?:-|$)|ring(?:-|$))/,
+  // An icon-only button keeps only its layout: fills, frames and every pointer effect (colour, scale, movement, fade) come
+  // from the shared icon-button rule.
+  ICON_APPEARANCE: /(?:^|:)!?(?:bg-|from-|via-|to-|border(?:-|$)|shadow(?:-|$)|ring(?:-|$))|^(?:hover|active|focus|group-hover):!?(?:text-|scale-|-?translate-|rotate-|opacity-|brightness-)/,
   INTERACTION_APPEARANCE: /(?:^|:)(?:hover|active|focus|focus-within|focus-visible|group-hover|group-active|group-focus-within):!?(?:bg-|from-|via-|to-|border(?:-|$)|ring(?:-|$)|shadow(?:-|$))/,
+} as const;
+
+// Shared "confirm delete" dialog used by every screen.
+export const STUDIO_CONFIRM = {
+  TITLE: "inline-flex items-center gap-2 leading-none text-slate-100",
+  TITLE_ICON: "w-4 h-4 text-rose-500 shrink-0",
+  TITLE_TEXT: "leading-none text-sm font-extrabold",
+  BODY: "space-y-4 text-left",
+  MESSAGE: "text-xs sm:text-sm text-slate-300 leading-relaxed",
+  WARNING: "p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold flex items-center gap-2",
+  WARNING_ICON: "w-4 h-4 text-rose-500 shrink-0",
+  ACTIONS: "flex justify-end items-center gap-2.5 pt-3 border-t border-slate-800",
+  CANCEL: "h-9 px-4 rounded-xl text-xs font-bold",
+  CONFIRM: "h-9 px-5 rounded-xl text-xs font-extrabold",
+  MAX_WIDTH: "max-w-md",
 } as const;

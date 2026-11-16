@@ -5,7 +5,7 @@ import { PAGE_WATCHDOG } from "../../constants/pageWatchdog.js";
 import { BROWSER_BLANK_PAGE, BROWSER_BLANK_PAGE_STALE_MS } from "../../constants/browserLifecycle.js";
 const chatRoomPages = new WeakSet<Page>();
 export const isChatRoomPage = (page: Page): boolean => chatRoomPages.has(page);
-export const blankChromePage = (context: BrowserContext): Page | undefined => context.pages().find((page) => !page.isClosed() && !chatRoomPages.has(page) && BROWSER_BLANK_PAGE.test(page.url()));
+const blankChromePage = (context: BrowserContext): Page | undefined => context.pages().find((page) => !page.isClosed() && !chatRoomPages.has(page) && BROWSER_BLANK_PAGE.test(page.url()));
 const blankSince = new WeakMap<Page, number>();
 export const pruneBlankChromePages = async (context: BrowserContext): Promise<void> => {
   const now = Date.now();

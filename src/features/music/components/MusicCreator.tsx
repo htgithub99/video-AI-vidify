@@ -14,114 +14,9 @@ import * as SRT from "../../../constants/sourceText.js";
 import * as MCS from "../constants/musicCreatorStyles.js";
 import { MUSIC_CREATOR_FORMAT as MCF } from "../../../constants/musicCreator.js";
 import { StudioLoadingState, StudioSegmentedControl, StudioSegmentButton, StudioHeader, StudioDisclosureButton, StudioPage, StudioCanvas, StudioFieldset, StudioCard, StudioInput, StudioTextarea } from "../../../components/ui/Studio.js";
-import {
-  SOURCE_TEMPLATE_1_1,
-  SOURCE_TEMPLATE_HTTP,
-  SOURCE_TEMPLATE_LYRICS,
-  SOURCE_TEMPLATE_MUSIC,
-  SOURCE_TEMPLATE_MUSIC_BACKGROUND,
-  SOURCE_TEMPLATE_MUSIC_COVER,
-  SOURCE_TEMPLATE_MUSIC_TRACK_EVALUATION,
-  SOURCE_TEMPLATE_SEO,
-  SOURCE_TEMPLATE_SEO_2,
-  SOURCE_TEMPLATE_SEO_ALL,
-  SOURCE_TEMPLATE_SYMBOL_10,
-  SOURCE_TEMPLATE_SYMBOL_11,
-  SOURCE_TEMPLATE_SYMBOL_12,
-  SOURCE_TEMPLATE_SYMBOL_13,
-  SOURCE_TEMPLATE_SYMBOL_14,
-  SOURCE_TEMPLATE_SYMBOL_15,
-  SOURCE_TEMPLATE_SYMBOL_16,
-  SOURCE_TEMPLATE_SYMBOL_17,
-  SOURCE_TEMPLATE_SYMBOL_5,
-  SOURCE_TEMPLATE_SYMBOL_7,
-  SOURCE_TEMPLATE_SYMBOL_8,
-  SOURCE_TEMPLATE_SYMBOL_9,
-  SOURCE_TEMPLATE_TITLE,
-  SOURCE_TEXT_0,
-  SOURCE_TEXT_16_9_HD,
-  SOURCE_TEXT_ALERT,
-  SOURCE_TEXT_BUTTON,
-  SOURCE_TEXT_CAN_TAI_FILE_NHAC_TU_DANH,
-  SOURCE_TEXT_CENTER,
-  SOURCE_TEXT_CHECKBOX,
-  SOURCE_TEXT_COUNT,
-  SOURCE_TEXT_DANGER,
-  SOURCE_TEXT_DATA_PLAYLISTSEOOPTIONS,
-  SOURCE_TEXT_DATA_SEOWARNING,
-  SOURCE_TEXT_DATA_SONGS,
-  SOURCE_TEXT_DATA_STYLEANALYSIS,
-  SOURCE_TEXT_DATA_SUNOSETTINGS,
-  SOURCE_TEXT_DATA_SUNOSETTINGSANALYSIS,
-  SOURCE_TEXT_DESCRIPTION,
-  SOURCE_TEXT_END,
-  SOURCE_TEXT_EXCLUDESTYLES,
-  SOURCE_TEXT_FILE,
-  SOURCE_TEXT_FOLDER,
-  SOURCE_TEXT_FROM_AMBER_500_TO_ORANGE_500,
-  SOURCE_TEXT_FROM_FUCHSIA_500_TO_PINK_500,
-  SOURCE_TEXT_FROM_INDIGO_500_TO_CYAN_500,
-  SOURCE_TEXT_FROM_PURPLE_500_TO_INDIGO_500,
-  SOURCE_TEXT_GRID_COLS_1,
-  SOURCE_TEXT_GRID_COLS_1_LG_GRID_COLS,
-  SOURCE_TEXT_GRID_COLS_1_MD_GRID_COLS,
-  SOURCE_TEXT_HASHTAGS,
-  SOURCE_TEXT_KHOP,
-  SOURCE_TEXT_LYRICS,
-  SOURCE_TEXT_MAXMODE,
-  SOURCE_TEXT_MAX_W_MD,
-  SOURCE_TEXT_MESSAGE,
-  SOURCE_TEXT_MP3,
-  SOURCE_TEXT_NAME,
-  SOURCE_TEXT_NOOPENER_NOREFERRER,
-  SOURCE_TEXT_OUTLINE,
-  SOURCE_TEXT_PERSONALIZE,
-  SOURCE_TEXT_POLITE,
-  SOURCE_TEXT_READONLY,
-  SOURCE_TEXT_READWRITE,
-  SOURCE_TEXT_SEO,
-  SOURCE_TEXT_SETTINGKEY,
-  SOURCE_TEXT_SM,
-  SOURCE_TEXT_SPLIT,
-  SOURCE_TEXT_START,
-  SOURCE_TEXT_STATUS,
-  SOURCE_TEXT_SWITCH,
-  SOURCE_TEXT_SYMBOL_10,
-  SOURCE_TEXT_SYMBOL_11,
-  SOURCE_TEXT_SYMBOL_12,
-  SOURCE_TEXT_SYMBOL_13,
-  SOURCE_TEXT_SYMBOL_14,
-  SOURCE_TEXT_SYMBOL_15,
-  SOURCE_TEXT_SYMBOL_16,
-  SOURCE_TEXT_SYMBOL_17,
-  SOURCE_TEXT_SYMBOL_18,
-  SOURCE_TEXT_SYMBOL_19,
-  SOURCE_TEXT_SYMBOL_2,
-  SOURCE_TEXT_SYMBOL_20,
-  SOURCE_TEXT_SYMBOL_21,
-  SOURCE_TEXT_SYMBOL_4,
-  SOURCE_TEXT_SYMBOL_5,
-  SOURCE_TEXT_SYMBOL_6,
-  SOURCE_TEXT_SYMBOL_7,
-  SOURCE_TEXT_SYMBOL_8,
-  SOURCE_TEXT_SYMBOL_9,
-  SOURCE_TEXT_TAGS,
-  SOURCE_TEXT_TAI_NHAC_SUNO,
-  SOURCE_TEXT_TEXT,
-  SOURCE_TEXT_TEXT_EMERALD_300_BG_EMERALD_500,
-  SOURCE_TEXT_TEXT_FUCHSIA_300_BG_FUCHSIA_500,
-  SOURCE_TEXT_TEXT_SLATE_300_BG_SLATE_800,
-  SOURCE_TEXT_TEXT_SLATE_400_BG_SLATE_800,
-  SOURCE_TEXT_TITLE,
-  SOURCE_TEXT_TRACK_ORDER,
-  SOURCE_TEXT_TRUE,
-  SOURCE_TEXT_UNSTYLED,
-  SOURCE_TEXT_URL,
-  SOURCE_TEXT_VI,
-  SOURCE_TEXT_WAV,
-} from "../../../constants/sourceText";
+import { SOURCE_TEMPLATE_1_1, SOURCE_TEMPLATE_HTTP, SOURCE_TEMPLATE_LYRICS, SOURCE_TEMPLATE_MUSIC, SOURCE_TEMPLATE_MUSIC_BACKGROUND, SOURCE_TEMPLATE_MUSIC_COVER, SOURCE_TEMPLATE_MUSIC_TRACK_EVALUATION, SOURCE_TEMPLATE_SEO, SOURCE_TEMPLATE_SEO_2, SOURCE_TEMPLATE_SEO_ALL, SOURCE_TEMPLATE_SYMBOL_10, SOURCE_TEMPLATE_SYMBOL_11, SOURCE_TEMPLATE_SYMBOL_12, SOURCE_TEMPLATE_SYMBOL_13, SOURCE_TEMPLATE_SYMBOL_14, SOURCE_TEMPLATE_SYMBOL_15, SOURCE_TEMPLATE_SYMBOL_16, SOURCE_TEMPLATE_SYMBOL_17, SOURCE_TEMPLATE_SYMBOL_5, SOURCE_TEMPLATE_SYMBOL_7, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEMPLATE_SYMBOL_9, SOURCE_TEMPLATE_TITLE, SOURCE_TEXT_0, SOURCE_TEXT_16_9_HD, SOURCE_TEXT_ALERT, SOURCE_TEXT_BUTTON, SOURCE_TEXT_CAN_TAI_FILE_NHAC_TU_DANH, SOURCE_TEXT_CENTER, SOURCE_TEXT_CHECKBOX, SOURCE_TEXT_COUNT, SOURCE_TEXT_DATA_PLAYLISTSEOOPTIONS, SOURCE_TEXT_DATA_SEOWARNING, SOURCE_TEXT_DATA_SONGS, SOURCE_TEXT_DATA_STYLEANALYSIS, SOURCE_TEXT_DATA_SUNOSETTINGS, SOURCE_TEXT_DATA_SUNOSETTINGSANALYSIS, SOURCE_TEXT_DESCRIPTION, SOURCE_TEXT_END, SOURCE_TEXT_EXCLUDESTYLES, SOURCE_TEXT_FILE, SOURCE_TEXT_FOLDER, SOURCE_TEXT_FROM_AMBER_500_TO_ORANGE_500, SOURCE_TEXT_FROM_FUCHSIA_500_TO_PINK_500, SOURCE_TEXT_FROM_INDIGO_500_TO_CYAN_500, SOURCE_TEXT_FROM_PURPLE_500_TO_INDIGO_500, SOURCE_TEXT_GRID_COLS_1, SOURCE_TEXT_GRID_COLS_1_LG_GRID_COLS, SOURCE_TEXT_GRID_COLS_1_MD_GRID_COLS, SOURCE_TEXT_HASHTAGS, SOURCE_TEXT_KHOP, SOURCE_TEXT_LYRICS, SOURCE_TEXT_MAXMODE, SOURCE_TEXT_MESSAGE, SOURCE_TEXT_MP3, SOURCE_TEXT_NAME, SOURCE_TEXT_NOOPENER_NOREFERRER, SOURCE_TEXT_PERSONALIZE, SOURCE_TEXT_POLITE, SOURCE_TEXT_READONLY, SOURCE_TEXT_READWRITE, SOURCE_TEXT_SEO, SOURCE_TEXT_SETTINGKEY, SOURCE_TEXT_SPLIT, SOURCE_TEXT_START, SOURCE_TEXT_STATUS, SOURCE_TEXT_SWITCH, SOURCE_TEXT_SYMBOL_10, SOURCE_TEXT_SYMBOL_11, SOURCE_TEXT_SYMBOL_12, SOURCE_TEXT_SYMBOL_13, SOURCE_TEXT_SYMBOL_14, SOURCE_TEXT_SYMBOL_15, SOURCE_TEXT_SYMBOL_16, SOURCE_TEXT_SYMBOL_17, SOURCE_TEXT_SYMBOL_18, SOURCE_TEXT_SYMBOL_19, SOURCE_TEXT_SYMBOL_2, SOURCE_TEXT_SYMBOL_20, SOURCE_TEXT_SYMBOL_21, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_SYMBOL_5, SOURCE_TEXT_SYMBOL_6, SOURCE_TEXT_SYMBOL_7, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_TAGS, SOURCE_TEXT_TAI_NHAC_SUNO, SOURCE_TEXT_TEXT, SOURCE_TEXT_TEXT_EMERALD_300_BG_EMERALD_500, SOURCE_TEXT_TEXT_FUCHSIA_300_BG_FUCHSIA_500, SOURCE_TEXT_TEXT_SLATE_300_BG_SLATE_800, SOURCE_TEXT_TEXT_SLATE_400_BG_SLATE_800, SOURCE_TEXT_TITLE, SOURCE_TEXT_TRACK_ORDER, SOURCE_TEXT_TRUE, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_URL, SOURCE_TEXT_VI, SOURCE_TEXT_WAV } from "../../../constants/sourceText";
 import { readBlobAsDataUrl, saveBlobWithDialog as saveMusicBlobWithDialog } from "../../../lib/fileUtils";
-import { DestructiveActionNotice } from "../../../components/common/DestructiveActionNotice";
+import { ConfirmDeleteModal } from "../../../components/common/ConfirmDeleteModal";
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, Music2, WandSparkles, Sparkles, Copy, Check, Disc3, SlidersHorizontal, Flame, FileText, Search, Save, Trash2, Pencil, X, Columns, Clock, AlertTriangle, Upload, Image as ImageIcon, Download, RefreshCw, ExternalLink, Link2, Globe, Users, Lock } from "lucide-react";
 import _ from "lodash";
@@ -132,7 +27,6 @@ import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSe
 import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy";
 import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy";
 import { Tooltip } from "../../../components/ui/Tooltip";
-import { Modal } from "../../../components/ui/Modal";
 import { Button } from "../../../components/ui/Button";
 import { ImagePreviewModal } from "../../../components/common/ImagePreviewModal";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types";
@@ -416,35 +310,35 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
             {SOURCE_TEXT_SYMBOL_9}
             {index + 1}
           </span>
-          <h3 className={cn(MCS.TEXT_SM_SM_TEXT_BASE_FONT_BLACK_TEXT_0F172A_DARK_TEXT_SLATE_100_TRUNCATE_MA)} title={displayTitle}>
+          <h3 className={cn(MCS.TEXT_SM_SM_TEXT_BASE_FONT_BLACK_TEXT_SLATE_100_TRUNCATE_)} title={displayTitle}>
             {displayTitle}
           </h3>
           <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopy(displayTitle, SOURCE_TEMPLATE_TITLE(String(index)), texts.COPY_TITLE_SUCCESS)} className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC)} title={copiedKey === SOURCE_TEMPLATE_TITLE(String(index)) ? texts.COPIED_LABEL : texts.COPY_TITLE_BTN}>
-            {copiedKey === SOURCE_TEMPLATE_TITLE(String(index)) ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
+            {copiedKey === SOURCE_TEMPLATE_TITLE(String(index)) ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0_63C36D)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
           </Button>
         </div>
         <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_FLEX)}>
-          {song.genre && <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_SKY_50_DARK_BG_SKY_950_50_BOR)}>{song.genre}</span>}
+          {song.genre && <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_SKY_950_50)}>{song.genre}</span>}
           {song.tempoBpm > 0 && (
-            <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_AMBER_50_DARK_BG_AMBER_950_50)}>
-              <Clock className={cn(MCS.W_3_H_3_TEXT_C2410C_DARK_TEXT_AMBER_400_SHRINK_0)} />
+            <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_AMBER_950_)}>
+              <Clock className={cn(MCS.W_3_H_3_TEXT_AMBER_400_SHRINK_0_99AF1D)} />
               <span>
                 {song.tempoBpm} {texts.BPM_UNIT}
               </span>
             </span>
           )}
-          {song.mood && <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_EMERALD_50_DARK_BG_EMERALD_95)}>{song.mood}</span>}
+          {song.mood && <span className={cn(MCS.TEXT_XS_FONT_MEDIUM_PX_2_PY_0_5_ROUNDED_MD_BG_EMERALD_95)}>{song.mood}</span>}
         </div>
       </div>
       {song.lyrics && (
         <div className={cn(MCS.SPACE_Y_1_5_PT_0_5)}>
-          <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_TEXT_XS_FONT_BOLD_TEXT_SLATE_700_DARK_TEX)}>
-            <span className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_FONT_MONO_TEXT_10PX_TEXT_PINK_600_DARK_TEXT_PINK)}>
+          <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_TEXT_XS_FONT_BOLD_TEXT)}>
+            <span className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_5_FONT_MONO_TEXT_10PX_TEXT_PINK_)}>
               <FileText className={cn(SRT.SOURCE_TEXT_W_3_H_3)} />
               {texts.LYRICS_TITLE}
             </span>
             <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopy(song.lyrics, SOURCE_TEMPLATE_LYRICS(String(index)), texts.COPY_LYRICS_SUCCESS)} className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC)} title={copiedKey === SOURCE_TEMPLATE_LYRICS(String(index)) ? texts.COPIED_LABEL : texts.COPY_LYRICS_BTN}>
-              {copiedKey === SOURCE_TEMPLATE_LYRICS(String(index)) ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
+              {copiedKey === SOURCE_TEMPLATE_LYRICS(String(index)) ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0_63C36D)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
             </Button>
           </div>
           <pre className={cn(MCS.P_3_5_ROUNDED_XL_BG_SLATE_955_90_BORDER_BORDER_SLATE_800_90_TEXT_XS_FONT_SA)}>{song.lyrics}</pre>
@@ -510,7 +404,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
     const isCopied = copiedKey === key;
     return (
       <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopy(text, key, texts.COPY_SEO_FIELD_SUCCESS)} className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC)} title={isCopied ? texts.COPIED_LABEL : titleText || texts.COPY_FIELD_BTN}>
-        {isCopied ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
+        {isCopied ? <Check className={cn(MCS.W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0_63C36D)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
       </Button>
     );
   };
@@ -520,10 +414,10 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
       <div className={cn(MCS.FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_SLATE_200_2)}>
         <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2)}>
           <Sparkles className={cn(MCS.W_4_H_4_TEXT_FUCHSIA_500_SHRINK_0)} />
-          <h3 className={cn(MCS.TEXT_SM_SM_TEXT_BASE_FONT_EXTRABOLD_TEXT_0F172A_DARK_TEXT_SLATE_100)}>{texts.PLAYLIST_SEO_TITLE}</h3>
+          <h3 className={cn(MCS.TEXT_SM_SM_TEXT_BASE_FONT_EXTRABOLD_TEXT_SLATE_100_DB43EF)}>{texts.PLAYLIST_SEO_TITLE}</h3>
         </div>
         <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2)}>
-          <span className={cn(MCS.TEXT_11PX_FONT_MONO_FONT_BOLD_TEXT_A21CAF_DARK_TEXT_FUCHSIA_300_BG_FUCHSIA)}>{texts.SEO_OPTIONS_COUNT_BADGE}</span>
+          <span className={cn(MCS.TEXT_11PX_FONT_MONO_FONT_BOLD_TEXT_FUCHSIA_300_BG_FUCHSI_AA9456)}>{texts.SEO_OPTIONS_COUNT_BADGE}</span>
           <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleExportText} disabled={_.isEmpty(seoOptions)} title={texts.SEO_EXPORT_TXT_TOOLTIP} className={cn(MCS.H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_5_TEXT_XS)}>
             <Download className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5)} />
             <span>{texts.SEO_EXPORT_TXT_BTN}</span>
@@ -534,60 +428,60 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
         {_.map(seoOptions, (opt, sIdx) => {
           const trackOrder = getSeoTrackOrder(opt.description);
           return (
-            <StudioCard key={sIdx} className={cn(MCS.P_4_ROUNDED_2XL_BG_WHITE_70_DARK_BG_SLATE_955_90_BORDER_BORDER_SLATE_200_DA)}>
-              <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_SLATE_200_80_DARK_B)}>
+            <StudioCard key={sIdx} className={cn(MCS.P_4_ROUNDED_2XL_BG_SLATE_955_90_BORDER_BORDER_SLATE_800__B1F038)}>
+              <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER_)}>
                 <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W)}>
                   <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PX_2_5_PY_0_5_ROUNDED_LG_BG_FUCHSIA)}>{texts.formatOptionLabel(sIdx + 1)}</span>
                   <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_1_PX_2_5_PY_0_5_ROUNDED_LG_BG_EMERALD_500_15_B)}>
-                    <Sparkles className={cn(MCS.W_3_H_3_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400)} />
+                    <Sparkles className={cn(MCS.W_3_H_3_TEXT_EMERALD_400_7BB64A)} />
                     <span>{texts.formatScoreLabel(opt.seoScore)}</span>
                   </span>
                 </div>
                 <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopyFullOption(opt, sIdx)} className={cn(MCS.BTN_ICON_TINY_W_7_H_7_MIN_W_28PX_MAX_W_28PX_MIN_H_28PX_MAX_H_28PX_P_0_ASPEC)} title={copiedKey === SOURCE_TEMPLATE_SEO_ALL(String(sIdx)) ? texts.COPIED_LABEL : texts.COPY_SEO_OPTION_BTN}>
-                  {copiedKey === SOURCE_TEMPLATE_SEO_ALL(String(sIdx)) ? <Check className={cn(MCS.W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_4_H_4_SHRINK_0)} />}
+                  {copiedKey === SOURCE_TEMPLATE_SEO_ALL(String(sIdx)) ? <Check className={cn(MCS.W_4_H_4_TEXT_EMERALD_400_SHRINK_0_D3C71C)} /> : <Copy className={cn(SRT.SOURCE_TEXT_W_4_H_4_SHRINK_0)} />}
                 </Button>
               </div>
               <div className={cn(MCS.SPACE_Y_2_5_FLEX_1_FLEX_FLEX_COL_JUSTIFY_BETWEEN)}>
                 <div className={cn(MCS.SPACE_Y_2_5)}>
-                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200)}>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8_924C9F)}>
                     <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
-                      <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                      <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_T)}>
                         <FileText className={cn(MCS.W_3_H_3_TEXT_PURPLE_500)} />
                         <span>{texts.SEO_FIELD_TITLE}</span>
                       </span>
                       <CopyFieldButton text={opt.title} field={SOURCE_TEXT_TITLE} optionIndex={sIdx} />
                     </div>
-                    <h4 className={cn(MCS.TEXT_XS_SM_TEXT_13PX_FONT_BLACK_TEXT_0F172A_DARK_TEXT_SLATE_100_LEADING_SNU)}>{opt.title}</h4>
+                    <h4 className={cn(MCS.TEXT_XS_SM_TEXT_13PX_FONT_BLACK_TEXT_SLATE_100_LEADING_S_E99FD0)}>{opt.title}</h4>
                   </StudioCard>
-                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200)}>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8_924C9F)}>
                     <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
-                      <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                      <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_T)}>
                         <SlidersHorizontal className={cn(MCS.W_3_H_3_TEXT_SKY_500)} />
                         <span>{texts.SEO_FIELD_DESCRIPTION}</span>
                       </span>
                       <CopyFieldButton text={opt.description} field={SOURCE_TEXT_DESCRIPTION} optionIndex={sIdx} />
                     </div>
-                    <p className={cn(MCS.TEXT_XS_TEXT_334155_DARK_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_32_OVERFLOW_Y)}>{opt.description}</p>
+                    <p className={cn(MCS.TEXT_XS_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_32_OVERFLOW_5049AC)}>{opt.description}</p>
                   </StudioCard>
                   {!_.isEmpty(trackOrder) && (
-                    <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200)}>
+                    <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8_924C9F)}>
                       <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
-                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_T)}>
                           <Music2 className={cn(MCS.W_3_H_3_TEXT_FUCHSIA_500)} />
                           <span>{texts.SEO_TRACK_ORDER}</span>
                         </span>
                         <CopyFieldButton text={trackOrder} field={SOURCE_TEXT_TRACK_ORDER} optionIndex={sIdx} />
                       </div>
-                      <p className={cn(MCS.TEXT_XS_TEXT_334155_DARK_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_24_OVERFLOW_Y)}>{trackOrder}</p>
+                      <p className={cn(MCS.TEXT_XS_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_24_OVERFLOW)}>{trackOrder}</p>
                     </StudioCard>
                   )}
                 </div>
                 <div className={cn(MCS.GRID_GRID_COLS_1_2XL_GRID_COLS_2_GAP_2_5_PT_1)}>
-                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200_2)}>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8_3C462C)}>
                     <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_2)}>
                       <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
-                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
-                          <span className={cn(MCS.FONT_BOLD_TEXT_PURPLE_600_DARK_TEXT_PURPLE_400)}>{texts.HASH_SYMBOL}</span>
+                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_T)}>
+                          <span className={cn(MCS.FONT_BOLD_TEXT_PURPLE_400_BEA27C)}>{texts.HASH_SYMBOL}</span>
                           <span>
                             {texts.HASHTAGS_LABEL}
                             {SOURCE_TEXT_SYMBOL_11}
@@ -599,17 +493,17 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                       </div>
                       <div className={cn(MCS.FLEX_FLEX_WRAP_GAP_X_2_5_GAP_Y_2_MAX_H_24_OVERFLOW_Y_AUTO_SCROLLBAR_NONE_SC)}>
                         {_.map(opt.hashtags, (tag, i) => (
-                          <span key={i} className={cn(MCS.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_7E22CE_DARK_TEXT_PURPLE_300_SELECT_ALL_H)}>
+                          <span key={i} className={cn(MCS.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_PURPLE_300_SELECT_ALL_05EE99)}>
                             {tag}
                           </span>
                         ))}
                       </div>
                     </div>
                   </StudioCard>
-                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER_SLATE_200_2)}>
+                  <StudioCard className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_900_60_BORDER_BORDER_SLATE_800_8_3C462C)}>
                     <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_2)}>
                       <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
-                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_500_DARK)}>
+                        <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_T)}>
                           <Search className={cn(MCS.W_3_H_3_TEXT_EMERALD_500)} />
                           <span>
                             {texts.TAGS_LABEL}
@@ -620,7 +514,7 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
                         </span>
                         <CopyFieldButton text={opt.tags.join(SOURCE_TEXT_SYMBOL_10)} field={SOURCE_TEXT_TAGS} optionIndex={sIdx} />
                       </div>
-                      <p className={cn(MCS.TEXT_10PX_FONT_MONO_TEXT_475569_DARK_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_2)}>{opt.tags.join(SOURCE_TEXT_SYMBOL_10)}</p>
+                      <p className={cn(MCS.TEXT_10PX_FONT_MONO_TEXT_SLATE_300_LEADING_RELAXED_MAX_H_622ED9)}>{opt.tags.join(SOURCE_TEXT_SYMBOL_10)}</p>
                     </div>
                   </StudioCard>
                 </div>
@@ -1575,7 +1469,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   <span>{texts.STYLE_YOUR_STYLES}</span>
                 </div>
                 <div className={cn(MCS.FLEX_FLEX_WRAP_GAP_1_5_MAX_H_28_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_P_0_5)}>
-                  <div className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, analyzeStyleFromSource ? MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S : MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX)}>
+                  <div className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, analyzeStyleFromSource ? MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S : MCS.BG_SLATE_955_90_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE)}>
                     <Tooltip content={optionTexts.analysisHint} align={SOURCE_TEXT_START}>
                       <Button
                         variant={SOURCE_TEXT_UNSTYLED}
@@ -1588,8 +1482,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         disabled={isBusy}
                         title={optionTexts.analysisHint}
                         className={cn(MCS.TEXT_11PX_FONT_BLACK_TRUNCATE_MAX_W_120PX_CURSOR_POINTER_TEXT_LEFT_FLEX_ITE)}>
-                        <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, analyzeStyleFromSource ? MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS : MCS.BG_SLATE_400_DARK_BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400)} />
-                        <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, analyzeStyleFromSource ? MCS.TEXT_WHITE : MCS.TEXT_1E1B4B_GROUP_HOVER_TEXT_6B21A8_DARK_TEXT_SLATE_200_DARK_GROUP_HOVER_TE)}>{optionTexts.analyze}</span>
+                        <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, analyzeStyleFromSource ? MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS : MCS.BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400)} />
+                        <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, analyzeStyleFromSource ? MCS.TEXT_WHITE : MCS.TEXT_SLATE_200_GROUP_HOVER_TEXT_WHITE)}>{optionTexts.analyze}</span>
                       </Button>
                     </Tooltip>
                   </div>
@@ -1597,7 +1491,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                     const isSelected = !analyzeStyleFromSource && _.isEqual(style, savedStyle.content);
                     const isReanalyzing = styleRequest.pending === savedStyle;
                     return (
-                      <div key={SOURCE_TEMPLATE_SYMBOL_5(String(styleIndex), String(savedStyle.title))} className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected })}>
+                      <div key={SOURCE_TEMPLATE_SYMBOL_5(String(styleIndex), String(savedStyle.title))} className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_SLATE_955_90_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE]: !isSelected })}>
                         <Tooltip content={savedStyle.content} align={SOURCE_TEXT_START}>
                           <Button
                             variant={SOURCE_TEXT_UNSTYLED}
@@ -1613,8 +1507,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                             disabled={isBusy}
                             className={cn(MCS.TEXT_11PX_FONT_BLACK_TRUNCATE_MAX_W_120PX_CURSOR_POINTER_TEXT_LEFT_FLEX_ITE)}
                             title={savedStyle.content}>
-                            <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, { [MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS]: isSelected, [MCS.BG_SLATE_400_DARK_BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400]: !isSelected })} />
-                            <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, { [MCS.TEXT_WHITE]: isSelected, [MCS.TEXT_1E1B4B_GROUP_HOVER_TEXT_6B21A8_DARK_TEXT_SLATE_200_DARK_GROUP_HOVER_TE]: !isSelected })}>{savedStyle.title}</span>
+                            <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, { [MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS]: isSelected, [MCS.BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400]: !isSelected })} />
+                            <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, { [MCS.TEXT_WHITE]: isSelected, [MCS.TEXT_SLATE_200_GROUP_HOVER_TEXT_WHITE]: !isSelected })}>{savedStyle.title}</span>
                           </Button>
                         </Tooltip>
                         <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_ML_1_5_SHRINK_0_SELF_CENTER)}>
@@ -1732,7 +1626,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                       {_.map(savedInspos, (item, index) => {
                         const isSelected = _.isEqual(sunoInspo, item.content);
                         return (
-                          <div key={SOURCE_TEMPLATE_SYMBOL_5(String(item.title), String(index))} className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected })}>
+                          <div key={SOURCE_TEMPLATE_SYMBOL_5(String(item.title), String(index))} className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_SLATE_955_90_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE]: !isSelected })}>
                             <Tooltip content={item.content} align={SOURCE_TEXT_START}>
                               <Button
                                 variant={SOURCE_TEXT_UNSTYLED}
@@ -1747,8 +1641,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                 disabled={isBusy}
                                 className={cn(MCS.TEXT_11PX_FONT_BLACK_TRUNCATE_MAX_W_130PX_CURSOR_POINTER_TEXT_LEFT_FLEX_ITE)}
                                 title={item.content}>
-                                <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, { [MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS]: isSelected, [MCS.BG_SLATE_400_DARK_BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400]: !isSelected })} />
-                                <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, { [MCS.TEXT_WHITE]: isSelected, [MCS.TEXT_1E1B4B_GROUP_HOVER_TEXT_6B21A8_DARK_TEXT_SLATE_200_DARK_GROUP_HOVER_TE]: !isSelected })}>{item.title}</span>
+                                <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, { [MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS]: isSelected, [MCS.BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400]: !isSelected })} />
+                                <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, { [MCS.TEXT_WHITE]: isSelected, [MCS.TEXT_SLATE_200_GROUP_HOVER_TEXT_WHITE]: !isSelected })}>{item.title}</span>
                               </Button>
                             </Tooltip>
                             <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_ML_1_5_SHRINK_0_SELF_CENTER)}>
@@ -1854,7 +1748,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         type={SOURCE_TEXT_BUTTON}
                         onClick={() => setOutputCount(count)}
                         disabled={isBusy}
-                        className={cn(MCS.RELATIVE_H_9_ROUNDED_XL_BORDER_FONT_BOLD_TEXT_XS_FLEX_FLEX_COL_ITEMS_CENTER, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected })}>
+                        className={cn(MCS.RELATIVE_H_9_ROUNDED_XL_BORDER_FONT_BOLD_TEXT_XS_FLEX_FLEX_COL_ITEMS_CENTER, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_SLATE_955_90_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE]: !isSelected })}>
                         <span>{texts.formatSongCount(count)}</span>
                         {isRecommended && !isSelected && <span className={cn(MCS.ABSOLUTE_TOP_1_PX_1_ROUNDED_TEXT_7PX_FONT_MONO_UPPERCASE_BG_AMBER_500_20_TE)}>{texts.RECOMMENDED_BADGE}</span>}
                       </Button>
@@ -2003,17 +1897,17 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                 ) : isGeneratingThumbnail ? (
                   <div className={cn(MCS.MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_FUCHSIA_500_40_BG_GRAD)}>
                     <div className={cn(MCS.W_7_H_7_ROUNDED_LG_BG_GRADIENT_TO_TR_FROM_FUCHSIA_500_TO_PURPLE_600_P_0_5_S)}>
-                      <div className={cn(MCS.W_FULL_H_FULL_BG_WHITE_DARK_BG_SLATE_900_ROUNDED_6PX_FLEX_ITEMS_CENTER_JUST)}>
-                        <Sparkles className={cn(MCS.W_3_5_H_3_5_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_400_ANIMATE_SPIN)} />
+                      <div className={cn(MCS.W_FULL_H_FULL_BG_SLATE_900_ROUNDED_6PX_FLEX_ITEMS_CENTER)}>
+                        <Sparkles className={cn(MCS.W_3_5_H_3_5_TEXT_FUCHSIA_400_ANIMATE_SPIN)} />
                       </div>
                     </div>
-                    <p className={cn(MCS.TEXT_10PX_FONT_BLACK_TRACKING_TIGHT_TEXT_86198F_DARK_TEXT_FUCHSIA_300_LEADI)}>{texts.THUMBNAIL_GENERATING}</p>
-                    <p className={cn(MCS.TEXT_8PX_FONT_MEDIUM_TEXT_SLATE_500_DARK_TEXT_SLATE_400)}>{texts.THUMBNAIL_MODEL_TAG}</p>
+                    <p className={cn(MCS.TEXT_10PX_FONT_BLACK_TRACKING_TIGHT_TEXT_FUCHSIA_300_LEA)}>{texts.THUMBNAIL_GENERATING}</p>
+                    <p className={cn(MCS.TEXT_8PX_FONT_MEDIUM_TEXT_SLATE_400)}>{texts.THUMBNAIL_MODEL_TAG}</p>
                   </div>
                 ) : (
                   <div className={cn(MCS.RELATIVE_MIN_W_0_W_FULL_ASPECT_VIDEO_ROUNDED_XL_BORDER_BORDER_DASHED_BORDER_2)}>
-                    <Sparkles className={cn(MCS.W_4_H_4_TEXT_SLATE_600_DARK_TEXT_SLATE_500)} />
-                    <span className={cn(MCS.TEXT_10PX_FONT_SEMIBOLD_TEXT_SLATE_400_DARK_TEXT_SLATE_400_LEADING_TIGHT)}>{texts.THUMBNAIL_AI_TITLE}</span>
+                    <Sparkles className={cn(MCS.W_4_H_4_TEXT_SLATE_500_F0A7D6)} />
+                    <span className={cn(MCS.TEXT_10PX_FONT_SEMIBOLD_TEXT_SLATE_400_LEADING_TIGHT)}>{texts.THUMBNAIL_AI_TITLE}</span>
                     <span className={cn(MCS.TEXT_8PX_FONT_MONO_TEXT_SLATE_500)}>{texts.THUMBNAIL_NOT_CREATED}</span>
                   </div>
                 )}
@@ -2031,8 +1925,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                     type={SOURCE_TEXT_BUTTON}
                     onClick={handleRegenerateThumbnail}
                     disabled={isBusy}
-                    className={cn(MCS.H_9_PX_3_ROUNDED_XL_BORDER_TEXT_XS_FONT_BOLD_INLINE_FLEX_ITEMS_CENTER_JUSTI, { [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_100_90_DARK_BG_FUCHSIA_950_70_TEXT_86198F]: isGeneratingThumbnail, [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_500_10_HOVER_BG_FUCHSIA_600_DARK_BG_FUCHSI]: !isGeneratingThumbnail })}>
-                    {isGeneratingThumbnail ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_400)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
+                    className={cn(MCS.H_9_PX_3_ROUNDED_XL_BORDER_TEXT_XS_FONT_BOLD_INLINE_FLEX_ITEMS_CENTER_JUSTI, { [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_950_70_TEXT_FUCHSIA_300]: isGeneratingThumbnail, [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_500_20_HOVER_BG_FUCHSIA]: !isGeneratingThumbnail })}>
+                    {isGeneratingThumbnail ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_FUCHSIA_400_AA0600)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
                     <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isGeneratingThumbnail ? texts.THUMBNAIL_CREATING_SHORT : generatedThumbnail ? texts.THUMBNAIL_REGENERATE : texts.THUMBNAIL_CREATE_BTN}</span>
                   </Button>
                   {isGeneratingThumbnail ? (
@@ -2198,11 +2092,11 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               {!_.isEmpty(songs) && (
                 <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_SHRINK_0)}>
                   <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleGenerate} disabled={isBusy} className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_PURPLE_100_HOVER_BG_PURPLE_200)} title={texts.MUSIC_RECOMPOSE_BTN_TOOLTIP}>
-                    {isLoading ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_PURPLE_600_DARK_TEXT_PURPLE_300_ANIMATE_SPIN)} /> : <WandSparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_PURPLE_600_DARK_TEXT_PURPLE_300)} />}
+                    {isLoading ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_PURPLE_300_ANIMATE_SPIN)} /> : <WandSparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_PURPLE_300)} />}
                     <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isLoading ? texts.MUSIC_RECOMPOSING_BTN : texts.MUSIC_RECOMPOSE_BTN}</span>
                   </Button>
                   <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleRegenerateSeo} disabled={isBusy} className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_FUCHSIA_100_HOVER_BG_FUCHSIA_20)} title={texts.SEO_REGENERATE_BTN_TOOLTIP}>
-                    {isRegeneratingSeo ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_300_ANIMATE_SPIN)} /> : <WandSparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_300)} />}
+                    {isRegeneratingSeo ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_FUCHSIA_300_ANIMATE_SPIN)} /> : <WandSparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_TEXT_FUCHSIA_300)} />}
                     <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isRegeneratingSeo ? texts.SEO_REGENERATING_BTN : texts.SEO_REGENERATE_BTN}</span>
                   </Button>
                   <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCreateSunoTest} disabled={isBusy} className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_CYAN_100_HOVER_BG_CYAN_200_80_D)}>
@@ -2634,8 +2528,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           key={idx}
                           type={SOURCE_TEXT_BUTTON}
                           onClick={() => setSelectedSeoSongIndex(idx)}
-                          className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_WHITESPACE_NOWRAP_TRANSITION_ALL_C, { [MCS.BG_GRADIENT_TO_R_FROM_INDIGO_600_TO_PURPLE_600_TEXT_WHITE_BORDER_INDIGO_400]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800]: !isSelected })}>
-                          <span className={cn(MCS.FONT_MONO_FONT_BLACK_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE, { [MCS.TEXT_INDIGO_100]: isSelected, [MCS.TEXT_INDIGO_600_GROUP_HOVER_TEXT_INDIGO_800_DARK_TEXT_INDIGO_400_DARK_GROUP]: !isSelected })}>{texts.formatTrackBadge(idx + 1)}</span>
+                          className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_WHITESPACE_NOWRAP_TRANSITION_ALL_C, { [MCS.BG_GRADIENT_TO_R_FROM_INDIGO_600_TO_PURPLE_600_TEXT_WHITE_BORDER_INDIGO_400]: isSelected, [MCS.BG_SLATE_955_90_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE_9AA173]: !isSelected })}>
+                          <span className={cn(MCS.FONT_MONO_FONT_BLACK_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE, { [MCS.TEXT_INDIGO_100]: isSelected, [MCS.TEXT_INDIGO_400_GROUP_HOVER_TEXT_INDIGO_300]: !isSelected })}>{texts.formatTrackBadge(idx + 1)}</span>
                           <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
                         </Button>
                       );
@@ -2654,74 +2548,26 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         </StudioCard>
       </StudioCanvas>
       <ImagePreviewModal imageUrl={previewThumbnail} onClose={() => setPreviewThumbnail(null)} />
-      <Modal
+      <ConfirmDeleteModal
         isOpen={Boolean(styleToDelete)}
         onClose={() => setStyleToDelete(null)}
-        maxWidth={SOURCE_TEXT_MAX_W_MD}
-        title={
-          <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_2_LEADING_NONE_TEXT_SLATE_900_DARK_TEXT_SLATE)}>
-            <Trash2 className={cn(MCS.W_4_H_4_TEXT_ROSE_500_SHRINK_0_SELF_CENTER_TRANSLATE_Y_1PX)} />
-            <span className={cn(MCS.LEADING_NONE_TEXT_SM_FONT_EXTRABOLD)}>{texts.STYLE_DELETE_BTN}</span>
-          </span>
-        }>
-        <div className={cn(MCS.SPACE_Y_4_TEXT_LEFT)}>
-          <p className={cn(MCS.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED)}>
-            {texts.STYLE_DELETE_CONFIRM}
-            {SRT.SOURCE_TEXT_SYMBOL_52}
-            <span className={cn(MCS.FONT_EXTRABOLD_TEXT_1E1B4B_DARK_TEXT_WHITE)}>
-              {SOURCE_TEXT_SYMBOL_19}
-              {styleToDelete?.title}
-              {SOURCE_TEXT_SYMBOL_20}
-            </span>
-            {SOURCE_TEXT_SYMBOL_21}
-          </p>
-          <DestructiveActionNotice className={cn(MCS.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_TEXT_ROSE_700_DARK)} iconClassName={cn(MCS.W_4_H_4_TEXT_ROSE_500_SHRINK_0)}>
-            {texts.CANNOT_BE_UNDONE}
-          </DestructiveActionNotice>
-          <div className={cn(MCS.FLEX_JUSTIFY_END_ITEMS_CENTER_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_200_DARK_B)}>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_OUTLINE} size={SOURCE_TEXT_SM} onClick={() => setStyleToDelete(null)} className={cn(MCS.H_9_PX_4_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300_DARK_BORDER_S)}>
-              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.CANCEL_BTN}</span>
-            </Button>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteStyle} className={cn(MCS.H_9_PX_5_ROUNDED_XL_TEXT_XS_FONT_EXTRABOLD_SHADOW_MD_SHADOW_ROSE_600_20_ACT)}>
-              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.STYLE_DELETE_BTN}</span>
-            </Button>
-          </div>
-        </div>
-      </Modal>
-      <Modal
+        onConfirm={confirmDeleteStyle}
+        title={texts.STYLE_DELETE_BTN}
+        message={<>{texts.STYLE_DELETE_CONFIRM}{SRT.SOURCE_TEXT_SYMBOL_52}<span className={cn(MCS.FONT_EXTRABOLD_TEXT_WHITE)}>{SOURCE_TEXT_SYMBOL_19}{styleToDelete?.title}{SOURCE_TEXT_SYMBOL_20}</span>{SOURCE_TEXT_SYMBOL_21}</>}
+        warning={texts.CANNOT_BE_UNDONE}
+        cancelLabel={texts.CANCEL_BTN}
+        confirmLabel={texts.STYLE_DELETE_BTN}
+      />
+      <ConfirmDeleteModal
         isOpen={Boolean(inspoToDelete)}
         onClose={() => setInspoToDelete(null)}
-        maxWidth={SOURCE_TEXT_MAX_W_MD}
-        title={
-          <span className={cn(MCS.INLINE_FLEX_ITEMS_CENTER_GAP_2_LEADING_NONE_TEXT_SLATE_900_DARK_TEXT_SLATE)}>
-            <Trash2 className={cn(MCS.W_4_H_4_TEXT_ROSE_500_SHRINK_0_SELF_CENTER_TRANSLATE_Y_1PX)} />
-            <span className={cn(MCS.LEADING_NONE_TEXT_SM_FONT_EXTRABOLD)}>{texts.INSPO_DELETE_CONFIRM}</span>
-          </span>
-        }>
-        <div className={cn(MCS.SPACE_Y_4_TEXT_LEFT)}>
-          <p className={cn(MCS.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED)}>
-            {texts.INSPO_DELETE_CONFIRM}
-            {SRT.SOURCE_TEXT_SYMBOL_52}
-            <span className={cn(MCS.FONT_EXTRABOLD_TEXT_1E1B4B_DARK_TEXT_WHITE)}>
-              {SOURCE_TEXT_SYMBOL_19}
-              {inspoToDelete?.title}
-              {SOURCE_TEXT_SYMBOL_20}
-            </span>
-            {SOURCE_TEXT_SYMBOL_21}
-          </p>
-          <DestructiveActionNotice className={cn(MCS.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_TEXT_ROSE_700_DARK)} iconClassName={cn(MCS.W_4_H_4_TEXT_ROSE_500_SHRINK_0)}>
-            {texts.CANNOT_BE_UNDONE}
-          </DestructiveActionNotice>
-          <div className={cn(MCS.FLEX_JUSTIFY_END_ITEMS_CENTER_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_200_DARK_B)}>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_OUTLINE} size={SOURCE_TEXT_SM} onClick={() => setInspoToDelete(null)} className={cn(MCS.H_9_PX_4_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300_DARK_BORDER_S)}>
-              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.CANCEL_BTN}</span>
-            </Button>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteInspo} className={cn(MCS.H_9_PX_5_ROUNDED_XL_TEXT_XS_FONT_EXTRABOLD_SHADOW_MD_SHADOW_ROSE_600_20_ACT)}>
-              <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.STYLE_DELETE_BTN}</span>
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={confirmDeleteInspo}
+        title={texts.INSPO_DELETE_CONFIRM}
+        message={<>{texts.INSPO_DELETE_CONFIRM}{SRT.SOURCE_TEXT_SYMBOL_52}<span className={cn(MCS.FONT_EXTRABOLD_TEXT_WHITE)}>{SOURCE_TEXT_SYMBOL_19}{inspoToDelete?.title}{SOURCE_TEXT_SYMBOL_20}</span>{SOURCE_TEXT_SYMBOL_21}</>}
+        warning={texts.CANNOT_BE_UNDONE}
+        cancelLabel={texts.CANCEL_BTN}
+        confirmLabel={texts.STYLE_DELETE_BTN}
+      />
     </StudioPage>
   );
 }

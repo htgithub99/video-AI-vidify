@@ -76,9 +76,8 @@ export interface MotionAuthoringSettings {
   picturePacing: string;
   targetPictureSeconds: number;
   language: string;
-  visualProfile: string;
+  // The figure proportion the plan describes (the drawing style and the layout are applied when the video is shown).
   visualProportion?: string;
-  visualLayout?: string;
   requestedParts: number;
 }
 export interface MotionHtmlMark {

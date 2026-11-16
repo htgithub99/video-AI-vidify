@@ -18,7 +18,7 @@ export const observeDeepSeekUploads = (page: Page) =>
     const url = new URL(request.url());
     return url.hostname === XRT.DEEPSEEK_HOST && D.UPLOAD_PATH.test(url.pathname);
   });
-export const readDeepSeekUploadState = async (input: Locator) => {
+const readDeepSeekUploadState = async (input: Locator) => {
   const scope = await getDeepSeekComposerScope(input);
   return scope.evaluate(
     (root, config) => {

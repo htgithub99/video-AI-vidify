@@ -1,6 +1,6 @@
 import { TOGGLE_STYLES as S } from "../../constants/toggleStyles.js";
 import { cn } from "../../lib/utils.js";
-export interface ToggleIndicatorProps {
+interface ToggleIndicatorProps {
   checked: boolean;
   trackClassName?: string;
   activeTrackClassName?: string;

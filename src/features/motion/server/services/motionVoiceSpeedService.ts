@@ -3,7 +3,7 @@ import { MOTION_VOICE_SPEED as V } from "../../../../constants/motionVoice.js";
 import type { MotionVoiceSpeedSettings, MotionVoiceSpeedTarget } from "../../../../types/motionVideo.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { cleanVoiceSpeed, motionVoiceLibraryFile, readMotionVoiceLibraryJson, readVoiceLibrary } from "./motionVoiceLibraryService.js";
-import { fetchLinkSource } from "./motionSourceFetchService.js";
+import { fetchLinkSource } from "../../../../server/services/linkSourceFetchService.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import os from "os";
 import path from "path";
@@ -28,7 +28,7 @@ const writeVoiceSpeedSettings = (settings: MotionVoiceSpeedSettings): MotionVoic
   writeMotionJsonAtomic(motionVoiceLibraryFile(V.FILE), settings);
   return settings;
 };
-export const measureTranscriptRate = (raw: string, focus?: number): { rate: number; window?: number; pauses?: MotionVoiceSpeedTarget["pauses"] } => {
+const measureTranscriptRate = (raw: string, focus?: number): { rate: number; window?: number; pauses?: MotionVoiceSpeedTarget["pauses"] } => {
   const segments = _.compact(
     raw.split(/\r?\n/).map((line) => {
       const m = V.STAMP_RE.exec(line.trim());

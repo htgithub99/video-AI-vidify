@@ -1,4 +1,4 @@
-export interface MotionGenreCraft {
+interface MotionGenreCraft {
   voice: string;
   plain?: string;
   retention: string;
@@ -7,7 +7,7 @@ export interface MotionGenreCraft {
   fill: string;
   edit: string;
 }
-export interface MotionGenreCraftMarkers {
+interface MotionGenreCraftMarkers {
   viewer: RegExp;
   first: RegExp;
   hearsay: RegExp;

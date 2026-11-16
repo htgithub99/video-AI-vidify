@@ -23,11 +23,11 @@ export const motionNodeAnimal = (node: Pick<MotionRemotionNode, "kind" | "entity
   for (const [animal, pattern] of SPEC.ANIMAL_MATCH) if (pattern.test(text)) return animal;
   return undefined;
 };
-export const motionStripClothing = (description: string): string => {
+const motionStripClothing = (description: string): string => {
   const next = description.replace(G.CLOTHING_PHRASE, "").replace(G.CLOTHING_CLAUSE, "").replace(G.CLOTHING_VI, "").replace(G.SPACES, RT_MAINTENANCE.SPACE).replace(G.LEAD_COMMA, "").trim();
   return next.length >= 3 ? next : description;
 };
-export const motionObjectAnimal = (item: Pick<MotionSceneObject, "class" | "term" | "description">): MotionAnimal | undefined => {
+const motionObjectAnimal = (item: Pick<MotionSceneObject, "class" | "term" | "description">): MotionAnimal | undefined => {
   if (!MOTION_OBJECT_ANIMAL_CLASSES.includes(item.class)) return undefined;
   for (const text of [item.term || "", item.description || ""]) for (const [animal, pattern] of SPEC.ANIMAL_MATCH) if (pattern.test(text)) return animal;
   return G.CLASS_ANIMAL[item.class];

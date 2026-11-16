@@ -12,12 +12,12 @@ interface VoiceAlignment {
   audioBase64?: string;
   audioUrl?: string;
 }
-export interface VoiceTimelineResult {
+interface VoiceTimelineResult {
   scenes: StoryboardScene[];
   backendAligned: boolean;
   warning?: string;
 }
-export interface AlignVoiceTimelineOptions {
+interface AlignVoiceTimelineOptions {
   audioBase64: string;
   scenes: StoryboardScene[];
   projectId: string;

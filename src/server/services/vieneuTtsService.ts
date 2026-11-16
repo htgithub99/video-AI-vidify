@@ -15,7 +15,7 @@ interface WorkerSlot {
   idle?: ReturnType<typeof setTimeout>;
   requests: Map<string, { resolve: (value: any) => void; reject: (error: Error) => void }>;
 }
-export interface VieneuModelTarget {
+interface VieneuModelTarget {
   model: string;
   python: string;
 }
@@ -50,7 +50,7 @@ const execute = (python: string, args: string[], signal?: AbortSignal): Promise<
       code === 0 && !signal?.aborted ? resolve() : reject(new Error(signal?.aborted ? C.CANCELLED : errors || C.FAILED));
     });
   });
-export const ensureVieneuRuntime = async (signal?: AbortSignal, log?: (value: string) => void): Promise<string> => {
+const ensureVieneuRuntime = async (signal?: AbortSignal, log?: (value: string) => void): Promise<string> => {
   const configured = process.env[C.PYTHON_ENV];
   if (configured) return configured;
   if (!setup)
@@ -76,7 +76,7 @@ export const ensureVieneuRuntime = async (signal?: AbortSignal, log?: (value: st
   return setup;
 };
 let asrSetup: Promise<void> | undefined;
-export const ensureVieneuAsr = (signal?: AbortSignal, log?: (value: string) => void): Promise<void> => {
+const ensureVieneuAsr = (signal?: AbortSignal, log?: (value: string) => void): Promise<void> => {
   if (!asrSetup)
     asrSetup = (async () => {
       const python = await ensureVieneuRuntime(signal, log),

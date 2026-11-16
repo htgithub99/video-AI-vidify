@@ -5,7 +5,7 @@ import { motionVideoGenre, motionVideoGenreMerges, motionVideoGenreStages } from
 import { MOTION_GENRE_STAGE as STAGE } from "../constants/motionGenreStage.js";
 import { motionNarratorCastKey } from "./motionVoice.js";
 import type { MotionBeat, MotionChapter, MotionStoryAnalysis } from "../types/motionVideo.js";
-export interface MotionStoryTimelineFinding {
+interface MotionStoryTimelineFinding {
   id: string;
   issue: string;
 }
@@ -14,7 +14,7 @@ const stamps = (chapter: MotionChapter): number[] =>
     const match = point.match(T.RANGE.STAMP);
     return match ? [Number(match[1] || 0) * 3600 + Number(match[2]) * 60 + Number(match[3])] : [];
   });
-export const motionChapterRangesValid = (chapters: MotionChapter[], sourceSeconds?: number): boolean => {
+const motionChapterRangesValid = (chapters: MotionChapter[], sourceSeconds?: number): boolean => {
   if (!sourceSeconds || !chapters.length) return true;
   const slack = T.RANGE.TOLERANCE;
   return chapters.every((chapter, index) => {

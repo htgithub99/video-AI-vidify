@@ -33,7 +33,7 @@ const genderOf = (value: unknown): string | undefined => {
   return g === MR.MOTION_TEXT_MALE || g === MR.MOTION_TEXT_FEMALE ? g : undefined;
 };
 const presetOf = (id: string, v: Ai33Voice): MotionVoicePreset => ({ id, name: v.name, gender: v.gender, age: v.age, description: v.description, language: v.language, source: L.AI33_SOURCE });
-export const listAi33Voices = (): MotionVoicePreset[] => _.map(_.toPairs(readAi33()), ([id, v]) => presetOf(id, v));
+const listAi33Voices = (): MotionVoicePreset[] => _.map(_.toPairs(readAi33()), ([id, v]) => presetOf(id, v));
 export const addAi33Voice = (raw: any): MotionVoicePreset => {
   const voiceId = text(raw?.voice_id ?? raw?.voiceId, L.AI33_ID_MAX),
     provider = text(raw?.provider, L.AI33_ID_MAX) || undefined,

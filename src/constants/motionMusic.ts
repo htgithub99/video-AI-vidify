@@ -96,7 +96,7 @@ export const MOTION_MUSIC = {
   CUE_TEMPLATES: ["title", "chapter", "verdict", "ending", "scoreboard"],
   LOG: { BUILT: (mood: string): string => `Đã soạn nhạc nền (${mood})` },
   UI: {
-    vi: { LABEL: "Nhạc nền", OFF: "Tắt", HINT: "AI đọc nội dung và tự chọn tâm trạng nhạc cho cả video và từng chương; nhạc tự hạ nhỏ khi có lời đọc. Chọn tâm trạng khác để ép một kiểu nhạc cho toàn video.", MOODS: { auto: "AI tự chọn", warm: "Ấm áp", sad: "Buồn", tense: "Căng thẳng", epic: "Hùng tráng", eerie: "Rùng rợn", playful: "Vui nhộn", neutral: "Trung tính" } },
+    vi: { LABEL: "Nhạc nền", OFF: "Tắt", HINT: "AI chọn tâm trạng nhạc cho video và từng chương; nhạc tự nhỏ khi có lời. Chọn một tâm trạng để dùng cho cả video.", MOODS: { auto: "AI tự chọn", warm: "Ấm áp", sad: "Buồn", tense: "Căng thẳng", epic: "Hùng tráng", eerie: "Rùng rợn", playful: "Vui nhộn", neutral: "Trung tính" } },
     en: { LABEL: "Music", OFF: "Off", HINT: "AI reads the content and picks the score mood for the video and each chapter, ducked under narration. Pick a mood to force one score for the whole video.", MOODS: { auto: "AI picks", warm: "Warm", sad: "Sad", tense: "Tense", epic: "Epic", eerie: "Eerie", playful: "Playful", neutral: "Neutral" } },
   },
   OFF: "off",

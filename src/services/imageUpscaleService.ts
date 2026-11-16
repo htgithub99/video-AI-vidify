@@ -14,7 +14,7 @@ interface ImageUpscaleResult {
   outputWidth: number;
   outputHeight: number;
 }
-export interface ApprovedSceneUpscaleOptions {
+interface ApprovedSceneUpscaleOptions {
   scenes: StoryboardScene[];
   validatedSceneIds: Set<string>;
   qualityMode?: QualityMode;

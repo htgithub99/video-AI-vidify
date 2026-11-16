@@ -13,7 +13,7 @@ export const CINEMATIC_DIALOGUE_DIRECTIVES = { FOLLOW_SOURCE: "Use dialogue only
 const getCinematicVeoDirectorProfile = (clipDurationSeconds: number): string => `Write the best complete Veo 3 prompt for each ${clipDurationSeconds}-second scene. Make all creative and directorial choices yourself.
 Follow the supplied story and user settings. Use at least ${CINEMATIC_POLICY_CONFIG.MIN_SHOTS_PER_VIDEO} clearly distinct, connected shots/camera setups when the clip duration supports it; each shot must have a motivated purpose and must not repeat content. Do not split time mechanically or add arbitrary cuts. Each scene must visibly change the situation, begin from the previous scene's ending state and leave a clear state for the next scene. Make the characters' objective, opposition and consequence easy to understand. End with the visible result of the climax and an emotional resolution, not at the moment of impact. An intro is a separate premium television-style opening before the story: make it a coherent multi-shot character introduction with at least ${CINEMATIC_POLICY_CONFIG.MIN_SHOTS_PER_VIDEO} motivated camera setups that establish the world, reveal the protagonist, introduce the other principal characters separately and connect their goals or opposition in the final title/payoff image. Use restrained centered title typography when configured; avoid random trailer montage, arbitrary fast cuts and duplication of the story's opening scene.
 Every generationPrompt is an independent submission, so restate each visible recurring character's exact supplied name and a few unmistakable identity anchors from that character card. Give each visible character a separate starting position, action, weapon or prop, and reaction. Also specify its eyeline and screen direction. The matching Google Flow Character is attached by exact name at generation time: never merge, swap, replace or duplicate identities unless the supplied scene explicitly requires a duplicate. Omit absent and off-screen characters. For combat, choreograph a clear cause-and-effect beat: readable distance and facing, one committed attack, exact contact, force transfer and an immediate consequence; avoid dance-like circling, weightless weapon swings, repeated exchanges and camera cuts that hide contact. Write the technical prompt in English. Keep required dialogue and visible text exactly in the configured language; when the scene has no supplied dialogue, do not invent dialogue or narration. Return a self-contained generationPrompt that can be sent to Veo 3 unchanged.`;
-export interface CinematicFilmPackagePromptContext {
+interface CinematicFilmPackagePromptContext {
   inputType?: string;
   audience?: string;
   writingStyle?: string;
@@ -132,7 +132,7 @@ Return valid raw JSON only:
 
 [SCREENPLAY]
 ${script}`;
-export interface CinematicThumbnailPromptOptions {
+interface CinematicThumbnailPromptOptions {
   requestId: string;
   rewrittenScript: string;
   thumbnailCount: number;

@@ -110,7 +110,7 @@ export const openSunoCreationCheckpoint = async (input: SunoCreationInput, playl
   await saveSunoCreationCheckpoint(checkpoint);
   return checkpoint;
 };
-export interface SunoCreationAdapter {
+interface SunoCreationAdapter {
   submit: (song: SongInput, index: number, persistIds: (ids: string[]) => Promise<void>, beginSubmission: () => Promise<void>) => Promise<string[]>;
   wait: (songIds: string[]) => Promise<void>;
   playlist: (songIds: string[], name: string) => Promise<string>;

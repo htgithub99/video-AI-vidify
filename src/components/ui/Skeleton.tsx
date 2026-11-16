@@ -2,7 +2,7 @@ import { RUNTIME_TEXT as RT_UI } from "../../constants/runtime/ui.js";
 import { SOURCE_TEXT_AUTOVIDEOSTUDIOSKELETON, SOURCE_TEXT_DASHBOARDSKELETON, SOURCE_TEXT_PROJECTLISTSKELETON, SOURCE_TEXT_PROJECTTABLESKELETON, SOURCE_TEXT_SETTINGSSKELETON } from "../../constants/sourceText";
 import { FC } from "react";
 import { cn } from "../../lib/utils";
-export const MinimalSpinnerLoading: FC<{ className?: string }> = ({ className }) => (
+const MinimalSpinnerLoading: FC<{ className?: string }> = ({ className }) => (
   <div className={cn(RT_UI.W_FULL_H_FULL_MIN_H_220PX_FLEX_1_FLEX, className)}>
     <div className={cn(RT_UI.LOADER_CIRCLE)} />
   </div>
@@ -18,7 +18,7 @@ const createLoadingSkeleton = <T extends LoadingSkeletonProps>(displayName: stri
   LoadingSkeleton.displayName = displayName;
   return LoadingSkeleton;
 };
-export interface ProjectTableSkeletonProps {
+interface ProjectTableSkeletonProps {
   rows?: number;
   className?: string;
 }

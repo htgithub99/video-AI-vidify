@@ -1,6 +1,6 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { PROMPT_SOURCE_DATA } from "../constants/promptSourceData.js";
-import { MOTION_HTML, MOTION_HTML_STYLES } from "../constants/motionHtmlTemplate.js";
+import { MOTION_HTML } from "../constants/motionHtmlTemplate.js";
 import { motionGenreSpec, motionRetentionCraft, motionVideoGenre } from "../constants/motionGenre.js";
 import { motionGenreCraft } from "./motionGenreCraft.js";
 import { MOTION_STORYTELLING_MODES } from "../constants/motionStorytelling.js";
@@ -9,8 +9,7 @@ import { motionStorytellingSilent } from "./motionStorytelling.js";
 import { MOTION_SCENE_PACING } from "../constants/motionScenePacing.js";
 import { MOTION_RENAME } from "../constants/motionRename.js";
 import { MOTION_HTML_WRITING } from "../constants/motionHtmlWriting.js";
-import { motionProportionPlanner } from "./motionDrawStyle.js";
-import { motionLayoutPlanner } from "./motionLayout.js";
+import { motionProportionOf, motionProportionPlanner } from "./motionDrawStyle.js";
 import { motionRenameMapActive, motionRenamePairs } from "./motionRename.js";
 import type { MotionChapter, MotionStoryAnalysis } from "../types/motionVideo.js";
 import type { MotionVisualSettings } from "../types/motionVisual.js";
@@ -58,24 +57,21 @@ export const motionHtmlVisualDirection = (analysis: MotionStoryAnalysis, languag
   const a = analysis.authoringSettings!;
   return [
     motionHtmlLanguageDirection(language, { plan: true }),
-    `${RT_MAINTENANCE.VISUAL_STYLE_WORDS_ONLY}${MOTION_HTML_STYLES[a.visualProfile]}`,
-    motionProportionPlanner({ profileId: a.visualProfile, proportion: a.visualProportion }),
-    ...[motionLayoutPlanner({ profileId: a.visualProfile, layout: a.visualLayout })].filter(Boolean),
+    `${RT_MAINTENANCE.VISUAL_STYLE_WORDS_ONLY}${MOTION_HTML.BASE_STYLE}`,
+    motionProportionPlanner({ proportion: a.visualProportion }),
     motionGenreSpec(a.videoGenre).GRAMMAR.picture,
     MOTION_HTML.TEMPLATE,
     ...(motionRenameMapActive(analysis).length ? [MOTION_RENAME.PROMPT.CHAPTER(motionRenamePairs(motionRenameMapActive(analysis)))] : []),
   ].join(RT_MAINTENANCE.NEWLINE);
 };
-export const motionHtmlAuthoringSnapshot = (input: { videoGenre?: unknown; storytelling?: unknown; length: string; target: number; language: string; profile: string; proportion?: string; layout?: string; pacing?: string; parts?: number }) => ({
+export const motionHtmlAuthoringSnapshot = (input: { videoGenre?: unknown; storytelling?: unknown; length: string; target: number; language: string; profile: string; proportion?: string; pacing?: string; parts?: number }) => ({
   version: 1 as const,
   videoGenre: motionVideoGenre(input.videoGenre),
   storytelling: motionStorytelling(input.storytelling),
   selectedLength: input.length,
   selectedTargetSeconds: input.target,
   language: input.language,
-  visualProfile: input.profile,
-  visualProportion: input.proportion,
-  visualLayout: input.layout,
+  visualProportion: motionProportionOf({ profileId: input.profile, proportion: input.proportion }),
   picturePacing: input.pacing || MOTION_SCENE_PACING.GENRE_DEFAULT[motionVideoGenre(input.videoGenre)] || MOTION_SCENE_PACING.DEFAULT,
   targetPictureSeconds: MOTION_SCENE_PACING.SECONDS[(input.pacing || MOTION_SCENE_PACING.GENRE_DEFAULT[motionVideoGenre(input.videoGenre)] || MOTION_SCENE_PACING.DEFAULT) as keyof typeof MOTION_SCENE_PACING.SECONDS],
   requestedParts: Math.max(1, input.parts || 1),

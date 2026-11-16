@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FC, type KeyboardEvent } from "react";
 import { MOTION_STYLES as S } from "../constants/motionStyles.js";
 import { MOTION_PICKER_KEYS as K } from "../constants/motionPicker.js";
-export interface MotionPickerOption {
+interface MotionPickerOption {
   id: string;
   name: string;
   hint: string;

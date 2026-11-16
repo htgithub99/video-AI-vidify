@@ -1,3 +1,5 @@
 import { MOTION_HTML_FIGURE as F } from "../constants/motionHtmlFigure.js";
-import { motionDrawStyle, motionProportionFigure } from "./motionDrawStyle.js";
-export const motionHtmlFigureDoc = (profile: string, proportion?: string): string => [F.DOC[motionDrawStyle(profile).figure] || F.DOC.history, motionProportionFigure({ profileId: profile, proportion })].filter(Boolean).join(F.JOIN);
+import { motionProportionFigure } from "./motionDrawStyle.js";
+// How the AI draws its own people: one base design for every scene (the drawing style is applied when the video is shown),
+// in the chosen figure proportion.
+export const motionHtmlFigureDoc = (settings: { profileId?: unknown; proportion?: unknown }): string => [F.DOC, motionProportionFigure(settings)].filter(Boolean).join(F.JOIN);

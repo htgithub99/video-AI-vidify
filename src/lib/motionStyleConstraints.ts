@@ -3,10 +3,10 @@ import * as MR from "../constants/motionRuntime.js";
 import _ from "lodash";
 import { MOTION_STYLE_AXES, MOTION_STYLE_DEFAULT_WIDTH, MOTION_STYLE_FX, MOTION_STYLE_OUTLINE_WIDTH, MOTION_STYLE_PARTS, MOTION_STYLE_PATTERNS as P, MOTION_STYLE_FRAMING } from "../constants/motionStyleConstraints.js";
 import type { MotionReferenceStyle } from "../types/motionVideo.js";
-export type MotionStylePart = (typeof MOTION_STYLE_PARTS)[number];
-export type MotionStyleAxis = (typeof MOTION_STYLE_AXES)[number];
-export type MotionStyleFx = (typeof MOTION_STYLE_FX)[number];
-export interface MotionStyleConstraints {
+type MotionStylePart = (typeof MOTION_STYLE_PARTS)[number];
+type MotionStyleAxis = (typeof MOTION_STYLE_AXES)[number];
+type MotionStyleFx = (typeof MOTION_STYLE_FX)[number];
+interface MotionStyleConstraints {
   present: boolean;
   absent: MotionStylePart[];
   hidden: MotionStylePart[];

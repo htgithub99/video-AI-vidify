@@ -19,7 +19,7 @@ import { checkRemotionCutoutLayers } from "./remotion/vectorCutoutInspector.js";
 import { logger } from "../../../../lib/logger.js";
 import { renderMotionHtmlSegments, renderMotionMixedSegments } from "./html/sceneRenderer.js";
 let cached: { key: string; promise: Promise<string> } | undefined;
-export const motionRemotionSourceFingerprint = (entryPoints: string[]): string => {
+const motionRemotionSourceFingerprint = (entryPoints: string[]): string => {
   const sources = new Map<string, string>();
   const visit = (file: string) => {
     if (sources.has(file)) return;

@@ -30,7 +30,7 @@ const readStore = (): SpeechRateStore => {
 const languageOf = (value: unknown): string => motionLanguageCode(value);
 const channelOf = (ref: unknown): string => _.toString(ref).split(MOTION_VOICE_LIBRARY.REF_SEPARATOR)[0] || GLOBAL_KEY;
 export const speechUnits = (text: unknown): number => motionSpeechUnits(text);
-export const defaultSpeechRate = (language: unknown): number => motionLanguageRate(language);
+const defaultSpeechRate = (language: unknown): number => motionLanguageRate(language);
 const speechProfile = (channelRef: unknown) => {
   const channel = findVoiceChannel(_.toString(channelRef));
   const settings = readMotionVoiceLibraryJson<Partial<MotionVoiceSpeedSettings>>(V.FILE, {});

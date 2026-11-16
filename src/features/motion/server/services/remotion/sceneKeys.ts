@@ -82,7 +82,7 @@ export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis,
       note,
     ]),
   );
-export const remotionBeatPlanCurrent = (beat: MotionBeat, analysis: MotionStoryAnalysis, state?: MotionRemotionState, note = state?.notes?.[beat.id] || "") =>
+const remotionBeatPlanCurrent = (beat: MotionBeat, analysis: MotionStoryAnalysis, state?: MotionRemotionState, note = state?.notes?.[beat.id] || "") =>
   !!state?.scenes[beat.id]?.length && [remotionBeatKey(beat, analysis), legacyBeatKey(beat, analysis)].includes(state.inputKeys[beat.id]) && state.scenes[beat.id].every((scene) => scene.sceneRevision === L.SCENE_REVISION && [remotionBeatKey(beat, analysis, note), legacyBeatKey(beat, analysis, note)].includes(scene.sourceKey!));
 export const remotionGroupKey = (beats: MotionBeat[], analysis: MotionStoryAnalysis, state?: MotionRemotionState, note?: string) =>
   grouped(state) ? motionInputKey([state!.groupingRevision, groupCount(beats, analysis), beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? "", state))]) : motionInputKey([PACING.REVISION, beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))]);
@@ -172,9 +172,5 @@ export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: Mo
   }
   return Object.keys(state.failures).length ? RT_SERVER.INVALID : pending ? RT_SERVER.PENDING : failed ? COMMON_RUNTIME.SOURCE_TEXT_PARTIAL : RT_SHARED.READY;
 };
-export const remotionStoryBuildCurrent = (script: MotionStoryScript, analysis: MotionStoryAnalysis) => remotionStoryBuildStatus(script, analysis) === RT_SHARED.READY;
+const remotionStoryBuildCurrent = (script: MotionStoryScript, analysis: MotionStoryAnalysis) => remotionStoryBuildStatus(script, analysis) === RT_SHARED.READY;
 export const remotionStoryRenderable = remotionStoryBuildCurrent;
-export const remotionStoryRecoveryPending = (script: MotionStoryScript) =>
-  Object.values(script.gen?.remotion?.scenes || {})
-    .flat()
-    .some((scene) => scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED);

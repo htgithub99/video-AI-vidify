@@ -1,10 +1,10 @@
 import { MOTION_PRODUCTION_REPORT as R } from "../constants/motionProductionReport.js";
 
-export interface MotionReportScene {
+interface MotionReportScene {
   id: string;
   html?: { attempts?: number; warnings?: string[]; fallback?: boolean };
 }
-export interface MotionReportInput {
+interface MotionReportInput {
   id: string;
   input: Record<string, unknown>;
   visual?: Record<string, unknown>;

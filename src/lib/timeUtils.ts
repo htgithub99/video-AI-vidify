@@ -4,7 +4,7 @@ const DEFAULT_TIME_STRING = SOURCE_TEXT_00_00;
 const SECONDS_IN_HOUR = 3600;
 const SECONDS_IN_MINUTE = 60;
 const TIME_PAD_LENGTH = 2;
-export const parseTimeToSeconds = (timeStr: string | undefined): number | null => {
+const parseTimeToSeconds = (timeStr: string | undefined): number | null => {
   if (_.isEmpty(timeStr)) return null;
   const parts = _.split(_.trim(timeStr), SOURCE_TEXT_SYMBOL_16);
   let secs = 0;

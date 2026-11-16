@@ -104,7 +104,7 @@ const alreadyAssigned = async (input: FileInputTarget, files: LocalAttachment[])
   const assigned = await handle.evaluate((node) => Array.from((node as HTMLInputElement).files || []).map((file) => file.name)).catch(() => []);
   return assigned.length === files.length && files.every((file, index) => assigned[index] === basename(file.path));
 };
-export const setGeminiLocalFilesViaCdp = async (page: Page, input: FileInputTarget, files: LocalAttachment[], signal?: AbortSignal): Promise<void> => {
+const setGeminiLocalFilesViaCdp = async (page: Page, input: FileInputTarget, files: LocalAttachment[], signal?: AbortSignal): Promise<void> => {
   throwIfPlanningCancelled(signal);
   const handle = await fileInputHandle(input);
   if (await alreadyAssigned(handle, files)) return;

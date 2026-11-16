@@ -2,7 +2,7 @@ import { SOURCE_TEMPLATE_SYMBOL_5, SOURCE_TEXT_CONTAINSDIALOGUE, SOURCE_TEXT_INS
 import _ from "lodash";
 import { CINEMATIC_EDIT_ANALYSIS_CONFIG } from "../constants/config";
 import { CinematicEditSegment, StoryboardScene } from "../types";
-export interface CinematicClipAnalysisDecision {
+interface CinematicClipAnalysisDecision {
   sceneId: string;
   takeDecision?: string;
   trimStartSeconds?: number;

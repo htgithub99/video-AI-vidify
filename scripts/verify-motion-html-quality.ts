@@ -78,18 +78,22 @@ assert.match(planText, /5\. REQUIRED:/);
 assert.match(planText, /6\. MOTION:/);
 assert.match(MOTION_HTML.ON_SCREEN_TEXT(undefined, true), /names every place/);
 assert.match(MOTION_HTML.ON_SCREEN_TEXT(undefined, false), /no place sign/);
-const { motionLayoutOutput, motionLayoutFocal } = await import("../src/lib/motionLayout.js");
+// A layout is the camera over the scene the AI drew once: the shot size per layout and plan shot, never a drawing rule.
+const { motionCameraShot, motionLayoutOf } = await import("../src/lib/motionLayout.js");
 {
-  const base = MOTION_HTML.OUTPUT;
-  assert.match(base, /SCALE: size people by shot/);
-  const stage = motionLayoutOutput(base, "stage");
-  assert.doesNotMatch(stage, /12-17% of frame height/, "stage layout drops the generic wide-shot size rule");
-  assert.match(stage, /32-40% of the frame height/);
-  assert.match(stage, /One scale per depth/, "depth consistency rules stay");
-  assert.equal(motionLayoutOutput(base, "auto"), base, "auto keeps the generic rule");
+  assert.match(MOTION_HTML.OUTPUT, /SCALE: size people by shot/, "the scene keeps one generic size rule");
+  assert.equal(motionCameraShot("wide", { shot: "close" }), "wide", "Toàn cảnh is the AI's whole frame");
+  assert.equal(motionCameraShot("stage", { shot: "medium" }), "full");
+  assert.equal(motionCameraShot("medium", { shot: "medium" }), "cowboy");
+  assert.equal(motionCameraShot("cinematic", { shot: "medium" }), "medium");
+  assert.equal(motionCameraShot("close", { shot: "medium" }), "mcu");
+  assert.equal(motionCameraShot("medium", { shot: "establishing" }), "full", "an establishing scene steps one size out");
+  assert.equal(motionCameraShot("cinematic", { shot: "close" }), "mcu", "a close scene steps one size in");
+  assert.equal(motionCameraShot("close", { shot: "close" }), "mcu", "never past the closest size");
+  assert.equal(motionCameraShot("close", { shot: "medium", kind: "map" }), "wide", "a map is never cut");
+  assert.equal(motionLayoutOf({ profileId: "sketch" }), "auto", "Tự động in Dựng cảnh AI is the whole frame");
+  assert.equal(motionLayoutOf({ profileId: "sketch", figureKit: true }), "stage", "Tự động in Bộ vẽ chuẩn follows the style");
 }
-assert.equal(motionLayoutFocal("stage", false, { focal: 0.12, wide: 0.08 }), 0.26);
-assert.equal(motionLayoutFocal("auto", true, { focal: 0.12, wide: 0.08 }), 0.08);
 const { MOTION_HTML_QUALITY: QQ } = await import("../src/constants/motionHtmlQuality.js");
 const reviewPrompt = QQ.REVIEW_PROMPT("You shove the rider off the bridge.", "protagonist (focal): You; rider (focal): Mongol rider", "rider falls into the river", "the protagonist shoves a rider off the bridge");
 assert.match(reviewPrompt, /NARRATION: You shove/);

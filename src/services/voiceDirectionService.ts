@@ -4,7 +4,7 @@ import _ from "lodash";
 import { API_ROUTES, AUTO_GENERATOR_CONSTANTS, SecurityConstants, VOICE_DIRECTION_CONFIG } from "../constants";
 import { delayAsync, safeSystemFetch } from "../lib/shared-utils";
 import { VoiceArc, VoiceDirection } from "../types";
-export interface DirectedVoiceOptions {
+interface DirectedVoiceOptions {
   text: string;
   voiceArc: VoiceArc;
   basePayload: Record<string, unknown>;

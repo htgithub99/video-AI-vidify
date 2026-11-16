@@ -1,6 +1,6 @@
 import { MOTION_STORY_CONFIG as S } from "../../../constants/motionVideo.js";
 import { jsonUtils } from "../../../lib/json.js";
-import { migrateMotionRenderKey, migrateMotionVisualDraft, motionVisualDraftKey, type MotionVisualDraft } from "./motionVisualDraft.js";
+import { mergeMotionVisualDrafts, migrateMotionRenderKey, migrateMotionVisualDraft, motionVisualDraftKey, type MotionVisualDraft } from "./motionVisualDraft.js";
 import type { MotionVisualSettings } from "../../../types/motionVisual.js";
 type StoredState = Record<string, unknown> & { script?: { gen?: MotionVisualDraft["gen"] } | null; visualSettings?: MotionVisualSettings; visualDrafts?: Record<string, MotionVisualDraft>; renderSignature?: string };
 export const loadMotionStoryState = async <T>(): Promise<Partial<T>> => {
@@ -8,11 +8,12 @@ export const loadMotionStoryState = async <T>(): Promise<Partial<T>> => {
   if (saved[S.STORY_SPLIT_FIELD]) {
     const [script, compiled] = await Promise.all([jsonUtils.getAsyncItem<StoredState["script"]>(S.STORY_SCRIPT_STORAGE_KEY, null), jsonUtils.getAsyncItem<MotionVisualDraft["compiled"]>(S.STORY_COMPILED_STORAGE_KEY, null)]);
     saved.script = script;
+    Object.assign(saved, mergeMotionVisualDrafts(saved));
     const key = saved.visualSettings && motionVisualDraftKey(saved.visualSettings);
     const draft = key ? saved.visualDrafts?.[key] : undefined;
-    if (key && draft) saved.visualDrafts = { ...saved.visualDrafts, [key]: { ...draft, gen: script?.gen, compiled } };
+    if (key && draft) saved.visualDrafts = { ...saved.visualDrafts, [key]: { ...draft, gen: saved.script?.gen, compiled } };
     delete saved[S.STORY_SPLIT_FIELD];
-  }
+  } else Object.assign(saved, mergeMotionVisualDrafts(saved));
   saved.renderSignature = migrateMotionRenderKey(saved.renderSignature);
   if (saved.visualDrafts) saved.visualDrafts = Object.fromEntries(Object.entries(saved.visualDrafts).map(([key, draft]) => [key, migrateMotionVisualDraft(draft)]));
   return saved as Partial<T>;

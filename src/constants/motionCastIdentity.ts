@@ -1,3 +1,4 @@
+import { motionStyleRecord } from "./motionDrawStyles/index.js";
 export const MOTION_CAST_IDENTITY = {
   CONSTRUCTION: /(?:,\s*|;\s*|\b)(?:solid\s+)?(?:black\s+)?mitten\s+hands?|(?:,\s*|;\s*|\b)(?:pure\s+)?white\s+round\s+head|(?:,\s*|;\s*|\b)big\s+round\s+(?:white\s+)?eyes(?:\s+with\s+(?:black\s+)?pupils)?|(?:,\s*|;\s*|\b)short\s+black\s+neck|(?:,\s*|;\s*|\b)(?:character\s+)?template\b/giu,
   TIDY: [/\s*,\s*(?=,|;|\.|$)/gu, /^\s*[,;]\s*/u, /\s{2,}/gu] as readonly RegExp[],
@@ -7,7 +8,8 @@ export const MOTION_CAST_IDENTITY = {
   GROUP_FIELDS: ["origin", "skin", "outfit", "gear", "faction"] as readonly string[],
   MARKS_MAX: 3,
   CARRIES_MAX: 3,
-  SKIN_DEFAULT: { history: "#e3b78f", explainer: "#e3b78f", horror: "#ffffff" } as Record<string, string>,
+  // By drawing-style family, so every style (sketch and comic are round-head styles) has its skin colour.
+  SKIN_DEFAULT: motionStyleRecord({ history: "#e3b78f", explainer: "#e3b78f", horror: "#ffffff" }) as Record<string, string>,
   HEX: /^#[0-9a-f]{6}$/i,
   SKIN_TONES: [
     [/\b(?:ebony|very dark|deep brown|dark brown|black)\b/i, "#6b4630"],

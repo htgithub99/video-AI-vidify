@@ -2,7 +2,7 @@ import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { MOTION_RESPONSE_SCHEMAS, type MotionResponseSchema } from "../constants/motionResponseContract.js";
 import { motionResponseIssues } from "./motionResponseContract.js";
-export const normalizeMotionEditorialMetadata = (value: any, schema: MotionResponseSchema): any => {
+const normalizeMotionEditorialMetadata = (value: any, schema: MotionResponseSchema): any => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   return Object.fromEntries(
     Object.entries(value).flatMap(([key, raw]) => {

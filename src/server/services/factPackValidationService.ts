@@ -24,7 +24,7 @@ const isSafePublicSourceUrl = async (rawUrl: string): Promise<boolean> => {
     return false;
   }
 };
-export type SourceReachabilityChecker = (url: string) => Promise<boolean>;
+type SourceReachabilityChecker = (url: string) => Promise<boolean>;
 const checkSourceReachability: SourceReachabilityChecker = async (url) => {
   if (!(await isSafePublicSourceUrl(url))) return false;
   const request = async (method: "HEAD" | "GET") => {

@@ -4,8 +4,7 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), "cfg-")); process.env.VIDIFY_
 const R = "../src/";
 const { planMotionHtmlScenes, generateMotionHtmlScene } = await import(R + "features/motion/server/services/html/scenePipeline.ts");
 const { motionHtmlAuthoringSnapshot } = await import(R + "lib/motionHtmlAuthoring.ts");
-const { MOTION_LAYOUTS } = await import(R + "constants/motionLayouts/index.ts");
-const { MOTION_HTML_STYLES } = await import(R + "constants/motionHtmlTemplate.ts");
+const { MOTION_HTML } = await import(R + "constants/motionHtmlTemplate.ts");
 const { motionHtmlPlanCurrent } = await import(R + "lib/motionHtmlScene.ts");
 const lineCount = (p: string) => (p.match(/"id":"L\d+"/g) || []).length;
 const base = { version: 1, mode: "remotion", engine: "remotion", profileId: "history", componentRevision: 1, pacing: "medium" } as any;
@@ -18,10 +17,11 @@ const script0 = { title: "T", language: "en", visualSettings: base, beats, gen: 
 const planned = await plan(script0, true, "s0");
 console.log("base plan calls:", prompts.length, "current:", motionHtmlPlanCurrent(planned, { ...analysis, visualSettings: base }));
 const variants: [string, any, boolean, (p: string) => boolean][] = [
-  ["Kiểu vẽ → sketch", { ...base, profileId: "sketch" }, true, (p) => p.includes(MOTION_HTML_STYLES.sketch)],
-  ["Kiểu vẽ → comic", { ...base, profileId: "comic" }, true, (p) => p.includes(MOTION_HTML_STYLES.comic)],
-  ["Bố cục → close", { ...base, layout: "close" }, true, (p) => p.includes(MOTION_LAYOUTS.close.planner)],
-  ["Bố cục → wide", { ...base, layout: "wide" }, true, (p) => p.includes(MOTION_LAYOUTS.wide.planner)],
+  // Drawing style and layout are applied when the scenes are shown: switching them never asks the AI again.
+  ["Kiểu vẽ → sketch", { ...base, profileId: "sketch" }, false, () => true],
+  ["Kiểu vẽ → comic", { ...base, profileId: "comic" }, false, () => true],
+  ["Bố cục → close", { ...base, layout: "close" }, false, () => true],
+  ["Bố cục → wide", { ...base, layout: "wide" }, false, () => true],
   ["Nhịp → many", { ...base, pacing: "many" }, true, (p) => /many/.test(p)],
   ["Nhịp → few", { ...base, pacing: "few" }, true, (p) => /few/.test(p)],
   ["Bộ vẽ chuẩn bật", { ...base, figureKit: true }, false, () => true],
@@ -47,9 +47,8 @@ const sceneCase = async (name: string, s: any, check: (p: string) => boolean) =>
   if (!(got && check(got))) failures++;
   console.log((got && check(got) ? "OK  " : "FAIL") + " scene | " + name);
 };
-await sceneCase("Kiểu vẽ sketch + Bộ vẽ chuẩn", { profile: "sketch", figureKit: true }, (p) => /MotionKit/.test(p));
-await sceneCase("Bố cục close", { layout: "close" }, (p) => p.includes(MOTION_LAYOUTS.close.scene));
-await sceneCase("Bố cục stage", { layout: "stage" }, (p) => p.includes(MOTION_LAYOUTS.stage.scene));
+await sceneCase("Kiểu vẽ sketch + Bộ vẽ chuẩn: base style, no kit", { profile: "sketch", figureKit: true }, (p) => p.includes(MOTION_HTML.GRAPHICS) && !/MotionKit\./.test(p));
+await sceneCase("Kiểu vẽ horror: same base style", { profile: "horror" }, (p) => p.includes(MOTION_HTML.GRAPHICS) && !/Khuat Mat/.test(p));
 await sceneCase("Khung 9:16 (720x1280)", { width: 720, height: 1280 }, (p) => /720/.test(p) && /1280/.test(p));
 await sceneCase("Ngôn ngữ vi", { language: "vi" }, (p) => /\bvi\b|Vietnamese/i.test(p));
 fs.rmSync(root, { recursive: true, force: true });

@@ -916,7 +916,7 @@ export interface ThumbnailQualityReport {
   warnings: string[];
   passed: boolean;
 }
-export interface SEOMetadata {
+interface SEOMetadata {
   text: string;
   searchScore: number;
   ctrScore: number;

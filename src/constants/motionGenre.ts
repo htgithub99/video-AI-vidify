@@ -21,7 +21,7 @@ export const MOTION_VIDEO_GENRE_TEXT = {
     OPTIONS: { pov: "POV – You are the character", witness: "Witness recollection (first-person)", chronicle: "Entire history in N minutes (chronicle)", verdict: "Big question – weigh every candidate (verdict)" },
   },
 } as const;
-export interface MotionVideoGenreStage {
+interface MotionVideoGenreStage {
   RULE: string;
   SOLO?: boolean;
 }

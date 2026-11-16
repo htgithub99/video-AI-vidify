@@ -5,15 +5,8 @@ import { MOTION_REMOTION_STAGING as S } from "../constants/motionRemotionStaging
 import { remotionObjectIdentity, remotionRole, remotionSubject } from "./motionRemotionGeometry.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../constants/motionRemotionLayout.js";
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
-import type { MotionRemotionNode, MotionRemotionScene, MotionVectorAsset } from "../types/motionVisual.js";
+import type { MotionRemotionNode, MotionRemotionScene } from "../types/motionVisual.js";
 export const remotionIdentityDescription = (description: string) => description.replace(S.HANDHELD, "").replace(S.FUTURE_APPEARANCE, "").trim();
-export const remotionAtomicDescription = (node: MotionRemotionNode) => (node.kind === RT_SHARED.CHARACTER ? remotionIdentityDescription(node.description) : node.description.replace(S.CONTENTS, "").split(S.SUBJECT_LOCATION)[0].trim() || node.description);
-export const remotionLegacyAssetIssue = (node: MotionRemotionNode, asset: MotionVectorAsset): string | undefined => {
-  if (asset.stagingRevision === S.REVISION) return;
-  if (node.kind === RT_SHARED.CHARACTER && remotionIdentityDescription(asset.description) !== asset.description.trim()) return S.MIGRATION_REASON;
-  if (node.kind === RT_SHARED.PROP && S.MARK.test(remotionSubject(node))) return S.MIGRATION_REASON;
-  if (node.kind === RT_SHARED.PROP && (remotionAtomicDescription({ ...node, description: asset.description }) !== asset.description.trim() || (!!node.mount && remotionRole(node) === RT_CORE.SUPPORT_A18603) || (S.GATE.test(node.description) && asset.width / asset.height > 3))) return S.MIGRATION_REASON;
-};
 export const normalizeRemotionRelations = (nodes: MotionRemotionNode[]): MotionRemotionNode[] =>
   nodes.map((original) => {
     let node = { ...original };

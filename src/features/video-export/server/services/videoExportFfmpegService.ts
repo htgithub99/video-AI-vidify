@@ -8,7 +8,7 @@ const STDERR_TAIL_LENGTH = 4000;
 const ABORT_CLOSE_TIMEOUT_MS = 5000;
 const PROGRESS_ARGS = [VIDEO_EXPORT_TEXT_HIDE_BANNER, VIDEO_EXPORT_TEXT_NOSTATS, VIDEO_EXPORT_TEXT_PROGRESS, VIDEO_EXPORT_TEXT_PIPE_1];
 export const isAbortError = (error: unknown): boolean => _.get(error, VIDEO_EXPORT_TEXT_MESSAGE) === VIDEO_EXPORT_CONSTANTS.PROCESS_ABORTED;
-export const createAbortError = (): Error => new Error(VIDEO_EXPORT_CONSTANTS.PROCESS_ABORTED);
+const createAbortError = (): Error => new Error(VIDEO_EXPORT_CONSTANTS.PROCESS_ABORTED);
 export const throwIfAborted = (signal?: AbortSignal): void => {
   if (signal?.aborted) throw createAbortError();
 };

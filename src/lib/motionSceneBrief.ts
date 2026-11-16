@@ -13,7 +13,7 @@ import { motionSceneObjects } from "./motionObjects.js";
 import { stringifyJson } from "./jsonStringify.js";
 import { motionSkinHex } from "./motionCastIdentity.js";
 import { MOTION_CAST_IDENTITY } from "../constants/motionCastIdentity.js";
-export const motionSkinLabel = (profile: MotionRemotionProfile, skin: string | undefined): string => B.SKIN_LABEL(skin, motionSkinHex(skin, MOTION_CAST_IDENTITY.SKIN_DEFAULT[profile]));
+const motionSkinLabel = (profile: MotionRemotionProfile, skin: string | undefined): string => B.SKIN_LABEL(skin, motionSkinHex(skin, MOTION_CAST_IDENTITY.SKIN_DEFAULT[profile]));
 import type { MotionAnalysisGroup, MotionCastMember } from "../types/motionVideo.js";
 import type { MotionRemotionEffect, MotionRemotionNode, MotionRemotionProfile, MotionRemotionScene, MotionSceneObject } from "../types/motionVisual.js";
 import { motionSceneActionLines, type MotionWrittenSceneIntent } from "./motionSceneActionBrief.js";
@@ -62,7 +62,7 @@ const scenePoses = (id: MotionRemotionProfile, nodes: MotionRemotionNode[]): Mot
     .map(([pose]) => pose);
 };
 const nameOf = (node: MotionRemotionNode, cast: MotionCastMember[]): string => cast.find((member) => member.key === node.entityId)?.name || node.id;
-export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[] => {
+const motionSceneBriefLines = (context: MotionSceneBriefContext): string[] => {
   const id = context.artDirection.id;
   const profile = MOTION_ILLUSTRATION_PROFILES[id];
   const scene = context.scene;
@@ -80,7 +80,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
   const extraPoses = scenePoses(id, scene.nodes);
   const when = [B.WHEN_LINE(context.era, context.place?.name, scene.time, scene.weather), scene.environment ? B.ENVIRONMENT_LINE(scene.environment) : "", context.place?.description ? context.place.description : ""].filter(Boolean);
   sections.push(B.SECTION(B.HEADINGS.WHEN, when));
-  sections.push(B.SECTION(B.HEADINGS.STORY, [B.PURPOSE_LINE(scene.purpose), scene.text ? B.TEXT_LINE(scene.text) : "", context.note || ""].filter(Boolean)));
+  sections.push(B.SECTION(B.HEADINGS.STORY, [scene.purpose ? B.PURPOSE_LINE(scene.purpose) : "", scene.text ? B.TEXT_LINE(scene.text) : "", context.note || ""].filter(Boolean)));
   const device = context.artDirection.device;
   const cameraLines = [device ? B.FORMAT_LINE(device) : view ? B.VIEWS[view] || "" : "", scene.camera ? B.CAMERA_LINE(scene.camera) : "", scene.lead ? B.LEAD_LINE(nameOf(scene.nodes.find((node) => node.id === scene.lead) || ({ id: scene.lead } as MotionRemotionNode), cast)) : "", B.FREE_LAYOUT].filter(Boolean);
   sections.push(B.SECTION(B.HEADINGS.CAMERA, cameraLines));
@@ -187,7 +187,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
   sections.push(B.CONTEXT_LINE(stringifyJson({ viewBox: context.viewBox, width: context.width, height: context.height, renderBehavior: context.renderBehavior })));
   return sections.filter(Boolean);
 };
-export const motionSceneWatchOuts = (context: MotionSceneBriefContext, objects: MotionSceneObject[] = motionSceneObjects(context.scene)): string[] => {
+const motionSceneWatchOuts = (context: MotionSceneBriefContext, objects: MotionSceneObject[] = motionSceneObjects(context.scene)): string[] => {
   const scene = context.scene;
   const cast = context.cast || [];
   const people = scene.nodes.filter((node) => node.kind === CHARACTER && !node.animal);
@@ -212,7 +212,7 @@ export const motionSceneWatchOuts = (context: MotionSceneBriefContext, objects: 
   }
   return [...new Set(out)];
 };
-export const motionSceneRequiredIds = (id: MotionRemotionProfile, named: MotionRemotionNode[], people: MotionRemotionNode[], crowds: MotionRemotionNode[], objects: MotionSceneObject[], cast: MotionCastMember[], nodes: MotionRemotionNode[] = []): string[] => {
+const motionSceneRequiredIds = (id: MotionRemotionProfile, named: MotionRemotionNode[], people: MotionRemotionNode[], crowds: MotionRemotionNode[], objects: MotionSceneObject[], cast: MotionCastMember[], nodes: MotionRemotionNode[] = []): string[] => {
   const legless = !MOTION_ILLUSTRATION_PROFILES[id].brief.partIds.includes(RT_MAINTENANCE.LEGS);
   const singles = people.filter((node) => !crowds.includes(node) && node.representation !== DETAIL && !node.unit);
   const lines: string[] = [];

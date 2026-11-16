@@ -2,7 +2,7 @@ import { stringifyJson } from "./jsonStringify.js";
 import * as MR from "../constants/motionRuntime.js";
 import { trimMotionText } from "./motionUtils.js";
 import type { MotionCreativeBlueprint } from "../types/motionVideo.js";
-export const creativeBlueprintErrors = (value: any): string[] => {
+const creativeBlueprintErrors = (value: any): string[] => {
   const errors: string[] = [];
   const text = (v: any) => typeof v === MR.MOTION_TEXT_STRING && v.trim().length > 0;
   const requiredText = (key: string, v: any) => {

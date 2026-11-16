@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { IMAGE_GENERATION_CONTINUITY_CONFIG } from "../constants/config";
 import { CharacterConfig, StoryboardScene } from "../types";
-export interface ContinuityBatchItem {
+interface ContinuityBatchItem {
   continuityKey?: string;
 }
 const resolvePrimaryCharacter = (characterIds: string[], characters: CharacterConfig[]): CharacterConfig | undefined => {

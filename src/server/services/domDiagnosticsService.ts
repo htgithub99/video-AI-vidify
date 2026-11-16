@@ -21,7 +21,7 @@ interface DomDiagnosticElement {
   text: string;
   html: string;
 }
-export interface DomDiagnosticCaptureOptions {
+interface DomDiagnosticCaptureOptions {
   fileName: string;
   selector: string;
   maxElements: number;

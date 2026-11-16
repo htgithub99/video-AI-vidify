@@ -1,6 +1,6 @@
-import type { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, ProjectLanguage } from "../../../types.js";
-import type { Lang } from "../../../lib/lang.js";
-import type { ChatExecutionPolicyProps } from "../../../hooks/useChatExecutionPolicy.js";
+import type { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, ProjectLanguage } from "../types.js";
+import type { Lang } from "../lib/lang.js";
+import type { ChatExecutionPolicyProps } from "../hooks/useChatExecutionPolicy.js";
 export interface CinematicSetupProps {
   idea: string;
   setIdea: (value: string) => void;

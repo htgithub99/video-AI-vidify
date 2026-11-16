@@ -17,7 +17,7 @@ export interface SystemFetchFailure<T = any> {
 export type SystemFetchResult<T = any> = SystemFetchSuccess<T> | SystemFetchFailure<T>;
 export const createSystemFetchFailure = <T = any>(error: string): SystemFetchFailure<T> => ({ success: false, error });
 export const getStoredApiKey = (keyName: string): string => storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-export const createAuthenticatedHeaders = (customHeaders: Record<string, string> = {}): Record<string, string> =>
+const createAuthenticatedHeaders = (customHeaders: Record<string, string> = {}): Record<string, string> =>
   _.assign(
     {
       [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,

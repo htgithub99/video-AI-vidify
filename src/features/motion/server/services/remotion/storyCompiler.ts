@@ -6,6 +6,7 @@ import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../../constants/motionRemotionLayout.js";
 import { motionPlanSettings, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { motionProportionOf } from "../../../../../lib/motionDrawStyle.js";
+import { motionLayoutOf } from "../../../../../lib/motionLayout.js";
 import { layoutRemotionNodes, validateRemotionSpec, remotionStateMissingScenes } from "../../../../../lib/motionRemotion.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSceneComposition.js";
 import { motionBeatLines } from "../../../../../lib/motionBeatLines.js";
@@ -133,6 +134,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     profileId: settings.profileId,
     figureKit: settings.figureKit === true,
     proportion: motionProportionOf(settings),
+    layout: motionLayoutOf(settings),
     assets: Object.fromEntries(Object.entries(state.assets).filter(([key]) => used.has(key))),
     scenes: timedScenes.map(compactTimedScene),
     subtitles,

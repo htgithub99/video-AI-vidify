@@ -1,14 +1,14 @@
 import { AudioQualityReport, StoryboardScene } from "../types";
 import { createAdvisoryAudioQuality } from "./audioQualityService";
 import { decodeAudioDuration, getVoiceTimelineDuration } from "./voiceTimelineService";
-export interface VoiceQualityRepairOptions {
+interface VoiceQualityRepairOptions {
   audioBase64: string;
   audioUrl: string;
   provider: string;
   scenes: StoryboardScene[];
   targetDurationSeconds: number;
 }
-export interface VoiceQualityRepairResult {
+interface VoiceQualityRepairResult {
   audioBase64: string;
   audioUrl: string;
   provider: string;

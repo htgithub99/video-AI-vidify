@@ -1,5 +1,4 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
-import type { MotionSoundCue } from "../../../../types/motionVideo.js";
 import * as MR from "../../../../constants/motionRuntime.js";
 import { MOTION_VOICE_PACING } from "../../../../constants/motionVoice.js";
 import _ from "lodash";
@@ -19,7 +18,7 @@ import {
 } from "../../../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_DIRECTOR_PATTERNS as P } from "../../../../constants/motionVideo.js";
 import { motionLanguage, motionLanguageRate, motionSpeechUnits } from "../../../../lib/motionLanguage.js";
-import type { MotionBeat, MotionSpec } from "../../../../types/motionVideo.js";
+import type { MotionBeat } from "../../../../types/motionVideo.js";
 const GRAPHIC_HOLD = [MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_HISTORY.GEOMAP, MOTION_HISTORY.ICONS, MOTION_HISTORY.VERDICT, MOTION_HISTORY.SCOREBOARD];
 const countUnits = (text: string): number => motionSpeechUnits(text);
 export const estimateBeatSeconds = (beat: MotionBeat, language: string): number => {
@@ -85,10 +84,3 @@ export const buildSubtitles = (beat: MotionBeat, start: number, end: number, lan
     return s;
   });
 };
-export interface CompiledStory {
-  spec: MotionSpec;
-  starts: number[];
-  ends: number[];
-  sfxCues: MotionSoundCue[];
-  missing: string[];
-}

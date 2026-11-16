@@ -104,8 +104,8 @@ import { VIDEO_EXPORT_AI_CLIP_CONSTANTS, VIDEO_EXPORT_AI_CLIP_FILTERS, VIDEO_EXP
 import { VideoExportAspectRatio, VideoExportConfig, VideoExportEffect, VideoExportJobStage, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../../types/videoExport.js";
 export { VideoExportQuality };
 type EncodeProfile = { width: number; height: number; fps: number; preset: string; crf: string; codec: string };
-export type VideoExportProgressHandler = (stage: VideoExportJobStage, percent: number, message: string) => void;
-export type RenderVideoExportParams = { audioPaths: string[]; imagePaths: string[]; aiClipPaths?: string[]; aiClipKeepAudio?: boolean[]; config: VideoExportConfig; outputPath: string; tempDir: string; quality: VideoExportQuality; signal?: AbortSignal; onProgress?: VideoExportProgressHandler };
+type VideoExportProgressHandler = (stage: VideoExportJobStage, percent: number, message: string) => void;
+type RenderVideoExportParams = { audioPaths: string[]; imagePaths: string[]; aiClipPaths?: string[]; aiClipKeepAudio?: boolean[]; config: VideoExportConfig; outputPath: string; tempDir: string; quality: VideoExportQuality; signal?: AbortSignal; onProgress?: VideoExportProgressHandler };
 const resolveEncodeProfile = (config: VideoExportConfig, quality: VideoExportQuality): EncodeProfile => {
   if (quality === VideoExportQuality.PREVIEW) {
     return { ...VIDEO_EXPORT_PREVIEW_DIMENSIONS[config.aspectRatio], fps: VIDEO_EXPORT_CONSTANTS.PREVIEW_FPS, preset: VIDEO_EXPORT_CONSTANTS.PREVIEW_PRESET, crf: VIDEO_EXPORT_CONSTANTS.PREVIEW_CRF, codec: VIDEO_EXPORT_CONSTANTS.VIDEO_CODEC };
@@ -709,8 +709,8 @@ export const renderVideoExport = async (params: RenderVideoExportParams): Promis
     if (!completed) await removePathSafely(outputPath);
   }
 };
-export type MultiPreviewOutputItem = { aspectRatio: VideoExportAspectRatio; outputPath: string };
-export type RenderMultiPreviewParams = { audioPaths: string[]; imagePaths: string[]; aiClipPaths?: string[]; aiClipKeepAudio?: boolean[]; config: VideoExportConfig; outputs: MultiPreviewOutputItem[]; tempDir: string; signal?: AbortSignal };
+type MultiPreviewOutputItem = { aspectRatio: VideoExportAspectRatio; outputPath: string };
+type RenderMultiPreviewParams = { audioPaths: string[]; imagePaths: string[]; aiClipPaths?: string[]; aiClipKeepAudio?: boolean[]; config: VideoExportConfig; outputs: MultiPreviewOutputItem[]; tempDir: string; signal?: AbortSignal };
 export const renderVideoExportMultiPreviews = async (params: RenderMultiPreviewParams): Promise<Record<string, { durationSeconds: number }>> => {
   const { audioPaths, imagePaths, aiClipPaths = [], aiClipKeepAudio = [], config, outputs, tempDir, signal } = params;
   const completedOutputs: string[] = [];

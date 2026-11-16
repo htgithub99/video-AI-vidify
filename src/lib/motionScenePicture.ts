@@ -7,7 +7,7 @@ import { motionLayerPart, motionLayerParts, motionSceneQualityIssues } from "./m
 import { motionSkinHex } from "./motionCastIdentity.js";
 import type { MotionCastMember } from "../types/motionVideo.js";
 import type { MotionRemotionNode, MotionRemotionProfile, MotionSceneObject, MotionVisualRect } from "../types/motionVisual.js";
-export interface MotionScenePicture {
+interface MotionScenePicture {
   issues: string[];
   severe: number;
 }
@@ -24,7 +24,7 @@ const fillOf = (fragment: string | undefined): [number, number, number] | undefi
 const luminance = ([r, g, b]: [number, number, number]): number => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 const area = (rect: MotionVisualRect): number => Math.max(0, rect.width) * Math.max(0, rect.height);
 const overlap = (a: MotionVisualRect, b: MotionVisualRect): number => Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
-export const motionSceneMeasure = (svg: string, width: number, height: number): Record<string, MotionVisualRect | null> => {
+const motionSceneMeasure = (svg: string, width: number, height: number): Record<string, MotionVisualRect | null> => {
   const measured: Record<string, MotionVisualRect | null> = {};
   for (const [id, box] of svgGeometry(svg).boxes) measured[id] = Number.isFinite(box.minX) ? { x: box.minX / width, y: box.minY / height, width: (box.maxX - box.minX) / width, height: (box.maxY - box.minY) / height } : null;
   return measured;

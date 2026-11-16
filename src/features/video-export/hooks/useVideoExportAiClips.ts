@@ -9,8 +9,8 @@ import { VIDEO_EXPORT_AI_CLIP_CONSTANTS, VIDEO_EXPORT_AI_CLIP_REGEX } from "../c
 import { requestJson, VideoExportTexts } from "../components/videoExportUtils.js";
 import { VideoExportAiClip, VideoExportAiClipJobState, VideoExportAiClipJobStatus, VideoExportAspectRatio, VideoExportImageItem } from "../types/videoExport.js";
 type AiClipImage = { id: string; name: string; dataUrl: string };
-export type GenerateAiClipsOptions = { imageIds?: string[]; restart?: boolean };
-export type VideoExportAiClipRuntimeSettings = {
+type GenerateAiClipsOptions = { imageIds?: string[]; restart?: boolean };
+type VideoExportAiClipRuntimeSettings = {
   provider: AiPlanningFallbackProvider;
   model: AiPlanningChatModel;
   executionMode: AiPlanningExecutionMode;

@@ -2,16 +2,16 @@ import { VideoExportOptionTone } from "../../../constants/runtime/enums.js";
 import { RUNTIME_TEXT as RT_VIDEO_EXPORT } from "../constants/runtimeText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import {
-  VIDEO_EXPORT_TEXT_BG_INDIGO_600_DARK_BG_INDIGO,
-  VIDEO_EXPORT_TEXT_BG_PURPLE_600_DARK_BG_PURPLE,
-  VIDEO_EXPORT_TEXT_BG_WHITE_DARK_BG_SLATE_950,
-  VIDEO_EXPORT_TEXT_BG_WHITE_DARK_BG_SLATE_950_2,
+  BG_INDIGO_600_BORDER_INDIGO_500_TEXT_WHITE_SHADOW_MD_SHA,
+  BG_PURPLE_600_BORDER_PURPLE_500_TEXT_WHITE_SHADOW_MD_SHA,
+  BG_SLATE_950_60_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE,
+  BG_SLATE_950_60_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE_AC37B3,
   VIDEO_EXPORT_TEXT_BUTTON,
   VIDEO_EXPORT_TEXT_GRID_COLS_2,
   VIDEO_EXPORT_TEXT_GRID_COLS_3,
   VIDEO_EXPORT_TEXT_GRID_COLS_4,
-  VIDEO_EXPORT_TEXT_TEXT_INDIGO_600_DARK_TEXT_INDIGO,
-  VIDEO_EXPORT_TEXT_TEXT_PURPLE_600_DARK_TEXT_PURPLE,
+  TEXT_INDIGO_400,
+  TEXT_PURPLE_400_2B8739,
   VIDEO_EXPORT_TEXT_UNSTYLED,
 } from "../../../constants/videoExportText";
 import { FC } from "react";
@@ -24,9 +24,9 @@ export type VideoExportOptionSection<T extends string | number> = { key: string;
 export { VideoExportOptionTone };
 type VideoExportOptionGridProps<T extends string | number> = { label?: string; hint?: string; options?: VideoExportOptionItem<T>[]; sections?: VideoExportOptionSection<T>[]; value: T; columns?: 2 | 3 | 4; tone?: VideoExportOptionTone; disabled?: boolean; scrollableClassName?: string; onChange: (value: T) => void };
 const TONE_CLASSNAMES: Record<VideoExportOptionTone, { active: string; idle: string; hint: string }> = {
-  [VideoExportOptionTone.PURPLE]: { active: VIDEO_EXPORT_TEXT_BG_PURPLE_600_DARK_BG_PURPLE, idle: VIDEO_EXPORT_TEXT_BG_WHITE_DARK_BG_SLATE_950, hint: VIDEO_EXPORT_TEXT_TEXT_PURPLE_600_DARK_TEXT_PURPLE },
-  [VideoExportOptionTone.INDIGO]: { active: VIDEO_EXPORT_TEXT_BG_INDIGO_600_DARK_BG_INDIGO, idle: VIDEO_EXPORT_TEXT_BG_WHITE_DARK_BG_SLATE_950_2, hint: VIDEO_EXPORT_TEXT_TEXT_INDIGO_600_DARK_TEXT_INDIGO },
-  [VideoExportOptionTone.AMBER]: { active: VIDEO_EXPORT_TEXT_BG_PURPLE_600_DARK_BG_PURPLE, idle: VIDEO_EXPORT_TEXT_BG_WHITE_DARK_BG_SLATE_950, hint: VIDEO_EXPORT_TEXT_TEXT_PURPLE_600_DARK_TEXT_PURPLE },
+  [VideoExportOptionTone.PURPLE]: { active: BG_PURPLE_600_BORDER_PURPLE_500_TEXT_WHITE_SHADOW_MD_SHA, idle: BG_SLATE_950_60_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE, hint: TEXT_PURPLE_400_2B8739 },
+  [VideoExportOptionTone.INDIGO]: { active: BG_INDIGO_600_BORDER_INDIGO_500_TEXT_WHITE_SHADOW_MD_SHA, idle: BG_SLATE_950_60_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE_AC37B3, hint: TEXT_INDIGO_400 },
+  [VideoExportOptionTone.AMBER]: { active: BG_PURPLE_600_BORDER_PURPLE_500_TEXT_WHITE_SHADOW_MD_SHA, idle: BG_SLATE_950_60_BORDER_SLATE_800_TEXT_SLATE_300_HOVER_TE, hint: TEXT_PURPLE_400_2B8739 },
 };
 const COLUMN_CLASSNAMES: Record<2 | 3 | 4, string> = { 2: VIDEO_EXPORT_TEXT_GRID_COLS_2, 3: VIDEO_EXPORT_TEXT_GRID_COLS_3, 4: VIDEO_EXPORT_TEXT_GRID_COLS_4 };
 export const VideoExportOptionGrid = <T extends string | number>({ label, hint, options = [], sections, value, columns = 3, tone = VideoExportOptionTone.PURPLE, disabled = false, scrollableClassName, onChange }: VideoExportOptionGridProps<T>): ReturnType<FC> => {
@@ -49,7 +49,7 @@ export const VideoExportOptionGrid = <T extends string | number>({ label, hint, 
     <div className={cn(RT_VIDEO_EXPORT.SPACE_Y_1_5_PT_0_5)}>
       {label && (
         <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
-          <label className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_700_DARK_TEXT_SLATE)}>{label}</label>
+          <label className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_300_FLEX_ITEMS_CENTER_GAP)}>{label}</label>
           {hint && <span className={cn(RT_VIDEO_EXPORT.TEXT_11PX_FONT_MONO_FONT_BOLD_TRUNCATE, toneClassNames.hint)}>{hint}</span>}
         </div>
       )}
@@ -61,8 +61,8 @@ export const VideoExportOptionGrid = <T extends string | number>({ label, hint, 
             {_.map(sections, (section) => (
               <div key={section.key} className={cn(RT_SHARED.SPACE_Y_1_5)}>
                 <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_2)}>
-                  <span className={cn(RT_VIDEO_EXPORT.TEXT_9PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_600_DARK)}>{section.label}</span>
-                  <span className={cn(RT_VIDEO_EXPORT.H_PX_FLEX_1_BG_SLATE_200_DARK_BG_SLATE)} />
+                  <span className={cn(RT_VIDEO_EXPORT.TEXT_9PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_500_SHRINK_0)}>{section.label}</span>
+                  <span className={cn(RT_VIDEO_EXPORT.H_PX_FLEX_1_BG_SLATE_800_80)} />
                 </div>
                 {renderOptions(section.options)}
               </div>

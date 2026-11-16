@@ -1,13 +1,13 @@
-import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
-import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
-import * as MR from "../../../../constants/motionRuntime.js";
-import type { MotionStorySource } from "../../../../types/motionVideo.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
+import * as MR from "../../constants/motionRuntime.js";
+import type { MotionStorySource } from "../../types/motionVideo.js";
 const UA = MR.MOTION_TEXT_MOZILLA_5_0_WINDOWS_NT_10_0_WIN64_X64_APPLEWEBKIT_537_36_KHTML_LI;
 const TIMEOUT_MS = 20000;
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const MAX_TEXT = 400000;
 const URL_RE = /https?:\/\/[^\s<>"')\]]+/gi;
-export interface FetchedSource {
+interface FetchedSource {
   ok: boolean;
   kind: "youtube" | "page";
   meta?: { author?: string; keywords?: string[]; description?: string };
@@ -69,7 +69,7 @@ const embeddedJson = (html: string, name: string): any => {
   }
   return null;
 };
-export const youtubeId = (url: string): string | null => {
+const youtubeId = (url: string): string | null => {
   const m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([\w-]{11})/i);
   return m ? m[1] : null;
 };

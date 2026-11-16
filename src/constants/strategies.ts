@@ -1,5 +1,5 @@
 import { SceneDensity } from "./enums.js";
-export interface SplitStrategyConfig {
+interface SplitStrategyConfig {
   density: SceneDensity;
   instruction: string;
 }

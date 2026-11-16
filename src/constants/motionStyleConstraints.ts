@@ -28,28 +28,8 @@ export const MOTION_STYLE_PATTERNS = {
 } as const;
 export const MOTION_STYLE_OUTLINE_WIDTH = { thin: [0.004, 0.014], medium: [0.012, 0.025], thick: [0.028, 0.05] } as Record<string, [number, number]>;
 export const MOTION_STYLE_DEFAULT_WIDTH = { thin: 0.01, medium: 0.018, thick: 0.034 } as Record<string, number>;
-export const MOTION_STYLE_RULES = {
-  DISTINGUISH_DEFAULT: "Every character must have a clearly different silhouette from the others (height, build, hair, clothing shape) and the body parts the style shows (arms and hands when the style has them).",
-  DISTINGUISH_AXES: (axes: string): string => `Tell characters apart only through what this style varies: ${axes}; everything else follows the kit. Draw only the body parts the style shows.`,
-  SHARED: (axes: string): string => `All characters share one figure exactly as the kit describes – the same head shape, face layout, body shape and proportions; tell them apart only by ${axes}. Do not vary height, build, hair, clothing shape or accessories.`,
-  FACE_DEFAULT: "where they say nothing, use a real skin tone (not the white/cream of clothing or background), eyes at least 1/8 of the head height and strokes at least 1/30 of the head width",
-  FACE_FILL: (hex: string): string => `the face fill is exactly ${hex} as the kit states, even when it is white or not a skin tone; where the kit says nothing else, eyes at least 1/8 of the head height and strokes at least 1/30 of the head width`,
-  ARMS_DEFAULT: "Arms hang outside the torso silhouette: with +Z toward the camera, rot z>0 swings a hanging limb toward +X, so the arm on the -X side uses a small negative z rotation and the arm on the +X side a positive one; hands must be visible from the front.",
-  NO_ARMS: "This style draws no arms and no hands: do not add them.",
-  NO_HANDS: "Arms hang outside the torso silhouette (with +Z toward the camera, rot z>0 swings a hanging limb toward +X) and end in rounded tips: this style draws no hands or fingers.",
-  ABSENT: (parts: string): string => `NOT IN THIS STYLE – never draw these, not even as hidden parts: ${parts}.`,
-  HIDDEN: (parts: string): string => `Never visible in this style: ${parts}. Keep the figure as the kit shows it (a closed base or a body cut by the frame); do not draw or pose them.`,
-  GLIDE: "Characters in this style show no legs: moving characters glide along moveTo paths; never author leg poses or leg keyframes.",
-  NO_OUTLINE_SHELLS: "The renderer draws every outline itself with the style's line weight: never add an enlarged dark copy of a shape behind it (a bigger black capsule, sphere, box or disc) to fake an outline – on round bodies and limbs it pokes through and turns the fill black.",
-  PRECEDENCE: "STYLE PRECEDENCE: the style kit decides how everything looks – shapes, proportions, palette, linework, shading, lighting, effects and level of detail. Video DNA, the genre, the look line and the story choose only what is shown, the moment (day or night, inside or outside) and its mood.",
-  FORBIDDEN_FX: (fx: string): string => `Effects this style never uses: ${fx} – do not add them, even when the genre or story suggests them.`,
-  NIGHT_TINT: "Night in this style is shown by darkening the whole palette with a deep tint, not by light sources, glows or beams.",
-  AXIS_WORDS: { colour: "body or clothing colour", hair: "hair", clothing: "clothing shape and pattern", height: "height", build: "build", accessories: "accessories" } as Record<string, string>,
-  PART_WORDS: { hair: "hair", nose: "nose", brows: "eyebrows", ears: "ears", eyes: "eyes", mouth: "mouth", arms: "arms", hands: "hands or fingers", legs: "legs or feet" } as Record<string, string>,
-  FX_WORDS: { fog: "fog or mist", rain: "rain", snow: "snow", glow: "glows or halos", particles: "particles", beams: "light beams", shadows: "cast shadows" } as Record<string, string>,
-} as const;
-export const MOTION_STYLE_PART = { HAIR: "hair", ARMS: "arms", LEGS: "legs", HANDS: "hands" } as const;
-export const MOTION_STYLE_AXIS = { COLOUR: "colour", CLOTHING: "clothing", ACCESSORIES: "accessories", HAIR: "hair" } as const;
+const MOTION_STYLE_PART = { HAIR: "hair", ARMS: "arms", LEGS: "legs", HANDS: "hands" } as const;
+const MOTION_STYLE_AXIS = { COLOUR: "colour", CLOTHING: "clothing", ACCESSORIES: "accessories", HAIR: "hair" } as const;
 export const MOTION_STYLE_VALUES = {
   ARMS: MOTION_STYLE_PART.ARMS,
   LEGS: MOTION_STYLE_PART.LEGS,

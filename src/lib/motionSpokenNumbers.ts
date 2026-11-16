@@ -26,7 +26,7 @@ export const motionSpokenInteger = (value: string, language: string): string => 
   }
   return parts.join(RT_MAINTENANCE.SPACE);
 };
-export const normalizeMotionSpokenText = (value: string, language: string, knownNames: string[] = []): string => {
+const normalizeMotionSpokenText = (value: string, language: string, knownNames: string[] = []): string => {
   if (motionLanguage(language).numbers !== N.SPOKEN) return value;
   const protectedValues: string[] = [];
   let result = /^vi/i.test(language) ? value : value.replace(/\b\d{1,3}(?:,\d{3})+\b/g, (match) => motionSpokenInteger(match.replaceAll(RT_MAINTENANCE.COMMA, ""), language));

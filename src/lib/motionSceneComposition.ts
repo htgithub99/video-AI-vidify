@@ -8,7 +8,6 @@ import { normalizeMotionVector } from "./motionVectorAsset.js";
 import { normalizeMotionSceneDesign } from "./motionSceneDesign.js";
 import { normalizeSceneRenderIds } from "./motionSceneRenderIds.js";
 import { motionActorTracks, motionAnimationTracks } from "./motionActorTracks.js";
-import { MOTION_SCENE_DESIGN as D } from "../constants/motionSceneDesign.js";
 import { MOTION_CLIP } from "../constants/motionClip.js";
 import { MOTION_CLIP_DIRECTOR } from "../constants/motionClipDirector.js";
 import { motionClipFrameSvg } from "./motionClipCompiler.js";
@@ -195,50 +194,6 @@ export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: 
   }
   validateSceneComposition(composition, asset, nodes, cast);
   return { asset, composition };
-};
-export const mergeSceneCompositionDraft = (previous: unknown, raw: unknown): Record<string, unknown> => {
-  const merged: Record<string, any> = { ...(previous && typeof previous === "object" && !Array.isArray(previous) ? previous : {}), ...(raw && typeof raw === "object" && !Array.isArray(raw) ? Object.fromEntries(Object.entries(raw).filter(([, value]) => value !== undefined)) : {}) };
-  if (merged.groupPatches !== undefined) {
-    if (previous && typeof previous === "object" && RT_SHARED.SVG in previous && typeof previous.svg === "string") merged.svg = previous.svg;
-    if (typeof merged.svg !== "string" || !Array.isArray(merged.groupPatches) || merged.groupPatches.length > C.LAYERS) throw new Error(D.PATCH_INVALID);
-    const svg: string = merged.svg;
-    const spans = new Map<string, { start: number; end: number; tag: string }>();
-    const stack: { id?: string; start: number; tag: string }[] = [];
-    for (const match of svg.matchAll(/<(\/?)([\w:-]+)\b[^<>]*>/g)) {
-      if (match[1]) {
-        const open = stack.pop();
-        if (open?.id) spans.set(open.id, { start: open.start, end: match.index! + match[0].length, tag: open.tag });
-      } else {
-        const open = { id: attributes(match[0]).id, start: match.index!, tag: match[2] };
-        if (!/\/\s*>$/.test(match[0])) stack.push(open);
-        else if (open.id) spans.set(open.id, { start: open.start, end: match.index! + match[0].length, tag: open.tag });
-      }
-    }
-    const replacements: { start: number; end: number; svg: string }[] = [];
-    for (const patch of merged.groupPatches) {
-      const span = spans.get(patch?.id);
-      const root = typeof patch?.svg === "string" && patch.svg.trim().match(/^<g\b[^<>]*>/)?.[0];
-      if (!span || span.tag !== RT_CORE.G || !root || attributes(root).id !== patch.id || replacements.some((old) => span.start < old.end && span.end > old.start)) throw new Error(D.PATCH_INVALID);
-      let depth = 0,
-        end = 0;
-      const fragment = patch.svg.trim();
-      for (const token of fragment.matchAll(/<(\/?)[\w:-]+\b[^<>]*>/g)) {
-        if (token[1]) depth--;
-        else if (!/\/\s*>$/.test(token[0])) depth++;
-        if (!depth) {
-          end = token.index! + token[0].length;
-          break;
-        }
-      }
-      if (end !== fragment.length) throw new Error(D.PATCH_INVALID);
-      replacements.push({ ...span, svg: patch.svg.trim() });
-    }
-    for (const patch of replacements.sort((a, b) => b.start - a.start)) merged.svg = merged.svg.slice(0, patch.start) + patch.svg + merged.svg.slice(patch.end);
-    delete merged.groupPatches;
-    merged.svg = normalizeMotionVector(merged.svg, RT_CORE.PATCH, RT_CORE.PATCH, "", true).svg;
-    compositionElements(merged.svg);
-  }
-  return merged;
 };
 export const motionSceneAnimationValue = (animation: MotionSceneAnimation, seconds: number): string => {
   const frames = animation.keyframes;

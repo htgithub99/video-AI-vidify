@@ -106,16 +106,16 @@ import { logger } from "../../../../lib/logger.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../../../../server/services/musicDiagnosticService.js";
 import { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_PATTERNS, SUNO_AUTOMATION_SELECTORS, SUNO_AUTOMATION_TEXTS, formatSunoPlaylistName, normalizeSunoPlaylistName } from "../../../../constants/sunoAutomation.js";
 import { isBackupChromeActive, chromeProfilePath } from "../../../../server/services/chromeBackupService.js";
-export interface SunoSongInput {
+interface SunoSongInput {
   songId: string;
   title: string;
   lyrics: string;
 }
-export interface SunoCreationResult {
+interface SunoCreationResult {
   playlistUrl: string;
   createdSongIds: string[];
 }
-export interface SunoAdvancedSettings {
+interface SunoAdvancedSettings {
   excludeStyles: string;
   vocalGender: "male" | "female" | "auto";
   duration: "auto";
@@ -126,15 +126,15 @@ export interface SunoAdvancedSettings {
   variety: number;
   personalize: boolean;
 }
-export interface ActiveSunoGeneration {
+interface ActiveSunoGeneration {
   title: string;
   songIds: string[];
 }
-export interface SunoDownloadTrack {
+interface SunoDownloadTrack {
   songId: string;
   title: string;
 }
-export type SunoDownloadFormat = "mp3" | "wav";
+type SunoDownloadFormat = "mp3" | "wav";
 const getSunoProfileDir = (): string => (isBackupChromeActive() ? chromeProfilePath() : path.join(getDataDirectory(), SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME));
 const SUNO_CDP_URL = SUNO_AUTOMATION_CONFIG.SUNO_CDP_URL;
 let activeSunoPage: Page | null = null;

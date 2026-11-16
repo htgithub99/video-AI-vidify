@@ -1,188 +1,5 @@
-import {
-  SOURCE_TEXT_SYMBOL_22,
-  SOURCE_TEXT_SYMBOL_3,
-  SOURCE_TEXT_SYMBOL_52,
-  SOURCE_TEXT_SYMBOL_42,
-  SOURCE_TEXT_SYMBOL_43,
-  SOURCE_TEXT_SYMBOL_4,
-  SOURCE_TEXT_SYMBOL_44,
-  SOURCE_TEXT_SYMBOL_45,
-  SOURCE_TEXT_NFD,
-  SOURCE_TEXT_SYMBOL_25,
-  SOURCE_TEXT_SYMBOL_54,
-  SOURCE_TEXT_CENTER,
-  SOURCE_TEXT_LEFT,
-  SOURCE_TEXT_RIGHT,
-  SOURCE_TEXT_TOP,
-  SOURCE_TEXT_BOTTOM,
-  SOURCE_TEXT_SCROLL,
-  SOURCE_TEXT_SPEED,
-  SOURCE_TEXT_START,
-  SOURCE_TEXT_END,
-  SOURCE_TEXT_FROM,
-  SOURCE_TEXT_TO,
-  SOURCE_TEXT_SYMBOL_16,
-  SOURCE_TEXT_MEDIUM,
-  SOURCE_TEXT_SYMBOL_12,
-  SOURCE_TEXT_FLOW,
-  SOURCE_TEXT_REVEAL,
-  SOURCE_TEXT_1,
-  SOURCE_TEXT_SYMBOL_53,
-  SOURCE_TEXT_SYMBOL_10,
-  SOURCE_TEXT_SYMBOL_6,
-  SOURCE_TEXT_ACTION,
-  SOURCE_TEXT_VI,
-  SOURCE_TEXT_EN,
-  SOURCE_TEXT_STYLE,
-  SOURCE_BROWSER_TEXT_SOURCE,
-  SOURCE_TEXT_LABEL,
-  SOURCE_TEXT_SYMBOL_56,
-  SOURCE_TEXT_FIXED,
-  SOURCE_TEXT_OFF,
-  SOURCE_TEXT_1_4,
-  SOURCE_TEXT_SYMBOL_9,
-  SOURCE_TEXT_PLANNING,
-  SOURCE_TEXT_I_2,
-  SOURCE_TEXT_LIBRARY,
-  SOURCE_TEXT_16_9,
-  SOURCE_TEXT_READY,
-  SOURCE_TEXT_SHA256,
-  SOURCE_TEXT_HEX,
-  SOURCE_TEXT_TITLE,
-  SOURCE_TEXT_LOGLINE,
-  SOURCE_TEXT_CLOSE_2,
-  SOURCE_TEXT_X,
-  SOURCE_TEXT_REQUIRED,
-  SOURCE_TEXT_ID,
-  SOURCE_TEXT_U_2,
-  SOURCE_TEXT_SVG,
-  SOURCE_TEXT_HREF,
-  SOURCE_TEXT_ARIA_DESCRIBEDBY_2,
-  SOURCE_TEXT_SYMBOL_33,
-  SOURCE_TEXT_LENGTH,
-  SOURCE_TEXT_SYMBOL_21,
-  SOURCE_TEXT_0,
-  SOURCE_TEXT_A_2,
-  SOURCE_TEXT_IMAGE,
-  SOURCE_TEXT_USE,
-  SOURCE_TEXT_R,
-  SOURCE_TEXT_PATH,
-  SOURCE_TEXT_D,
-  SOURCE_TEXT_GI,
-  SOURCE_TEXT_UNAVAILABLE,
-  SOURCE_TEXT_AND,
-  SOURCE_TEXT_SYMBOL_8,
-  SOURCE_TEXT_DOMCONTENTLOADED,
-  SOURCE_TEXT_DIALOG,
-  SOURCE_TEXT_HEADING,
-  SOURCE_TEXT_DELETE_2,
-  SOURCE_TEXT_POST,
-  SOURCE_TEXT_VISIBLE,
-  SOURCE_TEXT_BUTTON,
-  SOURCE_TEXT_HIDDEN,
-  SOURCE_TEXT_MENUITEM,
-  SOURCE_TEXT_TRUE,
-  SOURCE_TEXT_ABOUT_BLANK,
-  SOURCE_TEXT_SCENES,
-  SOURCE_TEXT_ABORT,
-  SOURCE_TEXT_SELECTED,
-  SOURCE_BROWSER_TEXT_ARIA_CHECKED,
-  SOURCE_TEXT_ARIA_SELECTED,
-  SOURCE_BROWSER_TEXT_SYMBOL,
-  SOURCE_TEXT_MESSAGE,
-  SOURCE_TEXT_RELATIVE,
-  SOURCE_TEXT_SYMBOL,
-  SOURCE_TEXT_WHITE,
-  SOURCE_TEXT_NONE,
-  SOURCE_TEXT_RANGE,
-  SOURCE_TEXT_SYMBOL_2,
-  SOURCE_TEXT_ALERT,
-  SOURCE_TEXT_STATUS,
-  SOURCE_TEXT_SYMBOL_7,
-  SOURCE_TEXT_M,
-  SOURCE_TEXT_W_4_H_4,
-  SOURCE_TEXT_W_4_H_4_TEXT_ROSE_500,
-  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W,
-  SOURCE_TEXT_TEXT_BLUE_400,
-  SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_2,
-  SOURCE_TEXT_TEXT_EMERALD_400,
-  SOURCE_TEXT_TEXT_AMBER_400,
-  SOURCE_TEXT_W_3_5_H_3_5,
-  SOURCE_TEXT_W_3_H_3,
-  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3,
-  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2,
-  SOURCE_TEXT_SPACE_Y_4,
-  SOURCE_TEXT_REJECTED,
-  SOURCE_TEXT_CODE,
-  SOURCE_TEXT_BASE64,
-  SOURCE_TEXT_SYMBOL_15,
-  SOURCE_TEXT_SYMBOL_23,
-  SOURCE_TEXT_PNG_2,
-  SOURCE_TEXT_SYMBOL_11,
-  SOURCE_TEXT_9_16,
-  SOURCE_TEXT_1_1,
-  SOURCE_TEXT_UTF8,
-  SOURCE_TEXT_HIDE_BANNER,
-  SOURCE_TEXT_ERROR,
-  SOURCE_TEXT_Y,
-  SOURCE_TEXT_F,
-  SOURCE_TEXT_PNG,
-  SOURCE_TEXT_I,
-  SOURCE_TEXT_AN,
-  SOURCE_TEXT_C_V,
-  SOURCE_TEXT_CRF,
-  SOURCE_TEXT_2,
-  SOURCE_TEXT_MP4,
-  SOURCE_TEXT_PIPE,
-  SOURCE_TEXT_IGNORE,
-  SOURCE_TEXT_DATA_2,
-  SOURCE_TEXT_MP4_2,
-  SOURCE_TEXT_SYMBOL_36,
-  SOURCE_TEXT_LOAD,
-  SOURCE_TEXT_CANVAS,
-  SOURCE_BROWSER_TEXT_2D,
-  SOURCE_TEXT_BACKGROUND,
-  SOURCE_TEXT_FAILED,
-} from "../sourceText.js";
-import {
-  MOTION_TEXT_SYMBOL_42,
-  MOTION_TEXT_FOLLOW,
-  MOTION_TEXT_SLOW,
-  MOTION_TEXT_SYMBOL_46,
-  MOTION_TEXT_U003C,
-  MOTION_TEXT_WIDE,
-  MOTION_TEXT_SCALE,
-  MOTION_TEXT_RAIN,
-  MOTION_TEXT_FOG,
-  MOTION_TEXT_HEIGHT,
-  MOTION_TEXT_STORYTELLING,
-  MOTION_TEXT_LINE,
-  MOTION_TEXT_NARRATION,
-  MOTION_TEXT_DIAGNOSTICS,
-  MOTION_TEXT_SYMBOL_11,
-  MOTION_TEXT_S,
-  MOTION_TEXT_SYMBOL_10,
-  MOTION_TEXT_PHUT,
-  MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_,
-  MOTION_TEXT_LIGHT,
-  MOTION_TEXT_MOTION_STORY_EDIT,
-  MOTION_TEXT_SYMBOL_37,
-  MOTION_TEXT_4_5,
-  MOTION_TEXT_LOGLEVEL,
-  MOTION_TEXT_IMAGE2PIPE,
-  MOTION_TEXT_FRAMERATE,
-  MOTION_TEXT_LIBX264,
-  MOTION_TEXT_PIX_FMT,
-  MOTION_TEXT_YUV420P,
-  MOTION_TEXT_DRAIN,
-  MOTION_TEXT_CONCAT,
-  MOTION_TEXT_SAFE,
-  MOTION_TEXT_C,
-  MOTION_TEXT_COPY,
-  MOTION_TEXT_IMAGE_PNG,
-  MOTION_TEXT_MAP,
-  MOTION_TEXT_TIMELINE,
-} from "../motionRuntime.js";
+import { SOURCE_TEXT_SYMBOL_22, SOURCE_TEXT_SYMBOL_3, SOURCE_TEXT_SYMBOL_52, SOURCE_TEXT_SYMBOL_42, SOURCE_TEXT_SYMBOL_43, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_SYMBOL_44, SOURCE_TEXT_SYMBOL_45, SOURCE_TEXT_NFD, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_SYMBOL_54, SOURCE_TEXT_CENTER, SOURCE_TEXT_LEFT, SOURCE_TEXT_RIGHT, SOURCE_TEXT_TOP, SOURCE_TEXT_BOTTOM, SOURCE_TEXT_SCROLL, SOURCE_TEXT_SPEED, SOURCE_TEXT_START, SOURCE_TEXT_END, SOURCE_TEXT_FROM, SOURCE_TEXT_TO, SOURCE_TEXT_SYMBOL_16, SOURCE_TEXT_MEDIUM, SOURCE_TEXT_SYMBOL_12, SOURCE_TEXT_FLOW, SOURCE_TEXT_REVEAL, SOURCE_TEXT_1, SOURCE_TEXT_SYMBOL_53, SOURCE_TEXT_SYMBOL_10, SOURCE_TEXT_SYMBOL_6, SOURCE_TEXT_ACTION, SOURCE_TEXT_VI, SOURCE_TEXT_EN, SOURCE_TEXT_STYLE, SOURCE_BROWSER_TEXT_SOURCE, SOURCE_TEXT_LABEL, SOURCE_TEXT_SYMBOL_56, SOURCE_TEXT_FIXED, SOURCE_TEXT_OFF, SOURCE_TEXT_1_4, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_PLANNING, SOURCE_TEXT_I_2, SOURCE_TEXT_16_9, SOURCE_TEXT_READY, SOURCE_TEXT_SHA256, SOURCE_TEXT_HEX, SOURCE_TEXT_TITLE, SOURCE_TEXT_LOGLINE, SOURCE_TEXT_CLOSE_2, SOURCE_TEXT_X, SOURCE_TEXT_REQUIRED, SOURCE_TEXT_ID, SOURCE_TEXT_U_2, SOURCE_TEXT_SVG, SOURCE_TEXT_HREF, SOURCE_TEXT_ARIA_DESCRIBEDBY_2, SOURCE_TEXT_SYMBOL_33, SOURCE_TEXT_LENGTH, SOURCE_TEXT_SYMBOL_21, SOURCE_TEXT_0, SOURCE_TEXT_A_2, SOURCE_TEXT_IMAGE, SOURCE_TEXT_USE, SOURCE_TEXT_R, SOURCE_TEXT_PATH, SOURCE_TEXT_D, SOURCE_TEXT_GI, SOURCE_TEXT_UNAVAILABLE, SOURCE_TEXT_AND, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_DOMCONTENTLOADED, SOURCE_TEXT_DIALOG, SOURCE_TEXT_HEADING, SOURCE_TEXT_DELETE_2, SOURCE_TEXT_POST, SOURCE_TEXT_VISIBLE, SOURCE_TEXT_BUTTON, SOURCE_TEXT_HIDDEN, SOURCE_TEXT_MENUITEM, SOURCE_TEXT_TRUE, SOURCE_TEXT_ABOUT_BLANK, SOURCE_TEXT_SCENES, SOURCE_TEXT_ABORT, SOURCE_TEXT_SELECTED, SOURCE_BROWSER_TEXT_ARIA_CHECKED, SOURCE_TEXT_ARIA_SELECTED, SOURCE_BROWSER_TEXT_SYMBOL, SOURCE_TEXT_MESSAGE, SOURCE_TEXT_RELATIVE, SOURCE_TEXT_SYMBOL, SOURCE_TEXT_WHITE, SOURCE_TEXT_NONE, SOURCE_TEXT_RANGE, SOURCE_TEXT_SYMBOL_2, SOURCE_TEXT_ALERT, SOURCE_TEXT_SYMBOL_7, SOURCE_TEXT_M, SOURCE_TEXT_W_4_H_4, SOURCE_TEXT_W_4_H_4_TEXT_ROSE_500, SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W, SOURCE_TEXT_TEXT_BLUE_400, SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_2, SOURCE_TEXT_TEXT_EMERALD_400, SOURCE_TEXT_TEXT_AMBER_400, SOURCE_TEXT_W_3_5_H_3_5, SOURCE_TEXT_W_3_H_3, SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3, SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2, SOURCE_TEXT_SPACE_Y_4, SOURCE_TEXT_REJECTED, SOURCE_TEXT_CODE, SOURCE_TEXT_BASE64, SOURCE_TEXT_SYMBOL_15, SOURCE_TEXT_SYMBOL_23, SOURCE_TEXT_PNG_2, SOURCE_TEXT_SYMBOL_11, SOURCE_TEXT_9_16, SOURCE_TEXT_1_1, SOURCE_TEXT_UTF8, SOURCE_TEXT_HIDE_BANNER, SOURCE_TEXT_ERROR, SOURCE_TEXT_Y, SOURCE_TEXT_F, SOURCE_TEXT_PNG, SOURCE_TEXT_I, SOURCE_TEXT_AN, SOURCE_TEXT_C_V, SOURCE_TEXT_CRF, SOURCE_TEXT_2, SOURCE_TEXT_MP4, SOURCE_TEXT_PIPE, SOURCE_TEXT_IGNORE, SOURCE_TEXT_DATA_2, SOURCE_TEXT_MP4_2, SOURCE_TEXT_SYMBOL_36, SOURCE_TEXT_LOAD, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_BACKGROUND, SOURCE_TEXT_FAILED } from "../sourceText.js";
+import { MOTION_TEXT_SYMBOL_42, MOTION_TEXT_FOLLOW, MOTION_TEXT_SLOW, MOTION_TEXT_SYMBOL_46, MOTION_TEXT_U003C, MOTION_TEXT_WIDE, MOTION_TEXT_SCALE, MOTION_TEXT_RAIN, MOTION_TEXT_FOG, MOTION_TEXT_HEIGHT, MOTION_TEXT_STORYTELLING, MOTION_TEXT_LINE, MOTION_TEXT_NARRATION, MOTION_TEXT_SYMBOL_11, MOTION_TEXT_S, MOTION_TEXT_SYMBOL_10, MOTION_TEXT_PHUT, MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_, MOTION_TEXT_LIGHT, MOTION_TEXT_MOTION_STORY_EDIT, MOTION_TEXT_SYMBOL_37, MOTION_TEXT_4_5, MOTION_TEXT_LOGLEVEL, MOTION_TEXT_IMAGE2PIPE, MOTION_TEXT_FRAMERATE, MOTION_TEXT_LIBX264, MOTION_TEXT_PIX_FMT, MOTION_TEXT_YUV420P, MOTION_TEXT_DRAIN, MOTION_TEXT_CONCAT, MOTION_TEXT_SAFE, MOTION_TEXT_C, MOTION_TEXT_COPY, MOTION_TEXT_IMAGE_PNG, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE } from "../motionRuntime.js";
 export const BACKSLASH = SOURCE_TEXT_SYMBOL_22;
 export const INVALID_FILE_NAME_PATTERN = '[<>:"/\\\\|?*\\x00-\\x1f]' as const;
 export const SINGLE_QUOTE = MOTION_TEXT_SYMBOL_42;
@@ -319,26 +136,13 @@ export const MOTIONHTMLANALYSISPROMPT_TEMPLATE_PART_6 =
 export const FEW = "few" as const;
 export const MOTIONHTMLANALYSISPROMPT_2 =
   "cast lists only needed identities: {key,name,role,description,look,marks,skin,carries,origin,gender,age,narrator?}. Describe visible clothing, hair and equipment in words appropriate to the source; no body construction templates, drawing code, rig or coordinates. groups optionally describes unnamed participants {key,name,look,origin,skin,outfit,gear,faction}; places describes needed environments {key,name,description,interior,time}. Empty cast/groups is valid for a map or process. Do not invent people, props or events to populate the schema. Use the supplied videoDna data contract, without allowing visual style to override the selected narrative voice or genre. Preserve source uncertainty and factual versus fictional intent." as const;
-export const SOURCE_2 = "SOURCE:\n" as const;
 export const NEWLINE = SOURCE_TEXT_SYMBOL_56;
-export const POV =
-  "GENRE VOICE (POV — Second-Person Immersive 'You'): Write in second person, present tense ('you' / 'bạn') so the viewer lives the source-supported situation directly through immediate actions, sensory details, urgent decisions and physical consequences. Drop the viewer right into the critical moment from the opening line, escalate the immediate pressure beat by beat, and let unseen background facts arrive naturally as news or a brief realization. Give 'you' one consistent, source-supported vantage for the whole video (a role, unit or place the source names, such as a crossbowman of the town militia or a rider of the advance guard) and stay inside what that person can see, hear and do at each moment: distant events reach you through someone or something arriving where you are (a survivor, a messenger, smoke on the horizon), never through omniscient summary. Prefer what you do and decide over what you hear or watch; do not open consecutive beats with 'you hear', 'you watch', 'you feel' or 'word spreads'. Do not invent losses, companions or a later life to fill a preset spine." as const;
-export const WITNESS =
-  "GENRE VOICE (WITNESS — First-Person Eyewitness 'I'): Write as one first-person eyewitness ('I' / 'tôi') recollecting the events in natural, grounded spoken language through concrete sensory perceptions, human tension, and direct cause/consequence. Contrast what was expected on the ground with what actually unfolded, preserve honest eyewitness uncertainty where the source is uncertain, keep one consistent source-supported vantage (where the witness stood and what they could know), let hindsight create tension ('I did not yet know that…') only with facts the source gives, do not invent events or speeches of real people, and close on the source's actual outcome and lasting impression." as const;
-export const CHRONICLE =
-  "GENRE VOICE (CHRONICLE — High-Stakes Causal Arc): Tell the source's historical or factual arc in compelling chronological order, driving forward through its real turning points. Open with the pivotal catalyst or pressure point, link each chapter and beat by clear cause-and-effect momentum ('because of this, the next crisis erupted'; every beat answers 'but' or 'therefore', never just 'and then') rather than a flat list of dates, give each turning point its moment of doubt before the outcome, build to the decisive turning point, and land the real aftermath. A short flash-forward hook is optional when useful; dates and numbers come strictly from the source." as const;
-export const VERDICT_2 =
-  "GENRE VOICE (VERDICT — Investigative Question & Hypothesis Showdown): Investigate one compelling source-grounded central question using a clear, concrete evaluation criterion. Open by framing the central mystery/question and why the stakes matter (or use a brief cold open that immediately raises that question). Select only hypotheses/candidates supported by the source and suited to this duration (typically 2 sharp contenders for short videos, or 2–3 when longer). Put each candidate to the test against the criterion—showing its strongest supporting evidence, then exposing its critical flaw or turning-point counter-evidence—before delivering a definitive, reasoned final verdict. Let the strongest-looking candidate face its sharpest counter-evidence, and keep the answer genuinely open until the final test. For a short video, opening, criterion, candidates and conclusion may share one chapter; state the criterion once, reuse it naturally, and avoid robotic label stamping." as const;
 export const PLAIN =
   "STORYTELLING (keep to the source): tell only what the source states, in an order that builds tension, with active verbs and the source's own concrete details; varied rhythm; every chapter ends on a real unresolved fact that pulls into the next." as const;
-export const LIVELY_2 =
-  "STORYTELLING MODE (LIVELY — Vivid & Engaging): Open with an immediate concrete detail or hook from the source, make the human or causal stakes tangible, use active verbs and vivid sensory grounding, vary sentence rhythm between brisk punchy lines and smooth narrative flow, and connect beats with purposeful momentum transitions that open a natural curiosity and pay it off cleanly." as const;
 export const GRIPPING =
   "STORYTELLING: punchy spoken cadence, sharp contrasts, escalating cause and consequence, and one curiosity loop kept alive until it pays off; land a memorable callback." as const;
 export const THIN_SOURCE_LOG = (chapter: string, source: number, target: number, needed: number, allowed: number): string => `Chương ${chapter}: nguồn mỏng (~${source} âm tiết, mục tiêu ~${target}) cần kéo ×${needed.toFixed(1)}${needed > allowed ? `, vượt giới hạn kéo giãn ×${allowed.toFixed(1)} của thể loại/chế độ: phần còn lại bù bằng chiều sâu giải thích, không lặp` : ""}`;
 export const THIN_SOURCE_FAITHFUL_LOG = (chapter: string, source: number, target: number, units: number): string => `Chương ${chapter}: Bám sát nguồn, nguồn chỉ có ~${source} âm tiết so với mục tiêu ~${target}; viết ~${units} âm tiết, không giãn, video sẽ ngắn hơn thời lượng đã chọn`;
-export const RETENTION_CRAFT =
-  "RETENTION CRAFT (lively): the first sentence must pull the viewer in within five seconds with the most striking source-supported moment, contrast or question, with no throat-clearing. Every beat must add something new (a fact, consequence, image or turn); never restate a fact, number, rumour or emotion already told anywhere in the script, merge it instead. Time only moves forward except one declared teaser. Show background through one concrete moment, object or action instead of summarising it; never run more than two exposition beats in a row, and compress lists (troop types, causes, names) into one vivid line or one image. Lead with the source's most surprising or counter-intuitive detail and find a fresh angle (expectation versus reality, a paradox, a hidden cause) instead of retelling the source line by line in its own order and wording. Prefer specific names, numbers, places and physical details from the source over generic phrases. When a chapter must run longer than its source, deepen instead of repeating: slowing one moment with new sensory, mechanical or consequence detail, or explaining how and why it happened, is new information; saying the same fact again in other words is not. Plant at least one real open question from the source early in each chapter and pay it off later; end every chapter on a concrete forward pull into the next. Raise the stakes as the video advances and let tension and brief release alternate." as const;
 export const RETENTION_CRAFT_GRIPPING =
   "RETENTION: the first sentence pulls the viewer in within five seconds with the most striking moment this genre allows, with no throat-clearing. Every beat adds something new (a fact, consequence, image or turn) and never restates a fact, number, rumour or emotion already told. Time moves forward except one declared teaser. Show background through one concrete moment instead of summarising it; never more than two background beats in a row; compress lists into one vivid line. Plant one real open question early in each chapter and pay it off; give each chapter at least one source-supported turn; end every chapter on a concrete forward pull. Raise the stakes as the video advances, alternate tension and brief release, and keep sentences short and charged at the peaks." as const;
 export const RETENTION_CRAFT_PLAIN =
@@ -348,8 +152,6 @@ export const STORYTELLING = "; storytelling=" as const;
 export const TOTAL_VIDEO_BUDGET_APPROXIMATELY = "; total video budget approximately " as const;
 export const SECONDS = " seconds. " as const;
 export const MOTIONHTMLGENREDIRECTION_TEMPLATE_PART_6 = " Scale structure to duration. No fixed stage, motif or shot quotas. Facts, uncertainty and real quotations come only from the source. The selected visual style does not change person/tense or the genre. Hook metadata is optional and never replaces an actual setup/payoff." as const;
-export const ROUGHLY = ", roughly " as const;
-export const SECONDS_PER_ILLUSTRATION_SPOKEN_BEATS_AND_PICTURES_ARE_SEPARATE_MULTIPLE = " seconds per illustration. Spoken beats and pictures are separate: multiple sentences/beats can share one Canvas. Plan visual changes for the content, not for every sentence or gesture." as const;
 export const VISUAL_STYLE_WORDS_ONLY = "VISUAL STYLE (words only): " as const;
 export const CANVAS_GUARD_SCRIPT =
   "(function(){const P=CanvasRenderingContext2D.prototype,nBegin=P.beginPath,nMove=P.moveTo,nLine=P.lineTo,nQuad=P.quadraticCurveTo,nBez=P.bezierCurveTo,nClose=P.closePath,nRect=P.rect,nArc=P.arc,nEllipse=P.ellipse,nRoundRect=P.roundRect,nFill=P.fill,nStroke=P.stroke,nFillRect=P.fillRect,S=new WeakMap();const isStage=ctx=>{const t=ctx.getTransform();return Math.abs(t.b)<1e-3&&Math.abs(t.c)<1e-3&&t.a>0.15&&t.d>0.15};P.fillRect=function(x,y,w,h){if(w>=600&&h>=40&&isStage(this)){const cw=Math.max(1280,this.canvas?.width||1280),ch=Math.max(720,this.canvas?.height||720);let nx=x,ny=y,nw=w,nh=h;if(x<=2&&x+w>=Math.min(1278,cw-2)){nx=Math.min(x,-512);nw=Math.max(x+w,cw+512)-nx}if(nx!==x){if(y<=2){ny=Math.min(y,-360);nh+=y-ny}if(y+h>=Math.min(718,ch-2)){nh=Math.max(ny+nh,ch+360)-ny}}return nFillRect.call(this,nx,ny,nw,nh)}return nFillRect.call(this,x,y,w,h)};P.beginPath=function(){S.set(this,{ok:true,cmds:[]});return nBegin.call(this)};P.moveTo=function(x,y){const s=S.get(this);if(s?.ok)s.cmds.push({t:'M',x,y});return nMove.call(this,x,y)};P.lineTo=function(x,y){const s=S.get(this);if(s?.ok)s.cmds.push({t:'L',x,y});return nLine.call(this,x,y)};P.quadraticCurveTo=function(cx,cy,x,y){const s=S.get(this);if(s?.ok)s.cmds.push({t:'Q',cx,cy,x,y});return nQuad.call(this,cx,cy,x,y)};P.bezierCurveTo=function(c1x,c1y,c2x,c2y,x,y){const s=S.get(this);if(s?.ok)s.cmds.push({t:'B',c1x,c1y,c2x,c2y,x,y});return nBez.call(this,c1x,c1y,c2x,c2y,x,y)};P.closePath=function(){const s=S.get(this);if(s?.ok)s.cmds.push({t:'Z'});return nClose.call(this)};for(const [k,fn] of [['rect',nRect],['arc',nArc],['ellipse',nEllipse],['roundRect',nRoundRect]])if(fn)P[k]=function(...a){const s=S.get(this);if(s)s.ok=false;return fn.apply(this,a)};const expandPath=ctx=>{const s=S.get(ctx);if(!s?.ok||s.expanded||s.cmds.length<2||!isStage(ctx))return;const pts=s.cmds.filter(c=>c.x!==undefined);if(pts.length<2)return;let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;for(const p of pts){if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y}const cw=Math.max(1280,ctx.canvas?.width||1280),ch=Math.max(720,ctx.canvas?.height||720);if(minX>2||maxX<Math.min(1278,cw-2))return;s.expanded=true;const L=Math.min(minX,-512),R=Math.max(maxX,cw+512),T=-360,B=ch+360,isL=x=>Math.abs(x-minX)<=2,isR=x=>Math.abs(x-maxX)<=2,mapY=(x,y)=>(isL(x)||isR(x))?(y<=2&&minY<=2&&maxY-minY>=80?Math.min(y,T):y>=Math.min(718,ch-2)&&maxY>=Math.min(718,ch-2)&&maxY-minY>=35?Math.max(y,B):y):y;nBegin.call(ctx);for(let i=0;i<s.cmds.length;i++){const c=s.cmds[i],nx=s.cmds[i+1],nextCurve=nx&&(nx.t==='Q'||nx.t==='B'||(nx.t==='L'&&!isL(nx.x)&&!isR(nx.x)));if(c.t==='M'){const my=mapY(c.x,c.y);if(isL(c.x)){nMove.call(ctx,L,my);if(nextCurve)nLine.call(ctx,c.x,c.y)}else if(isR(c.x)){nMove.call(ctx,R,my);if(nextCurve)nLine.call(ctx,c.x,c.y)}else nMove.call(ctx,c.x,c.y)}else if(c.t==='L'){const my=mapY(c.x,c.y);if(isL(c.x)){nLine.call(ctx,L,my);if(nextCurve)nLine.call(ctx,c.x,c.y)}else if(isR(c.x)){nLine.call(ctx,R,my);if(nextCurve)nLine.call(ctx,c.x,c.y)}else nLine.call(ctx,c.x,c.y)}else if(c.t==='Q'){nQuad.call(ctx,c.cx,c.cy,c.x,c.y);if(isR(c.x))nLine.call(ctx,R,mapY(c.x,c.y));else if(isL(c.x))nLine.call(ctx,L,mapY(c.x,c.y))}else if(c.t==='B'){nBez.call(ctx,c.c1x,c.c1y,c.c2x,c.c2y,c.x,c.y);if(isR(c.x))nLine.call(ctx,R,mapY(c.x,c.y));else if(isL(c.x))nLine.call(ctx,L,mapY(c.x,c.y))}else if(c.t==='Z')nClose.call(ctx)}};P.fill=function(...a){if(a.length===0||typeof a[0]==='string')expandPath(this);return nFill.apply(this,a)};P.stroke=function(...a){if(a.length===0)expandPath(this);return nStroke.apply(this,a)}})();" as const;
@@ -385,7 +187,6 @@ export const S_2 = ")s?(?:[_-]|$)" as const;
 export const I = SOURCE_TEXT_I_2;
 export const PROP = "prop" as const;
 export const REMOTION = "remotion" as const;
-export const LIBRARY = SOURCE_TEXT_LIBRARY;
 export const VALUE_16_9 = SOURCE_TEXT_16_9;
 export const READY = SOURCE_TEXT_READY;
 export const RENDERED = "rendered" as const;
@@ -568,7 +369,6 @@ export const GIU_YEU_CAU_CU_DE_DOC_LAI_KHONG_GUI_LAP = "; giữ yêu cầu cũ �
 export const MOTION_HTML_PLAN = "motion-html-plan" as const;
 export const SCENES = SOURCE_TEXT_SCENES;
 export const RETURN_THE_COMPLETE_HTML_DOCUMENT_IN_ONE_HTML_CODE_BLOCK = "Return the complete HTML document in one html code block, preserving the requested html root data-artifact and data-request-id. No JSON or explanation." as const;
-export const DIAGNOSTICS = MOTION_TEXT_DIAGNOSTICS;
 export const ABORT = SOURCE_TEXT_ABORT;
 export const EMPTY = "empty" as const;
 export const DELETED = "deleted" as const;
@@ -625,7 +425,6 @@ export const ATTEMPT = "Attempt" as const;
 export const LUOT_TAO = "Lượt tạo" as const;
 export const DOT_SEPARATOR = MOTION_TEXT_SYMBOL_10;
 export const CONTAIN = "contain" as const;
-export const STATUS = SOURCE_TEXT_STATUS;
 export const SELECTED_TOTAL = "Selected total" as const;
 export const MOC_CHON_TONG = "Mốc chọn tổng" as const;
 export const COLON_SPACE = SOURCE_TEXT_SYMBOL_7;
@@ -729,20 +528,20 @@ export const TEXT_XS_TEXT_SLATE_300_FONT_BOLD_FONT_MONO_PX = "text-xs text-slate
 export const FLEX_ITEMS_CENTER_GAP_2_UPPERCASE_TRACKING_WIDER_FONT_EXTRABOLD = "flex items-center gap-2 uppercase tracking-wider font-extrabold" as const;
 export const UPPERCASE_FONT_EXTRABOLD_TRACKING_WIDER = "uppercase font-extrabold tracking-wider" as const;
 export const SPACE_Y_4 = SOURCE_TEXT_SPACE_Y_4;
-export const TEXT_SLATE_700_DARK_TEXT_SLATE_300_TEXT_XS_LEADING = "text-slate-700 dark:text-slate-300 text-xs leading-relaxed" as const;
-export const FONT_BOLD_TEXT_SLATE_900_DARK_TEXT_SLATE_100_PX = "font-bold text-slate-900 dark:text-slate-100 px-1" as const;
-export const P_3_ROUNDED_2XL_BG_ROSE_500_10_BORDER_BORDER = "p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-bold leading-relaxed" as const;
-export const FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_4 = "flex items-center justify-end gap-2.5 pt-4 border-t border-slate-200 dark:border-slate-800" as const;
+export const TEXT_SLATE_300_TEXT_XS_LEADING_RELAXED = "text-slate-300 text-xs leading-relaxed" as const;
+export const FONT_BOLD_TEXT_SLATE_100_PX_1 = "font-bold text-slate-100 px-1" as const;
+export const P_3_ROUNDED_2XL_BG_ROSE_500_10_BORDER_BORDER = "p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold leading-relaxed" as const;
+export const FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_4 = "flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800" as const;
 export const PX_4_PY_2_TEXT_XS_FONT_BOLD_ROUNDED_XL = "px-4 py-2 text-xs font-bold rounded-xl" as const;
 export const PX_5_PY_2_TEXT_XS_FONT_BOLD_ROUNDED_XL = "px-5 py-2 text-xs font-bold rounded-xl" as const;
 export const SPACE_Y_1_5 = "space-y-1.5" as const;
-export const TEXT_10PX_FONT_EXTRABOLD_TEXT_SLATE_700_DARK_TEXT_SLATE = "text-[10px] font-extrabold text-slate-700 dark:text-slate-300 font-mono uppercase block tracking-wider" as const;
-export const PROJECTLIST = "w-full h-10 bg-white dark:bg-slate-955 border border-slate-300 dark:border-slate-800 focus:border-rose-500 text-slate-900 dark:text-slate-100 rounded-xl px-3 text-xs focus:outline-none transition-all font-sans shadow-xs" as const;
-export const PROJECTLIST_2 = "w-full bg-white dark:bg-slate-955 border border-slate-300 dark:border-slate-800 focus:border-rose-500 text-slate-900 dark:text-slate-100 rounded-xl p-3 text-xs focus:outline-none transition-all resize-none font-sans shadow-xs" as const;
-export const BG_AMBER_500_10_BORDER_BORDER_AMBER_500_20_P = "bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3 text-xs text-slate-700 dark:text-slate-300" as const;
+export const TEXT_10PX_FONT_EXTRABOLD_TEXT_SLATE_300_FONT_MONO_UPPERC = "text-[10px] font-extrabold text-slate-300 font-mono uppercase block tracking-wider" as const;
+export const PROJECTLIST = "w-full h-10 bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 rounded-xl px-3 text-xs focus:outline-none transition-all font-sans shadow-xs" as const;
+export const PROJECTLIST_2 = "w-full bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 rounded-xl p-3 text-xs focus:outline-none transition-all resize-none font-sans shadow-xs" as const;
+export const BG_AMBER_500_10_BORDER_BORDER_AMBER_500_20_P = "bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3 text-xs text-slate-300" as const;
 export const W_4_H_4_TEXT_AMBER_500_SHRINK_0_MT = "w-4 h-4 text-amber-500 shrink-0 mt-0.5" as const;
 export const LEADING_RELAXED_TEXT_11PX = "leading-relaxed text-[11px]" as const;
-export const FONT_EXTRABOLD_UPPERCASE_TRACKING_WIDER_TEXT_AMBER_600_DARK_TEXT = "font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 text-[10px] block mb-0.5" as const;
+export const FONT_EXTRABOLD_UPPERCASE_TRACKING_WIDER_TEXT_AMBER_400_T = "font-extrabold uppercase tracking-wider text-amber-400 text-[10px] block mb-0.5" as const;
 export const FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_3 = MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_;
 export const VALUE_1_3 = ".{1," as const;
 export const MEASURED = "measured" as const;
@@ -764,17 +563,10 @@ export const ROOM_AI_NOI_DUNG = " room AI nội dung." as const;
 export const DA_SAN_SANG = "Đã sẵn sàng " as const;
 export const CLOSE_BRACKET_SPACE = "] " as const;
 export const HTML = "html" as const;
-export const THE_HTML_ROOT_MUST_CARRY_DATA_ARTIFACT = "\nThe html root must carry data-artifact='" as const;
-export const AND_DATA_REQUEST_ID = "' and data-request-id='" as const;
-export const TO_IDENTIFY_THIS_RESPONSE_RETURN_THE_COMPLETE_HTML_ONLY = "' to identify this response. Return the complete HTML only." as const;
 export const MOTION_HTML = "motion-html-" as const;
 export const CODE = SOURCE_TEXT_CODE;
 export const TEXT_PLAIN = "text/plain" as const;
 export const HTML_AUTHORING_ENGLISH_V2 = "html-authoring-english-v2" as const;
-export const PLAN_ABOUT = " Plan about " as const;
-export const CHAPTERS_WITHIN = " chapters within " as const;
-export const S_TOTAL_ALLOWING_STAGES_TO_SHARE_CHAPTERS_AT_LEAST = "s TOTAL, allowing stages to share chapters. At least " as const;
-export const GENREDIRECTIVE_TEMPLATE_PART_4 = " meaningful chapter ranges are needed for the requested parts; explain if the source cannot support them. No SOLO stages or candidate quota. Choose a single opening sequence and keep it throughout writing." as const;
 export const CANVAS_MOTION = "Canvas motion " as const;
 export const NO_POSE_TRANSFORMS_MOVETO_COORDINATES_STOCK_FRAMES_OR_SIMPLIFIED_CONTACT = ". No pose transforms, moveTo coordinates, stock frames or simplified-contact restrictions." as const;
 export const ENABLED_DESCRIBE_THE_SOURCE_SUPPORTED_ACTIONS_AND_CAMERA_IN_PROSE = "enabled: describe the source-supported actions and camera in prose; AI will draw their full movement freely" as const;
@@ -797,38 +589,14 @@ export const CHUONG = "Chương " as const;
 export const CHIA_THANH = ": chia thành " as const;
 export const PHAN_NHO = " phần nhỏ (~" as const;
 export const PHAN_CANH_LUOT_DE_TOI_UU_TOC_DO_VA_TRANH = " phân cảnh/lượt) để tối ưu tốc độ và tránh quá tải token phản hồi." as const;
-export const CHAPTER_PART = "CHAPTER PART " as const;
-export const WRITE_ONLY_CONSECUTIVE_PART = ": Write ONLY consecutive part " as const;
-export const OF = " of " as const;
-export const FOR_CHAPTER = " for chapter " as const;
 export const OPEN_PAREN_SPACE = SOURCE_TEXT_SYMBOL_11;
-export const RETURN_ONLY = "). Return ONLY " as const;
-export const BEATS_AT_MOST = " beats (AT MOST " as const;
-export const BEATS_STARTING_WITH_BEAT_ID = " beats, starting with beat ID " as const;
 export const B = "_b" as const;
-export const COVERING_THIS_PART_S_SOURCE_SLICE = ") covering this part's SOURCE slice." as const;
 export const THIS_PART_OPENS_THE_CHAPTER_ESTABLISH_THE_CHAPTER_HOOK_IMMEDIATELY = "This part opens the chapter: establish the chapter hook immediately and cover only this part's source slice." as const;
 export const CONTINUE_SEAMLESSLY_FROM_THE_LAST_BEAT_IN_ALREADYWRITTEN_WITHOUT_REPEATING = "Continue seamlessly from the last beat in alreadyWritten without repeating earlier hooks, facts, or scenes." as const;
 export const STOP_AT_THE_END_OF_THIS_PART_S_SOURCE_SLICE = "Stop at the end of this part's source slice; reserve the chapter's closing payoff/handoff for the final part." as const;
 export const THIS_IS_THE_FINAL_PART_OF_THE_CHAPTER_DELIVER_THE = "This is the final part of the chapter: deliver the chapter's closing payoff or handoff cleanly." as const;
 export const PARTPROMPT =
   "Write the requested chapter part in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,utterances?}]}. Stable IDs identify source events. place is the key of the listed place where the beat physically happens; omit it when no listed place fits instead of reusing an unrelated one. visual is scene/map/diagram/process/timeline/comparison/card as appropriate; map only for routes, positions or movement across a region, while an event at one place (an attack, siege, sack, battle moment or arrival) is a scene." as const;
-export const LANGUAGE_2 = "Language=" as const;
-export const THIS_CHAPTER_PART = ". THIS CHAPTER PART (" as const;
-export const HAS_APPROXIMATELY = ") has approximately " as const;
-export const SECONDS_OF_SPEECH_AT = " seconds of speech at " as const;
-export const SPOKEN_UNITS_SECOND_APPROXIMATELY = " spoken units/second: approximately " as const;
-export const UNITS_TOTAL_ACROSS_ALL_ITS_BEATS_TARGET_WINDOW = " units TOTAL across all its beats (target window " as const;
-export const SPOKEN_WORDS_SYLLABLES_ACROSS = " spoken words/syllables across " as const;
-export const BEATS_OF = " beats of ~" as const;
-export const UNITS_EACH_HOLDING = " units each, holding ~" as const;
-export const S_PER_SCENE_FULL_CHAPTER_BUDGET_IS = "s per scene). Full chapter budget is " as const;
-export const S_6 = "s (" as const;
-export const UNITS_ACROSS = " units across ~" as const;
-export const SCENES_FULL_VIDEO_PART_HAS = " scenes); full video part has " as const;
-export const S_WITH = "s with " as const;
-export const S_RESERVED_FOR_PAUSES_SUMMARIZE_THIS_PART_S_CAUSAL_ARC = "s reserved for pauses. Summarize this part's causal arc within " as const;
-export const SPOKEN_UNITS_DO_NOT_NARRATE_EVERY_SOURCE_SENTENCE = " spoken units; do not narrate every source sentence." as const;
 export const ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED = "One narrator reads everything exactly once. utterances can be omitted. Do not invent dialogue." as const;
 export const USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR = "Use narrator for narration and the supplied cast keys for source-supported dialogue. Joined utterance text matches narration exactly; no duplicate spoken words." as const;
 export const PARTPROMPT_2 =
@@ -842,11 +610,6 @@ export const MOTION_STORY_CHAPTER = "motion-story-chapter" as const;
 export const KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN = "Không đọc được danh sách lời của chương từ phản hồi AI." as const;
 export const PROMPT =
   "Write the requested chapter in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,utterances?}]}. Stable IDs identify source events. place is the key of the listed place where the beat physically happens; omit it when no listed place fits instead of reusing an unrelated one. visual is scene/map/diagram/process/timeline/comparison/card as appropriate; map only for routes, positions or movement across a region, while an event at one place (an attack, siege, sack, battle moment or arrival) is a scene." as const;
-export const THIS_CHAPTER_HAS_APPROXIMATELY = ". THIS CHAPTER has approximately " as const;
-export const SPOKEN_WORDS_SYLLABLES_ACROSS_ROUGHLY = " spoken words/syllables across roughly " as const;
-export const S_PER_SCENE_THIS_IS_NOT_PER_BEAT_THE_FULL = "s per scene). This is not per beat. The full part has " as const;
-export const S_RESERVE = "s. Reserve " as const;
-export const S_FOR_PAUSES_HERE_SUMMARIZE_THE_SOURCE_S_CAUSAL_ARC = "s for pauses here. Summarize the source's causal arc within this budget; do not narrate every source sentence. More dramatic delivery must use the same budget." as const;
 export const MOTION_HTML_EDIT = "motion-html-edit" as const;
 export const BATCHPROMPT =
   "Edit the supplied spoken script batch once for source fidelity, strong genre voice, engaging storytelling cadence, and exact duration budget alignment. Return JSON {edits:[{id,narration,utterances?,reason}]}; omit unchanged beats. Preserve chapters that are already within their minUnits–maxUnits window; if a chapter is below minUnits or above maxUnits, adjust its beats using only source-supported details so total spoken units match the chapter budget. Also fix retention: cut or merge any beat that repeats a fact, number, rumour or emotion already told; restore forward time order; turn summarised background into one concrete moment; compress lists; make each chapter end pull forward. Do not add prescribed stages or unsupported facts. Do not return scores or request redraws." as const;
@@ -867,7 +630,6 @@ export const PHAN_CANH_HTML = "Phân cảnh HTML: " as const;
 export const SENTENCE_END = ")." as const;
 export const PHUC_HOI_YEU_CAU_DA_GUI = "phục hồi yêu cầu đã gửi" as const;
 export const THU_LAI_LOI_DU_LIEU = "thử lại lỗi dữ liệu" as const;
-export const SCENE_TEMPLATE_SOURCE_DATA_EXACT_VISIBLE_TEXT_STAYS_IN_THE = "SCENE TEMPLATE (source data; exact visible text stays in the selected video language):\n" as const;
 export const USER_NOTES_SOURCE_DATA = "USER NOTES (source data):\n" as const;
 export const RUNTIME = "RUNTIME: " as const;
 export const PARAGRAPH_SEPARATOR = MOTION_TEXT_SYMBOL_37;

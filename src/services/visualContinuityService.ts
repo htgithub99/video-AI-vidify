@@ -4,7 +4,7 @@ import _ from "lodash";
 import { VISUAL_CONTINUITY_CONFIG } from "../constants/config.js";
 import { EXPLICIT_FEMALE_SOURCE_PATTERN, EXPLICIT_MALE_SOURCE_PATTERN } from "../constants/regexes.js";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types.js";
-export interface VisualContinuityReport {
+interface VisualContinuityReport {
   blockingErrors: string[];
   passed: boolean;
 }

@@ -36,7 +36,7 @@ export const motionDurationText = (ms: number, language: string = RT_SHARED.VI):
   const pad = (value: number) => String(value).padStart(2, RT_MAINTENANCE.VALUE_0_2);
   return h ? `${h}${unit.h}${RT_MAINTENANCE.SPACE}${pad(m)}${unit.m}` : m ? `${m}${unit.m}${RT_MAINTENANCE.SPACE}${pad(s)}${unit.s}` : `${s}${unit.s}`;
 };
-export const motionLogSectionKey = (text: string): string | undefined => S.MATCH.find(([, pattern]) => pattern.test(text))?.[0];
+const motionLogSectionKey = (text: string): string | undefined => S.MATCH.find(([, pattern]) => pattern.test(text))?.[0];
 const motionLogStageKeys = (stage: string): string[] => S.MATCH.filter(([, pattern]) => pattern.test(stage)).map(([key]) => key);
 export const motionLogSections = (entries: MotionLogEntry[], language: string = RT_SHARED.VI, job?: MotionStoryJobState | null, render?: MotionJobState | null): MotionLogSection[] => {
   const text = S.TEXT[language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];

@@ -11,7 +11,7 @@ import { HighlightClipItem, ShortsDurationOption, ShortsSourceMetadata } from ".
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../../types.js";
 import { SHORTS_CONSTANTS, SHORTS_LOG_MESSAGES, SHORTS_PROMPTS, SHORTS_REGEX, SHORTS_TEXTS } from "../../../../constants/shorts.js";
 import { logger } from "../../../../lib/logger.js";
-export type HighlightAnalysisRequest = { metadata: ShortsSourceMetadata; clipCount: number; durationMode: ShortsDurationOption; audioSummaryText?: string; audioPath?: string; aiExecution?: { provider?: AiPlanningFallbackProvider; model?: AiPlanningChatModel; mode?: AiPlanningExecutionMode; chromeHeadless?: boolean; projectId?: string }; signal?: AbortSignal };
+type HighlightAnalysisRequest = { metadata: ShortsSourceMetadata; clipCount: number; durationMode: ShortsDurationOption; audioSummaryText?: string; audioPath?: string; aiExecution?: { provider?: AiPlanningFallbackProvider; model?: AiPlanningChatModel; mode?: AiPlanningExecutionMode; chromeHeadless?: boolean; projectId?: string }; signal?: AbortSignal };
 const resolveTargetDurationText = (mode: ShortsDurationOption): string => {
   if (mode === ShortsDurationOption.RANGE_15_30) return SHORTS_PROMPTS.DURATION_SHORT;
   if (mode === ShortsDurationOption.RANGE_30_60) return SHORTS_PROMPTS.DURATION_STANDARD;

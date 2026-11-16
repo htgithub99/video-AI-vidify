@@ -8,7 +8,7 @@ import { motionVisualBeatGroups } from "./motionScenePacing.js";
 import { motionPlanSettings, motionVisualSettingsFor } from "./motionVisual.js";
 import { MOTION_HTML, MOTION_HTML_REPAIR as R } from "../constants/motionHtmlTemplate.js";
 import { MOTION_HTML_QUALITY } from "../constants/motionHtmlQuality.js";
-export const motionHtmlIdentities = (analysis: MotionStoryAnalysis) => ({
+const motionHtmlIdentities = (analysis: MotionStoryAnalysis) => ({
   cast: analysis.cast.map(({ key, name, alias, role, description, look, marks, skin, carries, gender, age }) => ({ key, name, alias, role, description, look, marks, skin, carries, gender, age })),
   places: analysis.places.map(({ key, name, description, interior, time }) => ({ key, name, description, interior, time })),
   groups: analysis.groups?.map(({ key, name, look, origin, skin, outfit, gear, faction }) => ({ key, name, look, origin, skin, outfit, gear, faction })),
@@ -40,9 +40,13 @@ export const motionHtmlPlanSourceMatches = (stored: string | undefined, source: 
   if (!stored) return false;
   if (stored === source) return true;
   try {
+    // Plans from before: one carried the graphics text, and plans before one scene set served every drawing style and
+    // layout carried the style and layout in their settings.
     const legacy = parseJson<Record<string, unknown>>(stored);
-    if (!legacy || typeof legacy !== typeof {} || !(MOTION_HTML.LEGACY_PLAN_FIELD in legacy)) return false;
+    if (!legacy || typeof legacy !== typeof {}) return false;
     delete legacy[MOTION_HTML.LEGACY_PLAN_FIELD];
+    const settings = legacy.settings as Record<string, unknown> | undefined;
+    if (settings && typeof settings === typeof {}) for (const key of MOTION_HTML.VIEW_SETTINGS) delete settings[key];
     return stringifyJson(legacy) === source;
   } catch {
     return false;

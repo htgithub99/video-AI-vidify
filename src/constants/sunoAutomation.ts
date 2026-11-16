@@ -307,9 +307,6 @@ export const SUNO_AUTOMATION_SELECTORS = {
   STATE_HIDDEN: "hidden" as const,
   STATE_VISIBLE: "visible" as const,
 } as const;
-export const MUSIC_IMAGE_NOTE_TEXTS = {
-  SHARED_PROMPT_RULES: `The user's note is the authoritative visual edit specification. Every requested change must be visually obvious, with only explicitly requested elements preserved. Reference poses, scenery, crops and layouts must change wherever the note requests it. Requested adult subject styling must be clear, confident and tasteful rather than silently reverting to the original styling. Visible text is limited to wording explicitly required by the user or the authoritative track list; no invented subtitles, years, genres, slogans, logos or watermarks.`,
-} as const;
 export const SUNO_AUTOMATION_TEXTS = {
   CHROME_OPENED: "Chrome Suno đang mở.",
   CHROME_NOT_FOUND_ERR: "Không tìm thấy Chrome để mở profile Suno.",

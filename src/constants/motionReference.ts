@@ -50,7 +50,7 @@ export const MOTION_REFERENCE_TEXTS = {
     invalid: "Ảnh không hợp lệ. Hãy chọn PNG, JPG hoặc WebP.",
     size: "Ảnh quá lớn. Vui lòng chọn ảnh dưới 20 MB.",
     motion: "Chuyển động cảnh",
-    motionHint: "Bật chuyển động theo nội dung cảnh mới và camera chậm theo hành động chính: bám chủ thể, tiến nhẹ vào điểm nhấn hoặc lùi để mở cảnh. Tắt để toàn cảnh đứng yên, gồm nhân vật, hiệu ứng và camera.",
+    motionHint: "Bật: nhân vật và camera chuyển động theo cảnh. Tắt: cảnh đứng yên.",
     on: "Có chuyển động",
     off: "Toàn cảnh tĩnh",
     loading: "Đang xử lý ảnh…",

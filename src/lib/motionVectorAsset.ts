@@ -127,7 +127,7 @@ export const closeMotionSvgTags = (svg: string): string => {
       .join("")
   );
 };
-export const dedupeMotionSvgAttributes = (svg: string): string =>
+const dedupeMotionSvgAttributes = (svg: string): string =>
   svg.replace(C.MARKUP_TAG, (tag: string, name: string, attributes: string, end: string) => {
     const list = [...attributes.matchAll(C.MARKUP_ATTRIBUTE)];
     const last = new Map(list.map((attribute, index) => [attribute[1], index]));
@@ -203,7 +203,7 @@ const expandMotionSvgUses = (svg: string): string => {
   }
   return text.replace(new RegExp(SAN.USE.source, RT_MAINTENANCE.GI), "");
 };
-export const sanitizeMotionCompositionSvg = (svg: string, allowed: Set<string>): string => {
+const sanitizeMotionCompositionSvg = (svg: string, allowed: Set<string>): string => {
   const text = expandMotionSvgUses(svg);
   let out = "";
   let skip = 0;

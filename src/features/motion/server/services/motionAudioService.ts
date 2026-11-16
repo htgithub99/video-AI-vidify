@@ -42,8 +42,16 @@ const cadenceProfile = () => {
   const profile = referenceCadenceProfile(readVoiceSpeedSettings().target, readVoiceSpeedSettings().correction);
   return profile && flowPauses(profile);
 };
-const referenceNarration = (line: MotionUtterance, voiceId: string, paced: boolean) => (paced && line.role === MR.MOTION_TEXT_NARRATION && voiceUsesReferenceSpeed(voiceId) ? cadenceProfile() : undefined);
-export interface MotionVoiceDependencies {
+// Every paced line of a voice that follows the reference speed is evened phrase by phrase to the reference articulation:
+// the narration at it, a character's line at it times the line's delivery (a scared line a little faster, a sad one
+// slower), so the narrator and every character voice of a channel speak at one even pace.
+const referenceCadence = (line: MotionUtterance, voiceId: string, paced: boolean, delivery?: MotionVoiceDelivery) => {
+  if (!paced || !voiceUsesReferenceSpeed(voiceId)) return undefined;
+  const profile = cadenceProfile();
+  if (!profile || line.role === MR.MOTION_TEXT_NARRATION || !delivery) return profile;
+  return { ...profile, articulation: profile.articulation * deliveryTempo(line, delivery) };
+};
+interface MotionVoiceDependencies {
   voices?: (signal?: AbortSignal, log?: (value: string) => void) => Promise<MotionVoicePreset[]>;
   synthesize?: typeof synthesizeMotionSpeech;
   transcribe?: typeof transcribeVieneuAudio;
@@ -119,7 +127,7 @@ const normalizeClip = (wav: Buffer): Buffer => {
 };
 const clipJobs = new Map<string, Promise<SpeechClipAudio>>();
 const speechClip = (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false, preset?: number | null): Promise<SpeechClipAudio> => {
-  const key = hash([line.text, line.speed, line.rateFix, line.emotion, line.intensity, line.role, voiceId, language, delivery, engineDelivery(voiceId, delivery), voiceSpeedKey(voiceId), voiceClipRateLimit(line, language), referenceNarration(line, voiceId, paced), paced, preset, opts.asr === true]);
+  const key = hash([line.text, line.speed, line.rateFix, line.emotion, line.intensity, line.role, voiceId, language, delivery, engineDelivery(voiceId, delivery), voiceSpeedKey(voiceId), voiceClipRateLimit(line, language), referenceCadence(line, voiceId, paced, delivery), paced, preset, opts.asr === true]);
   const running = clipJobs.get(key);
   if (running) return running;
   const job = speechClipOnce(line, voiceId, language, opts, deps, delivery, paced, preset).finally(() => clipJobs.delete(key));
@@ -129,7 +137,7 @@ const speechClip = (line: MotionUtterance, voiceId: string, language: unknown, o
 const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false, preset?: number | null): Promise<SpeechClipAudio> => {
   const spoken = directedSpeechText(line);
   const known = preset !== undefined ? preset : knownVoiceTempoFactor(voiceId);
-  const reference = referenceNarration(line, voiceId, paced);
+  const reference = referenceCadence(line, voiceId, paced, delivery);
   const legacyRawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, legacyEngineDelivery(voiceId, delivery), ...(spoken !== directedBase(line) ? [spoken] : [])]) + MR.MOTION_TEXT_WAV;
   const rawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, engineDelivery(voiceId, delivery), ...(spoken !== directedBase(line) ? [spoken] : [])]) + MR.MOTION_TEXT_WAV,
     id = C.CLIP_PREFIX + hash([rawId, C.TEMPO, line.role, line.speed, line.rateFix, delivery.tempo, known, FX.VERSION, Q.VERSION, opts.asr === true, C.ASR.VERSION, motionVoiceFilter(line, delivery, 1), paced, reference, ...(paced ? [PACE.VERSION, PACE.DIALOGUE_RATE, voiceClipRateLimit(line, language)] : [])]) + MR.MOTION_TEXT_WAV,
@@ -309,7 +317,7 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
   let adjusted = 0;
   // Two passes: the second corrects a sentence whose first correction still left it outside the tolerance.
   const speeds = clips.map(() => line.rateFix || 1);
-  if (middle && (!referenceNarration(line, voiceId, paced) || clips.every((clip) => clip.cadence?.unfit)))
+  if (middle && (!referenceCadence(line, voiceId, paced, delivery) || clips.every((clip) => clip.cadence?.unfit)))
     for (let pass = 0; pass < S.PASSES; pass++)
       for (let index = 0; index < clips.length; index++) {
         const factor = rates[index] ? middle / rates[index] : 1;
@@ -386,7 +394,7 @@ export const motionVoicePacing = (analysis: MotionStoryAnalysis | null): Pacing 
   if (!(analysis && PACE.HORROR_RE.test([analysis.videoGenre, analysis.genre, analysis.genre2, analysis.sfxMood, analysis.musicMood].join(MR.MOTION_TEXT_SYMBOL_13)))) return null;
   return PACE.HORROR;
 };
-export const motionPacedLines = (line: MotionUtterance, _pacing: Pacing | null): { line: MotionUtterance; gap: number }[] => [{ line, gap: 0 }];
+const motionPacedLines = (line: MotionUtterance, _pacing: Pacing | null): { line: MotionUtterance; gap: number }[] => [{ line, gap: 0 }];
 const runClipPool = async <T, R>(items: T[], limit: number, signal: AbortSignal | undefined, fn: (item: T) => Promise<R>): Promise<R[]> => {
   const out: R[] = new Array(items.length);
   let next = 0,
@@ -469,7 +477,7 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
   const factors: Record<string, number | null> = Object.fromEntries(_.map(_.uniq(_.map(flat, (item) => item.voiceId)), (voiceId) => [voiceId, knownVoiceTempoFactor(voiceId)]));
   for (const voiceId of Object.keys(factors))
     if (factors[voiceId] === null) {
-      if (flat.filter((item) => item.voiceId === voiceId).every((item) => item.pieces.every((piece) => !!referenceNarration(piece.line, voiceId, !!pacing)))) {
+      if (flat.filter((item) => item.voiceId === voiceId).every((item) => item.pieces.every((piece) => !!referenceCadence(piece.line, voiceId, !!pacing, item.paced)))) {
         factors[voiceId] = 1;
         continue;
       }

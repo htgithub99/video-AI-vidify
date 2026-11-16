@@ -4,7 +4,7 @@ import { MOTION_GENRE_VOCABULARY as X } from "../../constants/motionGenres/vocab
 import { motionGenreSpec, motionVideoGenre } from "../../constants/motionGenre.js";
 import { motionLanguage, motionLanguageMaxUnits, motionSpeechUnits, motionSplitSentences } from "../motionLanguage.js";
 import type { MotionBeat } from "../../types/motionVideo.js";
-export interface MotionGenreVoiceFinding {
+interface MotionGenreVoiceFinding {
   id: string;
   issue: string;
 }

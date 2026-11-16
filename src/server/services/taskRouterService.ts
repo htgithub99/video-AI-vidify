@@ -3,7 +3,7 @@ import { SOURCE_TEXT_BUDGETUSD, SOURCE_TEXT_CAPABILITY, SOURCE_TEXT_ESTIMATEDCOS
 import _ from "lodash";
 import { AI_MODEL_CAPABILITY, AI_MODEL_REGISTRY, AI_TASK_ROUTER_CONFIG } from "../../constants/index.js";
 export { AiTaskCapability };
-export interface AiTaskRequest {
+interface AiTaskRequest {
   capability?: AiTaskCapability;
   estimatedInputTokens: number;
   mediaInputCount?: number;

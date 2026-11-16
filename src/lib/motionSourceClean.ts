@@ -4,8 +4,8 @@ import { MOTION_SOURCE_SPLIT_DECIMAL_PATTERN } from "../constants/motionSource.j
 const SPLIT_DECIMAL = new RegExp(MOTION_SOURCE_SPLIT_DECIMAL_PATTERN, MR.MOTION_TEXT_GM);
 const SOUND_CUE = /\*[^*\n]{1,60}\*/g;
 const MISSING_QUOTE = /((?:to quote|as [^.,\n]{1,40} put it|in the words of [^.,\n]{1,40}|[^.,\n]{1,40} (?:wrote|said|points out|responded|stated)(?: in a comment)?)[^.\n]{0,60}?)(\.\.\.|…)(?=\s|$)(?![ \t]*(?:\(\d{1,2}:\d{2}(?::\d{2})?\)[ \t]*)?\[)/gi;
-export const MISSING_QUOTE_MARK = MR.MOTION_TEXT_AUDIO_QUOTE_NOT_IN_TRANSCRIPT;
-export interface SourceCleanReport {
+const MISSING_QUOTE_MARK = MR.MOTION_TEXT_AUDIO_QUOTE_NOT_IN_TRANSCRIPT;
+interface SourceCleanReport {
   splitNumbers: number;
   soundCues: number;
   missingQuotes: number;

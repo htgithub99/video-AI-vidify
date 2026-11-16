@@ -1,11 +1,11 @@
 import _ from "lodash";
 import { REFACTOR_CONSTANTS, VOICE_PRESET_MAP, VOICE_TTS_ROUTING_CONFIG } from "../constants";
 import type { VideoProject, VoiceConfig } from "../types";
-export interface VoiceRoutingInput {
+interface VoiceRoutingInput {
   provider?: string;
   voiceId?: string;
 }
-export interface VoiceRoutingResult {
+interface VoiceRoutingResult {
   finalVoiceId: string;
 }
 export const resolveVoiceRouting = ({ voiceId }: VoiceRoutingInput): VoiceRoutingResult => {

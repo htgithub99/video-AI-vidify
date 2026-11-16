@@ -5,7 +5,7 @@ interface ConfigIssue {
   code: ConfigIssueCode;
   severity: ConfigIssueSeverity;
 }
-export interface ResolvedVisualConfig {
+interface ResolvedVisualConfig {
   config: VisualConfig;
   issues: ConfigIssue[];
   blocked: boolean;

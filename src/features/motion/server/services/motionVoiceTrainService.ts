@@ -13,7 +13,7 @@ import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { runMotionAudioProcess } from "./motionSoundMixService.js";
 import { decodeVoicePcm, voicePauses } from "./motionVoicePaceService.js";
 import { closeVieneuWorker, transcribeVieneuAudio, vieneuRoot } from "../../../../server/services/vieneuTtsService.js";
-export interface MotionTrainedVoice {
+interface MotionTrainedVoice {
   id: string;
   name: string;
   gender: string;
@@ -23,7 +23,7 @@ export interface MotionTrainedVoice {
   clips: number;
   createdAt: number;
 }
-export interface MotionTrainInput {
+interface MotionTrainInput {
   name: string;
   gender: string;
   description: string;

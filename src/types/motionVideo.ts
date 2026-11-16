@@ -155,12 +155,6 @@ export interface MotionSpec {
   audio?: { id?: string; volume?: number };
 }
 export type MotionSoundLayer = "ambience" | "action" | "character" | "accent";
-export interface MotionSoundGenrePalette {
-  bed?: { kind: string; gainDb: number; always: boolean };
-  suppress?: string[];
-  accents?: { kind: string; layer: MotionSoundLayer; pattern: RegExp; moods?: { mood: string; min: number }[]; description: string; gainDb: number; gap: number; at: number | "word" }[];
-  chapter?: { kind: string; layer: MotionSoundLayer; gainDb: number; description: string };
-}
 export interface MotionSoundEvent {
   id: string;
   kind: string;
@@ -517,7 +511,7 @@ export interface MotionScenePlan {
   continuity: string[];
   acceptance: string[];
 }
-export interface MotionFlatCamera {
+interface MotionFlatCamera {
   pitch: number;
   wideFigure?: number;
   horizon?: number;
@@ -708,10 +702,6 @@ export interface MotionVoiceChannel {
 export interface MotionVoiceChannels {
   channels: MotionVoiceChannel[];
   defaultId?: string;
-}
-export interface MotionVoiceTiming {
-  signature: string;
-  beats: Record<string, { duration: number; lines: { id: string; speaker: string; text: string; from: number; to: number }[] }>;
 }
 export interface MotionVoicePlan {
   direction?: MotionAudioDirection;

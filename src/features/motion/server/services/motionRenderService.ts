@@ -824,7 +824,7 @@ export const checkMotionSpec = async (spec: MotionRenderSpec): Promise<{ duratio
   }
 };
 const STILL_LABEL = { canvasId: MOTION_RENDER_CANVAS_ID, ctx2d: MOTION_TEXT_2D, bg: MOTION_TEXT_STILL_LABEL_BG, fg: MOTION_TEXT_STILL_LABEL_FG, font: MOTION_TEXT_STILL_LABEL_FONT, mime: MOTION_TEXT_IMAGE_JPEG };
-export interface MotionStillSession {
+interface MotionStillSession {
   render: (spec: MotionSpec, picks: { id: string; t: number }[], dir: string, opts?: { width?: number; height?: number; quality?: "draft" | "high"; label?: boolean }) => Promise<{ id: string; t: number; file: string; issues: string[]; camera?: unknown }[]>;
   close: () => Promise<void>;
 }

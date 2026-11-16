@@ -2,11 +2,8 @@ import { RUNTIME_TEXT as RT_UI } from "../constants/runtime/ui.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import {
   SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER,
-  SOURCE_TEXT_BG_AMBER_50_TEXT_AMBER_600,
   SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE,
-  SOURCE_TEXT_BG_BLUE_50_TEXT_BLUE_600,
   SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD,
-  SOURCE_TEXT_BG_EMERALD_50_TEXT_EMERALD_600,
   SOURCE_TEXT_BUTTON,
   SOURCE_TEXT_MAX_W_MD,
   SOURCE_TEXT_MESSAGE,
@@ -91,13 +88,12 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
     }
     return () => document.removeEventListener(UIConstants.MOUSE_DOWN_EVENT, handleClickOutside);
   }, [isDropdownOpen]);
-  const isDark = _.isEqual(theme, AppTheme.DARK);
   const planningTexts = CINEMATIC_SETUP_TEXTS[currentLang as Lang] || CINEMATIC_SETUP_TEXTS.vi;
   const roomActions = [
-    { provider: AiPlanningFallbackProvider.GeminiChat, name: planningTexts.GEMINI_CHAT_OPTION, label: planningTexts.CLEAR_GEMINI_ROOMS, subtext: planningTexts.GEMINI_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE : SOURCE_TEXT_BG_BLUE_50_TEXT_BLUE_600, icon: <Sparkles className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
-    { provider: AiPlanningFallbackProvider.GrokChat, name: planningTexts.GROK_CHAT_OPTION, label: planningTexts.CLEAR_GROK_ROOMS, subtext: planningTexts.GROK_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER : SOURCE_TEXT_BG_AMBER_50_TEXT_AMBER_600, icon: <Zap className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
-    { provider: AiPlanningFallbackProvider.ChatGptUi, name: planningTexts.CHATGPT_UI_OPTION, label: planningTexts.CLEAR_CHATGPT_ROOMS, subtext: planningTexts.CHATGPT_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD : SOURCE_TEXT_BG_EMERALD_50_TEXT_EMERALD_600, icon: <Bot className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
-    { provider: AiPlanningFallbackProvider.MetaAi, name: planningTexts.META_AI_OPTION, label: planningTexts.CLEAR_META_AI_ROOMS, subtext: planningTexts.META_AI_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE : SOURCE_TEXT_BG_BLUE_50_TEXT_BLUE_600, icon: <Sparkles className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
+    { provider: AiPlanningFallbackProvider.GeminiChat, name: planningTexts.GEMINI_CHAT_OPTION, label: planningTexts.CLEAR_GEMINI_ROOMS, subtext: planningTexts.GEMINI_BROWSER, badgeStyle: SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE, icon: <Sparkles className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
+    { provider: AiPlanningFallbackProvider.GrokChat, name: planningTexts.GROK_CHAT_OPTION, label: planningTexts.CLEAR_GROK_ROOMS, subtext: planningTexts.GROK_BROWSER, badgeStyle: SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER, icon: <Zap className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
+    { provider: AiPlanningFallbackProvider.ChatGptUi, name: planningTexts.CHATGPT_UI_OPTION, label: planningTexts.CLEAR_CHATGPT_ROOMS, subtext: planningTexts.CHATGPT_BROWSER, badgeStyle: SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD, icon: <Bot className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
+    { provider: AiPlanningFallbackProvider.MetaAi, name: planningTexts.META_AI_OPTION, label: planningTexts.CLEAR_META_AI_ROOMS, subtext: planningTexts.META_AI_BROWSER, badgeStyle: SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE, icon: <Sparkles className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
   ];
   const handleExecuteClearRooms = async () => {
     if (!confirmAction) return;
@@ -170,7 +166,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
               variant={SOURCE_TEXT_UNSTYLED}
               type={SOURCE_TEXT_BUTTON}
               onClick={() => setIsDropdownOpen((prev) => !prev)}
-              className={cn(RT_UI.HEADER_CONTROL_ITEM_PX_2_5_ROUNDED_XL_INLINE_FLEX, { "bg-slate-900/80 border border-slate-800 text-slate-200": isDark, "bg-white/90 border border-stone-200 text-zinc-700": !isDark, "border-slate-700 bg-slate-850 text-white": isDropdownOpen && isDark, "border-stone-300 bg-stone-50 text-zinc-900": isDropdownOpen && !isDark })}
+              className={cn(RT_UI.HEADER_CONTROL_ITEM_PX_2_5_ROUNDED_XL_INLINE_FLEX, isDropdownOpen ? "border border-slate-700 bg-slate-850 text-slate-100" : "bg-slate-900/80 border border-slate-800 text-slate-200")}
               title={planningTexts.CLEAR_AI_SESSIONS}
               aria-label={planningTexts.CLEAR_AI_SESSIONS}
               aria-expanded={isDropdownOpen}>
@@ -179,22 +175,22 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
               <ChevronDown className={cn(RT_UI.W_3_H_3_SHRINK_0_TEXT_SLATE_400_TRANSITION, isDropdownOpen && RT_UI.ROTATE_180)} />
             </Button>
             {isDropdownOpen && (
-              <div className={cn(RT_UI.ABSOLUTE_RIGHT_0_TOP_FULL_MT_2_W_64_ROUNDED, { "bg-[#181424]/98 border border-[#2c233a] shadow-black/60": isDark, "bg-white/98 border border-zinc-200/90 shadow-xl shadow-zinc-900/10": !isDark })}>
-                <div className={cn(RT_UI.PX_2_5_PY_1_5_TEXT_10PX_FONT_BOLD, { "border-[#2c233a] text-zinc-400": isDark, "border-zinc-100 text-zinc-500": !isDark })}>
+              <div className={cn(RT_UI.ABSOLUTE_RIGHT_0_TOP_FULL_MT_2_W_64_ROUNDED, "bg-slate-900/98 border border-slate-800 shadow-black/60")}>
+                <div className={cn(RT_UI.PX_2_5_PY_1_5_TEXT_10PX_FONT_BOLD, "border-slate-800 text-zinc-400")}>
                   <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_1_5)}>
                     <Trash2 className={cn(RT_UI.W_3_H_3_TEXT_ROSE_500)} />
-                    <span className={cn({ "text-zinc-200": isDark, "text-zinc-800": !isDark })}>{planningTexts.CLEAR_AI_MENU}</span>
+                    <span className={cn("text-zinc-200")}>{planningTexts.CLEAR_AI_MENU}</span>
                   </div>
-                  <span className={cn(RT_UI.TEXT_9PX_FONT_MEDIUM_NORMAL_CASE_PX_1_5_PY, { "text-zinc-400 bg-zinc-800/80 border-zinc-700/50": isDark, "text-zinc-500 bg-zinc-100 border-zinc-200": !isDark })}>{planningTexts.CLOSE_HIDDEN_TABS}</span>
+                  <span className={cn(RT_UI.TEXT_9PX_FONT_MEDIUM_NORMAL_CASE_PX_1_5_PY, "text-zinc-400 bg-zinc-800/80 border-zinc-700/50")}>{planningTexts.CLOSE_HIDDEN_TABS}</span>
                 </div>
                 <div className={cn(RT_UI.FLEX_FLEX_COL_GAP_1_5_PT_0_5)}>
                   {_.map(roomActions, (action) => (
-                    <div key={action.provider} className={cn(RT_UI.W_FULL_P_2_ROUNDED_XL_FLEX_ITEMS_CENTER_JUSTIFY, { "bg-[#221b2d]/60 border-[#2c233a]/80": isDark, "bg-zinc-50/80 border-zinc-200/70": !isDark })}>
+                    <div key={action.provider} className={cn(RT_UI.W_FULL_P_2_ROUNDED_XL_FLEX_ITEMS_CENTER_JUSTIFY, "bg-slate-850/60 border-slate-800/80")}>
                       <div className={cn(RT_UI.FLEX_ITEMS_CENTER_GAP_2_5_MIN_W_0_FLEX)}>
                         <div className={cn(RT_UI.W_8_H_8_ROUNDED_LG_FLEX_ITEMS_CENTER_JUSTIFY, action.badgeStyle)}>{action.icon}</div>
                         <div className={cn(RT_UI.FLEX_FLEX_COL_MIN_W_0)}>
-                          <span className={cn(RT_UI.TEXT_XS_FONT_BOLD_TRUNCATE_LEADING_TIGHT, { "text-zinc-100": isDark, "text-zinc-900": !isDark })}>{action.name}</span>
-                          <span className={cn(RT_UI.TEXT_10PX_FONT_MEDIUM_TRUNCATE_LEADING_TIGHT_MT_0_5, { "text-zinc-400": isDark, "text-zinc-500": !isDark })}>{action.subtext}</span>
+                          <span className={cn(RT_UI.TEXT_XS_FONT_BOLD_TRUNCATE_LEADING_TIGHT, "text-zinc-100")}>{action.name}</span>
+                          <span className={cn(RT_UI.TEXT_10PX_FONT_MEDIUM_TRUNCATE_LEADING_TIGHT_MT_0_5, "text-zinc-400")}>{action.subtext}</span>
                         </div>
                       </div>
                       <Button
@@ -207,7 +203,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
                         }}
                         className={cn(
                           RT_UI.BTN_ICON_TINY_GROUP_BTN_W_7_H_7_MIN,
-                          { "bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/30": isDark, "bg-rose-50 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-200 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/20": !isDark },
+                          "bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/30",
                           RT_UI.DISABLED_OPACITY_50_DISABLED_CURSOR_NOT_ALLOWED_FOCUS_OUTLINE_NONE,
                         )}
                         title={planningTexts.CLEAR_ROOM_TOOLTIP.replace(SecurityConstants.PLACEHOLDER_0, action.name)}
@@ -250,7 +246,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
           </div>
         }>
         <div className={cn(RT_UI.SPACE_Y_4_PT_1)}>
-          <p className={cn(RT_UI.TEXT_SLATE_700_DARK_TEXT_SLATE_200_TEXT_SM_FONT)}>{planningTexts.CLEAR_ROOM_CONFIRM.replace(SecurityConstants.PLACEHOLDER_0, confirmAction?.name || REFACTOR_CONSTANTS.VD_EMPTY_STRING)}</p>
+          <p className={cn(RT_UI.TEXT_SLATE_200_TEXT_SM_FONT_MEDIUM_LEADING_RELAXED)}>{planningTexts.CLEAR_ROOM_CONFIRM.replace(SecurityConstants.PLACEHOLDER_0, confirmAction?.name || REFACTOR_CONSTANTS.VD_EMPTY_STRING)}</p>
           <div className={cn(RT_UI.P_3_5_ROUNDED_2XL_BG_ROSE_500_10_BORDER)}>
             <AlertTriangle className={cn(RT_UI.W_4_H_4_SHRINK_0_TEXT_AMBER_500_MT)} />
             <span>{planningTexts.CLEAR_ROOM_RESOURCE_NOTICE}</span>

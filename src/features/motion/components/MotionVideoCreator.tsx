@@ -291,6 +291,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
     const spec = studio.compiled?.spec;
     return spec ? applyMotionRenderBehavior(spec, state.renderBehavior) : null;
   }, [studio.compiled, state.renderBehavior]);
+  // An exported video is shown while it matches the scenes; once they change, the scenes play live instead.
+  const showExported = !!studio.renderedVideoUrl && !(studio.renderedVideoStale && isRemotionSpec(previewSpec));
   const updateBeat = (id: string, patchBeat: Partial<MotionBeat>) => {
     if (!state.script) return;
     patch({
@@ -358,16 +360,16 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     {state.source.words}
                     {MOTION_TEXT_TU}
                   </MotionStatCard>
-                  <MotionStatCard icon={Layers} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_BLUE_500_DARK_TEXT_BLUE_400_SHRINK_0} label={text.SEGMENTS}>
+                  <MotionStatCard icon={Layers} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_BLUE_400_SHRINK_0_F4E506} label={text.SEGMENTS}>
                     {state.source.segments.length}
                     {MOTION_TEXT_DOAN}
                   </MotionStatCard>
-                  <MotionStatCard icon={Clock} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_500_DARK_TEXT_PURPLE_400_SHRINK_0} label={text.ESTIMATED}>
+                  <MotionStatCard icon={Clock} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_PURPLE_400_SHRINK_0_18491D} label={text.ESTIMATED}>
                     {MOTION_TEXT_SYMBOL_2}
                     {Math.round(state.source.sourceSeconds / 60)}
                     {MOTION_TEXT_PHUT}
                   </MotionStatCard>
-                  <MotionStatCard icon={Film} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_PINK_500_DARK_TEXT_PINK_400_SHRINK_0} label={MOTION_TEXT_TIEN_TRINH} valueClassName={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_TRUNCATE}>
+                  <MotionStatCard icon={Film} iconClassName={MOTION_STYLES.W_4_H_4_TEXT_PINK_400_SHRINK_0_3248A9} label={MOTION_TEXT_TIEN_TRINH} valueClassName={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_EMERALD_400_TRUNCATE}>
                     {MOTION_TEXT_DA_DOC_NGUON}
                   </MotionStatCard>
                 </div>
@@ -702,7 +704,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                         <span
                           className={cn(
                             MOTION_STYLES.SHRINK_0_PX_2_PY_0_5_ROUNDED_LG_TEXT_9PX_FONT_BOLD_UPPERCASE,
-                            f.status === MOTION_TEXT_OK ? MOTION_STYLES.BG_EMERALD_500_15_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_BORDER_BORDER_EMERALD_500_30 : f.status === MOTION_TEXT_WRONG ? MOTION_STYLES.BG_ROSE_500_15_TEXT_ROSE_600_DARK_TEXT_ROSE_400_BORDER_BORDER_ROSE_500_30 : MOTION_STYLES.BG_PURPLE_500_15_TEXT_PURPLE_300_BORDER_BORDER_PURPLE_500_30,
+                            f.status === MOTION_TEXT_OK ? MOTION_STYLES.BG_EMERALD_500_15_TEXT_EMERALD_400_BORDER_BORDER_EMERALD : f.status === MOTION_TEXT_WRONG ? MOTION_STYLES.BG_ROSE_500_15_TEXT_ROSE_400_BORDER_BORDER_ROSE_500_30 : MOTION_STYLES.BG_PURPLE_500_15_TEXT_PURPLE_300_BORDER_BORDER_PURPLE_500_30,
                           )}>
                           {f.status === MOTION_TEXT_OK ? text.FACT_OK : f.status === MOTION_TEXT_WRONG ? text.FACT_WRONG : text.FACT_UNCERTAIN}
                         </span>
@@ -829,12 +831,12 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                                 className={cn(
                                   MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_PX_2_5_PY_0_5_ROUNDED_LG_UPPERCASE,
                                   b.visual === MOTION_TEXT_SCENE
-                                    ? MOTION_STYLES.BG_SKY_500_15_BORDER_SKY_500_30_TEXT_SKY_700_DARK_TEXT_SKY_300
+                                    ? MOTION_STYLES.BG_SKY_500_15_BORDER_SKY_500_30_TEXT_SKY_300
                                     : b.visual === MOTION_TEXT_TITLE
-                                      ? MOTION_STYLES.BG_PURPLE_500_15_BORDER_PURPLE_500_30_TEXT_PURPLE_700_DARK_TEXT_PURPLE_300
+                                      ? MOTION_STYLES.BG_PURPLE_500_15_BORDER_PURPLE_500_30_TEXT_PURPLE_300
                                       : b.visual === MOTION_TEXT_STATS
-                                        ? MOTION_STYLES.BG_EMERALD_500_15_BORDER_EMERALD_500_30_TEXT_EMERALD_700_DARK_TEXT_EMERALD_300
-                                        : MOTION_STYLES.BG_FUCHSIA_500_15_BORDER_FUCHSIA_500_30_TEXT_FUCHSIA_700_DARK_TEXT_FUCHSIA_300,
+                                        ? MOTION_STYLES.BG_EMERALD_500_15_BORDER_EMERALD_500_30_TEXT_EMERALD_300
+                                        : MOTION_STYLES.BG_FUCHSIA_500_15_BORDER_FUCHSIA_500_30_TEXT_FUCHSIA_300,
                                 )}>
                                 {b.visual === MOTION_TEXT_SCENE ? MOTION_TEXT_SCENE_2 : b.visual === MOTION_TEXT_TITLE ? MOTION_TEXT_TITLE_2 : b.visual === MOTION_TEXT_STATS ? MOTION_TEXT_STATS_2 : b.visual}
                               </span>
@@ -869,7 +871,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               icon={PlayCircle}
               title={text.PREVIEW}
               hint={<MotionNoticeHint notices={[{ id: MOTION_NOTICE_IDS.STALE, tone: MOTION_NOTICE_IDS.WARN, text: text.EXPORTED_VIDEO_STALE, show: !!studio.renderedVideoUrl && !!studio.renderedVideoStale }]} />}
-              badge={studio.renderedVideoUrl ? text.EXPORTED_VIDEO_BADGE : text.PREVIEW_REMOTION_BADGE}
+              badge={showExported ? text.EXPORTED_VIDEO_BADGE : isRemotionSpec(previewSpec) && !motionAudioUrl(studio.previewAudioId) ? text.PREVIEW_SILENT_BADGE : text.PREVIEW_REMOTION_BADGE}
               right={
                 studio.renderedVideoResult && (
                   <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => studio.renderedVideoResult && void studio.saveResult(studio.renderedVideoResult)} title={text.SAVE_AS} className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F}>
@@ -889,19 +891,28 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               </p>
             )}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
-            {studio.renderedVideoUrl ? (
+            {showExported ? (
               <div className={MOTION_STYLES.SPACE_Y_3}>
-                <MotionExportedVideo key={studio.renderedVideoUrl} url={studio.renderedVideoUrl} width={studio.renderedVideoResult?.width} height={studio.renderedVideoResult?.height} />
+                <MotionExportedVideo key={studio.renderedVideoUrl} url={studio.renderedVideoUrl!} width={studio.renderedVideoResult?.width} height={studio.renderedVideoResult?.height} />
+              </div>
+            ) : isRemotionSpec(previewSpec) ? (
+              // Every scene is built: the scenes play straight away, without the voice until it is ready.
+              <div className={MOTION_STYLES.SPACE_Y_3}>
+                {state.autoExport && studio.renderBusy ? (
+                  <>
+                    <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{text.AUTO_EXPORT_RENDERING}</p>
+                    <MotionProgressBar progress={rj?.progress} minimum={4} className={MOTION_STYLES.H_2} animated={false} />
+                  </>
+                ) : null}
+                <Suspense fallback={<MotionMediaPlaceholder width={previewSpec.width} height={previewSpec.height} />}>
+                  <MotionRemotionPlayer spec={previewSpec} videoUrl={studio.previewVideoUrl} audioUrl={motionAudioUrl(studio.previewAudioId)} />
+                </Suspense>
               </div>
             ) : state.autoExport ? (
               <div className={MOTION_STYLES.SPACE_Y_3}>
                 <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{studio.renderBusy ? text.AUTO_EXPORT_RENDERING : text.AUTO_EXPORT_WAITING}</p>
                 {studio.renderBusy && <MotionProgressBar progress={rj?.progress} minimum={4} className={MOTION_STYLES.H_2} animated={false} />}
               </div>
-            ) : isRemotionSpec(previewSpec) ? (
-              <Suspense fallback={<MotionMediaPlaceholder width={previewSpec.width} height={previewSpec.height} />}>
-                <MotionRemotionPlayer spec={previewSpec} videoUrl={studio.previewVideoUrl} audioUrl={motionAudioUrl(studio.previewAudioId)} />
-              </Suspense>
             ) : studio.ME ? (
               <MotionSpecPlayer ME={studio.ME} spec={previewSpec} videoUrl={studio.previewVideoUrl} audioUrl={motionAudioUrl(studio.previewAudioId)} audioPending={studio.audioPreparing || !!studio.voiceError} pending={studio.audioPreparing || studio.renderBusy || busyKind === MOTION_TEXT_SCENES} />
             ) : (
@@ -1041,7 +1052,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             <StudioCard className={cardCls}>
               <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_2}>
                 <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO}>{text.STEP_LOG}</span>
-                {displayedJob && <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{MOTION_TEMPLATE_SYMBOL_3(String(Math.round((displayedProgress || 0) * 100)))}</span>}
+                {displayedJob && <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_400_FONT_BOLD}>{MOTION_TEMPLATE_SYMBOL_3(String(Math.round((displayedProgress || 0) * 100)))}</span>}
               </div>
               {studio.storyBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={storyStage} suffix={text.ELAPSED} />}
               {studio.storyBusy && <MotionAiStatusLine activities={job?.activeAi} />}
@@ -1219,16 +1230,16 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
         </div>
       ) : (
         <div className={MOTION_STYLES.SPACE_Y_4}>
-          <div className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_600_DARK_TEXT_SLATE_300}>
+          <div className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_300}>
             <div>{text.JUNK_STORAGE}</div>
-            <div className={MOTION_STYLES.FONT_MONO_FONT_BOLD_TEXT_SLATE_900_DARK_TEXT_SLATE_100_BREAK_ALL}>{report.storageDir}</div>
+            <div className={MOTION_STYLES.FONT_MONO_FONT_BOLD_TEXT_SLATE_100_BREAK_ALL}>{report.storageDir}</div>
           </div>
           {_.isEmpty(report.groups) ? (
             <div className={MOTION_STYLES.PY_6_TEXT_CENTER_TEXT_SM_TEXT_SLATE_500}>{text.JUNK_EMPTY}</div>
           ) : (
             <div className={MOTION_STYLES.SPACE_Y_2_MAX_H_46VH_OVERFLOW_Y_AUTO_PR_1}>
               {_.map(report.groups, (g) => (
-                <label key={g.group} className={MOTION_STYLES.FLEX_GAP_3_ITEMS_START_ROUNDED_XL_BORDER_BORDER_SLATE_200_DARK_BORDER_SLATE_800}>
+                <label key={g.group} className={MOTION_STYLES.FLEX_GAP_3_ITEMS_START_ROUNDED_XL_BORDER_BORDER_SLATE_80}>
                   <StudioInput
                     type={MOTION_TEXT_CHECKBOX}
                     className={MOTION_STYLES.MT_1_ACCENT_PURPLE_500}
@@ -1244,10 +1255,10 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
                   />
                   <div className={MOTION_STYLES.FLEX_1_MIN_W_0_SPACE_Y_1}>
                     <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
-                      <span className={MOTION_STYLES.TEXT_SM_FONT_BOLD_TEXT_SLATE_900_DARK_TEXT_SLATE_100}>{label(g.group)}</span>
-                      <span className={MOTION_STYLES.TEXT_XS_FONT_MONO_FONT_BOLD_TEXT_ROSE_600_DARK_TEXT_ROSE_400_SHRINK_0}>{formatBytes(g.bytes)}</span>
+                      <span className={MOTION_STYLES.TEXT_SM_FONT_BOLD_TEXT_SLATE_100_4C5792}>{label(g.group)}</span>
+                      <span className={MOTION_STYLES.TEXT_XS_FONT_MONO_FONT_BOLD_TEXT_ROSE_400_SHRINK_0}>{formatBytes(g.bytes)}</span>
                     </div>
-                    <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_500_DARK_TEXT_SLATE_400_SPACE_Y_0_5}>
+                    <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_400_SPACE_Y_0_5}>
                       {_.map(_.take(g.items, 4), (it) => (
                         <div key={it.path} className={MOTION_STYLES.TRUNCATE}>
                           {it.path}
@@ -1272,9 +1283,9 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
               ))}
             </div>
           )}
-          <p className={MOTION_STYLES.TEXT_11PX_TEXT_SLATE_500_DARK_TEXT_SLATE_400_LEADING_RELAXED}>{text.JUNK_NOTE}</p>
+          <p className={MOTION_STYLES.TEXT_11PX_TEXT_SLATE_400_LEADING_RELAXED_80D2CE}>{text.JUNK_NOTE}</p>
           <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3}>
-            <div className={MOTION_STYLES.TEXT_SM_FONT_BOLD_TEXT_SLATE_900_DARK_TEXT_SLATE_100}>{MOTION_TEMPLATE_JOIN_SPACE(text.JUNK_TOTAL, formatBytes(total))}</div>
+            <div className={MOTION_STYLES.TEXT_SM_FONT_BOLD_TEXT_SLATE_100_4C5792}>{MOTION_TEMPLATE_JOIN_SPACE(text.JUNK_TOTAL, formatBytes(total))}</div>
             <div className={MOTION_STYLES.FLEX_GAP_2}>
               <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={onClose} disabled={busy} className={MOTION_STYLES.PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300}>
                 {text.RESULTS_CANCEL}
@@ -1349,8 +1360,8 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
   };
   if (_.isEmpty(studio.results)) {
     return (
-      <StudioCard className={cn(cardCls, MOTION_STYLES.TEXT_CENTER_TEXT_XS_TEXT_SLATE_500_DARK_TEXT_SLATE_400_PY_20_FLEX_1_FLEX)}>
-        <FolderKanban className={MOTION_STYLES.W_10_H_10_TEXT_SLATE_300_DARK_TEXT_SLATE_700_STROKE_1} />
+      <StudioCard className={cn(cardCls, MOTION_STYLES.TEXT_CENTER_TEXT_XS_TEXT_SLATE_400_PY_20_FLEX_1_FLEX_FLE)}>
+        <FolderKanban className={MOTION_STYLES.W_10_H_10_TEXT_SLATE_700_STROKE_1} />
         <span>{text.RESULTS_EMPTY}</span>
         <div className={MOTION_STYLES.PT_3}>{junkButton}</div>
         {junkDialog}
@@ -1385,7 +1396,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
             </span>
           )}
           <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete(selected)} disabled={busy || studio.renderBusy || selected.length === 0} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO}>
-            <Trash2 className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_ROSE_600_DARK_TEXT_ROSE_400} />
+            <Trash2 className={MR.W_3_5_H_3_5_TEXT_ROSE_400_B3A93B} />
             <span>
               {text.RESULTS_DELETE_SELECTED}
               {selected.length > 0 ? `${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_11}${selected.length}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_12}` : ""}
@@ -1393,14 +1404,14 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
           </Button>
           {junkButton}
           <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete(true)} disabled={busy || studio.renderBusy} title={text.RESULTS_DELETE_ALL} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO}>
-            <Trash2 className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_ROSE_600_DARK_TEXT_ROSE_400} />
+            <Trash2 className={MR.W_3_5_H_3_5_TEXT_ROSE_400_B3A93B} />
             <span>{text.RESULTS_DELETE_ALL}</span>
           </Button>
         </div>
       </StudioCard>
       <div className={MOTION_STYLES.GRID_GRID_COLS_1_MD_GRID_COLS_2_2XL_GRID_COLS_3_GAP_5_PB_8}>
         {_.map(studio.results, (r) => (
-          <StudioCard key={r.id} className={cn(cardCls, MR.MOTION_TEXT_P_4_SPACE_Y_3_BG_WHITE_95_DARK_BG_SLATE_900_80_BORDER_BORDER_SLAT, picked.has(r.id) && MOTION_STYLES.RESULT_SELECTED)}>
+          <StudioCard key={r.id} className={cn(cardCls, MR.P_4_SPACE_Y_3_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_80_3FC799, picked.has(r.id) && MOTION_STYLES.RESULT_SELECTED)}>
             <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD}>
               <video src={r.videoUrl} controls preload={MOTION_TEXT_METADATA} className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_MAX_H_380PX_SHADOW_MD_BLOCK} />
               <label className={MOTION_STYLES.RESULT_SELECT} title={`${text.RESULTS_SELECT_VIDEO}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`}>
@@ -1432,10 +1443,10 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
               </div>
             </div>
             <div className={MR.MOTION_TEXT_SPACE_Y_1}>
-              <div className={MR.MOTION_TEXT_TEXT_XS_SM_TEXT_SM_FONT_BLACK_TEXT_0F172A_DARK_TEXT_SLATE_100_TRU} title={r.title}>
+              <div className={MR.TEXT_XS_SM_TEXT_SM_FONT_BLACK_TEXT_SLATE_100_TRUNCATE_TR} title={r.title}>
                 {r.title}
               </div>
-              <div className={MR.MOTION_TEXT_TEXT_11PX_FONT_MONO_FONT_MEDIUM_TEXT_475569_DARK_TEXT_SLATE_300_L}>
+              <div className={MR.TEXT_11PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_300_LEADING_S}>
                 {r.width}
                 {MOTION_TEXT_SYMBOL_12}
                 {r.height}
@@ -1475,13 +1486,13 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
               ))}
             </ul>
           )}
-          <p className={MOTION_STYLES.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED}>{confirm === true ? text.RESULTS_CONFIRM_ALL : confirm?.length === 1 ? text.RESULTS_CONFIRM_ONE : text.RESULTS_CONFIRM_SELECTED.replace(COMMON_RUNTIME.SOURCE_TEXT_COUNT, String(confirm?.length || 0))}</p>
+          <p className={MOTION_STYLES.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_300_LEADING_RELAXED_95A2B0}>{confirm === true ? text.RESULTS_CONFIRM_ALL : confirm?.length === 1 ? text.RESULTS_CONFIRM_ONE : text.RESULTS_CONFIRM_SELECTED.replace(COMMON_RUNTIME.SOURCE_TEXT_COUNT, String(confirm?.length || 0))}</p>
           {deleteError && (
             <p role={COMMON_RUNTIME.SOURCE_TEXT_ALERT} className={MOTION_STYLES.TEXT_11PX_TEXT_PURPLE_300}>
               {deleteError}
             </p>
           )}
-          <div className={MOTION_STYLES.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_TEXT_ROSE_700_DARK_TEXT_ROSE_400}>{MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC}</div>
+          <div className={MOTION_STYLES.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_}>{MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC}</div>
           <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_4_BORDER_T_BORDER_SLATE_200}>
             <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setConfirm(null)} disabled={busy} className={MOTION_STYLES.PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300_2}>
               {text.RESULTS_CANCEL}

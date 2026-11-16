@@ -1,5 +1,5 @@
 import { MOTION_HTML_WRITING as W } from "../constants/motionHtmlWriting.js";
-export interface MotionPlanRow {
+interface MotionPlanRow {
   fromLineId?: unknown;
   toLineId?: unknown;
   sceneTemplate?: unknown;

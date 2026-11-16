@@ -72,7 +72,7 @@ import _ from "lodash";
 import { BrowserContext, Page, chromium } from "playwright";
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 import { HTTP_URL_REGEX, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX } from "../../constants/regexes.js";
-export interface ArchivalImageResult {
+interface ArchivalImageResult {
   success: boolean;
   base64?: string;
   mimeType?: string;
@@ -152,7 +152,7 @@ const createCommonsQueryVariants = (query: string): string[] => {
   const pairs = _.map(_.range(0, _.max([0, originalWords.length - 1]) || 0), (index) => `${originalWords[index]}${RT_SHARED.SYMBOL_36A9E7}${originalWords[index + 1]}`);
   return _.slice(_.uniq(_.compact([query, ...pairs])), 0, 5);
 };
-export const isArchivalSearchCandidateRelevant = (candidate: SearchCandidate, query: string): boolean => {
+const isArchivalSearchCandidateRelevant = (candidate: SearchCandidate, query: string): boolean => {
   const queryTokens = relevanceTokens(query);
   const evidenceTokens = new Set(relevanceTokens(`${candidate.title || ""}${RT_SHARED.SYMBOL_36A9E7}${candidate.sourceUrl}`));
   const overlaps = _.filter(queryTokens, (token) => evidenceTokens.has(token));

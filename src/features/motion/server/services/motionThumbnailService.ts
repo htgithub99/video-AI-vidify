@@ -25,7 +25,9 @@ import type { MotionAiExecution, MotionSeoOption, MotionStoryAnalysis, MotionSto
 import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";
 import { motionRenameLeaks, motionRenameMapActive } from "../../../../lib/motionRename.js";
 import type { MotionVisualSettings } from "../../../../types/motionVisual.js";
-import { motionHtmlDrawIssue, motionHtmlGraphics } from "../../../../lib/motionHtmlPrompt.js";
+import { motionHtmlDrawIssue } from "../../../../lib/motionHtmlPrompt.js";
+import { MOTION_LAYOUT_WIDE } from "../../../../constants/motionLayouts/index.js";
+import { MOTION_HTML } from "../../../../constants/motionHtmlTemplate.js";
 import { motionHtmlFigureDoc } from "../../../../lib/motionHtmlFigure.js";
 import { motionHtmlFigures, motionHtmlFiguresIssue } from "../../../../lib/motionFigures.js";
 import { motionProportionOf } from "../../../../lib/motionDrawStyle.js";
@@ -82,9 +84,9 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       if (settings.figureKit === true) {
         opts.log?.(T.LOG_KIT);
         // The thumbnail page is written against the same figure table as the scenes; the kit draws its figures when it is captured.
-        const render = { kit: true, profile: settings.profileId, proportion: motionProportionOf(settings) };
+        const render = { kit: true, profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE };
         const htmlExec: MotionAiExecution = { ...exec, outputFormat: RT_MAINTENANCE.HTML, singleResponse: true };
-        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, motionHtmlGraphics(settings.profileId), PROMPT_REFERENCE_DOC.WRAP(PROMPT_REFERENCE_DOC.FIGURE_NAME, [motionHtmlFigureDoc(settings.profileId, settings.proportion), MOTION_FIGURES.DOC].join(RT_MAINTENANCE.NEWLINE)), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
+        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, MOTION_HTML.GRAPHICS, PROMPT_REFERENCE_DOC.WRAP(PROMPT_REFERENCE_DOC.FIGURE_NAME, [motionHtmlFigureDoc(settings), MOTION_FIGURES.DOC].join(RT_MAINTENANCE.NEWLINE)), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
         let reason = "";
         for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
           opts.signal?.throwIfAborted();

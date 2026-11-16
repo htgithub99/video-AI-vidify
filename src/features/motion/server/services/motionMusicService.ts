@@ -4,7 +4,7 @@ import path from "path";
 import _ from "lodash";
 import { randomUUID } from "crypto";
 import { MOTION_MUSIC as M, MOTION_MUSIC_AMBIENCE, MOTION_MUSIC_INSTRUMENTS, MOTION_MUSIC_LEAD_SECONDS, MOTION_MUSIC_MOODS, MOTION_MUSIC_PAD_SHAPES, MOTION_MUSIC_SCALES, MOTION_MUSIC_VOICES as MV, type MotionMusicInstrument, type MotionMusicMood } from "../../../../constants/motionMusic.js";
-import type { MotionMusicSegment, MotionSpec, MotionStoryAnalysis } from "../../../../types/motionVideo.js";
+import type { MotionMusicSegment, MotionStoryAnalysis } from "../../../../types/motionVideo.js";
 import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { runMotionAudioProcess, motionWavHeader } from "./motionSoundMixService.js";
 import { motionAudioHash as hash } from "./motionAudioUtils.js";
@@ -36,13 +36,6 @@ export const motionMusicSegments = (analysis: MotionStoryAnalysis | null | undef
   }
   return out;
 };
-export const motionMusicCues = (spec: MotionSpec): number[] =>
-  _.uniq(
-    _.map(
-      _.filter(spec.shots, (shot) => _.includes(M.CUE_TEMPLATES as readonly string[], shot.template) && shot.start > 0),
-      (shot) => +shot.start.toFixed(2),
-    ),
-  );
 const rng = (seed: number) => () => {
   seed = (seed * 16807) % 2147483647;
   return seed / 2147483647;

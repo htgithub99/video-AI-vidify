@@ -24,13 +24,13 @@ const kitGroup = (value: unknown): Record<string, string> | undefined => {
     });
   return entries.length ? Object.fromEntries(entries) : undefined;
 };
-export const normalizeStyleKit = (value: any): MotionStyleKit | undefined => {
+const normalizeStyleKit = (value: any): MotionStyleKit | undefined => {
   if (!value || typeof value !== "object") return undefined;
   const kit: MotionStyleKit = { render: kitGroup(value.render), character: kitGroup(value.character), animals: kitText(value.animals), background: kitGroup(value.background), fx: kitText(value.fx), typography: kitText(value.typography), camera: kitText(value.camera) };
   const clean = Object.fromEntries(Object.entries(kit).filter(([, item]) => item !== undefined)) as MotionStyleKit;
   return Object.keys(clean).length ? clean : undefined;
 };
-export const normalizeReferenceImages = (value: any): MotionReferenceImageInfo[] | undefined => {
+const normalizeReferenceImages = (value: any): MotionReferenceImageInfo[] | undefined => {
   if (!Array.isArray(value)) return undefined;
   const list = value.slice(0, C.MAX_IMAGES).flatMap((item: any) => {
     const name = kitText(item?.name)?.replace(/\.[a-z]+$/i, MR.MOTION_TEXT_EMPTY);

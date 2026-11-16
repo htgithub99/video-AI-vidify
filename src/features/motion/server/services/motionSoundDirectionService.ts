@@ -16,7 +16,7 @@ import { motionSoundCatalogPrompt } from "./motionSfxLibraryService.js";
 import { mapMotionAiPool, runMotionAi, motionCaptchaError } from "./motionStoryService.js";
 import { MOTION_AI_ROLE } from "../../../../constants/motionAiFallback.js";
 import type { MotionAiExecution, MotionAiLog } from "../../../../types/motionVideo.js";
-export interface MotionSoundDirectionOptions {
+interface MotionSoundDirectionOptions {
   exec: MotionAiExecution;
   signal?: AbortSignal;
   log: MotionAiLog;

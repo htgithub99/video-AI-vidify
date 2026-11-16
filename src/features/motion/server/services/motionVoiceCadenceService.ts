@@ -10,7 +10,7 @@ import { trimMotionVoiceEdges } from "./motionVoiceQualityService.js";
 import { runMotionAudioProcess } from "./motionSoundMixService.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 const N = P.NARRATOR_CADENCE;
-export interface ReferenceCadenceProfile {
+interface ReferenceCadenceProfile {
   articulation: number;
   clause: number;
   sentence: number;
@@ -53,7 +53,7 @@ export const inspectVoiceCadence = (wav: Buffer, text: string) => {
     .map((pause) => ({ ...pause, progress: cumulative[Math.min(levels.length, Math.round((pause.at * 1000) / V.AUDIO.HOP_MS))] / voiced }));
   return { articulation: units / active, seconds: info.duration, pauses };
 };
-export const referencePausePlan = (text: string, pauses: { at: number; d: number; progress: number }[], profile: ReferenceCadenceProfile) => {
+const referencePausePlan = (text: string, pauses: { at: number; d: number; progress: number }[], profile: ReferenceCadenceProfile) => {
   const units = speechUnits(text);
   const marks = [...text.matchAll(/[,;:，；：]|\.{3}|[.!?…]+/gu)].filter((mark) => /^["”’')\]]*\s+\S/u.test(text.slice(mark.index! + mark[0].length)));
   const boundaries = marks.map((mark) => ({ progress: speechUnits(text.slice(0, mark.index! + mark[0].length)) / units, target: /[,;:，；：]/u.test(mark[0]) ? profile.clause : /…|\.{3}/u.test(mark[0]) ? profile.suspense : profile.sentence }));

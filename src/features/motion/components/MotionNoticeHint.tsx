@@ -3,7 +3,7 @@ import { AlertTriangle, Info } from "lucide-react";
 import { cn } from "../../../lib/utils.js";
 import { MOTION_STYLES as S } from "../constants/motionStyles.js";
 import { MOTION_NOTICE_IDS } from "../constants/motionNotices.js";
-export interface MotionNotice {
+interface MotionNotice {
   id: string;
   tone: "warn" | "info";
   text: string;

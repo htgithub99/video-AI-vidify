@@ -1,41 +1,3 @@
-:root {
-  --studio-page: #0c0a0f;
-  --studio-canvas: rgba(20, 16, 26, 0.92);
-  --studio-surface: rgba(20, 16, 26, 0.92);
-  --studio-surface-raised: #221b2d;
-  --studio-input: rgba(10, 8, 14, 0.92);
-  --studio-text: #f8fafc;
-  --studio-text-secondary: #d0c5e1;
-  --studio-text-muted: #a99abf;
-  --studio-border: rgba(167, 139, 202, 0.18);
-  --studio-accent: #c084fc;
-  --studio-accent-soft: rgba(168, 85, 247, 0.15);
-  --studio-primary: linear-gradient(90deg, #9333ea, #db2777);
-  --studio-primary-hover: linear-gradient(90deg, #7e22ce, #be185d);
-  --studio-on-primary: #ffffff;
-  --studio-danger: #fb7185;
-  --studio-danger-soft: rgba(244, 63, 94, 0.14);
-  --studio-shadow: 0 18px 45px -8px rgba(0, 0, 0, 0.55), 0 6px 18px -4px rgba(0, 0, 0, 0.3);
-  --studio-input-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
-  --studio-toggle-on: #10b981;
-}
-:root.light {
-  --studio-page: #f9f5ec;
-  --studio-canvas: rgba(255, 252, 245, 0.98);
-  --studio-surface: rgba(255, 252, 245, 0.98);
-  --studio-surface-raised: #f4eee2;
-  --studio-input: #f4ecde;
-  --studio-text: #241a10;
-  --studio-text-secondary: #554736;
-  --studio-text-muted: #75634f;
-  --studio-border: rgba(120, 85, 45, 0.18);
-  --studio-accent: #7e22ce;
-  --studio-accent-soft: rgba(147, 51, 234, 0.09);
-  --studio-danger: #be123c;
-  --studio-danger-soft: #fff1f2;
-  --studio-shadow: 0 14px 38px -6px rgba(180, 120, 30, 0.16), 0 4px 14px -2px rgba(120, 70, 10, 0.06);
-  --studio-input-shadow: inset 0 2px 5px rgba(120, 70, 10, 0.1);
-}
 :root:is(.light, .dark) .studio-page {
   background: var(--studio-page) !important;
   color: var(--studio-text);
@@ -68,7 +30,7 @@
   color: var(--studio-text-secondary);
 }
 :root:is(.light, .dark) .studio-icon-frame {
-  background: linear-gradient(135deg, #a855f7, #d946ef, #db2777);
+  background: linear-gradient(135deg, var(--color-violet-600), var(--color-pink-600));
 }
 :root:is(.light, .dark) .studio-icon-inner {
   background: var(--studio-input);
@@ -256,6 +218,22 @@
 }
 :root:is(.light, .dark) .studio-button[data-icon-only="true"] :is(svg, span) {
   color: inherit !important;
+}
+:root:is(.light, .dark) .studio-button[data-icon-only="true"] {
+  transform: none !important;
+  opacity: 1;
+  transition: color 0.15s ease !important;
+}
+/* An icon-only button answers the pointer with its icon colour alone: no fill, frame, shadow, scale or movement. */
+:root:is(.light, .dark) .studio-button[data-icon-only="true"]:is(:hover, :focus-visible):not(:disabled) {
+  color: var(--studio-accent-strong) !important;
+}
+:root:is(.light, .dark) .studio-button[data-icon-only="true"][data-variant="danger"]:is(:hover, :focus-visible):not(:disabled) {
+  color: var(--studio-danger) !important;
+  filter: brightness(1.15);
+}
+:root:is(.light, .dark) .studio-button[data-icon-only="true"]:disabled {
+  opacity: 0.45;
 }
 :root:is(.light, .dark) .studio-button[data-icon-only="true"]::before,
 :root:is(.light, .dark) .studio-button[data-icon-only="true"]::after {

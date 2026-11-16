@@ -50,8 +50,8 @@ import { probeMediaDurationSeconds } from "./videoExportFfmpegService.js";
 import { getCapcutResourceCatalog } from "./capcutResourceService.js";
 import { VideoExportAspectRatio, VideoExportConfig } from "../../types/videoExport.js";
 const MICROSECONDS = 1_000_000;
-export type ExportCapcutProjectParams = { projectName: string; audioPaths: string[]; imagePaths: string[]; config: VideoExportConfig; capcutEffectId?: string; capcutTransitionId?: string };
-export type ExportCapcutProjectResult = { projectName: string; projectPath: string; durationSeconds: number; imageCount: number; trackCount: number };
+type ExportCapcutProjectParams = { projectName: string; audioPaths: string[]; imagePaths: string[]; config: VideoExportConfig; capcutEffectId?: string; capcutTransitionId?: string };
+type ExportCapcutProjectResult = { projectName: string; projectPath: string; durationSeconds: number; imageCount: number; trackCount: number };
 const getCapcutDraftsDirectory = (): string => {
   const customDraftsDir = VIDEO_EXPORT_TEXT_D_CAPCUT_CAPCUT_DRAFTS;
   if (fs.existsSync(customDraftsDir)) return customDraftsDir;

@@ -1,5 +1,5 @@
 import { PROVIDER_REFERENCE_UPLOAD_CONFIG } from "../../constants/config.js";
-export interface FlowReferenceAttachmentState {
+interface FlowReferenceAttachmentState {
   count: number;
   uploadPending: boolean;
 }

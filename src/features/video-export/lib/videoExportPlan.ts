@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { VIDEO_EXPORT_CONSTANTS } from "../constants/videoExport.js";
 import { VideoExportConfig, VideoExportSlideMode, VideoExportTransition } from "../types/videoExport.js";
-export type VideoExportSlidePlan = { segmentCount: number; slideSeconds: number; transitionSeconds: number };
+type VideoExportSlidePlan = { segmentCount: number; slideSeconds: number; transitionSeconds: number };
 export const computeVideoExportSlidePlan = (totalSeconds: number, imageCount: number, config: Pick<VideoExportConfig, "slideMode" | "slideSeconds" | "transition" | "transitionSeconds">): VideoExportSlidePlan => {
   const safeTotal = Math.max(0, _.toNumber(totalSeconds) || 0);
   const safeImageCount = Math.max(1, _.toInteger(imageCount) || 1);

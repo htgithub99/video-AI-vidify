@@ -9,19 +9,19 @@ import { getDataDirectory } from "../utils/paths.js";
 import { appWarn } from "../../lib/logger.js";
 import { sharedChromeTasks, waitChromeTask } from "./chromeTaskCoordinator.js";
 import { aiUnavailableUntil, classifyAiError, clearAiUnavailability, resetAiErrorStreak, formatAiUntil, listAiUnavailability, markAiUnavailable, tagAiAvailability, type AiAvailabilityClass } from "./aiAvailabilityService.js";
-export interface BackupChrome {
+interface BackupChrome {
   id: string;
   name: string;
   profile: string;
   port: number;
   ready: boolean;
 }
-export interface AiFallbackRoute {
+interface AiFallbackRoute {
   provider: string;
   model: string;
   enabled: boolean;
 }
-export type ChromeWaitPolicy = (typeof A.WAIT_POLICY)[keyof typeof A.WAIT_POLICY];
+type ChromeWaitPolicy = (typeof A.WAIT_POLICY)[keyof typeof A.WAIT_POLICY];
 interface StoredSettings {
   enabled: boolean;
   pinned: string | null;
@@ -31,7 +31,7 @@ interface StoredSettings {
   mainReady: boolean;
   lowSpec: boolean;
 }
-export interface ChromeBackupSettings extends StoredSettings {
+interface ChromeBackupSettings extends StoredSettings {
   activeId: string;
   useBackup: boolean;
   ready: boolean;
@@ -76,7 +76,7 @@ const nextPort = (chromes: { port?: number }[]): number => {
   while (chromes.some((chrome) => chrome.port === port) || C.RESERVED_PORTS.includes(port)) port++;
   return port;
 };
-export const normalizeFallbackChain = (input: unknown): AiFallbackRoute[] => {
+const normalizeFallbackChain = (input: unknown): AiFallbackRoute[] => {
   const defaults = MOTION_AI_FALLBACK.MAIN.map((route) => ({ provider: route.provider, model: route.model, enabled: true }));
   const saved = (Array.isArray(input) ? input : []).filter((route): route is AiFallbackRoute => !!route && defaults.some((item) => item.provider === route.provider));
   const unique = saved.filter((route, index) => saved.findIndex((item) => item.provider === route.provider) === index).map((route) => ({ provider: route.provider, model: typeof route.model === C.STRING ? route.model : C.EMPTY, enabled: route.enabled !== false }));
@@ -184,9 +184,8 @@ export const clearChromeAvailability = (chromeId?: string, provider?: string): C
   clearAiUnavailability(chromeId, provider);
   return readChromeBackupSettings();
 };
-export const isGeminiFlashQuotaError = (error: unknown): boolean => error instanceof Error && error.message.startsWith(C.QUOTA_CODE);
 export const backupChromeFailure = (message: string): Error => Object.assign(new Error(message), { [C.ERROR_FLAG]: true });
-export const markProviderRecent = (provider: string): void => {
+const markProviderRecent = (provider: string): void => {
   recentProviders.set(provider, Date.now());
 };
 const candidates = (stored: StoredSettings, current: string): string[] => {
@@ -194,7 +193,7 @@ const candidates = (stored: StoredSettings, current: string): string[] => {
   const start = Math.max(0, order.indexOf(current));
   return [...order.slice(start + 1), ...order.slice(0, start)].filter((id) => id !== current);
 };
-export const pickChromeFor = (provider: string, current = activeChromeId()): string | undefined => {
+const pickChromeFor = (provider: string, current = activeChromeId()): string | undefined => {
   const stored = readStored();
   const recent = [...recentProviders].filter(([name, at]) => name !== provider && Date.now() - at < A.RECENT_MS).map(([name]) => name);
   return candidates(stored, current).find((id) => !aiUnavailableUntil(id, provider) && recent.every((name) => !aiUnavailableUntil(id, name)));

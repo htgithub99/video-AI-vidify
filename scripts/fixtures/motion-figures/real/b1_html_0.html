@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html data-artifact="motion-html-scene" data-request-id="8780f66b-4559-4e81-9463-809a6a4e9b96">
+<head>
+<meta charset="utf-8">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111;overflow:hidden}#motion-canvas{display:block;width:100vw;height:100vh}</style>
+</head>
+<body>
+<canvas id="motion-canvas"></canvas>
+<script>
+const INK = '#16172a';
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (e0, e1, x) => {
+  const t = clamp((x - e0) / (e1 - e0 || 1), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+function hashSeed(s) {
+  const str = String(s || 'pest');
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function makeRng(seed) {
+  let s = hashSeed(seed) || 1;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function smoothPath(pts, closed) {
+  const p = new Path2D();
+  if (!pts || !pts.length) return p;
+  const n = pts.length;
+  if (closed) {
+    p.moveTo((pts[n - 1][0] + pts[0][0]) * 0.5, (pts[n - 1][1] + pts[0][1]) * 0.5);
+    for (let i = 0; i < n; i++) {
+      const cur = pts[i];
+      const nxt = pts[(i + 1) % n];
+      p.quadraticCurveTo(cur[0], cur[1], (cur[0] + nxt[0]) * 0.5, (cur[1] + nxt[1]) * 0.5);
+    }
+    p.closePath();
+  } else {
+    p.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < n - 1; i++) {
+      p.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) * 0.5, (pts[i][1] + pts[i + 1][1]) * 0.5);
+    }
+    if (n > 1) p.lineTo(pts[n - 1][0], pts[n - 1][1]);
+  }
+  return p;
+}
+function shape(ctx, p, fill, shade, lw, shadeFn) {
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill(p);
+  }
+  if (shade || shadeFn) {
+    ctx.save();
+    ctx.clip(p);
+    if (shadeFn) {
+      shadeFn(ctx);
+    } else {
+      ctx.fillStyle = shade;
+      ctx.fillRect(-600, -400, 2600, 1600);
+    }
+    ctx.restore();
+  }
+  if (lw > 0) {
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke(p);
+  }
+}
+function drawCloud(ctx, cx, cy, w, h, fill, shade) {
+  const lobes = [
+    [-0.36, 0.05, 0.22], [-0.18, -0.14, 0.28], [0.02, -0.22, 0.34],
+    [0.22, -0.12, 0.26], [0.38, 0.06, 0.20], [0.16, 0.16, 0.22],
+    [-0.08, 0.18, 0.24], [-0.26, 0.15, 0.19]
+  ];
+  const drawUnion = (ox, oy, scale, col) => {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    for (let i = 0; i < lobes.length; i++) {
+      const lx = lobes[i][0];
+      const ly = lobes[i][1];
+      const lr = lobes[i][2];
+      const x = cx + lx * w + ox;
+      const y = cy + ly * h + oy;
+      const r = lr * w * 0.52 * scale;
+      ctx.moveTo(x + r, y);
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  };
+  drawUnion(0, 2, 1.03, '#5c636b');
+  drawUnion(0, 4, 0.99, shade);
+  drawUnion(0, -3, 0.98, fill);
+}
+if (!window.MotionFigures) {
+  const registry = {};
+  window.MotionFigures = {
+    use(defs) {
+      const api = {};
+      const keys = Object.keys(defs);
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        registry[k] = defs[k];
+        api[k] = (ctx, o) => {
+          const res = registry[k](ctx, o);
+          if (o && o.mark && res && res.box && window.motionMark) {
+            window.motionMark(ctx, o.mark, res.box.x, res.box.y, res.box.w, res.box.h);
+          }
+          return res;
+        };
+      }
+      return api;
+    },
+    phase(progress, count, cues) {
+      const p = clamp(progress, 0, 1);
+      const at = [];
+      for (let i = 0; i < count; i++) {
+        at.push(Array.isArray(cues) && typeof cues[i] === 'number' ? cues[i] : i / count);
+      }
+      let idx = 0;
+      for (let i = 1; i < count; i++) {
+        if (p >= at[i]) idx = i;
+      }
+      const start = at[idx];
+      const end = idx + 1 < count ? at[idx + 1] : 1;
+      return { at, index: idx, local: clamp((p - start) / (end - start || 1), 0, 1) };
+    },
+    track(keys, progress) {
+      const p = clamp(progress, 0, 1);
+      if (!keys || !keys.length) return { x: 0, y: 0, moving: false, distance: 0 };
+      let i = 0;
+      while (i < keys.length - 2 && p >= keys[i + 1].at) i++;
+      const k0 = keys[i];
+      const k1 = keys[Math.min(i + 1, keys.length - 1)];
+      const span = (k1.at - k0.at) || 1;
+      const rawT = clamp((p - k0.at) / span, 0, 1);
+      const prevMoved = i > 0 && (Math.abs(keys[i].x - keys[i - 1].x) > 1 || Math.abs(keys[i].y - keys[i - 1].y) > 1);
+      const nextMoves = i + 2 < keys.length && (Math.abs(keys[i + 2].x - k1.x) > 1 || Math.abs(keys[i + 2].y - k1.y) > 1);
+      let t = rawT;
+      if (!prevMoved && !nextMoves) t = rawT * rawT * (3 - 2 * rawT);
+      else if (!prevMoved) t = rawT * rawT * (2 - rawT);
+      else if (!nextMoves) t = 1 - (1 - rawT) * (1 - rawT) * (2 - (1 - rawT));
+      const out = Object.assign({}, k0);
+      const props = Object.keys(k1);
+      for (let j = 0; j < props.length; j++) {
+        const prop = props[j];
+        if (typeof k0[prop] === 'number' && typeof k1[prop] === 'number' && prop !== 'at' && prop !== 'facing') {
+          out[prop] = lerp(k0[prop], k1[prop], t);
+        }
+      }
+      let dist = 0;
+      for (let j = 0; j < i; j++) {
+        dist += Math.hypot((keys[j + 1].x || 0) - (keys[j].x || 0), (keys[j + 1].y || 0) - (keys[j].y || 0));
+      }
+      dist += Math.hypot((out.x || 0) - (k0.x || 0), (out.y || 0) - (k0.y || 0));
+      const totalSeg = Math.hypot((k1.x || 0) - (k0.x || 0), (k1.y || 0) - (k0.y || 0));
+      out.moving = totalSeg > 2 && rawT > 0.001 && rawT < 0.999;
+      out.distance = dist;
+      return out;
+    }
+  };
+}
+const FIG = window.MotionFigures.use({
+  person(ctx, o) {
+    const x = o.x || 0;
+    const y = o.y || 0;
+    const H = o.h || 172;
+    const W = o.w || Math.round(H * 0.38);
+    const r = H / 8;
+    const facing = o.facing === -1 ? -1 : 1;
+    const lw = clamp(H * 0.015, 1.3, 2.7);
+    const bob = o.bob || 0;
+    const lean = ((o.lean || 0) * Math.PI) / 180;
+    const stride = 0.9 * r;
+    const phase = ((o.distance || 0) / (stride || 1)) * Math.PI;
+    const isWalk = o.pose === 'walk' || o.pose === 'run';
+    const isCrouch = o.pose === 'crouch';
+    const crouchY = isCrouch ? H * 0.11 : 0;
+    const swing = isWalk ? Math.sin(phase) * 0.48 : 0;
+    const skin = o.skin || '#f8f8f6';
+    const skinShade = o.soot ? '#55504d' : '#d0d5dd';
+    const topCol = o.top || '#6e5844';
+    const trimCol = o.trim || '#263047';
+    const pantsCol = o.pants || '#4a433b';
+    const bootCol = o.boots || '#3b2d22';
+    const capeCol = o.cape || null;
+    ctx.save();
+    ctx.translate(x, y);
+    const shPath = new Path2D();
+    shPath.ellipse(0, 1, r * 1.45, r * 0.34, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(22, 23, 42, 0.26)';
+    ctx.fill(shPath);
+    ctx.scale(facing, 1);
+    const hipY = -0.46 * H + crouchY + bob * 0.4;
+    const legLen = 0.46 * H - crouchY * 0.85;
+    const drawLeg = (ang, ox) => {
+      ctx.save();
+      ctx.translate(ox, hipY);
+      ctx.rotate(ang);
+      const legP = smoothPath([
+        [-r * 0.34, 0], [r * 0.34, 0],
+        [r * 0.28, legLen * 0.84], [-r * 0.26, legLen * 0.84]
+      ], true);
+      shape(ctx, legP, pantsCol, null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.18)';
+        c.fillRect(-r * 0.4, 0, r * 0.28, legLen);
+      });
+      const bootP = smoothPath([
+        [-r * 0.28, legLen * 0.72], [r * 0.30, legLen * 0.72],
+        [r * 0.56, legLen], [-r * 0.32, legLen]
+      ], true);
+      shape(ctx, bootP, bootCol, null, lw, o.muddy ? (c) => {
+        c.fillStyle = '#5a4e3c';
+        c.fillRect(-r * 0.4, legLen * 0.86, r * 1.1, legLen * 0.2);
+      } : null);
+      ctx.restore();
+    };
+    drawLeg(-swing, -r * 0.22);
+    drawLeg(swing, r * 0.22);
+    ctx.save();
+    ctx.translate(0, hipY);
+    const fAng = lean + (isCrouch ? 0.24 : 0);
+    ctx.rotate(fAng);
+    const shY = -0.26 * H;
+    const headCY = shY - r * 1.18;
+    const drawArm = (isFront) => {
+      let aRot = isFront ? -swing * 0.75 : swing * 0.75;
+      let elbowBend = 0.18;
+      if (isFront) {
+        if (o.pose === 'reach') {
+          aRot = -1.08;
+          elbowBend = -0.22;
+        } else if (o.pose === 'hold') {
+          aRot = -0.58 + (o.palmSlide || 0);
+          elbowBend = -0.45;
+        } else if (o.pose === 'crouch') {
+          aRot = -0.42;
+          elbowBend = -0.5;
+        }
+      } else if (o.hold === 'crossbow') {
+        aRot = -0.72;
+        elbowBend = -0.35;
+      }
+      ctx.save();
+      ctx.translate(isFront ? -r * 0.14 : r * 0.28, shY + r * 0.16);
+      ctx.rotate(aRot);
+      const armL = 0.29 * H;
+      const armP = smoothPath([
+        [-r * 0.24, -r * 0.1], [r * 0.24, -r * 0.1],
+        [r * 0.20 + elbowBend * r * 0.5, armL], [-r * 0.18 + elbowBend * r * 0.5, armL]
+      ], true);
+      shape(ctx, armP, isFront && capeCol ? capeCol : topCol, null, lw, (c) => {
+        if (o.tornSleeve && isFront) {
+          c.fillStyle = skin;
+          c.fillRect(-r * 0.3, armL * 0.52, r * 0.6, armL * 0.24);
+        }
+        if (o.muddy && capeCol) {
+          c.fillStyle = '#5a4e3c';
+          c.fillRect(-r * 0.3, armL * 0.72, r * 0.65, armL * 0.3);
+        }
+      });
+      const hx = elbowBend * r * 0.5;
+      const hy = armL + r * 0.08;
+      const handP = new Path2D();
+      handP.arc(hx, hy, r * 0.22, 0, Math.PI * 2);
+      shape(ctx, handP, skin, null, lw * 0.9, o.cutHand && isFront ? (c) => {
+        c.strokeStyle = '#8b2626';
+        c.lineWidth = lw * 0.9;
+        c.beginPath();
+        c.moveTo(hx - r * 0.1, hy - r * 0.04);
+        c.lineTo(hx + r * 0.12, hy + r * 0.06);
+        c.stroke();
+      } : null);
+      ctx.restore();
+      const ox = isFront ? -r * 0.14 : r * 0.28;
+      const oy = shY + r * 0.16;
+      const rx = ox + hx * Math.cos(aRot) - hy * Math.sin(aRot);
+      const ry = oy + hx * Math.sin(aRot) + hy * Math.cos(aRot);
+      return [
+        x + facing * (rx * Math.cos(fAng) - ry * Math.sin(fAng)),
+        y + hipY + (rx * Math.sin(fAng) + ry * Math.cos(fAng))
+      ];
+    };
+    const backHandPos = drawArm(false);
+    if (capeCol) {
+      const sway = o.cloakSway || 0;
+      const capeP = smoothPath([
+        [-r * 0.62, shY + r * 0.05], [r * 0.45, shY + r * 0.05],
+        [r * 0.55 + sway, r * 0.48], [-r * 0.85 + sway * 1.3, r * 0.52]
+      ], true);
+      shape(ctx, capeP, capeCol, null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.2)';
+        c.fillRect(-r * 1.1, r * 0.12, r * 2.0, r * 0.55);
+        if (o.scorched) {
+          c.fillStyle = '#26211e';
+          c.fillRect(-r * 1.1, r * 0.34, r * 2.0, r * 0.3);
+        }
+      });
+    }
+    if (o.quiver) {
+      const qP = smoothPath([
+        [-r * 0.72, shY - r * 0.35], [-r * 0.36, shY - r * 0.42],
+        [-r * 0.15, r * 0.18], [-r * 0.48, r * 0.24]
+      ], true);
+      shape(ctx, qP, '#593d28', null, lw * 0.9);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = lw * 0.8;
+      for (let b = 0; b < 3; b++) {
+        ctx.beginPath();
+        ctx.moveTo(-r * (0.62 - b * 0.09), shY - r * 0.38);
+        ctx.lineTo(-r * (0.72 - b * 0.08), shY - r * 0.68);
+        ctx.stroke();
+      }
+    }
+    const torsoP = smoothPath([
+      [-r * 0.76, shY], [r * 0.76, shY],
+      [r * 0.86, r * 0.22], [-r * 0.86, r * 0.22]
+    ], true);
+    shape(ctx, torsoP, topCol, null, lw, (c) => {
+      c.fillStyle = 'rgba(22,23,42,0.16)';
+      c.fillRect(-r * 1.0, -r * 0.25, r * 0.62, r * 0.8);
+      c.fillStyle = trimCol;
+      c.fillRect(-r * 1.0, r * 0.08, r * 2.0, r * 0.15);
+      c.fillRect(-r * 0.12, shY, r * 0.24, r * 0.6);
+    });
+    const beltP = smoothPath([
+      [-r * 0.82, -r * 0.06], [r * 0.82, -r * 0.06],
+      [r * 0.84, r * 0.06], [-r * 0.84, r * 0.06]
+    ], true);
+    shape(ctx, beltP, '#3a2b1f', null, lw * 0.85);
+    const neckP = smoothPath([
+      [-r * 0.26, shY - r * 0.36], [r * 0.26, shY - r * 0.36],
+      [r * 0.30, shY + r * 0.06], [-r * 0.30, shY + r * 0.06]
+    ], true);
+    shape(ctx, neckP, skin, null, lw * 0.9);
+    const headP = new Path2D();
+    headP.arc(0, headCY, r, 0, Math.PI * 2);
+    shape(ctx, headP, skin, null, lw, (c) => {
+      c.fillStyle = skinShade;
+      c.beginPath();
+      c.arc(-r * 0.32, headCY + r * 0.12, r * 0.95, 0, Math.PI * 2);
+      c.fill();
+      if (o.soot) {
+        c.fillStyle = 'rgba(34, 30, 28, 0.48)';
+        c.beginPath();
+        c.arc(r * 0.25, headCY + r * 0.2, r * 0.45, 0, Math.PI * 2);
+        c.arc(-r * 0.15, headCY - r * 0.1, r * 0.38, 0, Math.PI * 2);
+        c.fill();
+      }
+      if (o.stubble) {
+        c.fillStyle = 'rgba(58, 52, 48, 0.24)';
+        c.fillRect(-r, headCY + r * 0.24, r * 2, r * 0.8);
+      }
+    });
+    if (o.singedHair) {
+      const hairP = smoothPath([
+        [-r * 1.04, headCY - r * 0.1], [-r * 0.85, headCY - r * 0.96],
+        [0, headCY - r * 1.08], [r * 0.82, headCY - r * 0.86],
+        [r * 0.95, headCY - r * 0.25], [r * 0.4, headCY - r * 0.55],
+        [-r * 0.35, headCY - r * 0.52]
+      ], true);
+      shape(ctx, hairP, '#2c2522', null, lw * 0.9);
+    }
+    if (o.head === 'cap') {
+      const capP = smoothPath([
+        [-r * 1.06, headCY - r * 0.22], [-r * 0.88, headCY - r * 0.98],
+        [0, headCY - r * 1.12], [r * 0.88, headCY - r * 0.96],
+        [r * 1.14, headCY - r * 0.22], [0, headCY - r * 0.34]
+      ], true);
+      shape(ctx, capP, o.headColor || '#4d392a', null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.22)';
+        c.fillRect(-r * 1.2, headCY - r * 0.42, r * 2.4, r * 0.26);
+      });
+    }
+    const lookOff = (o.look || 0) * r * 0.12;
+    const ex1 = r * 0.22 + lookOff;
+    const ex2 = r * 0.64 + lookOff;
+    const ey = headCY - r * 0.04;
+    ctx.fillStyle = INK;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = lw * 0.95;
+    if (o.expression === 'scared' || o.expression === 'shout') {
+      const eyes = [ex1, ex2];
+      for (let i = 0; i < eyes.length; i++) {
+        const ex = eyes[i];
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(ex, ey, r * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = INK;
+        ctx.beginPath();
+        ctx.arc(ex + r * 0.03, ey, r * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      const eyes = [ex1, ex2];
+      for (let i = 0; i < eyes.length; i++) {
+        ctx.beginPath();
+        ctx.ellipse(eyes[i], ey, r * 0.075, r * 0.105, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    const browTilt = (o.expression === 'worried' || o.expression === 'scared' || o.expression === 'sad') ? -0.25 : 0.12;
+    ctx.beginPath();
+    ctx.moveTo(ex1 - r * 0.14, ey - r * 0.22 + browTilt * r * 0.2);
+    ctx.lineTo(ex1 + r * 0.14, ey - r * 0.22 - browTilt * r * 0.2);
+    ctx.moveTo(ex2 - r * 0.14, ey - r * 0.22 - browTilt * r * 0.2);
+    ctx.lineTo(ex2 + r * 0.14, ey - r * 0.22 + browTilt * r * 0.2);
+    ctx.stroke();
+    const my = headCY + r * 0.42;
+    if (o.expression === 'shout') {
+      const mP = new Path2D();
+      mP.ellipse(r * 0.42 + lookOff, my, r * 0.16, r * 0.20, 0, 0, Math.PI * 2);
+      shape(ctx, mP, '#421c1c', null, lw * 0.8);
+    } else if (o.expression === 'worried' || o.expression === 'scared' || o.expression === 'sad') {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.24 + lookOff, my + r * 0.06);
+      ctx.quadraticCurveTo(r * 0.42 + lookOff, my - r * 0.06, r * 0.60 + lookOff, my + r * 0.06);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.26 + lookOff, my);
+      ctx.quadraticCurveTo(r * 0.44 + lookOff, my + r * 0.05, r * 0.60 + lookOff, my - r * 0.02);
+      ctx.stroke();
+    }
+    if (o.hold === 'spear') {
+      const sx = r * 0.56;
+      const shaftP = smoothPath([
+        [sx - r * 0.07, -hipY], [sx + r * 0.07, -hipY],
+        [sx + r * 0.06, headCY - r * 2.1], [sx - r * 0.06, headCY - r * 2.1]
+      ], true);
+      shape(ctx, shaftP, '#7a593b', null, lw * 0.85);
+      const tipP = smoothPath([
+        [sx - r * 0.15, headCY - r * 2.05], [sx, headCY - r * 2.75],
+        [sx + r * 0.15, headCY - r * 2.05]
+      ], true);
+      shape(ctx, tipP, '#9aa2ab', null, lw * 0.85);
+    } else if (o.hold === 'crossbow') {
+      ctx.save();
+      ctx.translate(r * 0.35, shY + r * 0.62);
+      ctx.rotate(-0.18);
+      const stockP = smoothPath([
+        [-r * 0.55, -r * 0.12], [r * 1.45, -r * 0.08],
+        [r * 1.45, r * 0.10], [-r * 0.55, r * 0.16]
+      ], true);
+      shape(ctx, stockP, '#7c5838', null, lw * 0.9);
+      const prodP = smoothPath([
+        [r * 1.25, -r * 0.85], [r * 1.42, -r * 0.85],
+        [r * 1.42, r * 0.85], [r * 1.25, r * 0.85]
+      ], true);
+      shape(ctx, prodP, '#5c646d', null, lw * 0.9);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = lw * 0.75;
+      ctx.beginPath();
+      ctx.moveTo(r * 1.32, -r * 0.82);
+      ctx.lineTo(r * 0.45, 0);
+      ctx.lineTo(r * 1.32, r * 0.82);
+      ctx.stroke();
+      ctx.restore();
+    } else if (o.hold === 'sack') {
+      const bagP = smoothPath([
+        [r * 0.15, shY + r * 0.45], [r * 0.95, shY + r * 0.42],
+        [r * 1.05, r * 0.25], [r * 0.10, r * 0.28]
+      ], true);
+      shape(ctx, bagP, '#6b5c49', null, lw * 0.9);
+    }
+    const frontHandPos = drawArm(true);
+    ctx.restore();
+    ctx.restore();
+    return {
+      box: { x: x - W * 0.5, y: y - H, w: W, h: H },
+      head: [x, y - H + r],
+      hand: frontHandPos,
+      backHand: backHandPos
+    };
+  },
+  building(ctx, o) {
+    const x = o.x || 0;
+    const y = o.y || 0;
+    const w = o.w || 150;
+    const h = o.h || 105;
+    const lw = clamp(h * 0.018, 1.2, 2.2);
+    const col = o.color || '#cfc6b2';
+    const trim = o.trim || '#69533e';
+    const bodyP = smoothPath([
+      [x - w * 0.5, y], [x - w * 0.34, y - h * 0.62],
+      [x, y - h], [x + w * 0.34, y - h * 0.62],
+      [x + w * 0.5, y]
+    ], true);
+    shape(ctx, bodyP, col, null, lw, (c) => {
+      c.fillStyle = 'rgba(22,23,42,0.16)';
+      c.fillRect(x, y - h, w * 0.6, h);
+      c.fillStyle = trim;
+      c.fillRect(x - w * 0.6, y - h * 0.64, w * 1.2, h * 0.07);
+    });
+    const doorP = smoothPath([
+      [x - w * 0.12, y], [x - w * 0.04, y - h * 0.56],
+      [x + w * 0.04, y - h * 0.56], [x + w * 0.12, y]
+    ], true);
+    shape(ctx, doorP, '#2a2623', null, lw * 0.85);
+    return { box: { x: x - w * 0.5, y: y - h, w, h } };
+  },
+  vehicle(ctx, o) {
+    const x = o.x || 0;
+    const y = o.y || 0;
+    const w = o.w || 165;
+    const h = o.h || 98;
+    const lw = clamp(h * 0.018, 1.2, 2.2);
+    const col = o.color || '#6e5239';
+    const tiltP = smoothPath([
+      [x - w * 0.36, y - h * 0.45], [x - w * 0.30, y - h],
+      [x + w * 0.30, y - h], [x + w * 0.36, y - h * 0.45]
+    ], true);
+    shape(ctx, tiltP, '#c8bfa9', null, lw, (c) => {
+      c.fillStyle = 'rgba(22,23,42,0.15)';
+      c.fillRect(x - w * 0.5, y - h * 0.68, w, h * 0.25);
+    });
+    const bedP = smoothPath([
+      [x - w * 0.42, y - h * 0.48], [x + w * 0.42, y - h * 0.48],
+      [x + w * 0.38, y - h * 0.22], [x - w * 0.38, y - h * 0.22]
+    ], true);
+    shape(ctx, bedP, col, null, lw);
+    const wheelXs = [x - w * 0.25, x + w * 0.25];
+    for (let i = 0; i < wheelXs.length; i++) {
+      const wx = wheelXs[i];
+      const wr = h * 0.22;
+      const wy = y - wr;
+      const wp = new Path2D();
+      wp.arc(wx, wy, wr, 0, Math.PI * 2);
+      shape(ctx, wp, '#59402b', null, lw);
+      const hub = new Path2D();
+      hub.arc(wx, wy, wr * 0.38, 0, Math.PI * 2);
+      shape(ctx, hub, '#8c8376', null, lw * 0.8);
+    }
+    return { box: { x: x - w * 0.45, y: y - h, w: w * 0.9, h } };
+  }
+});
+const sceneCache = {};
+function getStaticData(seed) {
+  if (sceneCache[seed]) return sceneCache[seed];
+  const rng = makeRng(seed);
+  const tufts = [];
+  for (let i = 0; i < 42; i++) {
+    tufts.push({
+      x: -360 + rng() * 2020,
+      y: 572 + rng() * 280,
+      s: 0.7 + rng() * 0.75,
+      dark: rng() > 0.45
+    });
+  }
+  const stones = [];
+  for (let i = 0; i < 24; i++) {
+    stones.push({
+      x: -340 + rng() * 1980,
+      y: 580 + rng() * 270,
+      rx: 4 + rng() * 7,
+      ry: 2.5 + rng() * 4
+    });
+  }
+  const levies = [
+    { x: 165, y: 536, h: 112, top: '#4b7a45', hold: 'spear', facing: 1, ph: 0.3 },
+    { x: 245, y: 544, h: 116, top: '#6d5843', hold: 'crossbow', facing: 1, ph: 1.7 },
+    { x: 355, y: 530, h: 108, top: '#5a6b48', hold: 'spear', facing: 1, ph: 2.8 },
+    { x: 715, y: 534, h: 112, top: '#6d5843', hold: 'spear', facing: -1, ph: 0.9 },
+    { x: 805, y: 548, h: 118, top: '#4b7a45', hold: 'spear', facing: -1, ph: 2.1 },
+    { x: 880, y: 552, h: 120, top: '#6d5843', hold: 'crossbow', facing: -1, ph: 3.4 },
+    { x: 1065, y: 538, h: 112, top: '#5a6b48', hold: 'spear', facing: -1, ph: 1.2 },
+    { x: 1165, y: 546, h: 116, top: '#4b7a45', hold: 'spear', facing: -1, ph: 2.5 }
+  ];
+  sceneCache[seed] = { tufts, stones, levies };
+  return sceneCache[seed];
+}
+window.motionScene = {
+  ready: Promise.resolve(),
+  async renderAt(input = {}) {
+    const canvas = document.getElementById('motion-canvas');
+    if (!canvas) return;
+    const w = Math.max(320, Number(input.width) || 1280);
+    const h = Math.max(180, Number(input.height) || 720);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    const motionEnabled = input.motionEnabled !== false;
+    const cameraEnabled = input.cameraEnabled !== false;
+    const progress = motionEnabled ? clamp(Number(input.progress) || 0, 0, 1) : 0;
+    const time = motionEnabled ? (Number(input.time) || 0) : 0;
+    const data = getStaticData(input.seed || 'pest');
+    const ph = window.MotionFigures.phase(progress, 3, input.cues);
+    const camKeys = [
+      { at: 0, zoom: 1.0, focusX: 630, focusY: 382 },
+      { at: ph.at[1], zoom: 1.04, focusX: 595, focusY: 391 },
+      { at: ph.at[2], zoom: 1.08, focusX: 560, focusY: 400 },
+      { at: 1, zoom: 1.11, focusX: 545, focusY: 405 }
+    ];
+    const cam = cameraEnabled ? window.MotionFigures.track(camKeys, progress) : camKeys[0];
+    const youKeys = [
+      { at: 0, x: 465, y: 612, pose: 'hold', expression: 'calm', look: 0.1 },
+      { at: ph.at[1] * 0.85, x: 465, y: 612, pose: 'hold', expression: 'worried', look: 0.6 },
+      { at: ph.at[1], x: 465, y: 612, pose: 'hold', expression: 'worried', look: 0.7 },
+      { at: ph.at[2], x: 465, y: 612, pose: 'reach', expression: 'worried', look: 0.6 },
+      { at: 1, x: 465, y: 612, pose: 'hold', expression: 'grave', look: 0.55 }
+    ];
+    const you = window.MotionFigures.track(youKeys, progress);
+    const refKeys = [
+      { at: 0, x: 1090, y: 616, pose: 'walk', expression: 'scared', facing: -1 },
+      { at: ph.at[1] * 0.88, x: 556, y: 614, pose: 'reach', expression: 'scared', facing: -1 },
+      { at: ph.at[1], x: 556, y: 614, pose: 'reach', expression: 'shout', facing: -1 },
+      { at: lerp(ph.at[1], ph.at[2], 0.42), x: 576, y: 616, pose: 'crouch', expression: 'shout', facing: -1 },
+      { at: ph.at[2], x: 750, y: 596, pose: 'walk', expression: 'sad', facing: 1 },
+      { at: 1, x: 778, y: 594, pose: 'crouch', expression: 'sad', facing: -1 }
+    ];
+    const ref = window.MotionFigures.track(refKeys, progress);
+    const tomasKeys = [
+      { at: 0, x: 910, y: 612, pose: 'stand', expression: 'stern', facing: -1 },
+      { at: ph.at[1] * 1.15, x: 910, y: 612, pose: 'stand', expression: 'worried', facing: -1 },
+      { at: ph.at[2], x: 586, y: 612, pose: 'reach', expression: 'grave', facing: -1 },
+      { at: 1, x: 586, y: 612, pose: 'reach', expression: 'grave', facing: -1 }
+    ];
+    const tomas = window.MotionFigures.track(tomasKeys, progress);
+    ctx.save();
+    ctx.scale(w / 1280, h / 720);
+    ctx.fillStyle = '#a3abb3';
+    ctx.fillRect(0, 0, 1280, 720);
+    ctx.save();
+    ctx.translate(640, 360);
+    ctx.scale(cam.zoom, cam.zoom);
+    ctx.translate(-cam.focusX, -cam.focusY);
+    const skyG = ctx.createLinearGradient(0, -260, 0, 440);
+    skyG.addColorStop(0, '#8d969f');
+    skyG.addColorStop(1, '#bcc3ca');
+    ctx.fillStyle = skyG;
+    ctx.fillRect(-450, -260, 2180, 720);
+    const drift = time * 4.5;
+    drawCloud(ctx, 180 + drift, 120, 290, 110, '#cfd5db', '#9ba3ac');
+    drawCloud(ctx, 640 + drift * 0.8, 95, 340, 125, '#d4dae0', '#a1a9b2');
+    drawCloud(ctx, 1080 + drift * 0.9, 130, 310, 115, '#cbd1d7', '#969ea7');
+    const farBank = smoothPath([
+      [-450, 434], [120, 426], [640, 431], [1180, 425], [1730, 433],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, farBank, '#8c948c', null, 1.2);
+    const riverP = smoothPath([
+      [-450, 436], [240, 435], [760, 437], [1730, 435],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, riverP, '#758796', null, 1.5, (c) => {
+      c.fillStyle = '#687988';
+      c.fillRect(-450, 458, 2180, 40);
+    });
+    ctx.strokeStyle = 'rgba(210, 222, 232, 0.45)';
+    ctx.lineWidth = 1.4;
+    for (let r = 0; r < 9; r++) {
+      const rx = -220 + r * 195 + Math.sin(time * 0.8 + r) * 8;
+      const ry = 446 + (r % 3) * 11;
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.quadraticCurveTo(rx + 36, ry - 2, rx + 72, ry);
+      ctx.stroke();
+    }
+    const midPlain = smoothPath([
+      [-450, 484], [180, 481], [680, 485], [1240, 480], [1730, 484],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, midPlain, '#7b8164', null, 1.8);
+    FIG.building(ctx, { kind: 'tent', x: 115, y: 522, w: 145, h: 92, color: '#cbc2ad', trim: '#634f3c' });
+    FIG.vehicle(ctx, { kind: 'wagon', x: 315, y: 526, w: 155, h: 90, color: '#6b4f37' });
+    FIG.building(ctx, { kind: 'tent', x: 960, y: 520, w: 155, h: 96, color: '#c4baa4', trim: '#584737' });
+    FIG.vehicle(ctx, { kind: 'wagon', x: 1155, y: 528, w: 160, h: 92, color: '#634933' });
+    const fgPlain = smoothPath([
+      [-450, 566], [220, 562], [650, 568], [1120, 561], [1730, 566],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, fgPlain, '#6d6e52', null, 2.0, (c) => {
+      c.fillStyle = '#5b5542';
+      c.beginPath();
+      c.ellipse(540, 616, 260, 26, 0, 0, Math.PI * 2);
+      c.ellipse(230, 658, 150, 22, 0, 0, Math.PI * 2);
+      c.ellipse(920, 635, 190, 24, 0, 0, Math.PI * 2);
+      c.fill();
+    });
+    const puddleP = smoothPath([
+      [145, 656], [205, 646], [278, 650], [295, 664],
+      [242, 674], [162, 670]
+    ], true);
+    shape(ctx, puddleP, '#7c8b96', null, 1.8, (c) => {
+      c.strokeStyle = 'rgba(218, 228, 236, 0.5)';
+      c.lineWidth = 1.3;
+      c.beginPath();
+      c.ellipse(222, 660, 24 + Math.sin(time * 1.6) * 2, 4.5, 0, 0, Math.PI * 2);
+      c.stroke();
+    });
+    for (let i = 0; i < data.stones.length; i++) {
+      const st = data.stones[i];
+      const sp = new Path2D();
+      sp.ellipse(st.x, st.y, st.rx, st.ry, 0, 0, Math.PI * 2);
+      shape(ctx, sp, '#7c7a72', null, 1.2);
+    }
+    for (let i = 0; i < data.tufts.length; i++) {
+      const tf = data.tufts[i];
+      const tx = tf.x;
+      const ty = tf.y;
+      const s = tf.s;
+      const gp = smoothPath([
+        [tx - 10 * s, ty], [tx - 13 * s, ty - 12 * s], [tx - 5 * s, ty - 4 * s],
+        [tx, ty - 15 * s], [tx + 5 * s, ty - 4 * s], [tx + 13 * s, ty - 11 * s],
+        [tx + 10 * s, ty]
+      ], true);
+      shape(ctx, gp, tf.dark ? '#535b3d' : '#656e4b', null, 1.2);
+    }
+    const actors = [];
+    for (let idx = 0; idx < data.levies.length; idx++) {
+      const lv = data.levies[idx];
+      const easingRef = (idx === 4 || idx === 5) && progress > lerp(ph.at[1], ph.at[2], 0.45);
+      actors.push({
+        y: lv.y,
+        draw() {
+          FIG.person(ctx, {
+            x: lv.x,
+            y: lv.y,
+            w: Math.round(lv.h * 0.38),
+            h: lv.h,
+            facing: lv.facing,
+            pose: easingRef ? 'reach' : 'stand',
+            expression: easingRef ? 'worried' : 'stern',
+            top: lv.top,
+            trim: '#263047',
+            head: 'cap',
+            hold: lv.hold,
+            look: Math.sin(time * 0.9 + lv.ph) * 0.5,
+            bob: Math.sin(time * 2.1 + lv.ph) * 1.4
+          });
+        }
+      });
+    }
+    const breathYou = Math.sin(time * 2.3) * 1.8;
+    const swayYou = Math.sin(time * 1.7) * 2.4;
+    const palmSlide = progress < ph.at[1] ? Math.sin(time * 2.6) * 0.14 : 0;
+    let youRes = null;
+    actors.push({
+      y: you.y,
+      draw() {
+        youRes = FIG.person(ctx, {
+          mark: 'you',
+          x: you.x,
+          y: you.y,
+          w: 68,
+          h: 176,
+          facing: 1,
+          pose: you.pose,
+          palmSlide,
+          expression: you.expression,
+          look: you.look + Math.sin(time * 1.3) * 0.08,
+          top: '#6e5844',
+          trim: '#2d2620',
+          cape: '#524133',
+          boots: '#3d2e22',
+          head: 'cap',
+          headColor: '#4a3728',
+          hold: 'crossbow',
+          quiver: true,
+          muddy: true,
+          cutHand: true,
+          bob: breathYou,
+          cloakSway: swayYou,
+          lean: progress > ph.at[2] ? Math.sin(smoothstep(ph.at[2], 1, progress) * Math.PI) * 3.5 : 0
+        });
+      }
+    });
+    const breathRef = Math.sin(time * 3.1 + 1.1) * 2.1;
+    actors.push({
+      y: ref.y,
+      draw() {
+        const refH = ref.y < 602 ? 162 : 172;
+        FIG.person(ctx, {
+          mark: 'refugee',
+          x: ref.x,
+          y: ref.y,
+          w: Math.round(refH * 0.38),
+          h: refH,
+          facing: ref.facing,
+          pose: ref.moving ? 'walk' : ref.pose,
+          distance: ref.distance,
+          expression: ref.expression,
+          top: '#4f3e33',
+          cape: '#45352c',
+          scorched: true,
+          soot: true,
+          singedHair: true,
+          hold: 'sack',
+          bob: breathRef,
+          cloakSway: Math.sin(time * 2.2 + 0.7) * 2.8
+        });
+      }
+    });
+    const breathTom = Math.sin(time * 2.2 + 2.0) * 1.8;
+    let tomasRes = null;
+    actors.push({
+      y: tomas.y,
+      draw() {
+        tomasRes = FIG.person(ctx, {
+          mark: 'tomas',
+          top: '#4b7a45',
+          _seed: true,
+          x: tomas.x,
+          y: tomas.y,
+          w: 68,
+          h: 178,
+          facing: tomas.facing,
+          pose: tomas.moving ? 'walk' : tomas.pose,
+          distance: tomas.distance,
+          expression: tomas.expression,
+          trim: '#222d47',
+          head: 'cap',
+          headColor: '#4a3728',
+          hold: 'spear',
+          tornSleeve: true,
+          stubble: true,
+          bob: breathTom
+        });
+      }
+    });
+    actors.sort((a, b) => a.y - b.y);
+    for (let i = 0; i < actors.length; i++) actors[i].draw();
+    if (tomasRes && youRes) {
+      const passT = smoothstep(ph.at[2] - 0.04, ph.at[2] + 0.14, progress);
+      const wx = lerp(tomasRes.hand[0], youRes.hand[0], passT);
+      const wy = lerp(tomasRes.hand[1], youRes.hand[1], passT);
+      const wsP = smoothPath([
+        [wx - 9, wy - 4], [wx + 9, wy - 5],
+        [wx + 10, wy + 4], [wx - 8, wy + 5]
+      ], true);
+      shape(ctx, wsP, '#838991', null, 1.6, (c) => {
+        c.fillStyle = '#5d636b';
+        c.fillRect(wx - 12, wy, 24, 8);
+      });
+      if (window.motionMark) {
+        window.motionMark(ctx, 'whetstone', wx - 11, wy - 7, 22, 14);
+      }
+    }
+    ctx.restore();
+    ctx.restore();
+  }
+};
+if (!window.__MOTION_HOST__) { const t0 = performance.now(), dur = 10, loop = (now) => { const t = ((now - t0) / 1000) % dur; window.motionScene.renderAt({ time: t, progress: t / dur, frame: Math.floor(t * 30), fps: 30, duration: dur, width: window.innerWidth || 1280, height: window.innerHeight || 720, mode: 'preview', motionEnabled: true, sceneEffectsEnabled: true, seed: 'preview', speaking: [] }); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+</script>
+</body>
+</html>

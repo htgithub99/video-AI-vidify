@@ -47,7 +47,7 @@ const getHardwareId = (): string =>
     .update(_.join([process.platform, process.arch, resolveRawDeviceId()], SecurityConstants.HYPHEN))
     .digest(SecurityConstants.ENCODING_HEX as crypto.BinaryToTextEncoding)
     .substring(SecurityConstants.ZERO, SecurityConstants.SUBSTRING_LEN_32);
-export interface LicenseInfo {
+interface LicenseInfo {
   status: LicenseStatus;
   plan_id: string;
   plan_type: string;

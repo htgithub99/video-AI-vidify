@@ -4,7 +4,7 @@ import { MOTION_IDENTITY_REFERENCE as I } from "../constants/motionIdentityRefer
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
 import { MOTION_PROFILE_SCENES } from "../constants/motionProfiles/scenes.js";
 import type { MotionRemotionProfile, MotionRemotionScene, MotionVectorAsset } from "../types/motionVisual.js";
-export type MotionIdentityReference = { entityId: string; sceneId: string; svg: string; costumeColors?: string[] };
+type MotionIdentityReference = { entityId: string; sceneId: string; svg: string; costumeColors?: string[] };
 export const motionLayerSvg = (svg: string, id: string): string | undefined => {
   const open = new RegExp(`${RT_MAINTENANCE.W_B_BID_S_S}${escape(id)}${RT_MAINTENANCE.VALUE_2}`).exec(svg);
   if (!open) return undefined;
@@ -19,9 +19,9 @@ export const motionLayerSvg = (svg: string, id: string): string | undefined => {
   }
   return undefined;
 };
-export const motionCompactSvg = (svg: string): string => svg.replace(I.STRIP, "").replace(I.WHITESPACE, I.TAG_JOIN).trim().replace(I.ROOT_TRANSFORM, RT_MAINTENANCE.VALUE_1_2);
+const motionCompactSvg = (svg: string): string => svg.replace(I.STRIP, "").replace(I.WHITESPACE, I.TAG_JOIN).trim().replace(I.ROOT_TRANSFORM, RT_MAINTENANCE.VALUE_1_2);
 const idPattern = /<[\w:-]+\b[^<>]*\bid\s*=\s*(["'])([^"']+)\1/g;
-export const motionStripSubLayers = (svg: string, exclude: ReadonlySet<string>): string => {
+const motionStripSubLayers = (svg: string, exclude: ReadonlySet<string>): string => {
   let next = svg;
   for (let guard = 0; guard < 64; guard++) {
     const inner = next.slice(next.indexOf(RT_MAINTENANCE.CLOSE_TAG) + 1);
@@ -65,19 +65,19 @@ const withoutIdentity = (node: SvgNode, identity: RegExp): SvgNode | undefined =
   if (node.id && identity.test(node.id)) return undefined;
   return { ...node, children: node.children.map((child) => withoutIdentity(child, identity)).filter((child): child is SvgNode => !!child) };
 };
-export const motionIdentityHead = (layerSvg: string, identity: RegExp): string | undefined => {
+const motionIdentityHead = (layerSvg: string, identity: RegExp): string | undefined => {
   const [root] = parseSvg(layerSvg);
   if (!root?.open) return undefined;
   const kept = root.children.map((child) => keepIdentity(child, identity)).filter((child): child is SvgNode => !!child);
   return kept.length ? root.open + serialize(kept) + root.close : undefined;
 };
-export const motionIdentityBody = (layerSvg: string, identity: RegExp): string => {
+const motionIdentityBody = (layerSvg: string, identity: RegExp): string => {
   const [root] = parseSvg(layerSvg);
   const body = root && withoutIdentity(root, identity);
   return body ? serialize([body]) : "";
 };
 const expandHex = (hex: string): string => (hex.length === I.HEX_SHORT ? `${RT_MAINTENANCE.HASH}${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex.slice(0, 7)).toLowerCase();
-export const motionSvgPalette = (svg: string, size: number = I.PALETTE_SIZE): string[] => {
+const motionSvgPalette = (svg: string, size: number = I.PALETTE_SIZE): string[] => {
   const counts = new Map<string, number>();
   for (const match of svg.matchAll(I.FILL)) {
     const hex = expandHex(match[1]);
@@ -88,7 +88,7 @@ export const motionSvgPalette = (svg: string, size: number = I.PALETTE_SIZE): st
     .slice(0, size)
     .map(([hex]) => hex);
 };
-export const motionCostumeColors = (bodySvg: string): string[] =>
+const motionCostumeColors = (bodySvg: string): string[] =>
   motionSvgPalette(bodySvg, 8)
     .filter((hex) => !I.COSTUME_SKIP.test(hex))
     .slice(0, I.COSTUME_COLORS);

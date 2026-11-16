@@ -44,7 +44,7 @@ const frameSignature = (profile: MotionRemotionProfile): number[] | undefined =>
   }
   return frameSignatures.get(profile);
 };
-export const motionHeadShapeMatches = (svg: string, nodeId: string, profile: MotionRemotionProfile): boolean | undefined => {
+const motionHeadShapeMatches = (svg: string, nodeId: string, profile: MotionRemotionProfile): boolean | undefined => {
   const expected = frameSignature(profile);
   if (!expected) return undefined;
   let elements: ReturnType<typeof compositionElements>;

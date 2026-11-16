@@ -30,7 +30,9 @@ export const motionVisualSettingsFor = (input: Record<string, any>): MotionVisua
   const pacing = MOTION_SCENE_PACING.GENRE_DEFAULT[motionVideoGenre(genre)];
   return pacing ? { ...settings, pacing } : settings;
 };
-export const motionPlanSettings = (settings: MotionVisualSettings): MotionVisualSettings => ({ ...settings, figureKit: undefined, proportion: undefined });
+// What the scene plan and the drawings depend on. "Cách dựng", the drawing style, the proportion and the layout are applied
+// when the scenes are shown, so one set of scenes serves every choice of them.
+export const motionPlanSettings = (settings: MotionVisualSettings): Partial<MotionVisualSettings> => ({ ...settings, profileId: undefined, layout: undefined, figureKit: undefined, proportion: undefined });
 // A scene drawn on the figure table serves both "Cách dựng" choices; a scene from before it has to be drawn again.
 export const motionSceneCurrent = (artifact: { figures?: boolean } | undefined): boolean => artifact?.figures === true;
 export const isRemotionSpec = (spec: MotionRenderSpec | null | undefined): spec is MotionRemotionSpec => !!spec && RT_CORE.ENGINE in spec && spec.engine === RT_SHARED.REMOTION;

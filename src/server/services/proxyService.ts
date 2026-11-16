@@ -81,7 +81,7 @@ import { createProxyDiagnostics } from "./proxyDiagnostics.js";
 import { launchNativeProxyBrowser, NativeProxyRouteError, type NativeProxyBrowserFactory, type NativeProxySession } from "./nativeProxyBrowser.js";
 type StoredProfile = Omit<ProxyProfile, "session" | "hasPassword"> & { encryptedPassword: string };
 const DESTINATIONS = { browser: SOURCE_TEXT_HTTPS_WWW_YOUTUBE_COM, youtube: SOURCE_TEXT_HTTPS_WWW_YOUTUBE_COM, studio: SOURCE_TEXT_HTTPS_STUDIO_YOUTUBE_COM } as const;
-export function proxyFailure(error: unknown): string {
+function proxyFailure(error: unknown): string {
   const message = getErrorMessage(error, "");
   if (/407|INVALID_AUTH|AUTH_UNSUPPORTED|credentials/i.test(message)) return SOURCE_TEXT_PROXY_TU_CHOI_XAC_THUC_KIEM_TRA;
   if (isProxyTimeout(error)) return SOURCE_TEXT_KET_NOI_PROXY_HET_THOI_GIAN_CHO;

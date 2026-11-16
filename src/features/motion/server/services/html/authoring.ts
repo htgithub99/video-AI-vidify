@@ -70,7 +70,7 @@ const parseStampSeconds = (match: RegExpMatchArray): number => {
   const seconds = Number(match[3] ?? match[6] ?? 0);
   return hours * 3600 + minutes * 60 + seconds;
 };
-export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, totalSeconds: number, totalUnits: number, totalScenes: number): HtmlChapterPartSlice[] => {
+const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, totalSeconds: number, totalUnits: number, totalScenes: number): HtmlChapterPartSlice[] => {
   const rawDesiredParts = Math.max(Math.ceil(totalScenes / MAX_HTML_BEATS_PER_PART), Math.ceil(totalUnits / MAX_HTML_UNITS_PER_PART));
   if (rawDesiredParts <= 1) return [];
   let atoms = slice

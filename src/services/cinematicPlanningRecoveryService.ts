@@ -1,7 +1,7 @@
 import { SOURCE_TEXT_ID, SOURCE_TEXT_SYMBOL_16 } from "../constants/sourceText";
 import _ from "lodash";
 import { StoryboardScene } from "../types";
-export interface CinematicPlanningResponsePartition {
+interface CinematicPlanningResponsePartition {
   completedScenes: StoryboardScene[];
   unresolvedScenes: StoryboardScene[];
 }

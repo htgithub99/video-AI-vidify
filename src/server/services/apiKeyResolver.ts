@@ -23,7 +23,7 @@ import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
 import { appLog, appError } from "../../lib/logger.js";
 import { jsonUtils } from "../../lib/json.js";
 import _ from "lodash";
-export interface ResolvedApiKeys {
+interface ResolvedApiKeys {
   geminiKey: string;
   cerebrasKey: string;
   groqKey: string;

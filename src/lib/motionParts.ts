@@ -3,7 +3,7 @@ import _ from "lodash";
 import { MOTION_PARTS as P } from "../constants/motionParts.js";
 import type { MotionChapter, MotionGenState, MotionSeriesPart, MotionSeriesState, MotionStoryAnalysis } from "../types/motionVideo.js";
 const chapterSeconds = (chapter: MotionChapter): number => chapter.targetSeconds || P.DEFAULT_CHAPTER_SECONDS;
-export const motionPartPlan = (chapters: MotionChapter[], wanted: number): MotionSeriesPart[] => {
+const motionPartPlan = (chapters: MotionChapter[], wanted: number): MotionSeriesPart[] => {
   const count = _.clamp(Math.round(wanted) || 1, 1, Math.max(1, chapters.length));
   const total = _.sumBy(chapters, chapterSeconds);
   const parts: MotionSeriesPart[] = [];

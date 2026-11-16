@@ -13,12 +13,12 @@ import { remotionPoint, remotionVisibleRect } from "../../../lib/motionRemotionG
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
 import type { MotionRemotionProfile, MotionRemotionScene, MotionRemotionNode, MotionRemotionPlacedNode, MotionVectorAsset, MotionRemotionTimedScene, MotionRenderBehavior, MotionVisualRect } from "../../../types/motionVisual.js";
 export const motionFrameSeconds = (frame: number, fps: number) => Math.max(0, frame) / Math.max(1, fps);
-export const motionStableSeed = (value: string): number => {
+const motionStableSeed = (value: string): number => {
   let seed = 2166136261;
   for (const c of value) seed = Math.imul(seed ^ c.charCodeAt(0), 16777619);
   return (seed >>> 0) / 4294967296;
 };
-export const motionActorScale = (behavior: MotionRenderBehavior, seconds: number, id: string, locked = false) => (behavior.actors === RT_SHARED.SIMPLE && !locked ? 1 + B.ACTOR.AMOUNT * (0.5 - 0.5 * Math.cos((seconds * Math.PI * 2) / B.ACTOR.SECONDS + motionStableSeed(id) * Math.PI * 2)) : 1);
+const motionActorScale = (behavior: MotionRenderBehavior, seconds: number, id: string, locked = false) => (behavior.actors === RT_SHARED.SIMPLE && !locked ? 1 + B.ACTOR.AMOUNT * (0.5 - 0.5 * Math.cos((seconds * Math.PI * 2) / B.ACTOR.SECONDS + motionStableSeed(id) * Math.PI * 2)) : 1);
 export const motionPropAngle = (behavior: MotionRenderBehavior, seconds: number, id: string) => (behavior.sceneEffects === RT_SHARED.GENTLE ? Math.sin(seconds * 0.65 + motionStableSeed(id) * Math.PI * 2) * 0.35 : 0);
 export const motionActorLocked = (scene: MotionRemotionScene, node: MotionRemotionNode) => (node.kind === RT_SHARED.CHARACTER ? node.relation === RT_SHARED.ON || node.relation === RT_SHARED.INSIDE : !!node.relation || scene.nodes.some((n) => n.target === node.id));
 export const motionNodeFrame = (scene: MotionRemotionTimedScene, node: MotionRemotionPlacedNode, assets: Record<string, MotionVectorAsset>, behavior: MotionRenderBehavior, seconds: number) => {
@@ -65,7 +65,7 @@ export const remotionSceneView = (scene: MotionRemotionTimedScene | undefined, w
     y = Math.max(Math.max(height - height * scale, -top * scale), Math.min(Math.min(0, height - bottom * scale), height * 0.43 - (top + bottom) * 0.5 * scale));
   return { scale, x, y };
 };
-export const remotionCameraRange = (scene: MotionRemotionTimedScene | undefined, scenes: MotionRemotionTimedScene[]) => {
+const remotionCameraRange = (scene: MotionRemotionTimedScene | undefined, scenes: MotionRemotionTimedScene[]) => {
   const index = scene ? scenes.indexOf(scene) : -1;
   if (!scene || index < 0) return scene;
   const key = (item: MotionRemotionTimedScene) => stringifyJson([item.composition?.assetKey || item.id, item.composition?.design?.cameraMotion, item.view || RT_MOTION.WIDE, [...(item.focus || [])].sort()]);
@@ -112,7 +112,7 @@ export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: 
   const direction = scene && asset ? motionSceneCameraDirection(scene, asset, Math.max(0, seconds - scene.startFrame / fps), (scene.endFrame - scene.startFrame) / fps, camera) : { mode: RT_MAINTENANCE.HOLD };
   return motionCameraFrame({ enabled: behavior.actors === RT_SHARED.SIMPLE && behavior.camera === RT_SHARED.GENTLE, seconds, start: (range?.startFrame || 0) / fps, end: range ? range.endFrame / fps : 12, width, height, seed: range?.id || scene?.id || "", protectedRects, ...direction }, camera);
 };
-export const remotionSceneEffects = (scene: MotionRemotionScene): NonNullable<MotionRemotionScene["effects"]> => {
+const remotionSceneEffects = (scene: MotionRemotionScene): NonNullable<MotionRemotionScene["effects"]> => {
   if (scene.effects)
     return scene.effects.map((effect) => {
       if (effect.kind === RT_MOTION.RAIN || effect.kind === RT_MOTION.FOG) return { ...effect, source: undefined, anchor: undefined, region: effect.region && !([RT_SHARED.BACKGROUND, RT_SHARED.CENTER, RT_SHARED.LEFT, RT_SHARED.RIGHT] as string[]).includes(effect.region) ? effect.region : effect.kind === RT_MOTION.RAIN ? RT_MOTION.OUTDOORS : RT_SHARED.FLOOR };

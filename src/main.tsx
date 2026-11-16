@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./styles/studioTheme.css";
+import "./styles/palette.css";
 import { LicenseProvider } from "./contexts/LicenseContext.tsx";
 import { LicenseActivation } from "./components/LicenseActivation.tsx";
 import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "./constants";

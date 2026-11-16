@@ -18,7 +18,7 @@ export interface MotionResponseSchema {
   minimum?: number;
   maximum?: number;
 }
-export const MOTION_RESPONSE_LIMITS = { TOPIC_CHARS: 100, MEANING_CHARS: 500, EVIDENCE_CHARS: 360, ALIASES_MAX: 6 } as const;
+const MOTION_RESPONSE_LIMITS = { TOPIC_CHARS: 100, MEANING_CHARS: 500, EVIDENCE_CHARS: 360, ALIASES_MAX: 6 } as const;
 export const MOTION_RESPONSE_VALUES = {
   TIMES: ["day", "dusk", "night", "dawn", "overcast", "interior", "interior_dark"],
   WEATHERS: ["none", "rain", "snow", "fog"],

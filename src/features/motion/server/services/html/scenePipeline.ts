@@ -11,7 +11,7 @@ import type { ChatPendingSubmission, ChatPlanningSubmission } from "../../../../
 import { randomUUID } from "node:crypto";
 import { AsyncResource } from "node:async_hooks";
 import { setTimeout as delay } from "node:timers/promises";
-import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../../constants/motionHtmlTemplate.js";
+import { MOTION_HTML } from "../../../../../constants/motionHtmlTemplate.js";
 import { MOTION_HTML_QUALITY } from "../../../../../constants/motionHtmlQuality.js";
 import { motionHtmlCutLarge, motionHtmlErrorSignature, motionHtmlFocalMoved, motionHtmlMissing, motionHtmlRequired, motionHtmlRuntimeFeedback, motionHtmlScriptIssue } from "../../../../../lib/motionHtmlQuality.js";
 import { motionHtmlVisualDirection, motionHtmlPacingDirection, motionHtmlLanguageDirection } from "../../../../../lib/motionHtmlAuthoring.js";
@@ -30,7 +30,7 @@ import { motionHtmlFigureDoc } from "../../../../../lib/motionHtmlFigure.js";
 import { MOTION_FIGURES } from "../../../../../constants/motionFigures.js";
 import { motionFigureRenderKey, motionHtmlFiguresIssue, motionHtmlUsesFigures } from "../../../../../lib/motionFigures.js";
 import { motionHtmlMechanics } from "../../../../../lib/motionHtmlMechanics.js";
-import { motionHtmlDrawIssue, motionHtmlGraphics, motionHtmlRuleLines } from "../../../../../lib/motionHtmlPrompt.js";
+import { motionHtmlDrawIssue, motionHtmlRuleLines } from "../../../../../lib/motionHtmlPrompt.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson, motionAiRoutes } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
@@ -49,8 +49,7 @@ import type { MotionHtmlRequest } from "../../../../../types/motionHtmlScene.js"
 import { motionRepairPlanRows } from "../../../../../lib/motionPlanRepair.js";
 import { MOTION_HTML_WRITING } from "../../../../../constants/motionHtmlWriting.js";
 import { motionProportionOf } from "../../../../../lib/motionDrawStyle.js";
-import { MOTION_LAYOUTS, type MotionLayoutId } from "../../../../../constants/motionLayouts/index.js";
-import { motionLayoutFocal, motionLayoutOf, motionLayoutOutput, motionLayoutPlanner, motionLayoutShares } from "../../../../../lib/motionLayout.js";
+import { MOTION_LAYOUT_WIDE } from "../../../../../constants/motionLayouts/index.js";
 type HtmlSubmission = Omit<ChatPlanningSubmission, "pending"> & { pending?: Omit<ChatPendingSubmission, "page"> & { page?: ChatPendingSubmission["page"] } };
 const htmlSubmissionSnapshot = (submission: HtmlSubmission, refreshUrl = false): NonNullable<MotionHtmlRequest["submission"]> => {
   const snapshot = { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned };
@@ -296,15 +295,16 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
   const route = routes[Math.min(Math.floor(missed / MOTION_HTML.SWITCH_AFTER), routes.length - 1)];
   return route.provider === exec.provider ? exec : { ...exec, provider: route.provider, model: route.model, mode: route.mode };
 };
-export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; layout?: MotionLayoutId; figureKit?: boolean; scope?: string; language?: string; cast?: string; continuity?: string; motion?: boolean; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
+export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; figureKit?: boolean; scope?: string; language?: string; cast?: string; continuity?: string; motion?: boolean; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
   // One scene for both renderers: the AI draws the whole scene and registers its own figure functions in the figure table;
   // "Bộ vẽ chuẩn" only swaps those functions for the kit when the scene is shown, so the drawing never depends on it.
-  const graphics = motionHtmlGraphics(settings.profile);
-  const output = motionLayoutOutput(MOTION_HTML.OUTPUT, settings.layout);
-  const framing = settings.layout && MOTION_LAYOUTS[settings.layout].scene;
-  const figureDoc = [motionHtmlFigureDoc(settings.profile, settings.proportion), MOTION_FIGURES.DOC, framing].filter(Boolean).join(RT_MAINTENANCE.NEWLINE);
-  const render = { kit: settings.figureKit === true, profile: settings.profile, proportion: motionProportionOf({ profileId: settings.profile, proportion: settings.proportion }) };
-  const key = motionInputKey([MOTION_HTML.VERSION, output, graphics, figureDoc, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language, settings.cast, settings.continuity]);
+  // Every scene is drawn once in the base style at the AI's own framing: the drawing style ("Bộ vẽ chuẩn") and the layout's
+  // camera are applied when the scene is shown, so neither is part of the drawing request. Checks see the whole frame.
+  const graphics = MOTION_HTML.GRAPHICS;
+  const output = MOTION_HTML.OUTPUT;
+  const figureDoc = [motionHtmlFigureDoc({ profileId: settings.profile, proportion: settings.proportion }), MOTION_FIGURES.DOC].join(RT_MAINTENANCE.NEWLINE);
+  const render = { kit: settings.figureKit === true, profile: settings.profile, proportion: motionProportionOf({ profileId: settings.profile, proportion: settings.proportion }), layout: MOTION_LAYOUT_WIDE };
+  const key = motionInputKey([MOTION_HTML.VERSION, output, graphics, figureDoc, scene.sceneTemplate, settings.width, settings.height, scene.drawingNote, settings.language, settings.cast, settings.continuity]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
   if (!scene.htmlRequest && saved) {
@@ -323,9 +323,9 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     settings.cast,
     settings.continuity,
     MOTION_HTML.SCENE_LABEL + scene.sceneTemplate,
-    MOTION_HTML.ON_SCREEN_TEXT(scene.timeLabel, settings.kind === MOTION_HTML_WRITING.MAP_KIND, /\bcard\b/.test(framing || "")),
+    MOTION_HTML.ON_SCREEN_TEXT(scene.timeLabel, settings.kind === MOTION_HTML_WRITING.MAP_KIND),
     scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
-    `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: Number(settings.seconds.toFixed(1)), profile: settings.profile })}`,
+    `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: Number(settings.seconds.toFixed(1)) })}`,
   ]
     .filter(Boolean)
     .join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
@@ -333,8 +333,8 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     store.save(scene);
     save();
   };
-  const focalMin = motionLayoutFocal(settings.layout, MOTION_HTML_QUALITY.WIDE_SHOTS.includes(String(settings.shot || settings.kind || "").toLowerCase()), { focal: MOTION_HTML_QUALITY.FOCAL_MIN, wide: MOTION_HTML_QUALITY.FOCAL_MIN_WIDE });
-  const blueprint = motionSceneBlueprint(scene.sceneTemplate, { shot: settings.shot, kind: settings.kind, focalMin, shares: motionLayoutShares(settings.layout) });
+  const focalMin = MOTION_HTML_QUALITY.WIDE_SHOTS.includes(String(settings.shot || settings.kind || "").toLowerCase()) ? MOTION_HTML_QUALITY.FOCAL_MIN_WIDE : MOTION_HTML_QUALITY.FOCAL_MIN;
+  const blueprint = motionSceneBlueprint(scene.sceneTemplate, { shot: settings.shot, kind: settings.kind, focalMin });
   // Sizes and places are the AI's own: no layout plan is imposed; named people keep the look earlier scenes fixed.
   const extra = [isMap ? MOTION_HTML_QUALITY.MAP_RULES : motionSceneCastPrompt(settings.castLooks, (blueprint?.items || []).map((item) => item.id)), MOTION_HTML_QUALITY.OUTPUT, settings.variety].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
   // Last rung of the scene ladder: a scene drawn by code from the blueprint through the figure table, so one stubborn scene never blocks the video.
@@ -688,7 +688,7 @@ const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; secon
   if (!state.scenes[group.id]?.length || state.inputKeys[group.id] !== key) {
     const prompt = [
       RT_MAINTENANCE.PROMPT_3,
-      analysis.authoringSettings ? motionHtmlVisualDirection(analysis) : [`${RT_MAINTENANCE.STYLE_2}${MOTION_HTML_STYLES[settings.profileId]}`, motionLayoutPlanner(settings), motionHtmlLanguageDirection(language, { plan: true }), MOTION_HTML.TEMPLATE].filter(Boolean).join(RT_MAINTENANCE.NEWLINE),
+      analysis.authoringSettings ? motionHtmlVisualDirection(analysis) : [`${RT_MAINTENANCE.STYLE_2}${MOTION_HTML.BASE_STYLE}`, motionHtmlLanguageDirection(language, { plan: true }), MOTION_HTML.TEMPLATE].filter(Boolean).join(RT_MAINTENANCE.NEWLINE),
       motionHtmlPacingDirection(settings, group.seconds),
       opts.sfx === false ? RT_MAINTENANCE.SOUNDEVENTS_SFX_IS_DISABLED : RT_MAINTENANCE.PROMPT_4,
       MOTION_HTML_WRITING.PLAN_LINES,
@@ -765,9 +765,7 @@ export const createMotionHtmlSceneStreamer = (initialAnalysis: MotionStoryAnalys
         ...initialAnalysis,
         authoringSettings: {
           ...initialAnalysis.authoringSettings,
-          visualProfile: settings.profileId,
-          visualProportion: settings.proportion,
-          visualLayout: settings.layout,
+          visualProportion: motionProportionOf(settings),
           language,
           picturePacing: settings.pacing || initialAnalysis.authoringSettings.picturePacing,
           targetPictureSeconds: settings.pacing === RT_MAINTENANCE.FEW ? 14 : settings.pacing === RT_MAINTENANCE.MANY ? 6 : settings.pacing === RT_MAINTENANCE.MEDIUM ? 9 : initialAnalysis.authoringSettings.targetPictureSeconds,
@@ -841,9 +839,7 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
       ...analysis,
       authoringSettings: {
         ...analysis.authoringSettings,
-        visualProfile: settings.profileId,
-        visualProportion: settings.proportion,
-        visualLayout: settings.layout,
+        visualProportion: motionProportionOf(settings),
         language: script.language,
         picturePacing: settings.pacing || analysis.authoringSettings.picturePacing,
         targetPictureSeconds: settings.pacing === RT_MAINTENANCE.FEW ? 14 : settings.pacing === RT_MAINTENANCE.MANY ? 6 : settings.pacing === RT_MAINTENANCE.MEDIUM ? 9 : analysis.authoringSettings.targetPictureSeconds,
@@ -956,7 +952,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
         const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
         const cast = (scene as { kind?: string }).kind === MOTION_HTML_WRITING.MAP_KIND ? undefined : motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
         motionSceneCastSeed((state.castLooks ||= {}), analysis.cast);
-        await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), layout: motionLayoutOf(settings), figureKit: settings.figureKit === true, scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE, kind: (scene as { kind?: string }).kind, shot: (scene as { shot?: string }).shot, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
+        await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), figureKit: settings.figureKit === true, scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE, kind: (scene as { kind?: string }).kind, shot: (scene as { shot?: string }).shot, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
         delete state.failures[scene.id];
         done++;
         opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);

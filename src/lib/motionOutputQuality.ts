@@ -2,7 +2,7 @@ import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_RENDER_VALIDATION as V } from "../constants/motionRenderValidation.js";
 import type { MotionRenderSpec } from "../types/motionVisual.js";
 import { isRemotionSpec } from "./motionVisual.js";
-export interface MotionMediaRange {
+interface MotionMediaRange {
   start: number;
   end: number;
 }

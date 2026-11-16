@@ -2,8 +2,8 @@ import { MOTION_SCENE_INTENT as I } from "../constants/motionSceneIntent.js";
 import type { MotionSceneFormat, MotionSceneView } from "../constants/motionProfiles/framing.js";
 import type { MotionBeat } from "../types/motionVideo.js";
 import type { MotionRemotionScene } from "../types/motionVisual.js";
-export const motionSceneIntentView = (shot?: string): MotionSceneView | undefined => (shot ? I.SHOT_TO_VIEW[shot] : undefined);
-export const motionSceneIntentFormat = (visual?: string): MotionSceneFormat | undefined => (visual ? I.VISUAL_TO_FORMAT[visual] : undefined);
+const motionSceneIntentView = (shot?: string): MotionSceneView | undefined => (shot ? I.SHOT_TO_VIEW[shot] : undefined);
+const motionSceneIntentFormat = (visual?: string): MotionSceneFormat | undefined => (visual ? I.VISUAL_TO_FORMAT[visual] : undefined);
 export const applyMotionSceneIntent = (scenes: MotionRemotionScene[], beats: MotionBeat[]): { views: number; formats: number } => {
   let views = 0;
   let formats = 0;

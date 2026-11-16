@@ -1,5 +1,5 @@
 import { MOTION_SOURCE_SEGMENTS as S } from "../constants/motionSourceSegments.js";
-export interface MotionTimedSegment {
+interface MotionTimedSegment {
   t: number;
   text: string;
 }

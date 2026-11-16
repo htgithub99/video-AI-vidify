@@ -1,5 +1,5 @@
 import { SOURCE_TEXT_CONTENT_MISSING, SOURCE_TEXT_CONTENT_SHORT, SOURCE_TEXT_DIRECTIVE_MISSING, SOURCE_TEXT_NFC, SOURCE_TEXT_REQUEST_MISSING, SOURCE_TEXT_VERIFIED } from "../../constants/sourceText";
-export const normalizeChatComposerText = (value: string): string => value.normalize(SOURCE_TEXT_NFC).replace(/[\s\u00a0\u200b\u200c\u200d]/g, "");
+const normalizeChatComposerText = (value: string): string => value.normalize(SOURCE_TEXT_NFC).replace(/[\s\u00a0\u200b\u200c\u200d]/g, "");
 export const assessChatComposerContent = (submittedPrompt: string, directive: string, requestId: string | undefined, readings: string[]): { valid: boolean; actualChars: number; reason: string } => {
   const expected = normalizeChatComposerText(submittedPrompt);
   const directiveEnd = normalizeChatComposerText(directive).slice(-60);

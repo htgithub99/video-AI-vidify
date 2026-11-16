@@ -91,8 +91,8 @@ import fs from "fs";
 import path from "path";
 import _ from "lodash";
 import { logger } from "../../../../lib/logger.js";
-export type CapcutResourceItem = { id: string; effect_id: string; effect_type: number; title: string };
-export type CapcutCatalog = { effects: CapcutResourceItem[]; transitions: CapcutResourceItem[] };
+type CapcutResourceItem = { id: string; effect_id: string; effect_type: number; title: string };
+type CapcutCatalog = { effects: CapcutResourceItem[]; transitions: CapcutResourceItem[] };
 const FALLBACK_CATALOG: CapcutCatalog = {
   effects: [
     { id: VIDEO_EXPORT_TEXT_7675372430621297938, effect_id: VIDEO_EXPORT_TEXT_7675372430621297938, effect_type: 7, title: VIDEO_EXPORT_TEXT_DISCO_VO_CUC },

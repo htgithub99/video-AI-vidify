@@ -1,19 +1,37 @@
 import { MOTION_FIGURES as F } from "../constants/motionFigures.js";
 import { MOTION_HTML_KIT as K } from "../constants/motionHtmlKit.js";
 import { motionDrawStyle } from "./motionDrawStyle.js";
-// How a scene's figures are drawn when it is shown or exported: by the scene's own functions ("Dựng cảnh AI") or by the
-// standard kit in the chosen drawing style ("Bộ vẽ chuẩn").
-export type MotionFigureRender = { kit?: boolean; profile?: string; proportion?: string };
-// The renderer a compiled video or scene preview asks for.
-export const motionFigureRenderOf = (spec: { figureKit?: boolean; profileId?: string; proportion?: string } | undefined): MotionFigureRender => ({ kit: spec?.figureKit === true, profile: spec?.profileId, proportion: spec?.proportion });
-// Names one way of drawing the figures, so a picture captured with another one is known to be out of date.
-export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => (render?.kit ? `kit:${render.profile || ""}:${render.proportion || ""}` : "ai");
+import { motionCameraShot, motionLayoutOf } from "./motionLayout.js";
+import { motionSceneBlueprint } from "./motionSceneBlueprint.js";
+// How a scene is shown or exported: its figures by the scene's own functions ("Dựng cảnh AI") or by the standard kit in
+// the chosen drawing style ("Bộ vẽ chuẩn"), and the layout's camera over the scene the AI drew once.
+export type MotionFigureScene = { shot?: string; kind?: string; sceneTemplate?: string };
+export type MotionFigureRender = { kit?: boolean; profile?: string; proportion?: string; layout?: string; scene?: MotionFigureScene };
+// The renderer a compiled video or scene preview asks for, for one scene.
+export const motionFigureRenderOf = (spec: { figureKit?: boolean; profileId?: string; proportion?: string; layout?: string } | undefined, scene?: MotionFigureScene): MotionFigureRender => ({
+  kit: spec?.figureKit === true,
+  profile: spec?.profileId,
+  proportion: spec?.proportion,
+  layout: motionLayoutOf({ profileId: spec?.profileId, layout: spec?.layout, figureKit: spec?.figureKit }),
+  scene: scene && { shot: scene.shot, kind: scene.kind, sceneTemplate: scene.sceneTemplate },
+});
+// Names one way of showing the figures, so a picture captured another way is known to be out of date.
+export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `${render?.kit ? `kit:${render.profile || ""}:${render.proportion || ""}` : "ai"}|${motionLayoutOf({ profileId: render?.profile, layout: render?.layout, figureKit: render?.kit })}`;
 export const motionHtmlUsesFigures = (html: string): boolean => F.USES.test(html);
-// Adds the figure table (and, for "Bộ vẽ chuẩn", the kit) to a scene written against the figure contract. Scenes from
-// before the contract are returned unchanged and keep the renderer they were drawn for.
+// The view the page applies over the scene: the style layer ("Bộ vẽ chuẩn" only) and the camera's shot with the plan's
+// focal people as its subjects.
+export const motionFigureView = (render?: MotionFigureRender) => {
+  const style = render?.kit && render.profile ? F.STYLES[motionDrawStyle(render.profile).kitLook] || null : null;
+  const shot = motionCameraShot(motionLayoutOf({ profileId: render?.profile, layout: render?.layout, figureKit: render?.kit }), render?.scene);
+  const focus = shot === "wide" ? [] : (motionSceneBlueprint(render?.scene?.sceneTemplate, { shot: render?.scene?.shot, kind: render?.scene?.kind })?.items || []).filter((item) => item.focal && item.fn === "person").map((item) => item.id);
+  return { style, shot, focus };
+};
+// Adds the figure table (and, for "Bộ vẽ chuẩn", the kit) and the view to a scene written against the figure contract.
+// Scenes from before the contract are returned unchanged.
 export const motionHtmlFigures = (html: string, render?: MotionFigureRender): string => {
   if (!motionHtmlUsesFigures(html) || html.includes(F.ATTR)) return html;
-  const tag = `<script ${F.ATTR}="1">${F.SCRIPT}</script>`;
+  const view = JSON.stringify(motionFigureView(render)).replace(/</g, "\\u003c");
+  const tag = `<script ${F.ATTR}="1">window.__motionView=${view};${F.SCRIPT}${F.VIEW}</script>`;
   const head = html.indexOf(K.HEAD);
   const page = head >= 0 ? html.slice(0, head + K.HEAD.length) + tag + html.slice(head + K.HEAD.length) : tag + html;
   if (!render?.kit || !render.profile) return page;

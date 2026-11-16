@@ -5,7 +5,7 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { getDataDirectory } from "../../../../server/utils/paths.js";
-export type SunoPlaylistCheckpoint = { playlistName: string; songIds: string[]; playlistId?: string; creationStarted?: boolean };
+type SunoPlaylistCheckpoint = { playlistName: string; songIds: string[]; playlistId?: string; creationStarted?: boolean };
 const checkpointPath = (songIds: string[], name: string): string =>
   path.join(
     getDataDirectory(),

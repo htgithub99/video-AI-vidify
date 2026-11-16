@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { MOTION_HTML_QUALITY } from "../src/constants/motionHtmlQuality.js";
 import { motionSceneBlueprint, motionSafeSceneSource, motionSceneCastSeed, motionSceneCastLearn, type MotionCastLooks } from "../src/lib/motionSceneBlueprint.js";
 import { MOTION_FIGURES } from "../src/constants/motionFigures.js";
-import { motionHtmlFigures, motionHtmlFiguresIssue } from "../src/lib/motionFigures.js";
+import { motionFigureRenderKey, motionFigureView, motionHtmlFigures, motionHtmlFiguresIssue } from "../src/lib/motionFigures.js";
 import { motionProductionReport } from "../src/lib/motionProductionReport.js";
 import { motionSentencePieces } from "../src/features/motion/server/services/motionAudioService.js";
 import { motionTrimBeatsToUnits } from "../src/features/motion/server/services/html/authoring.js";
@@ -71,16 +71,11 @@ assert.match(report.text, /scenes: 2 phút 5 giây \(thử lại 1 lần\)/);
 assert.ok(!report.text.includes("idle") && report.text.includes("x/y"));
 console.log("motion quality v2 ok");
 
-// The chosen layout sets the figure size of the layout plan, and a wrapped travel distance becomes one move.
+// The plan shot sets the figure size of the scene (the layout only frames it), and a wrapped travel distance becomes one move.
 {
-  const { motionLayoutShares } = await import("../src/lib/motionLayout.js");
   const template = "5. REQUIRED: king (focal): the king; guard (support): a guard\n6. MOTION: king walks in\n7. INTERACT: none";
-  const sizeOf = (layout: string, shot: string) => motionSceneBlueprint(template, { shot, focalMin: 0.18, shares: motionLayoutShares(layout as never) })!.items.find((item) => item.id === "king")!.size;
-  const share = (r: number) => (r * 4.1) / 720;
-  assert.ok(share(sizeOf("wide", "medium")) <= 0.28 && share(sizeOf("wide", "close")) <= 0.29 && share(sizeOf("wide", "establishing")) >= 0.14, "wide layout keeps people 16-28%");
-  assert.ok(share(sizeOf("close", "close")) >= 0.58 && share(sizeOf("close", "close")) <= 0.72 && share(sizeOf("medium", "medium")) >= 0.38 && share(sizeOf("medium", "medium")) <= 0.48);
-  assert.ok(share(sizeOf("stage", "medium")) >= 0.32 && share(sizeOf("stage", "medium")) <= 0.4 && share(sizeOf("cinematic", "medium")) >= 0.5 && share(sizeOf("cinematic", "medium")) <= 0.65);
-  for (const layout of ["stage", "cinematic", "wide", "medium", "close"]) for (const shot of ["establishing", "wide", "medium", "close"]) assert.ok(sizeOf(layout, shot) > 0);
+  const sizeOf = (shot: string) => motionSceneBlueprint(template, { shot, focalMin: 0.18 })!.items.find((item) => item.id === "king")!.size;
+  assert.ok(sizeOf("establishing") <= sizeOf("wide") && sizeOf("wide") <= sizeOf("medium") && sizeOf("medium") <= sizeOf("close"), "closer shots draw larger people");
   const ph = figures.phase(0.5, 2);
   assert.equal(ph.of(0), 1);
   assert.equal(ph.of(1), 0);
@@ -135,24 +130,40 @@ console.log("motion quality v2 ok");
   assert.equal(aiFig.tree(ctx, { kind: "zzz", x: 1, y: 2, h: 3, w: 4 }).box.h, 3, "a kind without a function still has a box");
   // Kit renderer: the kit person gets the size that makes it exactly h tall, a sideways stretch to w (within limits), and
   // its hand comes back through the same stretch; the scene's own function is not called.
+  // Kit drawings are measured from their pixels: a tiny raster stands in for the hidden canvas, and the fake kit paints
+  // plain rectangles (a person 2r wide and 4.4r tall, a piece of wall 3p wide and 2p tall per piece).
+  const raster = () => {
+    let W = 0, H = 0, data = new Uint8ClampedArray(0);
+    const ctx2 = {
+      setTransform() {}, save() {}, restore() {}, translate() {}, scale() {},
+      clearRect() { data.fill(0); },
+      fillRect(x: number, y: number, w: number, h: number) { for (let j = Math.max(0, Math.floor(y)); j < Math.min(H, Math.ceil(y + h)); j++) for (let i = Math.max(0, Math.floor(x)); i < Math.min(W, Math.ceil(x + w)); i++) data[(j * W + i) * 4 + 3] = 255; },
+      getImageData() { return { data }; },
+    };
+    return { get width() { return W; }, set width(v: number) { W = v; data = new Uint8ClampedArray(W * Math.max(H, v) * 4); }, get height() { return H; }, set height(v: number) { H = v; data = new Uint8ClampedArray(W * H * 4); }, getContext: () => ctx2 };
+  };
+  (globalThis as any).document = { createElement: () => raster() };
   const kitCalls: any[] = [];
   const K = {
-    poses: ["stand", "walk"], animals: ["horse"], vehicles: ["wagon"], trees: ["oak"], props: ["barrel", "wall", "fence"], icons: ["swords"],
+    poses: ["stand", "walk"], animals: ["horse"], vehicles: ["wagon"], trees: ["oak"], props: ["barrel", "wall", "fence"],
     style: () => "outline", proportion: () => "",
     knows: (fn: string, kind: string) => ({ animal: ["horse"], vehicle: ["wagon"], tree: ["oak"], prop: ["barrel", "wall", "fence"] } as Record<string, string[]>)[fn]?.includes(kind) ?? false,
-    size: (fn: string, o: any) => (fn === "person" ? { width: 2 * o.r, height: 4.4 * o.r } : { width: 3 * o.p * (o.count || 1), height: 2 * o.p, left: 1.5 * o.p, right: 1.5 * o.p }),
-    person: (_c: unknown, o: any) => { kitCalls.push(o); return { hand: [o.x + o.r, o.y - 2 * o.r] }; },
+    person: (c: any, o: any) => { kitCalls.push(o); c.fillRect?.(o.x - o.r, o.y - 4.4 * o.r, 2 * o.r, 4.4 * o.r); return { hand: [o.x + o.r, o.y - 2 * o.r] }; },
     animal: (_c: unknown, o: any) => { kitCalls.push(o); return {}; },
-    prop: (_c: unknown, o: any) => { kitCalls.push(o); return {}; },
+    prop: (c: any, o: any) => { kitCalls.push(o); const w = 3 * o.p * (o.count || 1); c.fillRect?.(o.x - w / 2, o.y - 2 * o.p, w, 2 * o.p); return {}; },
+    icons: ["swords"],
+    icon: (c: any, o: any) => { kitCalls.push({ icon: o }); c.fillRect?.(o.x - o.r / 2, o.y - o.r / 2, o.r, o.r); },
+    arrow: (_c: unknown, o: any) => { kitCalls.push({ arrow: o }); },
   };
   const kitRun = run(K);
   const kitFig = kitRun.F.use(own);
   calls.length = 0;
   const b = kitFig.person(ctx, { x: 400, y: 600, h: 132, w: 66, pose: "walk", top: "#aa0000", mark: "hero" });
-  assert.ok(Math.abs(kitCalls[0].r - 30) < 1e-9, "height fitted: r = h / 4.4");
-  assert.equal(kitCalls[0].y, 600, "feet on the scene's ground point");
-  assert.equal(kitCalls[0].top, "#aa0000", "the scene's colours");
-  assert.equal(kitCalls[0].mark, undefined, "the table marks the box once");
+  const call = kitCalls[kitCalls.length - 1];
+  assert.ok(Math.abs(call.r - 30) < 1e-9, "height fitted: r = h / 4.4");
+  assert.equal(call.y, 600, "feet on the scene's ground point");
+  assert.equal(call.top, "#aa0000", "the scene's colours");
+  assert.equal(call.mark, undefined, "the table marks the box once");
   assert.ok(calls.includes("scale 1.100"), "width fitted by a sideways stretch: 66 / 60");
   assert.deepEqual(b.hand, [400 + 30 * 1.1, 540]);
   assert.deepEqual(b.box, { x: 367, y: 468, w: 66, h: 132 });
@@ -168,6 +179,12 @@ console.log("motion quality v2 ok");
   // Walls along a length are a row of kit pieces sized to the height.
   kitFig.wall(ctx, { kind: "fence", x: 500, y: 600, h: 40, w: 600 });
   assert.equal(kitCalls[kitCalls.length - 1].count, 10);
+  // An icon fills the circle the scene gives whatever its pulse (pulse 0 is no ring, never a hidden icon); curve is px.
+  kitFig.icon(ctx, { kind: "swords", x: 100, y: 100, r: 40, pop: 0 });
+  const icon = kitCalls[kitCalls.length - 1].icon;
+  assert.ok(Math.abs(icon.r - 80) < 2 && icon.pop === 1, "the symbol's painted half-size (r/2) fills r and shows fully");
+  kitFig.arrow(ctx, { from: [0, 0], to: [400, 0], curve: 100 });
+  assert.equal(kitCalls[kitCalls.length - 1].arrow.curve, 0.25, "a 100 px bend on a 400 px arrow");
   // Keyframes and phases are the same for both renderers.
   const keys = [{ at: 0, x: 0 }, { at: 0.3, x: 300 }, { at: 0.6, x: 600 }, { at: 1, x: 1000 }];
   assert.ok(kitRun.F.track(keys, 0.31).x - kitRun.F.track(keys, 0.29).x > 15, "speed carries through a keyframe");
@@ -179,5 +196,16 @@ console.log("motion quality v2 ok");
   assert.ok(motionHtmlFigures(page, { kit: true, profile: "sketch" }).includes("data-motion-kit"));
   assert.equal(motionHtmlFigures("<html><head></head><body></body></html>", { kit: true, profile: "sketch" }), "<html><head></head><body></body></html>", "older scenes are left as they were drawn");
   assert.ok(motionHtmlFiguresIssue("MotionKit.person(ctx, {})") && !motionHtmlFiguresIssue(page));
+  // The view over the scene: the style layer only for "Bộ vẽ chuẩn", the layout's shot for the scene, never for a map.
+  const viewOf = (render: Parameters<typeof motionFigureView>[0]) => motionFigureView(render);
+  assert.deepEqual(viewOf({ kit: false, profile: "comic", layout: "wide" }), { style: null, shot: "wide", focus: [] }, "Dựng cảnh AI · Toàn cảnh shows the scene as drawn");
+  assert.equal(viewOf({ kit: true, profile: "comic", layout: "wide" }).style?.finish, "grain");
+  assert.equal(viewOf({ kit: true, profile: "horror", layout: "wide" }).style?.finish, "vignette");
+  assert.equal(viewOf({ kit: false, layout: "close", scene: { shot: "medium" } }).shot, "mcu");
+  assert.equal(viewOf({ kit: false, layout: "close", scene: { shot: "medium", kind: "map" } }).shot, "wide");
+  assert.deepEqual(viewOf({ kit: false, layout: "medium", scene: { shot: "medium", sceneTemplate: "5. REQUIRED: king (focal): the king; guard (support): a guard" } }).focus, ["king"]);
+  assert.ok(motionHtmlFigures(page, { kit: false, layout: "close", scene: { shot: "medium" } }).includes('window.__motionView={"style":null,"shot":"mcu"'));
+  assert.notEqual(motionFigureRenderKey({ kit: false, layout: "close" }), motionFigureRenderKey({ kit: false, layout: "wide" }), "a thumbnail knows the layout it was captured with");
+  assert.equal(motionFigureRenderKey({ kit: false, profile: "comic" }), motionFigureRenderKey({ kit: false, profile: "sketch" }), "the drawing style does not change Dựng cảnh AI");
   console.log("figure table ok");
 }

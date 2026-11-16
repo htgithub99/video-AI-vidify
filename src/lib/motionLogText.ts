@@ -22,7 +22,7 @@ export const motionUserLogLine = (line: string): string | undefined => {
   if (friendly === undefined) return undefined;
   return stamp + scopes.map((scope) => T.OPEN + scope + T.CLOSE).join(T.EMPTY) + friendly;
 };
-export const motionLogBody = (line: string): string => line.replace(T.TIME, T.EMPTY);
+const motionLogBody = (line: string): string => line.replace(T.TIME, T.EMPTY);
 export const createMotionLogFilter = (now: () => number = Date.now) => {
   let last: string | undefined;
   let lastAt = 0;

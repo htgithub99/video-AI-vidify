@@ -93,7 +93,7 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
     typographyId: ThumbnailTypographyId.RoundedStory,
   },
 ] as const;
-export const THUMBNAIL_TYPOGRAPHY_CATALOG = [
+const THUMBNAIL_TYPOGRAPHY_CATALOG = [
   {
     id: ThumbnailTypographyId.CondensedImpact,
     description: "Heavy condensed uppercase sans-serif, compact spacing, black fill on light backgrounds or white fill on dark backgrounds, minimal shadow.",

@@ -30,10 +30,13 @@ export const MotionVisualModeField: FC<{ value: MotionVisualSettings; language: 
           onClick={() => onChange({ ...value, figureKit: kit ? undefined : true })}
         />
       </div>
-      <div className={S.STEP1_TOGGLE_WRAPPER}>
-        <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.profile}</span>
-        <MotionVisualPicker label={text.profile} value={value.profileId} options={styles} disabled={disabled} onChange={(id) => onChange({ ...value, profileId: id as MotionRemotionProfile, proportion: undefined })} />
-      </div>
+      {/* The drawing style is the kit's line and tone over the scene; "Dựng cảnh AI" shows the scene exactly as the AI drew it. */}
+      {kit ? (
+        <div className={S.STEP1_TOGGLE_WRAPPER}>
+          <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.profile}</span>
+          <MotionVisualPicker label={text.profile} value={value.profileId} options={styles} disabled={disabled} onChange={(id) => onChange({ ...value, profileId: id as MotionRemotionProfile, proportion: undefined })} />
+        </div>
+      ) : null}
       <div className={S.STEP1_TOGGLE_WRAPPER}>
         <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{layoutTitle}</span>
         <MotionVisualPicker label={layoutTitle} value={value.layout || MOTION_LAYOUT_DEFAULT} options={layouts} disabled={disabled} onChange={(id) => onChange({ ...value, layout: motionIsLayout(id) && id !== MOTION_LAYOUT_DEFAULT ? id : undefined })} />

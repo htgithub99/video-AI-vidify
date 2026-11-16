@@ -2,7 +2,7 @@ import vm from "node:vm";
 import { MOTION_HTML_QUALITY as Q } from "../constants/motionHtmlQuality.js";
 import type { MotionHtmlMark } from "../types/motionHtmlScene.js";
 
-export interface MotionHtmlRequired {
+interface MotionHtmlRequired {
   id: string;
   focal: boolean;
 }

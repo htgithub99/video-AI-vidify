@@ -3,7 +3,7 @@ import { CINEMATIC_CONFIG, PIPELINE_COMPLETION_CONFIG } from "../constants/confi
 import { VideoProject } from "../types";
 import { hasProductionAudioSource } from "./productionAudioService";
 import { hasSceneAsset } from "./projectImageGenerationService";
-export interface PipelineReadiness {
+interface PipelineReadiness {
   ready: boolean;
   blockers: string[];
 }

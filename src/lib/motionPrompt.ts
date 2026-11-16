@@ -3,7 +3,6 @@ import { MOTION_PROMPT as C } from "../constants/motionPrompt.js";
 import { MOTION_EDITORIAL as E } from "../constants/motionEditorial.js";
 export const motionPromptEditorialContext = (artifact: string, context: string): string => (C.SELF_CONTAINED_ARTIFACTS.includes(artifact) ? "" : E.CONTEXT(context));
 export const motionPromptSingleMessage = (artifact: string = ""): boolean => C.SINGLE_MESSAGE_ARTIFACTS.includes(artifact);
-export const motionPromptPayloadBudget = (_fixedChars: number, budget = C.TARGET_CHARS - C.WRAPPER_RESERVE): number => budget;
 export const motionPromptBudget = (artifact: string = "", provider: string = "", model: string = ""): number => Math.max(C.MIN_TRANSPORT_CHARS, Math.min(C.ROUTE_BUDGETS[provider] || C.TARGET_CHARS, C.MODEL_BUDGETS[provider + RT_SHARED.SYMBOL_E7AC07 + model] || Number.POSITIVE_INFINITY, C.ARTIFACT_BUDGETS[artifact] || Number.POSITIVE_INFINITY));
 export const motionPromptMeasurement = (payload: string, full: string, contextChars = 0, images = 0, budget: number = C.TARGET_CHARS, singleMessage = false) => ({
   payloadChars: payload.length,

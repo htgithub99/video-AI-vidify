@@ -12,7 +12,7 @@ import { motionGenreCraft } from "../../../../lib/motionGenreCraft.js";
 import { motionSourceSegments, motionSplitUntimed } from "../../../../lib/motionSourceSegments.js";
 import { motionHtmlAuthoringSnapshot, motionHtmlGenreDirection, motionHtmlAnalysisPrompt } from "../../../../lib/motionHtmlAuthoring.js";
 import { motionProportionPlanner } from "../../../../lib/motionDrawStyle.js";
-import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../constants/motionHtmlTemplate.js";
+import { MOTION_HTML } from "../../../../constants/motionHtmlTemplate.js";
 import { parseAiJson } from "../../../../lib/aiJson.js";
 import { writeMotionHtmlChapter, editMotionHtmlScript } from "./html/authoring.js";
 import { normalizeMotionWritingPlan, normalizeMotionWritingChapter, motionWritingBiblePrompt, motionWritingChapterLean, motionWritingProtectedMotifs, motionWritingState, motionWritingChapterCount } from "../../../../lib/motionWriting.js";
@@ -264,7 +264,7 @@ const motionPromptSections = (artifact: string, sections: Record<string, number 
     _.noop();
   }
 };
-export const resolveTargetSeconds = (source: MotionStorySource, length: MotionStoryLength, _expansion = 1): number => {
+const resolveTargetSeconds = (source: MotionStorySource, length: MotionStoryLength, _expansion = 1): number => {
   const seconds = MOTION_STORY_LENGTH_SECONDS[length];
   if (seconds !== undefined) return seconds;
   return Math.max(60, source.sourceSeconds);
@@ -430,7 +430,7 @@ const probeRoomPage = async (page: any, requestId: string): Promise<Record<strin
     return { error: _.toString(e?.message) };
   }
 };
-export const escapeStrayQuotes = (text: string): string => {
+const escapeStrayQuotes = (text: string): string => {
   let out: string = MR.MOTION_TEXT_EMPTY;
   let inString = false;
   for (let i = 0; i < text.length; i++) {
@@ -864,14 +864,7 @@ const motionRoomChatModel = (provider: string, model?: string): AiPlanningChatMo
           : provider === AiPlanningFallbackProvider.GrokChat
           ? ((_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined) as AiPlanningChatModel)
           : pickEnum(_.values(AiPlanningChatModel), model, AiPlanningChatModel.GeminiFlash);
-export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, aiOutageMs(provider), (unavailableRoomProvider(provider)?.until || 0) - Date.now(), (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
-export const resetMotionAiRoom = async (): Promise<void> => {
-  const run = motionAiRunStore.getStore();
-  if (!run) return;
-  if (run.editorial) return;
-  const workerId = run.lastWorkerId || AIR.WORKER(run.workerId, MOTION_AI_ROLE.MAIN);
-  if (run.rooms.has(workerId)) run.roomRefreshes.add(workerId);
-};
+const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, aiOutageMs(provider), (unavailableRoomProvider(provider)?.until || 0) - Date.now(), (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
 const countMotionRequest = (provider: string, log?: MotionAiLog): void => {
   const run = motionAiRunStore.getStore();
   if (!run) return;
@@ -972,7 +965,7 @@ const holdForCaptcha = async (provider: string, log?: MotionAiLog): Promise<void
   log?.(MOTION_CAPTCHA.LOG_HOLD);
   await captchaHold.catch(_.noop);
 };
-export const logMotionAiChain = (entry: { artifact: string; step: number; total: number; provider: string; model?: string; result: string; reason?: string }): void => {
+const logMotionAiChain = (entry: { artifact: string; step: number; total: number; provider: string; model?: string; result: string; reason?: string }): void => {
   try {
     fs.appendFileSync(path.join(getLogsDirectory(), MOTION_AI_FALLBACK.LOG_FILE), stringifyJson({ at: new Date().toISOString(), ...entry, reason: entry.reason ? _.truncate(entry.reason, { length: MOTION_AI_FALLBACK.REASON_MAX }) : undefined }) + MR.MOTION_TEXT_SYMBOL_27);
   } catch {
@@ -989,7 +982,7 @@ export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => 
   );
   return [primary, ...rest];
 };
-export const motionFallbackChain = (exec: MotionAiExecution): string[] | undefined => (exec.allowFallback === false ? undefined : motionAiRoutes({ ...exec, strictProvider: false }).map((route) => String(route.provider)));
+const motionFallbackChain = (exec: MotionAiExecution): string[] | undefined => (exec.allowFallback === false ? undefined : motionAiRoutes({ ...exec, strictProvider: false }).map((route) => String(route.provider)));
 export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
   const run = motionAiRunStore.getStore();
   if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
@@ -1810,7 +1803,7 @@ export const analyzeStory = async (
   const ledger = await buildSourceLedger(source, { ...opts, draft, targetSeconds: target });
   const transcript = ledger ? MR.MOTION_TEMPLATE_EVENT_LEDGER_OF_THE_FULL_SOURCE_BUILT_PART_BY_PART_FROM_THE_COMPL(ledger) : sourceSlice(source);
   const htmlAuthoring = opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION;
-  const htmlSettings = opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? motionHtmlAuthoringSnapshot({ videoGenre: opts.videoGenre, storytelling: opts.storytelling, length: opts.length, target, language: opts.language, profile: opts.visualSettings.profileId, proportion: opts.visualSettings.proportion, layout: opts.visualSettings.layout, pacing: opts.visualSettings.pacing, parts: opts.parts }) : undefined;
+  const htmlSettings = opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? motionHtmlAuthoringSnapshot({ videoGenre: opts.videoGenre, storytelling: opts.storytelling, length: opts.length, target, language: opts.language, profile: opts.visualSettings.profileId, proportion: opts.visualSettings.proportion, pacing: opts.visualSettings.pacing, parts: opts.parts }) : undefined;
   const prompt = htmlAuthoring ? motionHtmlAnalysisPrompt({ title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript, pacing: htmlSettings?.picturePacing }) : MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
   const rename = opts.renameEntities === true;
@@ -1838,7 +1831,7 @@ export const analyzeStory = async (
       [
         MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)),
         motionStoryLanguageGuide(opts.language),
-        opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? `${RT_MAINTENANCE.SELECTED_VISUAL_STYLE_IN_PROSE}${MOTION_HTML_STYLES[opts.visualSettings.profileId]}${RT_MAINTENANCE.SPACE}${motionProportionPlanner(opts.visualSettings)}${RT_MAINTENANCE.DO_NOT_SUPPLY_SVG_RIG_BODY_FRAMES_OR_NUMERIC_PLACEMENT}` : motionVisualCapability(opts.visualSettings),
+        opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? `${RT_MAINTENANCE.SELECTED_VISUAL_STYLE_IN_PROSE}${MOTION_HTML.BASE_STYLE}${RT_MAINTENANCE.SPACE}${motionProportionPlanner(opts.visualSettings)}${RT_MAINTENANCE.DO_NOT_SUPPLY_SVG_RIG_BODY_FRAMES_OR_NUMERIC_PLACEMENT}` : motionVisualCapability(opts.visualSettings),
       ]
         .filter(Boolean)
         .join(MR.MOTION_TEXT_SYMBOL_27),
@@ -2096,7 +2089,7 @@ const foldAdultChapters = (chapters: MotionChapter[]): MotionChapter[] => {
   return _.map(out, (c, i) => ({ ...c, id: MOTION_TEMPLATE_C_2(String(i + 1)) }));
 };
 const OPENING_STYLES = [MR.MOTION_TEXT_A_CONCRETE_MOMENT_OR_IMAGE, MR.MOTION_TEXT_A_SURPRISING_FACT_OR_NUMBER, MR.MOTION_TEXT_A_CONTRAST_OR_A_TURN, MR.MOTION_TEXT_THE_REPORTED_WORDS_OR_ACTION_OF_A_PERSON_FROM_THE_SOURCE, MR.MOTION_TEXT_A_CALM_STATEMENT_THAT_CONTINUES_THE_PREVIOUS_THOUGHT, MR.MOTION_TEXT_A_QUESTION_ONLY_IF_IT_SOUNDS_NATURAL];
-export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number, videoGenre?: unknown, htmlAuthoring = false): MotionStoryAnalysis => {
+const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number, videoGenre?: unknown, htmlAuthoring = false): MotionStoryAnalysis => {
   const stageIds = motionVideoGenreStages(videoGenre);
   const stageOrder = Object.keys(stageIds);
   const chapterStages = (value: unknown): string[] =>

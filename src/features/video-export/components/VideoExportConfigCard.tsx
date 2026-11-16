@@ -284,7 +284,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
       </div>
       <fieldset disabled={isDisabled} className={cn(RT_VIDEO_EXPORT.SPACE_Y_3_MIN_W_0)}>
         <div className={cn(RT_VIDEO_EXPORT.SPACE_Y_1_5_PT_0_5)}>
-          <label className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_700_DARK_TEXT_SLATE)}>
+          <label className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_300_FLEX_ITEMS_CENTER_GAP)}>
             <span>{text.ASPECT_RATIO_LABEL}</span>
           </label>
           <div className={cn(RT_VIDEO_EXPORT.GRID_GRID_COLS_3_GAP_2)}>
@@ -300,10 +300,10 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
                   onClick={() => exporter.updateConfig(VIDEO_EXPORT_TEXT_ASPECTRATIO, item.value)}
                   className={cn(RT_VIDEO_EXPORT.FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_PY_2_5, {
                     "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected,
-                    "bg-white dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-purple-300 dark:hover:border-slate-700 hover:text-purple-700 dark:hover:text-white hover:bg-purple-50/50 dark:hover:bg-slate-900/60": !isSelected,
+                    "bg-slate-950/60 border-slate-800 text-slate-200 hover:border-slate-700 hover:text-white hover:bg-slate-900/60": !isSelected,
                   })}>
-                  <Icon className={cn(RT_VIDEO_EXPORT.W_4_H_4_MB_1_TRANSITION_TRANSFORM_GROUP_HOVER, isSelected ? RT_VIDEO_EXPORT.TEXT_WHITE : RT_VIDEO_EXPORT.TEXT_PURPLE_600_DARK_TEXT_PURPLE_400)} />
-                  <span className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO, isSelected ? RT_VIDEO_EXPORT.TEXT_WHITE : RT_VIDEO_EXPORT.TEXT_SLATE_800_DARK_TEXT_SLATE_200)}>{item.label}</span>
+                  <Icon className={cn(RT_VIDEO_EXPORT.W_4_H_4_MB_1_TRANSITION_TRANSFORM_GROUP_HOVER, isSelected ? RT_VIDEO_EXPORT.TEXT_WHITE : RT_VIDEO_EXPORT.TEXT_PURPLE_400_2B8739)} />
+                  <span className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO, isSelected ? RT_VIDEO_EXPORT.TEXT_WHITE : RT_VIDEO_EXPORT.TEXT_SLATE_200)}>{item.label}</span>
                 </Button>
               );
             })}
@@ -311,7 +311,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
         </div>
         {config.aspectRatio === VideoExportAspectRatio.VERTICAL_9_16 && (
           <div className={cn(RT_VIDEO_EXPORT.SPACE_Y_1_5_PT_0_5_ANIMATE_IN_FADE)}>
-            <label className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_700_DARK_TEXT_SLATE_CEDA41)}>
+            <label className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_300_FLEX_ITEMS_CENTER_JUS)}>
               <span>{text.REFRAME_LABEL}</span>
             </label>
             <div className={cn(RT_SHARED.GRID_GRID_COLS_3_GAP_1_5)}>
@@ -333,7 +333,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
                       onClick={() => exporter.updateConfig(VIDEO_EXPORT_TEXT_REFRAMEMODE, item.mode)}
                       className={cn(RT_VIDEO_EXPORT.H_8_ROUNDED_XL_BORDER_FONT_MONO_FONT_BOLD_TEXT, {
                         "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected,
-                        "bg-white dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-purple-700 dark:hover:text-white hover:border-purple-300 dark:hover:border-slate-700 hover:bg-purple-50/50 dark:hover:bg-slate-900/60": !isSelected,
+                        "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-900/60": !isSelected,
                       })}>
                       <Icon className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />
                       <span className={RT_SHARED.TRUNCATE}>{item.label}</span>
@@ -348,7 +348,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
         <VideoExportVisualSelector text={text} label={text.TRANSITION_LABEL} badge={VIDEO_EXPORT_CONSTANTS.FFMPEG_BADGE_TRANSITION} sections={transitionSections} value={config.transition} accentColor={VIDEO_EXPORT_CONSTANTS.COLOR_PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITION, value)} />
         {config.transition !== VideoExportTransition.NONE && <VideoExportOptionGrid label={text.TRANSITION_DURATION_LABEL} options={toSecondOptions(VIDEO_EXPORT_CONSTANTS.TRANSITION_SECONDS_OPTIONS)} value={config.transitionSeconds} columns={4} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITIONSECONDS, value)} />}
         <VideoExportAiClipPanel text={text} aiClips={exporter.aiClips} disabled={isDisabled} />
-        <div className={cn(RT_VIDEO_EXPORT.P_3_5_ROUNDED_2XL_BG_SLATE_50_80_DARK)}>
+        <div className={cn(RT_VIDEO_EXPORT.P_3_5_ROUNDED_2XL_BG_SLATE_950_50_BORDER_BORDER_SLATE_80)}>
           <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO_UPPERCASE_TRACKING_WIDER_TEXT)}>
             <span>{text.EXPORT_SETTINGS_LABEL}</span>
           </div>
@@ -360,45 +360,45 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
           <VideoExportOptionGrid label={text.CODEC_LABEL} options={codecOptions} value={config.codec} columns={2} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_CODEC, value)} />
         </div>
         <div className={cn(RT_VIDEO_EXPORT.SPACE_Y_1_5_PT_0_5)}>
-          <label htmlFor={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_TITLE} className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_700_DARK_TEXT_SLATE_CEDA41)}>
+          <label htmlFor={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_TITLE} className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_300_FLEX_ITEMS_CENTER_JUS)}>
             <span>{text.TITLE_LABEL}</span>
           </label>
           <StudioInput id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_TITLE} type={VIDEO_EXPORT_TEXT_TEXT} value={title} maxLength={120} placeholder={text.TITLE_PLACEHOLDER} onChange={(event) => exporter.setTitle(event.target.value)} className={cn(RT_VIDEO_EXPORT.W_FULL_H_8_PX_3_ROUNDED_XL_BG_WHITE)} />
         </div>
       </fieldset>
       <div className={cn(RT_SHARED.GRID_GRID_COLS_2_GAP_2)}>
-        <div className={cn(RT_VIDEO_EXPORT.BG_WHITE_DARK_BG_SLATE_950_60_BORDER_BORDER_SLATE)}>
-          <Clock className={cn(RT_VIDEO_EXPORT.W_4_H_4_TEXT_BLUE_600_DARK_TEXT_BLUE)} />
+        <div className={cn(RT_VIDEO_EXPORT.BG_SLATE_950_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5)}>
+          <Clock className={cn(RT_VIDEO_EXPORT.W_4_H_4_TEXT_BLUE_400_SHRINK_0_F4E506)} />
           <div className={cn(RT_SHARED.MIN_W_0)}>
-            <div className={cn(RT_VIDEO_EXPORT.TEXT_9PX_TEXT_SLATE_500_DARK_TEXT_SLATE_400_FONT)}>{text.SUMMARY_DURATION}</div>
-            <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_TEXT_SLATE_800_DARK_TEXT_SLATE)}>{formatCleanTime(totalAudioSeconds)}</div>
+            <div className={cn(RT_VIDEO_EXPORT.TEXT_9PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE_TRUNCATE)}>{text.SUMMARY_DURATION}</div>
+            <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_TEXT_SLATE_200_C27B4A)}>{formatCleanTime(totalAudioSeconds)}</div>
           </div>
         </div>
-        <div className={cn(RT_VIDEO_EXPORT.BG_WHITE_DARK_BG_SLATE_955_60_BORDER_BORDER_SLATE)}>
-          <ImageIcon className={cn(RT_VIDEO_EXPORT.W_4_H_4_TEXT_PINK_600_DARK_TEXT_PINK)} />
+        <div className={cn(RT_VIDEO_EXPORT.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5)}>
+          <ImageIcon className={cn(RT_VIDEO_EXPORT.W_4_H_4_TEXT_PINK_400_SHRINK_0_3248A9)} />
           <div className={cn(RT_SHARED.MIN_W_0)}>
-            <div className={cn(RT_VIDEO_EXPORT.TEXT_9PX_TEXT_SLATE_500_DARK_TEXT_SLATE_400_FONT)}>{text.SUMMARY_PER_IMAGE}</div>
-            <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_TEXT_SLATE_800_DARK_TEXT_SLATE)}>{slidePlan.slideSeconds > 0 ? VIDEO_EXPORT_TEMPLATE_SYMBOL(`${slidePlan.slideSeconds.toFixed(1)}`, `${text.SECONDS_UNIT}`, `${slidePlan.segmentCount}`) : VIDEO_EXPORT_TEXT_SYMBOL}</div>
+            <div className={cn(RT_VIDEO_EXPORT.TEXT_9PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE_TRUNCATE)}>{text.SUMMARY_PER_IMAGE}</div>
+            <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_TEXT_SLATE_200_C27B4A)}>{slidePlan.slideSeconds > 0 ? VIDEO_EXPORT_TEMPLATE_SYMBOL(`${slidePlan.slideSeconds.toFixed(1)}`, `${text.SECONDS_UNIT}`, `${slidePlan.segmentCount}`) : VIDEO_EXPORT_TEXT_SYMBOL}</div>
           </div>
         </div>
       </div>
       {showProgress && job && (
-        <div className={cn(RT_VIDEO_EXPORT.P_2_5_ROUNDED_XL_BG_WHITE_DARK_BG_SLATE)}>
+        <div className={cn(RT_VIDEO_EXPORT.P_2_5_ROUNDED_XL_BG_SLATE_950_80_BORDER_BORDER_SLATE_800)}>
           <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
-            <span className={cn(RT_VIDEO_EXPORT.TEXT_SLATE_700_DARK_TEXT_SLATE_300_FONT_BOLD_TRUNCATE)}>{job.status === VideoExportJobStatus.ERROR ? job.error || text.EXPORT_ERROR : job.message || text.EXPORTING_BTN}</span>
+            <span className={cn(RT_VIDEO_EXPORT.TEXT_SLATE_300_FONT_BOLD_TRUNCATE)}>{job.status === VideoExportJobStatus.ERROR ? job.error || text.EXPORT_ERROR : job.message || text.EXPORTING_BTN}</span>
             {!isExporting && (job.status === VideoExportJobStatus.ERROR || job.status === VideoExportJobStatus.CANCELLED) ? (
               <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={!canStart} onClick={exporter.startExport} className={cn(RT_VIDEO_EXPORT.EXPORT_RETRY_INLINE_BTN)}>
                 <RotateCcw className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />
                 <span>{text.AI_CLIP_RETRY_BTN}</span>
               </Button>
             ) : (
-              <span className={cn(RT_VIDEO_EXPORT.FONT_BOLD_TEXT_PURPLE_700_DARK_TEXT_PURPLE_300_SHRINK)}>
+              <span className={cn(RT_VIDEO_EXPORT.FONT_BOLD_TEXT_PURPLE_300_SHRINK_0)}>
                 {progressPercent}
                 {VIDEO_EXPORT_TEXT_SYMBOL_2}
               </span>
             )}
           </div>
-          <div className={cn(RT_VIDEO_EXPORT.W_FULL_BG_SLATE_100_DARK_BG_SLATE_950_ROUNDED)}>
+          <div className={cn(RT_VIDEO_EXPORT.W_FULL_BG_SLATE_950_ROUNDED_FULL_H_1_5_OVERFLOW_HIDDEN_B)}>
             <div
               className={cn(RT_SHARED.H_FULL_ROUNDED_FULL_TRANSITION_ALL_DURATION_300, { "bg-rose-500": job.status === VideoExportJobStatus.ERROR, "bg-slate-500": job.status === VideoExportJobStatus.CANCELLED, "bg-emerald-400": job.status === VideoExportJobStatus.COMPLETED, "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 animate-pulse": job.status === VideoExportJobStatus.RENDERING })}
               style={{ width: `${progressPercent}${RT_SHARED.SYMBOL}` }}

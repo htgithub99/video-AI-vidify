@@ -2,7 +2,7 @@ import { MOTION_BEAT_SHEET as B } from "../constants/motionBeatSheet.js";
 import { motionGenreSpec } from "../constants/motionGenre.js";
 import { motionStorytellingPreset } from "./motionStorytelling.js";
 import type { MotionBeat, MotionChapter, MotionStoryAnalysis } from "../types/motionVideo.js";
-export const motionChapterEvents = (chapter: Pick<MotionChapter, "id" | "keyPoints">): { id: string; point: string }[] => (chapter.keyPoints || []).map((point, index) => ({ id: B.ID(chapter.id, index), point: point.replace(B.TIMESTAMP, "") }));
+const motionChapterEvents = (chapter: Pick<MotionChapter, "id" | "keyPoints">): { id: string; point: string }[] => (chapter.keyPoints || []).map((point, index) => ({ id: B.ID(chapter.id, index), point: point.replace(B.TIMESTAMP, "") }));
 export const motionChapterBeatSheet = (analysis: Pick<MotionStoryAnalysis, "storytelling" | "videoGenre" | "cast">, chapter: Pick<MotionChapter, "id" | "keyPoints">): string => {
   const events = motionChapterEvents(chapter);
   if (!events.length) return "";

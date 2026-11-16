@@ -104,7 +104,7 @@ const localBox = (node: any, defs: Record<string, any[]>, depth: number): Box | 
       return null;
   }
 };
-export const motionNodeBox = (node: any, defs: Record<string, any[]> = {}, depth = 0): Box | null => {
+const motionNodeBox = (node: any, defs: Record<string, any[]> = {}, depth = 0): Box | null => {
   if (!node || depth > 8 || node.visible === false || node.shape === MR.MOTION_TEXT_LIGHT) return null;
   const box = localBox(node, defs, depth);
   return box ? transformBox(box, node) : null;

@@ -47,6 +47,37 @@ interface VisualDraftContext {
 }
 export const hasMotionVisualDraft = (state: VisualDraftContext) => !!Object.values(state.script?.gen?.remotion?.scenes || {}).some((scenes) => scenes.length);
 export const motionVisualDraftKey = (settings: MotionVisualSettings) => stringifyJson(motionPlanSettings(normalizeMotionVisualSettings(settings)));
+// Saved state from when every drawing style and layout kept its own scene set: one set per plan is kept, the shown one
+// when it has scenes, otherwise the one built most recently, and that set becomes the shown one.
+export const mergeMotionVisualDrafts = <T extends { visualSettings?: MotionVisualSettings; visualDrafts?: Record<string, MotionVisualDraft>; script?: { gen?: MotionVisualDraft["gen"] } | null }>(saved: T): T => {
+  const drafts = saved.visualDrafts;
+  if (!drafts || !saved.visualSettings) return saved;
+  const rekey = (key: string) => {
+    try {
+      return motionVisualDraftKey(JSON.parse(key) as MotionVisualSettings);
+    } catch {
+      return key;
+    }
+  };
+  if (Object.keys(drafts).every((key) => rekey(key) === key)) return saved;
+  const settings = normalizeMotionVisualSettings(saved.visualSettings);
+  const shownKey = stringifyJson({ ...settings, figureKit: undefined, proportion: undefined });
+  const activeKey = motionVisualDraftKey(settings);
+  const built = (draft?: MotionVisualDraft) => Object.values(draft?.gen?.remotion?.scenes || {}).some((list) => !!list?.length);
+  const time = (draft?: MotionVisualDraft) => draft?.gen?.remotion?.updatedAt || 0;
+  const shown = drafts[shownKey] && { ...drafts[shownKey], gen: saved.script?.gen ?? drafts[shownKey].gen };
+  const merged: Record<string, MotionVisualDraft> = {};
+  for (const [key, draft] of Object.entries(drafts)) {
+    const next = rekey(key);
+    const held = merged[next];
+    if (!held || (built(draft) && (!built(held) || time(draft) > time(held)))) merged[next] = draft;
+  }
+  const newest = merged[activeKey];
+  if (shown && (built(shown) || !built(newest))) merged[activeKey] = shown;
+  const winner = merged[activeKey];
+  const script = winner && saved.script && winner !== shown && built(winner) ? { ...saved.script, gen: winner.gen } : saved.script;
+  return { ...saved, visualDrafts: merged, script, ...(script !== saved.script ? { thumbnail: winner.thumbnail, thumbnails: winner.thumbnails } : {}) };
+};
 const compileKeys: { inputs: unknown[]; key: string }[] = [];
 export const motionCompileStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
@@ -66,7 +97,7 @@ export const motionRenderStateKey = (state: object) => {
   return hashJson([MOTION_CAMERA_REVISION, motionCompileStateKey(state), fields.quality, motionEffectiveEncoder(fields), fields.musicMood, fields.musicVolume]);
 };
 const legacyKey = (key: unknown): key is string => typeof key === V.KEY_TYPE && (key as string).length > V.HASHED_KEY_MAX;
-export const migrateMotionCompileKey = <T>(key: T): T => (legacyKey(key) ? (hashText(key) as T) : key);
+const migrateMotionCompileKey = <T>(key: T): T => (legacyKey(key) ? (hashText(key) as T) : key);
 export const migrateMotionRenderKey = <T>(key: T): T => {
   if (!legacyKey(key)) return key;
   const parts = JSON.parse(key) as unknown[];

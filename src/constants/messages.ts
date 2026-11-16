@@ -174,7 +174,7 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_MUTEX_DELAY: "Đang chuẩn bị bước tiếp theo...",
     GEMINI_CHAT_REQUEST_PACING: "Đang điều tiết tốc độ tạo nội dung...",
     GEMINI_CHAT_BATCH_NEXT_DELAY: "Kênh {0}: Đang chuẩn bị phân cảnh tiếp theo...",
-    GEMINI_CAPTCHA_DETECTED: "Kênh {0}: Phát hiện màn hình xác minh/Captcha. Vui lòng giải Captcha trên trình duyệt, hệ thống sẽ tự động tiếp tục ngay sau đó.",
+    GEMINI_CAPTCHA_DETECTED: "Kênh {0}: gặp Captcha. Giải trên trình duyệt, app sẽ tự chạy tiếp.",
     GEMINI_CAPTCHA_SOLVED_RESUMING: "Kênh {0}: Đã xác minh thành công! Đang tự động tiếp tục quy trình tạo ảnh...",
     SPAM_PREVENTION_DELAY: "Đang giữ khoảng cách an toàn giữa các yêu cầu tạo ảnh...",
     API_RATE_LIMITS_TRIGGERED: "Hệ thống đạt giới hạn tạo ảnh tạm thời, đang giãn cách thời gian...",
@@ -489,8 +489,8 @@ const PIPELINE_LOGS_LOCALIZED = {
     VOICE_ALIGN_START: "Syncing AI Voice (Python)...",
   },
 };
-export type BackendMessageKey = keyof typeof BACKEND_MESSAGES_LOCALIZED.vi;
-export type PipelineLogKey = keyof typeof PIPELINE_LOGS_LOCALIZED.vi;
+type BackendMessageKey = keyof typeof BACKEND_MESSAGES_LOCALIZED.vi;
+type PipelineLogKey = keyof typeof PIPELINE_LOGS_LOCALIZED.vi;
 export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string => (isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || BACKEND_MESSAGES_LOCALIZED.vi[key]);
 export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string => (isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : (PIPELINE_LOGS_LOCALIZED.en as any)[key] || PIPELINE_LOGS_LOCALIZED.vi[key]);
 export const BACKEND_MESSAGES = new Proxy({} as Record<BackendMessageKey, string>, {
@@ -683,7 +683,7 @@ export const LOG_DICTIONARY = {
   FAILED_FETCH_VOICES_REGISTRY: { en: "Failed to load voices library:", vi: "Không thể tải danh sách giọng nói từ thư viện:" },
   AUDIO_PLAYBACK_FAILED: { en: "Unable to play selected audio sample", vi: "Không thể phát thử tệp âm thanh này" },
   FAILED_RESUME_AUDIO_CONTEXT: { en: "Failed to resume audio drivers:", vi: "Không thể kích hoạt lại hệ thống âm thanh trình duyệt:" },
-  AUDIO_CONTEXT_INIT_FAILED: { en: "Audio drivers not ready. Activating video-only recording:", vi: "Hệ thống âm thanh của trình duyệt chưa sẵn sàng, đang chuyển sang lưu trữ dạng chỉ có hình ảnh:" },
+  AUDIO_CONTEXT_INIT_FAILED: { en: "Audio drivers not ready. Activating video-only recording:", vi: "Âm thanh trình duyệt chưa sẵn sàng, chỉ lưu hình:" },
   SYSTEM_FLOW_ERROR: { en: "[System Issue] {0}:", vi: "[Hệ thống gặp sự cố] {0}:" },
   SYSTEM_ACTION_START: { en: "[System Action] {0}", vi: "[Hệ thống] {0}" },
   LOAD_CUSTOM_MODEL_ERR: { en: "Failed to retrieve the specialized AI models list:", vi: "Lỗi tải danh sách mô hình tùy chỉnh:" },
@@ -723,7 +723,7 @@ export const PIPELINE_CONTROLLER_MESSAGES = {
   AI_FALLBACK_CHAT_FAILED: "Dịch vụ AI dự phòng chưa phản hồi, hệ thống chuyển sang xử lý qua API.",
   API_PLANNING_UNAVAILABLE: "Kết nối API chưa khả dụng, chuyển sang xử lý qua trình duyệt.",
   VIETNAMESE_ACCENT_RESTORE_FAILED: "Nội dung tiếng Việt chưa đạt chuẩn, đang yêu cầu AI tạo lại.",
-  FREE_AI_PROVIDER_UNAVAILABLE: "Dịch vụ AI tạm thời không phản hồi. Vui lòng kiểm tra khóa API trong phần Cài đặt rồi tiếp tục.",
+  FREE_AI_PROVIDER_UNAVAILABLE: "AI không phản hồi. Kiểm tra khóa API trong Cài đặt.",
   FREE_AI_PROVIDER_QUOTA_EXHAUSTED: "Dịch vụ AI đang tạm hết hạn mức hoặc chưa sẵn sàng. Vui lòng thử lại sau ít phút.",
 } as const;
 export const ROOM_ONLY_MESSAGES = {
@@ -747,7 +747,7 @@ export const GROK_AUTOMATION_MESSAGES = {
   CONNECT_FAILED: "Không thể kết nối với cửa sổ Grok. Vui lòng đóng cửa sổ cũ rồi thử lại.",
   NO_SESSION_CREATED: "Chưa thể khởi tạo phiên làm việc với Grok. Vui lòng thử lại.",
   USING_ACCOUNT: (email: string) => `[Grok] Sử dụng tài khoản ${email}.`,
-  NOT_LOGGED_IN: "Tài khoản Chrome chưa đăng nhập Grok. Vui lòng mở Chrome và đăng nhập một lần để tiếp tục.",
+  NOT_LOGGED_IN: "Chrome chưa đăng nhập Grok. Đăng nhập một lần để tiếp tục.",
   AGE_GATE_PENDING: "Grok đang chờ xác nhận độ tuổi trong hồ sơ tài khoản.",
   ATTACHED_ROOM: (_projectId: string) => `[Grok] Đã kết nối phiên làm việc cho dự án.`,
   DURATION_NOT_SUPPORTED: (duration: string) => `[Grok] Thời lượng ${duration} chưa được hỗ trợ; sử dụng cấu hình mặc định.`,

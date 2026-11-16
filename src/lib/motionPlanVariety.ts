@@ -18,4 +18,3 @@ export const motionPlanVarietyIssues = (rows: Row[], texts: string[]): string[] 
   if (rows.length >= V.MIN_GROUP_FOR_SHOTS && new Set(rows.map((row) => norm(row.shot)).filter(Boolean)).size < V.MIN_SHOTS) issues.push(V.FEW_SHOTS(rows.length));
   return issues;
 };
-export const motionSceneHasAction = (text: string): boolean => V.ACTION.test(text);

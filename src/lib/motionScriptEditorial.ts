@@ -10,8 +10,8 @@ import { motionRenameAutofix } from "./motionRename.js";
 import { MOTION_RENAME as N } from "../constants/motionRename.js";
 import { MOTION_STORY_TIMELINE as T } from "../constants/motionStoryTimeline.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript } from "../types/motionVideo.js";
-export type MotionEditorialResult = { beats: MotionBeat[]; edit: NonNullable<MotionStoryScript["edit"]> };
-export const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string) => {
+type MotionEditorialResult = { beats: MotionBeat[]; edit: NonNullable<MotionStoryScript["edit"]> };
+const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string) => {
   const findings = motionScriptFindings(beats, analysis, language, sourceText);
   const all = [...findings.review, ...findings.overlap, ...findings.stage, ...findings.style, ...findings.echo, ...findings.repeat];
   const sorted = all.map((item, index) => ({ ...item, priority: W.PRIORITY[(RT_MAINTENANCE.KIND in item && typeof item.kind === "string" ? item.kind : "") || RT_MAINTENANCE.STYLE] ?? 5, index })).sort((a, b) => a.priority - b.priority || a.index - b.index);

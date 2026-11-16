@@ -1,5 +1,5 @@
 import { motionLanguage } from "../lib/motionLanguage.js";
-export const MOTION_STORY_LANGUAGE = {
+const MOTION_STORY_LANGUAGE = {
   VI_RE: /^(?:vi(?:[-_][a-z]+)*|vietnamese|tiếng việt)$/iu,
   EMPTY: "",
   EN_RE: /^(?:en(?:[-_][a-z]+)*|english)$/iu,

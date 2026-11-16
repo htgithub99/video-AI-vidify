@@ -2,7 +2,7 @@ import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types.js";
 import { encodeGeminiChatModel } from "./geminiChatModels.js";
 import { encodeClaudeChatModel } from "./claudeChatModels.js";
 import { MOTION_SCENE_AI } from "./motionSceneLibrary.js";
-export interface MotionAiRoute {
+interface MotionAiRoute {
   provider: string;
   model: string;
 }

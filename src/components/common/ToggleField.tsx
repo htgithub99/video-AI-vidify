@@ -4,7 +4,7 @@ import * as ST from "../../constants/sourceText.js";
 import { TOGGLE_ELEMENTS } from "../../constants/toggleStyles.js";
 import { cn } from "../../lib/utils.js";
 import { ToggleIndicator } from "./ToggleIndicator.js";
-export interface ToggleFieldProps {
+interface ToggleFieldProps {
   checked: boolean;
   label: string;
   text: string;

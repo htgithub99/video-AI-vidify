@@ -8,7 +8,7 @@ import type { Locator, Page } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../../constants/cinematicConstants.js";
 import { uploadFailure } from "./chatUploadRecovery.js";
 type Attachment = { name: string; mimeType: string; path?: string };
-export type UploadState = { count: number; labels: string[]; files: Array<{ label: string; busy: boolean; failed: boolean; ready: boolean }>; busy: boolean; failed: boolean; sendReady: boolean; readyCount: number; busyCount: number; failedCount: number; errorMessage?: string };
+type UploadState = { count: number; labels: string[]; files: Array<{ label: string; busy: boolean; failed: boolean; ready: boolean }>; busy: boolean; failed: boolean; sendReady: boolean; readyCount: number; busyCount: number; failedCount: number; errorMessage?: string };
 export type ChatUploadPolicy = { scope: string; send: string; remove: string; attachment: string; busy: string; failure: RegExp; failedError: string; notReadyError: string; composerAncestor?: string; errorSelector?: string; ready?: string; matchImageNames?: boolean; omitImageExtension?: boolean; omitAudioExtension?: boolean; imageIdentityError?: string };
 const claudePolicy: ChatUploadPolicy = {
   scope: CONFIG.CLAUDE_UPLOAD_SCOPE_SELECTOR,

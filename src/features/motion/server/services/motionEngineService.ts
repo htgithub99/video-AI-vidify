@@ -50,7 +50,7 @@ interface EngineCache {
   fontFaces: { family: string; weight: number; style: string; src: string; unicodeRange: string }[];
 }
 let cache: EngineCache | null = null;
-export const getMotionEngineDir = (): string => {
+const getMotionEngineDir = (): string => {
   const resource = getStaticResourcePath(MOTION_VIDEO_CONSTANTS.ENGINE_DIR);
   if (fs.existsSync(resource)) return resource;
   return path.join(process.cwd(), MOTION_VIDEO_CONSTANTS.ENGINE_DIR);
@@ -77,7 +77,7 @@ const readFonts = (dir: string): EngineCache["fontFaces"] => {
     }),
   );
 };
-export const loadMotionEngine = (): EngineCache => {
+const loadMotionEngine = (): EngineCache => {
   const dir = getMotionEngineDir();
   const signature = MOTION_CAMERA.SIGNATURE(engineSignature(dir), MOTION_CAMERA_REVISION);
   if (cache && cache.signature === signature) return cache;

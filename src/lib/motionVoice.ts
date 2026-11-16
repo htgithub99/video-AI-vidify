@@ -123,8 +123,8 @@ export const motionVoiceAge = (voice: MotionVoicePreset): string => {
   if ((C.SENIOR as readonly string[]).includes(voice.name) || (C.SENIOR_FEMALE as readonly string[]).includes(voice.name) || C.SENIOR_TAG.test(text)) return MR.MOTION_TEXT_SENIOR;
   return C.CHILD_TAG.test(text) ? MR.MOTION_TEXT_CHILD : C.ADULT;
 };
-export const motionVoiceGroup = (gender?: string, age?: string): MotionVoiceGroup => (age === MR.MOTION_TEXT_CHILD ? G.CHILD : age === MR.MOTION_TEXT_SENIOR ? (gender === MR.MOTION_TEXT_FEMALE ? G.SENIOR_FEMALE : G.SENIOR_MALE) : gender === MR.MOTION_TEXT_FEMALE ? G.FEMALE_ADULT : G.MALE_ADULT);
-export const motionVoiceRegion = (voice?: Pick<MotionVoicePreset, "name" | "description">): string | undefined => {
+const motionVoiceGroup = (gender?: string, age?: string): MotionVoiceGroup => (age === MR.MOTION_TEXT_CHILD ? G.CHILD : age === MR.MOTION_TEXT_SENIOR ? (gender === MR.MOTION_TEXT_FEMALE ? G.SENIOR_FEMALE : G.SENIOR_MALE) : gender === MR.MOTION_TEXT_FEMALE ? G.FEMALE_ADULT : G.MALE_ADULT);
+const motionVoiceRegion = (voice?: Pick<MotionVoicePreset, "name" | "description">): string | undefined => {
   if (!voice) return undefined;
   const raw = [voice.name, voice.description].join(MR.MOTION_TEXT_SYMBOL_13),
     text = soundText(raw);

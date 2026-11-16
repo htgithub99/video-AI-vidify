@@ -1,4 +1,4 @@
-import type { CinematicSetupProps } from "../../video-generation/types/cinematicSetup.js";
+import type { CinematicSetupProps } from "../../../types/cinematicSetup.js";
 import { RUNTIME_TEXT as RT_CINEMATIC } from "../constants/runtimeText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { StudioCard, StudioTextarea, StudioSelect } from "../../../components/ui/Studio.js";

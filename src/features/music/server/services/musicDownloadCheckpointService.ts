@@ -39,7 +39,7 @@ export interface MusicDownloadCheckpoint {
   sourceWavRequired: true;
   updatedAt: number;
 }
-export interface MusicEvaluationCheckpoint {
+interface MusicEvaluationCheckpoint {
   version: 1;
   key: string;
   candidateIds: string[];

@@ -1,7 +1,7 @@
 import { SOURCE_TEXT_ALL_APPROVED, SOURCE_TEXT_APPROVED, SOURCE_TEXT_ID, SOURCE_TEXT_KEY_ONLY } from "../constants/sourceText";
 import _ from "lodash";
 import { QualityMode, StoryboardScene } from "../types";
-export interface QualityProfile {
+interface QualityProfile {
   draftCandidates: number;
   upscale: "key_only" | "approved" | "all_approved";
 }

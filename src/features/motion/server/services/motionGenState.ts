@@ -11,7 +11,6 @@ const previewRoot = (): string => {
   return dir;
 };
 export const genPreviewDir = (...parts: string[]): string => path.join(previewRoot(), ...parts);
-export const genPreviewRel = (file: string): string => path.relative(previewRoot(), file).split(path.sep).join(G.PATH_SEP);
 export const resolveGenPreview = (rel: string): string | null => {
   const root = path.resolve(previewRoot());
   const file = path.resolve(root, _.toString(rel));

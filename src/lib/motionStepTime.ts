@@ -1,4 +1,4 @@
-export interface MotionStepTiming {
+interface MotionStepTiming {
   id?: string;
   startedAt?: number;
   updatedAt?: number;

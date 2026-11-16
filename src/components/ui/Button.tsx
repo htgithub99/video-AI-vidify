@@ -1,42 +1,22 @@
-import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
-import { VIDEO_EXPORT_TEXT_NUMBER, VIDEO_EXPORT_TEXT_STRING } from "../../constants/videoExportText";
 import { SOURCE_TEXT_MD, SOURCE_TEXT_PRIMARY, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
 import { STUDIO_UI } from "../../constants/studioTheme.js";
 import { isIconOnlyButton, isStudioControlRole, studioButtonVariant, studioControlClassName, studioIconButtonClassName } from "../../lib/studioTheme.js";
 import React from "react";
 import { IBaseButtonProps } from "../../types";
-import { BUTTON_CLASS_NAME, BUTTON_SIZE_CLASS_NAME, BUTTON_TOOLTIP_PREFIX, BUTTON_VARIANT_CLASS_NAME, DETECTOR_VIETNAMESE_REGEX } from "../../constants";
+import { BUTTON_CLASS_NAME, BUTTON_SIZE_CLASS_NAME, BUTTON_VARIANT_CLASS_NAME } from "../../constants";
 import _ from "lodash";
 import { Sparkles } from "lucide-react";
-const getChildrenText = (node: React.ReactNode): string => {
-  if (_.isNil(node)) return "";
-  if (typeof node === VIDEO_EXPORT_TEXT_STRING || typeof node === VIDEO_EXPORT_TEXT_NUMBER) return _.toString(node);
-  if (_.isArray(node)) return _.trim(_.join(_.map(node, getChildrenText), RT_SHARED.SYMBOL_36A9E7));
-  if (React.isValidElement(node)) {
-    return getChildrenText(node.props.children);
-  }
-  return "";
-};
 export const Button: React.FC<IBaseButtonProps> = ({ children, variant = SOURCE_TEXT_PRIMARY, size = SOURCE_TEXT_MD, isLoading, className = "", disabled, ...props }) => {
   const isUnstyled = variant === SOURCE_TEXT_UNSTYLED;
   const sizeStyles = isUnstyled ? "" : BUTTON_SIZE_CLASS_NAME[size];
   const variantStyles = isUnstyled ? "" : _.defaultTo(BUTTON_VARIANT_CLASS_NAME[variant], BUTTON_VARIANT_CLASS_NAME.primary);
   const finalBaseStyles = isUnstyled ? "" : BUTTON_CLASS_NAME.BASE;
-  const cleanText = getChildrenText(children).trim();
   const isControl = isStudioControlRole(props.role);
   const iconOnly = !isControl && isIconOnlyButton(children);
   const buttonClassName = cn(STUDIO_UI.BUTTON, finalBaseStyles, sizeStyles, variantStyles, className, { [BUTTON_CLASS_NAME.LOADING]: Boolean(isLoading) });
-  let computedTitle = props.title;
-  if (!computedTitle && cleanText) {
-    if (DETECTOR_VIETNAMESE_REGEX.test(cleanText)) {
-      computedTitle = `${BUTTON_TOOLTIP_PREFIX.VI}${cleanText}`;
-    } else {
-      computedTitle = `${BUTTON_TOOLTIP_PREFIX.EN}${cleanText}`;
-    }
-  }
   return (
-    <button data-variant={studioButtonVariant(variant, className)} data-icon-only={iconOnly || undefined} className={iconOnly ? studioIconButtonClassName(buttonClassName) : isControl ? studioControlClassName(buttonClassName) : buttonClassName} disabled={disabled || isLoading} title={computedTitle} {...props}>
+    <button data-variant={studioButtonVariant(variant, className)} data-icon-only={iconOnly || undefined} className={iconOnly ? studioIconButtonClassName(buttonClassName) : isControl ? studioControlClassName(buttonClassName) : buttonClassName} disabled={disabled || isLoading} {...props}>
       {isLoading ? (
         <span className={cn(BUTTON_CLASS_NAME.LOADING_CONTENT)}>
           <Sparkles className={cn(BUTTON_CLASS_NAME.LOADING_SPINNER)} />

@@ -1,0 +1,9 @@
+{
+  "b1_html_0": { "shot": "medium", "free": ["whetstone"] },
+  "b1_html_1": { "shot": "overhead", "kind": "map" },
+  "b1_html_2": { "shot": "close", "free": ["hooves"] },
+  "b1_html_3": { "shot": "wide" },
+  "b1_html_4": { "shot": "medium" },
+  "b1_html_5": { "shot": "wide" },
+  "b6_html_0": { "shot": "wide" }
+}

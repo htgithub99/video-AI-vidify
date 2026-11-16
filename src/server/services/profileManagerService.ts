@@ -21,7 +21,7 @@ import _ from "lodash";
 import { logger } from "../../lib/logger.js";
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 chromium.use(stealthPlugin());
-export interface GoogleProfile {
+interface GoogleProfile {
   id: string;
   name: string;
   isLinked: boolean;

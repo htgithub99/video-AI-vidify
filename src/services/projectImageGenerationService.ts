@@ -19,7 +19,7 @@ import _ from "lodash";
 import { API_ROUTES, FLOW_DIRECT_VIDEO_CONFIG, FLOW_VIDEO_MEDIA_CONFIG, GEMINI_MEDIA_ERRORS, REFACTOR_CONSTANTS, SecurityConstants, SYSTEM_FETCH_CONFIG } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
-export interface ProjectImageItem {
+interface ProjectImageItem {
   sceneId: string;
   prompt: string;
   generateType?: GenerateType;
@@ -53,25 +53,25 @@ interface ProjectImageGenerationConfig {
   retainBrowserSession?: boolean;
   onBatchResult: (result: ProjectImageResult) => void;
 }
-export interface ProjectImageGenerationSummary {
+interface ProjectImageGenerationSummary {
   completedSceneIds: string[];
   failedSceneIds: string[];
   cancelled: boolean;
 }
-export interface ProjectFlowVideoBatchResponse {
+interface ProjectFlowVideoBatchResponse {
   success: boolean;
   results: ProjectImageResult[];
   newProjectId?: string;
   warning?: string;
 }
-export interface FlowVideoRecoveryRequest {
+interface FlowVideoRecoveryRequest {
   projectId: string;
   sceneId: string;
   mediaId?: string;
   mediaIds?: string[];
   expectedOutputCount?: number;
 }
-export interface SceneAssetSummary {
+interface SceneAssetSummary {
   total: number;
   completed: number;
   missingSceneIds: string[];

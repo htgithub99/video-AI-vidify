@@ -1,4 +1,4 @@
-import { MOTION_TEXT_FLEX_FLEX_WRAP_GAP_2, MOTION_TEXT_W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0, MOTION_TEXT_W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0 } from "../../../constants/motionRuntime.js";
+import { MOTION_TEXT_FLEX_FLEX_WRAP_GAP_2, W_4_H_4_TEXT_EMERALD_400_SHRINK_0_D3C71C, W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0 } from "../../../constants/motionRuntime.js";
 import { SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_BG, SOURCE_TEXT_GRID_GRID_COLS_1_LG_GRID_COLS, SOURCE_TEXT_W_3_5_H_3_5_TEXT_ROSE } from "../../../constants/sourceText.js";
 export const RUNTIME_TEXT = {
   TEXT_10PX_TEXT_SLATE_500: "text-[10px] text-slate-500",
@@ -29,9 +29,9 @@ export const RUNTIME_TEXT = {
   W_4_H_4_ANIMATE_SPIN_SHRINK_0_TEXT_WHITE: "w-4 h-4 animate-spin shrink-0 text-white",
   LG_COL_SPAN_6_FLEX_FLEX_COL_GLASS_CARD_ROUNDED: "lg:col-span-6 flex flex-col glass-card rounded-2xl sm:rounded-3xl p-5 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl lg:h-0 lg:min-h-full min-h-[420px] overflow-hidden",
   FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_BORDER: "flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5 mb-3 shrink-0",
-  BTN_ICON_TINY_W_7_H_7_MIN_W_28PX: "btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95",
-  W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD: MOTION_TEXT_W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0,
-  BTN_ICON_TINY_W_7_H_7_MIN_W_28PX_9DA0C7: "btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95 disabled:opacity-30",
+  BTN_ICON_TINY_W_7_H_7_MIN_W_28PX: "btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95",
+  W_4_H_4_TEXT_EMERALD_400_SHRINK_0_D3C71C: W_4_H_4_TEXT_EMERALD_400_SHRINK_0_D3C71C,
+  BTN_ICON_TINY_W_7_H_7_MIN_W_28PX_9DA0C7: "btn-icon-tiny w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] !p-0 aspect-square rounded-lg flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-95 disabled:opacity-30",
   FLEX_1_MIN_H_0_FLEX_FLEX_COL_OVERFLOW_HIDDEN: "flex-1 min-h-0 flex flex-col overflow-hidden",
   FLEX_1_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_PY: "flex-1 flex items-center justify-center text-center py-8 text-slate-500",
   TEXT_XS_FONT_MEDIUM: "text-xs font-medium",
@@ -40,9 +40,9 @@ export const RUNTIME_TEXT = {
   W_5_H_5_ROUNDED_MD_BG_PURPLE_500_10: "w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5",
   FLEX_1_MIN_W_0_TEXT_XS_TEXT_SLATE_200: "flex-1 min-w-0 text-xs text-slate-200 leading-relaxed font-sans select-text break-words line-clamp-2",
   FLEX_ITEMS_CENTER_GAP_1_SHRINK_0_PT_0_5: "flex items-center gap-1 shrink-0 pt-0.5",
-  BTN_ICON_TINY_W_6_H_6_MIN_W_24PX: "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90",
-  W_3_5_H_3_5_TEXT_EMERALD_500_DARK: MOTION_TEXT_W_3_5_H_3_5_TEXT_EMERALD_500_DARK_TEXT_EMERALD_400_SHRINK_0,
-  BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_5328FC: "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90 disabled:opacity-30",
+  BTN_ICON_TINY_W_6_H_6_MIN_W_24PX: "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90",
+  W_3_5_H_3_5_TEXT_EMERALD_500_DARK: W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0,
+  BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_5328FC: "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-rose-400 hover:text-rose-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none active:scale-90 disabled:opacity-30",
   GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P_5_SM: "glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl w-full",
   FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_BORDER_254F0C: "flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3",
   W_6_H_6_ROUNDED_XL_BG_ROSE_500_15: "w-6 h-6 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center font-mono font-black text-xs shadow-sm shadow-rose-500/20",

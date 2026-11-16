@@ -22,14 +22,14 @@ const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
     signal?.addEventListener(H.ABORT_EVENT, stop, { once: true });
   });
 const ease = (t: number): number => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-export const humanPause = (range: readonly [number, number]): Promise<void> => sleep(between(range));
+const humanPause = (range: readonly [number, number]): Promise<void> => sleep(between(range));
 const startPoint = (page: Page): Point => {
   const known = pointers.get(page);
   if (known) return known;
   const size = page.viewportSize() || { width: 1280, height: 800 };
   return { x: size.width * (0.5 + (Math.random() - 0.5) * H.START_ZONE), y: size.height * (0.5 + (Math.random() - 0.5) * H.START_ZONE) };
 };
-export const humanMoveTo = async (page: Page, target: Point): Promise<void> => {
+const humanMoveTo = async (page: Page, target: Point): Promise<void> => {
   const from = startPoint(page);
   const dx = target.x - from.x;
   const dy = target.y - from.y;

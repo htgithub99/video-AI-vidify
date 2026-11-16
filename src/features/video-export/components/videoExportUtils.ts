@@ -9,7 +9,7 @@ import type { VideoExportOptionItem, VideoExportOptionSection } from "./VideoExp
 export const getVideoExportOptions = <T extends string | number>(options: VideoExportOptionItem<T>[] = [], sections?: VideoExportOptionSection<T>[]): VideoExportOptionItem<T>[] => (_.isEmpty(sections) ? options : _.flatMap(sections, (section) => section.options));
 export type VideoExportTexts = (typeof VIDEO_EXPORT_TEXTS)[keyof typeof VIDEO_EXPORT_TEXTS];
 const JSON_HEADERS = { "Content-Type": VIDEO_EXPORT_TEXT_APPLICATION_JSON };
-export class VideoExportRequestError extends Error {
+class VideoExportRequestError extends Error {
   status: number;
   constructor(message: string, status: number) {
     super(message);

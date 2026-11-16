@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;overflow:hidden}#motion-canvas{display:block;width:100vw;height:100vh}</style></head>
+<body><canvas id="motion-canvas"></canvas>
+<script>
+// Contract edge cases, each in its own quarter of a white frame so the bench can measure its painted pixels:
+// a wagon-fort row (top left), a map icon with pop 0 (top right), an arrow bent 60 px (bottom left), an icon growing in
+// with a pulse ring (bottom right).
+const canvas = document.getElementById('motion-canvas');
+const ctx = canvas.getContext('2d');
+const INK = '#26201c';
+const FIG = window.MotionFigures.use({
+  wall(c, o) { c.fillStyle = '#8a6a44'; c.fillRect(o.x - o.w / 2, o.y - o.h, o.w, o.h); c.strokeStyle = INK; c.lineWidth = 2; c.strokeRect(o.x - o.w / 2, o.y - o.h, o.w, o.h); return {}; },
+  icon(c, o) { c.fillStyle = o.color || '#b3362e'; c.beginPath(); c.arc(o.x, o.y, o.r * (o.appear ?? 1), 0, Math.PI * 2); c.fill(); return {}; },
+  arrow(c, o) { const mx = (o.from[0] + o.to[0]) / 2, my = (o.from[1] + o.to[1]) / 2, dx = o.to[0] - o.from[0], dy = o.to[1] - o.from[1], len = Math.hypot(dx, dy) || 1, b = o.curve || 0; c.strokeStyle = o.color || '#b3362e'; c.lineWidth = o.width || 8; c.beginPath(); c.moveTo(o.from[0], o.from[1]); c.quadraticCurveTo(mx - (dy / len) * b * 2, my + (dx / len) * b * 2, o.to[0], o.to[1]); c.stroke(); return {}; },
+});
+window.motionScene = { ready: Promise.resolve(), renderAt: async function (input = {}) {
+  const W = input.width || 1280, H = input.height || 720;
+  if (canvas.width !== W) canvas.width = W;
+  if (canvas.height !== H) canvas.height = H;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+  if (window.__benchBlank) return;
+  FIG.wall(ctx, { kind: 'wagonFort', x: 320, y: 300, w: 440, h: 80, mark: 'fort' });
+  FIG.icon(ctx, { kind: 'swords', x: 960, y: 180, r: 60, color: '#b3362e', pop: 0, mark: 'battle' });
+  FIG.arrow(ctx, { from: [80, 560], to: [560, 560], curve: 60, width: 8, color: '#b3362e', mark: 'march' });
+  FIG.icon(ctx, { kind: 'swords', x: 960, y: 540, r: 60, color: '#b3362e', appear: 1, pulse: 0.5, mark: 'pulse' });
+} };
+</script></body></html>

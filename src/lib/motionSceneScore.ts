@@ -3,7 +3,7 @@ import { MOTION_SCENE_SCORE as S } from "../constants/motionSceneScore.js";
 import { parseSvgTransform, svgGeometry, svgWithin, type SvgGeometry } from "./motionSvgGeometry.js";
 import { motionAnimationTracks } from "./motionActorTracks.js";
 import type { MotionRemotionNode, MotionSceneActionPlan, MotionSceneAnimation, MotionSceneLayer } from "../types/motionVisual.js";
-export interface MotionSceneScoreInput {
+interface MotionSceneScoreInput {
   svg: string;
   layers: MotionSceneLayer[];
   animations: MotionSceneAnimation[];

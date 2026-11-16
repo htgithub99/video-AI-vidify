@@ -1,5 +1,5 @@
 import type { MotionStyleKit } from "../types/motionVideo.js";
-export interface MotionStylePreset {
+interface MotionStylePreset {
   id: string;
   mode: "2d" | "3d";
   genre?: string;
@@ -11,7 +11,7 @@ export interface MotionStylePreset {
   description: string;
   kit: MotionStyleKit;
 }
-export const MOTION_GHOST_TALE_PRESET = "ghost_story_2d";
+const MOTION_GHOST_TALE_PRESET = "ghost_story_2d";
 const preset = (id: string, mode: "2d" | "3d", vi: string, en: string, look: string, palette: string[], outline: [string, number] | null, description: string, render: Record<string, string>, character: Record<string, string>, background: Record<string, string>, fx: string, camera: string): MotionStylePreset => ({
   id,
   mode,
@@ -401,4 +401,3 @@ export const MOTION_STYLE_PRESETS: MotionStylePreset[] = [
     ),
   },
 ];
-export const motionStylePreset = (id: unknown): MotionStylePreset | undefined => MOTION_STYLE_PRESETS.find((item) => item.id === id);

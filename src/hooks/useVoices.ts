@@ -5,7 +5,7 @@ import _ from "lodash";
 import { API_QUERY_PARAMS, VBEE_PROVIDER_ID, VOICE_OWNERSHIP_KEY, VOICE_OWNERSHIP_COMMUNITY, REFACTOR_CONSTANTS } from "../constants";
 import { fetchVoiceCatalog } from "../services/voiceCatalogService";
 import { jsonUtils } from "../lib/json";
-export interface UseVoicesFilters {
+interface UseVoicesFilters {
   provider: string;
   page: number;
   pageSize: number;

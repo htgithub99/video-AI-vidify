@@ -2,7 +2,7 @@ import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { stringifyJson } from "./jsonStringify.js";
 import { MOTION_RESPONSE_SCHEMAS, MOTION_RESPONSE_TEXT as C, type MotionResponseSchema } from "../constants/motionResponseContract.js";
-export const motionResponseType = (value: unknown): string => (value === undefined ? RT_CORE.MISSING : value === null ? RT_CORE.NULL : Array.isArray(value) ? RT_CORE.ARRAY : typeof value);
+const motionResponseType = (value: unknown): string => (value === undefined ? RT_CORE.MISSING : value === null ? RT_CORE.NULL : Array.isArray(value) ? RT_CORE.ARRAY : typeof value);
 export const motionResponseShape = (schema: MotionResponseSchema): string => {
   if (schema.anyOf) return schema.anyOf.map(motionResponseShape).join(RT_CORE.OR);
   if (schema.type === RT_SHARED.OBJECT)
@@ -48,7 +48,7 @@ export const withMotionResponsePrompt = (artifact: string, prompt: string): stri
   return !contract || prompt.includes(contract) || prompt.includes(C.DIAGNOSTICS) ? prompt : prompt + RT_SHARED.SYMBOL_01BA47 + contract;
 };
 export const motionResponseRepair = (prompt: string, diagnostics: unknown): string => C.REPAIR + prompt + C.DIAGNOSTICS + stringifyJson(diagnostics);
-export const normalizeMotionResponseOptionals = (value: any, schema: MotionResponseSchema): any => {
+const normalizeMotionResponseOptionals = (value: any, schema: MotionResponseSchema): any => {
   if (Array.isArray(value) && schema.type === RT_CORE.ARRAY && schema.items) return value.map((item) => normalizeMotionResponseOptionals(item, schema.items!));
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const objectSchema = schema.type === RT_SHARED.OBJECT ? schema : schema.anyOf?.find((option) => option.type === RT_SHARED.OBJECT);

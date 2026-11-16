@@ -21,7 +21,7 @@ export const decodeVoicePcm = async (file: string, signal?: AbortSignal): Promis
     await fs.promises.rm(raw, { force: true }).catch(_.noop);
   }
 };
-export interface MotionVoicePaceReport {
+interface MotionVoicePaceReport {
   rate: number;
   articulation: number;
   speechRatio: number;

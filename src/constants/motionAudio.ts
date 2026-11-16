@@ -1,4 +1,4 @@
-export interface MotionSfxMood {
+interface MotionSfxMood {
   root: number;
   chord: number[];
   gain: number;

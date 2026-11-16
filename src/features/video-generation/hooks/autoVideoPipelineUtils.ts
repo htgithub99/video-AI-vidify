@@ -8,18 +8,18 @@ import { blobToBase64 } from "../../../lib/fileUtils";
 import { logger } from "../../../utils/logger";
 import type { PipelineConfig } from "./useAutoVideoPipeline";
 import { resolveStylePreset } from "../../../constants/stylePresets";
-export interface CachedVoiceAudio {
+interface CachedVoiceAudio {
   audioBase64: string;
   audioUrl: string;
   isCached: boolean;
 }
-export interface ReferenceChangeState {
+interface ReferenceChangeState {
   hasVisualOverrides: boolean;
   shouldRegenerateSceneAssets: boolean;
   shouldRegenerateStoryboard: boolean;
   shouldRegenerateThumbnails: boolean;
 }
-export interface PipelineInvalidationState {
+interface PipelineInvalidationState {
   regenerateScript: boolean;
   regenerateStoryboard: boolean;
   regenerateVoice: boolean;
@@ -27,7 +27,7 @@ export interface PipelineInvalidationState {
   regenerateSeo: boolean;
   regenerateThumbnails: boolean;
 }
-export interface GenerationCheckpointSceneProgress {
+interface GenerationCheckpointSceneProgress {
   completedSceneIds: string[];
   pendingSceneIds: string[];
   failedSceneIds: string[];
@@ -81,7 +81,7 @@ export const fetchCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<C
   }
   return { audioBase64, audioUrl, isCached: _.some([audioBase64, audioUrl], (value) => !_.isEmpty(value)) };
 };
-export interface ResolvedTargetProject {
+interface ResolvedTargetProject {
   selectedAutoProject: VideoProject | null;
   existingTargetProject: VideoProject | null;
 }

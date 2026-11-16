@@ -33,7 +33,7 @@ export const MOTION_STORYTELLING = {
   TEXT: {
     vi: {
       LABEL: "Cách kể",
-      HINT: "Giọng kể luôn ở mức cuốn hút nhất theo thể loại. Lựa chọn này chỉ quyết định khi nguồn ngắn hơn thời lượng đã chọn: Giữ đúng nguồn thì video có thể ngắn hơn; Đủ thời lượng thì thêm nội dung mới đúng kiểu thể loại để đủ thời lượng, không kể chậm, không kéo lê. Không lựa chọn nào thêm sự kiện, con số hay lời và việc của người có thật ngoài nguồn.",
+      HINT: "Khi nguồn ngắn hơn thời lượng: Giữ đúng nguồn (video có thể ngắn hơn) hoặc Đủ thời lượng (thêm nội dung đúng thể loại). Không thêm sự kiện hay con số ngoài nguồn.",
       OPTIONS: { plain: "Giữ đúng nguồn", lively: "Đủ thời lượng", gripping: "Đủ thời lượng" },
       CAPACITY: (sourceMinutes: number, chosenMinutes: number, factor: number, mode: string): string => (factor > 1.01 ? `Nguồn đủ cho ~${sourceMinutes} phút; đang chọn ${chosenMinutes} phút → giãn ×${factor.toFixed(1)} (${mode}).` : `Nguồn đủ cho ~${sourceMinutes} phút với ${chosenMinutes} phút đã chọn.`),
       ESTIMATE: (seconds: number, chosenSeconds: number): string => `Ước tính kịch bản ~${Math.floor(seconds / 60)} phút ${Math.round(seconds % 60)} giây theo tốc độ đọc đã đo (chọn ${Math.round(chosenSeconds / 60)} phút, đạt ${Math.round((seconds / Math.max(1, chosenSeconds)) * 100)}%).`,

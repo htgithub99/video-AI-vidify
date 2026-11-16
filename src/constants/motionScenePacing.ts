@@ -17,7 +17,7 @@ export const MOTION_SCENE_PACING = {
   TEXT: {
     vi: {
       label: "Nhịp đổi hình",
-      hint: "Bao lâu thì đổi sang một hình minh họa mới. Thưa: một hình giữ qua nhiều câu kể, cảnh chuyển thoáng qua được gộp vào hình đang có. Dày: đổi hình theo từng ý. Mọi mức vẫn đổi hình khi sang chương, đổi giờ trong ngày hoặc có manh mối quan trọng.",
+      hint: "Bao lâu đổi hình. Thưa: một hình qua nhiều câu. Dày: đổi theo từng ý. Luôn đổi khi sang chương hoặc đổi giờ.",
       few: "Thưa – giữ hình lâu (~14 giây/hình)",
       medium: "Vừa (~9 giây/hình)",
       many: "Dày – đổi hình nhanh (~6 giây/hình)",

@@ -5,7 +5,7 @@ import { MOTION_VIDEO_GENRES, motionGenreSpec, motionVideoGenre } from "../../co
 import type { MotionBeat, MotionStoryAnalysis } from "../../types/motionVideo.js";
 import { motionNarratorCastKey } from "../motionVoice.js";
 import { motionSpeakerNames } from "./autofix.js";
-export interface MotionGenreGrammarFinding {
+interface MotionGenreGrammarFinding {
   id: string;
   issue: string;
 }

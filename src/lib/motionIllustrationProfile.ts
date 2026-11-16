@@ -5,12 +5,12 @@ import { SCENE_DEVICES, SCENE_FRAMING, SCENE_FRAMING_PLANNING, type MotionSceneF
 import type { MotionRemotionProfile } from "../types/motionVisual.js";
 const WIDE: MotionSceneView = RT_MAINTENANCE.WIDE;
 const ILLUSTRATION: MotionSceneFormat = RT_MAINTENANCE.ILLUSTRATION;
-export const motionProfileFraming = (id: MotionRemotionProfile, view?: MotionSceneView): string => {
+const motionProfileFraming = (id: MotionRemotionProfile, view?: MotionSceneView): string => {
   const profile = MOTION_ILLUSTRATION_PROFILES[id];
   const key = view && Object.hasOwn(SCENE_FRAMING, view) ? view : WIDE;
   return profile.framing?.[key] || SCENE_FRAMING[key];
 };
-export const motionProfileDevice = (id: MotionRemotionProfile, format?: MotionSceneFormat): string | undefined => {
+const motionProfileDevice = (id: MotionRemotionProfile, format?: MotionSceneFormat): string | undefined => {
   if (!format || format === ILLUSTRATION) return undefined;
   const profile = MOTION_ILLUSTRATION_PROFILES[id];
   return profile.devices?.[format] || SCENE_DEVICES[format];

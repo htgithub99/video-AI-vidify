@@ -2,7 +2,7 @@ import { MOTION_CAMERA as C } from "../constants/motionCamera.js";
 import { stringifyJson } from "./jsonStringify.js";
 import type { MotionProfileCamera } from "../constants/motionProfileMotion.js";
 export type MotionCameraMode = (typeof C.MODES)[number];
-export interface MotionCameraInput {
+interface MotionCameraInput {
   enabled: boolean;
   seconds: number;
   start: number;

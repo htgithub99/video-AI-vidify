@@ -1,8 +1,8 @@
 import _ from "lodash";
 import { VideoGenre } from "./enums";
 export type StyleCategory = "all" | "cartoon_2d" | "3d_cinematic" | "documentary_editorial" | "infographic_concept" | "artistic_retro";
-export type BackgroundMode = "minimal" | "contextual" | "white";
-export interface CuratedStylePreset {
+type BackgroundMode = "minimal" | "contextual" | "white";
+interface CuratedStylePreset {
   id: string;
   name: string;
   nameVi: string;
@@ -16,7 +16,7 @@ export interface CuratedStylePreset {
   characterRule: string;
   keywords: string[];
 }
-export interface StyleCategoryItem {
+interface StyleCategoryItem {
   id: StyleCategory;
   nameVi: string;
   nameEn: string;

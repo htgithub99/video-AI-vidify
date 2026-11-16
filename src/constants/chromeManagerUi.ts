@@ -102,12 +102,12 @@ export const CHROME_MANAGER_UI = {
     RULES: { vi: "Cách xử lý", en: "Behaviour" },
     CHROMES: { vi: "Chrome", en: "Chrome profiles" },
     CHROMES_HINT: {
-      vi: "Chrome chính và mỗi Chrome dự phòng đều là chrome.exe thật với profile và cổng riêng. Mở đăng nhập mở Gemini, ChatGPT, Claude, DeepSeek, Meta AI, Grok – đăng nhập tài khoản rồi bấm Kiểm tra. Thứ tự thẻ là thứ tự chuyển; hết Chrome dự phòng sẽ quay về Chrome chính.",
+      vi: "Mỗi Chrome có profile và cổng riêng. Bấm Mở đăng nhập, đăng nhập các AI rồi bấm Kiểm tra. Thứ tự thẻ là thứ tự chuyển.",
       en: "Each backup runs like the primary Chrome (real chrome.exe with its own profile and port). Open login opens Gemini, ChatGPT, Claude, DeepSeek, Meta AI and Grok – sign in the spare accounts, then press Check. Tile order is the switch order.",
     },
     CHAIN: { vi: "Thứ tự AI dự phòng", en: "Fallback AI order" },
     CHAIN_HINT: {
-      vi: "Dùng khi bật “AI dự phòng” ở các màn: AI đã chọn ở màn chạy trước, rồi lần lượt các AI đang bật theo thứ tự này (bỏ qua AI đang hết lượt). Kéo để đổi thứ tự.",
+      vi: "Khi bật AI dự phòng: dùng AI đã chọn trước, rồi lần lượt các AI dưới đây. Kéo để đổi thứ tự.",
       en: "Used when “Fallback AI” is on in a screen: the screen's chosen AI runs first, then the enabled AIs in this order (skipping exhausted ones). Drag to reorder.",
     },
     STATUS: { vi: "Trạng thái AI", en: "AI status" },

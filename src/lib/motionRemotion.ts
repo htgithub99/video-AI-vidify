@@ -13,18 +13,19 @@ import { normalizeRemotionRelations } from "./motionRemotionStaging.js";
 import { separateRemotionSubjects } from "./motionRemotionVisibility.js";
 import { normalizeMotionRenderBehavior } from "./motionRenderBehavior.js";
 import { motionProportionOf } from "./motionDrawStyle.js";
+import { motionLayoutOf } from "./motionLayout.js";
 import { MOTION_ASPECT_BASE } from "../constants/motionVideo.js";
 import { MOTION_REMOTION_SPACE as SPACE } from "../constants/motionRemotionSpace.js";
 import { validateSceneComposition } from "./motionSceneComposition.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
-export const remotionIncompleteScenes = (scenes: MotionRemotionScene[], assets: Record<string, MotionVectorAsset>): string[] =>
+const remotionIncompleteScenes = (scenes: MotionRemotionScene[], assets: Record<string, MotionVectorAsset>): string[] =>
   scenes.filter((scene) => (scene.renderer === RT_MAINTENANCE.HTML_CANVAS ? !scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status) : scene.build?.status === RT_SHARED.FAILED || (scene.composition && C.PLACEHOLDER_RE.test(assets[scene.composition.assetKey]?.svg || "")))).map((scene) => scene.id);
 export const assertRemotionExportable = (spec: MotionRemotionSpec): void => {
   const missing = remotionIncompleteScenes(spec.scenes, spec.assets);
   if (missing.length) throw new Error(C.INCOMPLETE(missing));
 };
 export const remotionStateMissingScenes = (state: MotionRemotionState): string[] => [...new Set([...Object.keys(state.failures || {}), ...remotionIncompleteScenes(Object.values(state.scenes || {}).flat(), state.assets || {})])];
-export const remotionAssetAnchors = (raw: unknown, required: string[] = []): MotionVectorAsset["anchors"] => {
+const remotionAssetAnchors = (raw: unknown, required: string[] = []): MotionVectorAsset["anchors"] => {
   const value = raw && typeof raw === "object" ? (raw as Record<string, any>) : {};
   const entries = Object.entries(value)
     .map(([key, point]) => [key, { x: typeof point?.x === "string" && point.x.trim() ? Number(point.x) : point?.x, y: typeof point?.y === "string" && point.y.trim() ? Number(point.y) : point?.y }] as const)
@@ -35,7 +36,7 @@ export const remotionAssetAnchors = (raw: unknown, required: string[] = []): Mot
   return anchors;
 };
 // figures: the "Cách dựng" choice to preview with (the current one in the editor); defaults to the one the scenes were built with.
-export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState, figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown }): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
+export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState, figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown; layout?: unknown }): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
   if (scene.renderer === RT_MAINTENANCE.HTML_CANVAS) {
     if (!scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status) || !state || state.settings.mode !== RT_MAINTENANCE.REMOTION) return { error: scene.htmlRequest?.error };
     if (scene.html.figures !== true) return { error: V.LEGACY_SCENE };
@@ -55,9 +56,10 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
         duration: frames / 30,
         motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE,
         renderBehavior: state.renderBehavior,
-        profileId: state.settings.profileId,
+        profileId: (figures && typeof figures.profileId === "string" && Object.hasOwn(V.PROFILES, figures.profileId) ? figures.profileId : state.settings.profileId) as MotionRemotionSpec["profileId"],
         figureKit: (figures ?? state.settings).figureKit === true,
         proportion: motionProportionOf(figures ?? state.settings),
+        layout: motionLayoutOf({ profileId: figures?.profileId ?? state.settings.profileId, layout: (figures ?? state.settings).layout, figureKit: (figures ?? state.settings).figureKit }),
         assets: {},
         scenes: [{ ...scene, nodes: [], startFrame: 0, endFrame: frames }],
         subtitles: [],

@@ -69,7 +69,6 @@ assert.equal(calls[1].attempted, false, "retry is a fresh request");
 assert.notEqual(calls[1].requestId, calls[0].requestId);
 assert.ok(logs.some((l) => l.includes("bỏ lượt cũ")), logs.join("\n"));
 const { MOTION_HTML } = await import("../src/constants/motionHtmlTemplate.js");
-const { motionHtmlGraphics } = await import("../src/lib/motionHtmlPrompt.js");
 const { motionHtmlRuleLines } = await import("../src/lib/motionHtmlPrompt.js");
 const { MOTION_FIGURES } = await import("../src/constants/motionFigures.js");
 const { motionHtmlPlanSourceMatches } = await import("../src/lib/motionHtmlScene.js");
@@ -101,7 +100,7 @@ assert.ok(routeLogs.some((line) => line.includes(routed[2].provider)));
 const scenePrompt = routed[0].prompt;
 assert.ok(scenePrompt.startsWith(motionHtmlRuleLines(MOTION_HTML.OUTPUT)));
 assert.ok(scenePrompt.includes(MOTION_FIGURES.DOC), "every scene is written against the figure table");
-assert.equal(scenePrompt.split(motionHtmlGraphics("history")).length, 2, "style rules appear once");
+assert.equal(scenePrompt.split(MOTION_HTML.GRAPHICS).length, 2, "style rules appear once");
 assert.doesNotMatch(scenePrompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE|kopje|cowhide|chainmail|screaming|Unconscious/i);
 assert.ok(scenePrompt.length < 26000, "scene prompt stays bounded (figure table included): " + scenePrompt.length);
 const horrorCtrl = new AbortController();
@@ -118,8 +117,7 @@ await assert.rejects(
     log: () => undefined,
   }),
 );
-assert.ok(horrorPrompt.includes(motionHtmlGraphics("horror")), "horror scenes use their own drawing style");
-assert.ok(!horrorPrompt.includes(MOTION_HTML.GRAPHICS));
+assert.ok(horrorPrompt.includes(MOTION_HTML.GRAPHICS) && !/Khuat Mat/.test(horrorPrompt), "every drawing style shares one base drawing (the style is applied when shown)");
 const { motionHtmlWritingDirection, motionHtmlAuthoringSnapshot } = await import("../src/lib/motionHtmlAuthoring.js");
 const { motionRenameAutofix } = await import("../src/lib/motionRename.js");
 const renamedAnalysis: any = { title: "T", chapters: [{ id: "c1", targetSeconds: 30 }], cast: [], places: [], renameEntities: true, renameMap: [{ source: "Henry Pulleine", renamed: "Arthur Hale", kind: "person" }], authoringSettings: motionHtmlAuthoringSnapshot({ length: "2min", target: 120, language: "en", profile: "history" }) };
@@ -179,17 +177,16 @@ const onlyNamed = motionHtmlCastCards(castAnalysis, [{ cast: ["pulleine", "durnf
 assert.ok(!onlyNamed.includes("Pulleine") && !onlyNamed.includes("Durnford") && onlyNamed.includes("Zulu impi"), "only people the scene names get a card");
 assert.equal(motionHtmlCastCards(castAnalysis, [], "A colonel waits."), "", "a title alone does not pull in a named officer");
 const { motionHtmlFigureDoc } = await import("../src/lib/motionHtmlFigure.js");
-assert.ok(scenePrompt.includes(motionHtmlFigureDoc("history")) && horrorPrompt.includes(motionHtmlFigureDoc("horror")), "scene prompts carry the measured figure design of their profile");
-assert.match(motionHtmlFigureDoc("history"), /groundY/, "figures stand on the drawn ground");
+assert.ok(scenePrompt.includes(motionHtmlFigureDoc({ profileId: "history" })) && horrorPrompt.includes(motionHtmlFigureDoc({ profileId: "horror" })), "scene prompts carry the measured figure design");
+assert.match(motionHtmlFigureDoc({}), /groundY/, "figures stand on the drawn ground");
 assert.match(scenePrompt, /hand-drawn[\s\S]*one Path2D/, "outline belongs to its shape");
 assert.match(scenePrompt, /only advances when the SCENE says/, "a gathering group does not charge");
 assert.match(scenePrompt, /never drawn while a clip is active/, "a ground clip cannot hide the figures");
-assert.match(motionHtmlFigureDoc("history"), /legs visible from the hem at -0.9r/, "legs show below the torso");
-assert.match(motionHtmlFigureDoc("horror"), /The hem never reaches the shoes/, "horror legs show too");
+assert.match(motionHtmlFigureDoc({}), /legs visible from the hem at -0.9r/, "legs show below the torso");
 assert.match(scenePrompt, /no flat base line, never a row of equal bumps/, "clouds have a rounded underside");
 assert.match(scenePrompt, /never write names next to people/, "labels stay off the subjects");
 assert.match(scenePrompt, /camX follows groupX at most 1:1[\s\S]*distance travelled/, "the camera never outruns marchers and steps follow distance");
-assert.doesNotMatch(motionHtmlFigureDoc("history"), /torsoY=-28|headR\+4/, "no fixed pixel offsets");
+assert.doesNotMatch(motionHtmlFigureDoc({}), /torsoY=-28|headR\+4/, "no fixed pixel offsets");
 assert.doesNotMatch(scenePrompt, /overlapping (?:outlined )?(?:puffs|circles)|lumpy blobs|capsule|corner radius/, "no geometric shape recipes");
 assert.doesNotMatch(scenePrompt, /legs down both flanks/, "one rider rule only");
 assert.doesNotMatch(scenePrompt, /MotionKit\./, "the AI never calls the kit");

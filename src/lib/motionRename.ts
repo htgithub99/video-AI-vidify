@@ -2,7 +2,7 @@ import { escapeRegExp as escape } from "./regexUtils.js";
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_RENAME as N, type MotionRenameKind } from "../constants/motionRename.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionRenameEntry } from "../types/motionVideo.js";
-export const motionRenameNormalize = (value: string): string => value.toLowerCase().normalize(RT_MAINTENANCE.NFD).replace(N.DIACRITICS, "").replace(N.D_BAR, N.D_PLAIN).replace(N.SPACES, N.SPACE).trim();
+const motionRenameNormalize = (value: string): string => value.toLowerCase().normalize(RT_MAINTENANCE.NFD).replace(N.DIACRITICS, "").replace(N.D_BAR, N.D_PLAIN).replace(N.SPACES, N.SPACE).trim();
 export const normalizeMotionRenameMap = (raw: unknown): MotionRenameEntry[] => {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
@@ -27,7 +27,7 @@ export const motionRenameLeaks = (text: string | undefined, map: MotionRenameEnt
 };
 export const motionRenameMapActive = (analysis: Pick<MotionStoryAnalysis, "renameEntities" | "renameMap">): MotionRenameEntry[] => (analysis.renameEntities ? analysis.renameMap || [] : []);
 export const motionRenamePairs = (map: MotionRenameEntry[]): string => map.map((entry) => `${entry.source}${RT_MAINTENANCE.ARROW_SEPARATOR}${entry.renamed}`).join(RT_MAINTENANCE.SEMICOLON_SPACE);
-export interface MotionRenameIssue {
+interface MotionRenameIssue {
   path: string;
   expected: string;
   actual: string;
@@ -92,7 +92,7 @@ export const motionRenameAutofix = (beats: MotionBeat[], analysis: Pick<MotionSt
   });
   return { beats: next, replaced };
 };
-export interface MotionRenameFinding {
+interface MotionRenameFinding {
   id: string;
   issue: string;
 }

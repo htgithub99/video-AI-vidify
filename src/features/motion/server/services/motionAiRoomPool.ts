@@ -25,7 +25,7 @@ interface RoomWaiter {
   reject: (reason: unknown) => void;
   stop: () => void;
 }
-export const motionRoomGroup = (workerId: string): string =>
+const motionRoomGroup = (workerId: string): string =>
   (MOTION_STORY_CONFIG.SCENE_WORKER_IDS as readonly string[]).includes(workerId) ? MOTION_STORY_CONFIG.ROOM_GROUPS.SCENE : (MOTION_STORY_CONFIG.PLAN_WORKER_IDS as readonly string[]).includes(workerId) ? MOTION_STORY_CONFIG.ROOM_GROUPS.PLAN : (MOTION_STORY_CONFIG.LIGHT_WORKER_IDS as readonly string[]).includes(workerId) ? MOTION_STORY_CONFIG.ROOM_GROUPS.LIGHT : MOTION_STORY_CONFIG.ROOM_GROUPS.CONTENT;
 export class MotionAiRoomPool {
   private readonly slots: RoomSlot[] = [

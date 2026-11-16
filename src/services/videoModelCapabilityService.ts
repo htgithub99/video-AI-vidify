@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { VIDEO_MODEL_CAPABILITY_CONFIG } from "../constants/config";
 import { AspectRatio, ImageGeneratorEngine } from "../types";
-export interface VideoModelCapabilities {
+interface VideoModelCapabilities {
   durations: readonly string[];
   resolutions: readonly string[];
   aspectRatios: readonly AspectRatio[];

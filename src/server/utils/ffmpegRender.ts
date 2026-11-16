@@ -119,7 +119,7 @@ const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
   }
   return candidatePath;
 };
-export interface RenderPreflightResult {
+interface RenderPreflightResult {
   ready: boolean;
   issues: string[];
 }

@@ -36,7 +36,7 @@ import { HighlightClipItem, ShortsAspectRatio, ShortsReframeMode } from "../../.
 import { SHORTS_CONSTANTS, SHORTS_LOG_MESSAGES, SHORTS_REGEX, SHORTS_TEXTS } from "../../../../constants/shorts.js";
 import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { logger } from "../../../../lib/logger.js";
-export type RenderShortClipParams = { sourceVideoPath: string; clip: HighlightClipItem; aspectRatio: ShortsAspectRatio; reframeMode: ShortsReframeMode; outputDirectory?: string; signal?: AbortSignal; onProgress?: (percent: number) => void };
+type RenderShortClipParams = { sourceVideoPath: string; clip: HighlightClipItem; aspectRatio: ShortsAspectRatio; reframeMode: ShortsReframeMode; outputDirectory?: string; signal?: AbortSignal; onProgress?: (percent: number) => void };
 const runProcessWithSignal = (cmd: string, args: string[], signal?: AbortSignal, maxBuffer: number = 20 * 1024 * 1024): Promise<{ stdout: string; stderr: string }> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {

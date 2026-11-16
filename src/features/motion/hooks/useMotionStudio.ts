@@ -222,7 +222,7 @@ const seriesState = (full: MotionStoryAnalysis, parts: number | undefined, langu
 };
 const chainOn = (s: PersistedState): boolean => !s.automationPaused && (s.autoContinue !== false || s.autoRun === true);
 const exportOn = (s: PersistedState): boolean => !s.automationPaused && s.autoExport === true;
-export interface MotionScenesRequest {
+interface MotionScenesRequest {
   scenes?: string[];
   beats?: string[];
   locations?: string[];
@@ -231,7 +231,7 @@ export interface MotionScenesRequest {
   retryFailed?: boolean;
 }
 const compileStateKey = motionCompileStateKey;
-export const narrationSignature = motionVoiceSignature;
+const narrationSignature = motionVoiceSignature;
 const selectedChannelRef = (next: PersistedState, data: MotionVoiceChannels): string => voiceChannelRef(data.channels.find((item) => item.id === (next.voiceChannelId === undefined ? data.defaultId : next.voiceChannelId)));
 const withVoiceConfig = (next: PersistedState, data: MotionVoiceChannels): PersistedState => {
   if (!next.script) return next;
@@ -1194,7 +1194,9 @@ export function useMotionStudio() {
       compiledSig.current = MR.MOTION_TEXT_EMPTY;
       return;
     }
-    if (!hydrated || flowCount > 0 || sceneBuildPending.current || state.visualSettingsError || state.autoExport || (state.activeStoryJobId && state.activeStoryJobId === state.productionId)) return;
+    // The preview is compiled as soon as every scene is built, with automatic export too, so the scenes can be watched
+    // before the voice and the export are ready.
+    if (!hydrated || flowCount > 0 || sceneBuildPending.current || state.visualSettingsError || (state.activeStoryJobId && state.activeStoryJobId === state.productionId)) return;
     if (
       state.visualSettings.mode === RT_SHARED.REMOTION &&
       (!state.script.gen?.remotion ||

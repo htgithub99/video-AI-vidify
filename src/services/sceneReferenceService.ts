@@ -16,7 +16,7 @@ export const SCENE_REFERENCE_CONFIG = {
   TRANSIENT_STYLE_PATTERN: /\b(?:cinematic|dramatic|volumetric)\s+lighting\b|\b(?:sharp\s+detail|high\s+quality|photorealistic|3d\s+render)\b/gi,
   DUPLICATE_SEPARATOR_PATTERN: /\s*,\s*,+/g,
 } as const;
-export interface SceneGenerationContext {
+interface SceneGenerationContext {
   characterIds: string[];
   prompt: string;
   referenceImages: string[];

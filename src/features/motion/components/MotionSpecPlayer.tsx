@@ -172,7 +172,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
         )}
         {!spec && !videoUrl && !loading && (
           <div className={MOTION_STYLES.ABSOLUTE_INSET_0_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2}>
-            <Play className={MOTION_STYLES.W_8_H_8_TEXT_SLATE_600_DARK_TEXT_SLATE_700_STROKE_1} />
+            <Play className={MOTION_STYLES.W_8_H_8_TEXT_SLATE_700_STROKE_1} />
           </div>
         )}
         {loading && (
@@ -209,8 +209,8 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
         />
       )}
       {error ? <p role={MR.MOTION_TEXT_ALERT}>{error}</p> : null}
-      <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_P_2_ROUNDED_XL_BG_SLATE_50_DARK_BG_SLATE_955_60} style={{ visibility: videoUrl ? MR.MOTION_TEXT_HIDDEN : MR.MOTION_TEXT_VISIBLE }}>
-        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => seek(0)} className={MOTION_STYLES.P_2_TEXT_SLATE_500_HOVER_TEXT_PURPLE_400_DARK_TEXT_SLATE_400_DARK_HOVER_TEXT_PURPLE_400_TRANSITION_COLORS_CURSOR_POINTER} disabled={controlsDisabled}>
+      <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_P_2_ROUNDED_XL_BG_SLATE_955_60_B} style={{ visibility: videoUrl ? MR.MOTION_TEXT_HIDDEN : MR.MOTION_TEXT_VISIBLE }}>
+        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => seek(0)} className={MOTION_STYLES.P_2_TEXT_SLATE_400_HOVER_TEXT_PURPLE_400_TRANSITION_COLO} disabled={controlsDisabled}>
           <SkipBack className={MOTION_STYLES.W_4_H_4} />
         </Button>
         <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => (playing ? pause() : void play())} className={MOTION_STYLES.P_2_TEXT_PURPLE_400_HOVER_TEXT_PURPLE_300_TRANSITION_COLORS_CURSOR_POINTER_DISABLED_OPACITY_30} disabled={controlsDisabled || audioPending}>
@@ -233,7 +233,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
             <div key={i} className={MOTION_STYLES.PLAYER_SEEK_MARK} style={{ left: MR.MOTION_TEMPLATE_SYMBOL_48(m) }} />
           ))}
         </div>
-        <span className={MOTION_STYLES.TEXT_11PX_FONT_MONO_TEXT_SLATE_600_DARK_TEXT_SLATE_400_W_24_TEXT_RIGHT}>
+        <span className={MOTION_STYLES.TEXT_11PX_FONT_MONO_TEXT_SLATE_400_W_24_TEXT_RIGHT}>
           {formatSeconds(time)}
           {MOTION_TEXT_SYMBOL_24}
           {formatSeconds(duration)}

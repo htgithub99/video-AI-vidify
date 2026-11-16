@@ -5,7 +5,7 @@ import type { MotionScenePacing, MotionVisualSettings } from "../types/motionVis
 import { motionBeatLines } from "./motionBeatLines.js";
 import { motionLanguageRate, motionSpeechUnits } from "./motionLanguage.js";
 export const motionScenePacing = (settings?: MotionVisualSettings): MotionScenePacing => settings?.pacing || P.DEFAULT;
-export const motionPacingSeconds = (settings?: MotionVisualSettings) => P.SECONDS[motionScenePacing(settings)];
+const motionPacingSeconds = (settings?: MotionVisualSettings) => P.SECONDS[motionScenePacing(settings)];
 export const motionBeatVisualSeconds = (beat: MotionBeat, language: string = RT_SHARED.VI) => {
   return Math.max(1, motionSpeechUnits(beat.narration) / motionLanguageRate(language));
 };

@@ -46,7 +46,7 @@ const verifyDeleted = async (page: Page): Promise<boolean> => {
   if (await visible(page.getByText(C.EMPTY, { exact: true })).count()) return true;
   return !(await visible(page.getByText(C.TODAY, { exact: true })).count());
 };
-export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSignal): Promise<"deleted" | "empty"> => {
+const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSignal): Promise<"deleted" | "empty"> => {
   let committed = false;
   const check = () => {
     signal.throwIfAborted();

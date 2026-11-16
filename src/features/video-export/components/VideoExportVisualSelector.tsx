@@ -162,24 +162,24 @@ export const VideoExportVisualSelector = <T extends string | number>({ text, lab
   return (
     <div className={cn(RT_VIDEO_EXPORT.SPACE_Y_1_5_PT_0_5_TEXT_LEFT)}>
       <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
-        <span className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_ZINC_800_DARK_TEXT_SLATE)}>{label}</span>
+        <span className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_300)}>{label}</span>
         {badge && <span className={cn(RT_VIDEO_EXPORT.PX_1_5_PY_0_2_ROUNDED_TEXT_10PX_FONT)}>{badge}</span>}
       </div>
-      <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={disabled} onClick={() => setIsModalOpen(true)} className={cn(RT_VIDEO_EXPORT.W_FULL_P_2_5_ROUNDED_2XL_BORDER_TRANSITION_ALL, RT_VIDEO_EXPORT.BG_WHITE_DARK_BG_SLATE_955_70_BORDER_SLATE_200)}>
+      <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={disabled} onClick={() => setIsModalOpen(true)} className={cn(RT_VIDEO_EXPORT.W_FULL_P_2_5_ROUNDED_2XL_BORDER_TRANSITION_ALL, RT_VIDEO_EXPORT.BG_SLATE_955_70_BORDER_SLATE_800_HOVER_BORDER_CYAN_500_5)}>
         <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_2_5_MIN_W_0)}>
           <div className={cn(RT_VIDEO_EXPORT.W_10_H_10_ROUNDED_XL_FLEX_ITEMS_CENTER_JUSTIFY)}>
             <div className={RT_VIDEO_EXPORT.ABSOLUTE_TOP_1_LEFT_1_TEXT_9PX}>{VIDEO_EXPORT_TEXT_SYMBOL_9}</div>
             <SelectedIcon className={cn(RT_SHARED.W_5_H_5)} />
           </div>
           <div className={cn(RT_VIDEO_EXPORT.MIN_W_0_SPACE_Y_0_5)}>
-            <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_EXTRABOLD_TEXT_ZINC_900_DARK_TEXT_WHITE)}>
+            <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_EXTRABOLD_TEXT_WHITE_TRUNCATE_FLEX_ITEMS_CE)}>
               <span>{selectedItem?.label || text.VISUAL_SELECT_UNSELECTED}</span>
               {selectedSectionName && <span className={cn(RT_VIDEO_EXPORT.TEXT_9PX_FONT_MONO_FONT_BOLD_PX_1_5_PY)}>{selectedSectionName}</span>}
             </div>
-            <div className={cn(RT_VIDEO_EXPORT.TEXT_11PX_TEXT_ZINC_600_DARK_TEXT_ZINC_400_FONT)}>{text.VISUAL_SELECT_CLICK_HINT(allItems.length)}</div>
+            <div className={cn(RT_VIDEO_EXPORT.TEXT_11PX_TEXT_ZINC_400_FONT_MEDIUM)}>{text.VISUAL_SELECT_CLICK_HINT(allItems.length)}</div>
           </div>
         </div>
-        <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_TEXT_CYAN_600_DARK_TEXT_CYAN)}>
+        <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_TEXT_CYAN_400_FLEX_ITEMS_CENTER_GAP_0_)}>
           <span>{text.VISUAL_SELECT_CHANGE}</span>
           <ChevronRight className={cn(RT_SHARED.W_3_5_H_3_5)} />
         </div>
@@ -206,7 +206,7 @@ export const VideoExportVisualSelector = <T extends string | number>({ text, lab
                   <span className={RT_SHARED.HIDDEN_SM_INLINE}>{VIDEO_EXPORT_TEXT_NHAN_DAN}</span>
                 </div>
                 <div className={RT_VIDEO_EXPORT.FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_961042}>
-                  <Sparkles className={RT_VIDEO_EXPORT.W_3_5_H_3_5_FILL_00E5FF} />
+                  <Sparkles className={RT_VIDEO_EXPORT.W_3_5_H_3_5_FILL_ACCENT} />
                   <span>{label}</span>
                 </div>
                 <div className={RT_VIDEO_EXPORT.FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1}>
@@ -219,8 +219,8 @@ export const VideoExportVisualSelector = <T extends string | number>({ text, lab
                 </div>
               </div>
             </div>
-            <div className={RT_VIDEO_EXPORT.FLEX_FLEX_1_MIN_H_0_OVERFLOW_HIDDEN_BG_141416}>
-              <div className={RT_VIDEO_EXPORT.W_52_MD_W_56_SHRINK_0_BG_19191D_BORDER}>
+            <div className={RT_VIDEO_EXPORT.FLEX_FLEX_1_MIN_H_0_OVERFLOW_HIDDEN_BG_SLATE_900}>
+              <div className={RT_VIDEO_EXPORT.W_52_MD_W_56_SHRINK_0_BG_SLATE_850_BORDER}>
                 <Button
                   variant={VIDEO_EXPORT_TEXT_UNSTYLED}
                   type={VIDEO_EXPORT_TEXT_BUTTON}
@@ -228,7 +228,7 @@ export const VideoExportVisualSelector = <T extends string | number>({ text, lab
                     setActiveCategory(VIDEO_EXPORT_CONSTANTS.CATEGORY_ALL);
                     setSearchQuery("");
                   }}
-                  className={cn(RT_VIDEO_EXPORT.W_FULL_PX_3_PY_2_ROUNDED_XL_TEXT_XS, activeCategory === VIDEO_EXPORT_CONSTANTS.CATEGORY_ALL && !searchQuery ? RT_VIDEO_EXPORT.BG_0E383D_TEXT_00E5FF_BORDER_00E5FF_30_SHADOW_SM : RT_VIDEO_EXPORT.TEXT_ZINC_400_BORDER_TRANSPARENT_HOVER_BG_ZINC_800_60)}>
+                  className={cn(RT_VIDEO_EXPORT.W_FULL_PX_3_PY_2_ROUNDED_XL_TEXT_XS, activeCategory === VIDEO_EXPORT_CONSTANTS.CATEGORY_ALL && !searchQuery ? RT_VIDEO_EXPORT.ACCENT_CHIP : RT_VIDEO_EXPORT.TEXT_ZINC_400_BORDER_TRANSPARENT_HOVER_BG_ZINC_800_60)}>
                   <span>{VIDEO_EXPORT_TEXT_YEU_THICH_TAT_CA}</span>
                   <span className={RT_VIDEO_EXPORT.ML_AUTO_TEXT_10PX_FONT_MONO_PX_1_5_PY}>{allItems.length}</span>
                 </Button>
@@ -251,9 +251,9 @@ export const VideoExportVisualSelector = <T extends string | number>({ text, lab
                               setActiveCategory(cat.key);
                               setSearchQuery("");
                             }}
-                            className={cn(RT_VIDEO_EXPORT.W_FULL_PX_3_PY_2_ROUNDED_XL_TEXT_XS_99D461, isCatActive ? RT_VIDEO_EXPORT.BG_0E383D_TEXT_00E5FF_FONT_BOLD_BORDER_00E5FF_30_SHADOW : RT_VIDEO_EXPORT.TEXT_ZINC_400_BORDER_TRANSPARENT_HOVER_BG_ZINC_800_50)}>
+                            className={cn(RT_VIDEO_EXPORT.W_FULL_PX_3_PY_2_ROUNDED_XL_TEXT_XS_99D461, isCatActive ? RT_VIDEO_EXPORT.ACCENT_CHIP_BOLD : RT_VIDEO_EXPORT.TEXT_ZINC_400_BORDER_TRANSPARENT_HOVER_BG_ZINC_800_50)}>
                             <span className={RT_SHARED.TRUNCATE}>{cat.label}</span>
-                            <span className={cn(RT_VIDEO_EXPORT.TEXT_10PX_FONT_MONO_PX_1_5_PY_0_2, isCatActive ? RT_VIDEO_EXPORT.BG_00E5FF_20_TEXT_00E5FF : RT_VIDEO_EXPORT.BG_BLACK_30_TEXT_ZINC_500)}>{cat.count}</span>
+                            <span className={cn(RT_VIDEO_EXPORT.TEXT_10PX_FONT_MONO_PX_1_5_PY_0_2, isCatActive ? RT_VIDEO_EXPORT.ACCENT_SOFT : RT_VIDEO_EXPORT.BG_BLACK_30_TEXT_ZINC_500)}>{cat.count}</span>
                           </Button>
                         );
                       })}
@@ -261,7 +261,7 @@ export const VideoExportVisualSelector = <T extends string | number>({ text, lab
                   )}
                 </div>
               </div>
-              <div className={RT_VIDEO_EXPORT.FLEX_1_FLEX_FLEX_COL_MIN_W_0_BG_121214}>
+              <div className={RT_VIDEO_EXPORT.FLEX_1_FLEX_FLEX_COL_MIN_W_0_BG_SLATE_950}>
                 <div className={RT_VIDEO_EXPORT.RELATIVE_W_FULL_MAX_W_XL_SHRINK_0}>
                   <Search className={RT_VIDEO_EXPORT.ABSOLUTE_LEFT_3_5_TOP_1_2_TRANSLATE_Y_1} />
                   <StudioInput type={VIDEO_EXPORT_TEXT_TEXT} autoFocus value={searchQuery} placeholder={VIDEO_EXPORT_TEXT_MOI_NGUOI_DANG_TIM_KIEM_RETRO} onChange={(e) => setSearchQuery(e.target.value)} className={RT_VIDEO_EXPORT.W_FULL_H_9_PL_10_PR_9_ROUNDED_FULL} />
@@ -302,18 +302,18 @@ export const VideoExportVisualSelector = <T extends string | number>({ text, lab
                               setIsModalOpen(false);
                             }}
                             className={cn(RT_VIDEO_EXPORT.GROUP_FLEX_FLEX_COL_ITEMS_CENTER_GAP_1_5_TRANSITION)}>
-                            <div className={cn(RT_VIDEO_EXPORT.W_FULL_ASPECT_SQUARE_ROUNDED_2XL_RELATIVE_OVERFLOW_HIDDEN_FLEX, isSelected ? RT_VIDEO_EXPORT.BORDER_2_BORDER_00E5FF_RING_2_RING_00E5FF_50_SHADOW : RT_VIDEO_EXPORT.BORDER_ZINC_800_BG_1A1A1F_HOVER_BORDER_ZINC_400_HOVER)}>
+                            <div className={cn(RT_VIDEO_EXPORT.W_FULL_ASPECT_SQUARE_ROUNDED_2XL_RELATIVE_OVERFLOW_HIDDEN_FLEX, isSelected ? RT_VIDEO_EXPORT.ACCENT_SELECTED : RT_VIDEO_EXPORT.BORDER_ZINC_800_BG_SLATE_850_HOVER_BORDER_ZINC_400_HOVER)}>
                               <div className={cn(RT_VIDEO_EXPORT.ABSOLUTE_INSET_0_BG_GRADIENT_TO_BR_OPACITY_80_GROUP, gradientTheme)} />
                               <div className={cn(RT_VIDEO_EXPORT.ABSOLUTE_INSET_0_TRANSITION_COLORS_DURATION_200, isSelected ? RT_VIDEO_EXPORT.BG_CYAN_950_20 : RT_VIDEO_EXPORT.BG_BLACK_40_GROUP_HOVER_BG_BLACK_20)} />
                               <div className={RT_VIDEO_EXPORT.ABSOLUTE_TOP_2_LEFT_2_W_5_H_5_ROUNDED}>{VIDEO_EXPORT_TEXT_SYMBOL_9}</div>
-                              <div className={cn(RT_VIDEO_EXPORT.RELATIVE_Z_10_W_11_H_11_ROUNDED_XL_BACKDROP, isSelected ? RT_VIDEO_EXPORT.BG_00E5FF_25_BORDER_00E5FF_60_TEXT_00E5FF_SHADOW_00E5FF : RT_VIDEO_EXPORT.BG_BLACK_40_BORDER_WHITE_10_TEXT_WHITE)}>
+                              <div className={cn(RT_VIDEO_EXPORT.RELATIVE_Z_10_W_11_H_11_ROUNDED_XL_BACKDROP, isSelected ? RT_VIDEO_EXPORT.ACCENT_ACTIVE : RT_VIDEO_EXPORT.BG_BLACK_40_BORDER_WHITE_10_TEXT_WHITE)}>
                                 <ItemIcon className={RT_SHARED.W_5_H_5} />
                               </div>
-                              <div className={cn(RT_VIDEO_EXPORT.ABSOLUTE_BOTTOM_2_RIGHT_2_W_6_H_6_ROUNDED, isSelected ? RT_VIDEO_EXPORT.BG_00E5FF_TEXT_BLACK_RING_2_RING_WHITE_50_SCALE : RT_VIDEO_EXPORT.BG_BLACK_70_TEXT_WHITE_90_GROUP_HOVER_BG_WHITE)}>{isSelected ? <Check className={RT_VIDEO_EXPORT.W_3_5_H_3_5_STROKE_3} /> : <Download className={RT_VIDEO_EXPORT.W_3_H_3_STROKE_2_5} />}</div>
+                              <div className={cn(RT_VIDEO_EXPORT.ABSOLUTE_BOTTOM_2_RIGHT_2_W_6_H_6_ROUNDED, isSelected ? RT_VIDEO_EXPORT.ACCENT_SOLID_RING : RT_VIDEO_EXPORT.BG_BLACK_70_TEXT_WHITE_90_GROUP_HOVER_BG_WHITE)}>{isSelected ? <Check className={RT_VIDEO_EXPORT.W_3_5_H_3_5_STROKE_3} /> : <Download className={RT_VIDEO_EXPORT.W_3_H_3_STROKE_2_5} />}</div>
                               {isSelected && <div className={RT_VIDEO_EXPORT.ABSOLUTE_TOP_2_RIGHT_2_PX_2_PY_0_5}>{VIDEO_EXPORT_TEXT_DA_CHON}</div>}
                             </div>
                             <div className={RT_VIDEO_EXPORT.W_FULL_TEXT_CENTER_PX_1}>
-                              <span className={cn(RT_VIDEO_EXPORT.TEXT_XS_TRUNCATE_BLOCK_TRANSITION_COLORS_LEADING_TIGHT, isSelected ? RT_VIDEO_EXPORT.TEXT_00E5FF_FONT_BLACK : RT_VIDEO_EXPORT.TEXT_ZINC_300_GROUP_HOVER_TEXT_WHITE_FONT_MEDIUM)}>{item.label}</span>
+                              <span className={cn(RT_VIDEO_EXPORT.TEXT_XS_TRUNCATE_BLOCK_TRANSITION_COLORS_LEADING_TIGHT, isSelected ? RT_VIDEO_EXPORT.ACCENT_TEXT_BLACK : RT_VIDEO_EXPORT.TEXT_ZINC_300_GROUP_HOVER_TEXT_WHITE_FONT_MEDIUM)}>{item.label}</span>
                             </div>
                           </div>
                         );

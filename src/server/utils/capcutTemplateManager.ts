@@ -8,7 +8,7 @@ import { logger } from "../../lib/logger.js";
 import { TEMPLATE_CONFIG } from "../../constants/index.js";
 import { BACKEND_MESSAGES_LOCALIZED } from "../../constants/messages.js";
 import { jsonUtils } from "../../lib/json.js";
-export interface CapcutTemplate {
+interface CapcutTemplate {
   id: string;
   name: string;
   createdAt: string;

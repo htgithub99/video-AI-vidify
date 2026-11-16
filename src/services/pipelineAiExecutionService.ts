@@ -4,13 +4,13 @@ import { GEMINI_CHAT_MODEL_OPTIONS } from "../constants/geminiChatModels.js";
 import { DEEPSEEK_CHAT_MODES } from "../constants/deepseekChat";
 import { CINEMATIC_CHAT_DEFAULT_MODELS, CINEMATIC_CHAT_MODEL_OPTIONS } from "../constants/cinematicConstants";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, VideoProject } from "../types";
-export interface PipelineAiExecutionInput {
+interface PipelineAiExecutionInput {
   planningFallbackProvider?: AiPlanningFallbackProvider;
   planningChatModel?: AiPlanningChatModel;
   planningExecutionMode?: AiPlanningExecutionMode;
   planningChromeHeadless?: boolean;
 }
-export interface ResolvedPipelineAiExecution {
+interface ResolvedPipelineAiExecution {
   provider: AiPlanningFallbackProvider;
   model: AiPlanningChatModel;
   mode: AiPlanningExecutionMode;

@@ -1,6 +1,6 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 export type SvgBox = { minX: number; minY: number; maxX: number; maxY: number };
-export type SvgMatrix = [number, number, number, number, number, number];
+type SvgMatrix = [number, number, number, number, number, number];
 export interface SvgGeometry {
   ancestors: Map<string, string[]>;
   boxes: Map<string, SvgBox>;

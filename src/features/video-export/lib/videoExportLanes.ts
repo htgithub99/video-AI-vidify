@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { MOTION_REMOTION_RENDER as R } from "../../../constants/motionRemotionRender.js";
 import { VIDEO_EXPORT_SPEED } from "../constants/videoExportSpeed.js";
-export type VideoExportLanePlan = { lanes: number; threads: number };
+type VideoExportLanePlan = { lanes: number; threads: number };
 export const videoExportRenderLanes = (cpus: number, freeBytes: number, jobs: number, pixels: number): VideoExportLanePlan => {
   const bytesPerLane = R.BYTES_PER_WORKER * Math.max(1, pixels / VIDEO_EXPORT_SPEED.BASE_PIXELS);
   const lanes = Math.max(1, Math.min(R.MAX_WORKERS, cpus - R.RESERVED_CPUS, Math.floor(freeBytes / bytesPerLane), Math.max(1, jobs)));

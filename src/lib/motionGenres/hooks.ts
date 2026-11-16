@@ -5,7 +5,7 @@ import { MOTION_VIDEO_GENRES, motionVideoGenre } from "../../constants/motionGen
 import { motionStorytellingPreset } from "../motionStorytelling.js";
 import { motionLanguage } from "../motionLanguage.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../../types/motionVideo.js";
-export interface MotionHookFinding {
+interface MotionHookFinding {
   id: string;
   issue: string;
 }

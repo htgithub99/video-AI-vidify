@@ -10,7 +10,7 @@ import { motionLayerParts } from "../../../../../lib/motionSceneQuality.js";
 import { motionLayerSvg } from "../../../../../lib/motionIdentityReference.js";
 import { repairMotionSvgMarkup } from "../../../../../lib/motionVectorAsset.js";
 import type { MotionObjectSheetEntry, MotionRemotionProfile, MotionRemotionScene, MotionRemotionState, MotionSceneObject } from "../../../../../types/motionVisual.js";
-export interface MotionSheetItem {
+interface MotionSheetItem {
   key: string;
   term: string;
   class: MotionSceneObject["class"];

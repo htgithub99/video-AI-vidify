@@ -1,3 +1,4 @@
+import { MOTION_LAYOUT_WIDE } from "../../../../constants/motionLayouts/index.js";
 import * as COMMON_RUNTIME from "../../../../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../../../../constants/runtime/values.js";
 import fs from "node:fs";
@@ -60,7 +61,7 @@ export const prepareMotionThumbnailReferences = async (analysis: MotionStoryAnal
   try {
     opts.signal?.throwIfAborted();
     const state = script.gen.remotion;
-    if (!state || state.settings.mode !== RUNTIME_VALUES.REMOTION_D1BD7A5B || state.settings.profileId !== settings.profileId) return [];
+    if (!state || state.settings.mode !== RUNTIME_VALUES.REMOTION_D1BD7A5B) return [];
     const candidates = rankMotionThumbnailScenes(
       Object.values(state.scenes)
         .flat()
@@ -74,7 +75,7 @@ export const prepareMotionThumbnailReferences = async (analysis: MotionStoryAnal
     for (const [index, { scene }] of unique.entries()) {
       opts.signal?.throwIfAborted();
       if (!scene.composition && scene.html) {
-        const image = await renderHtmlReference(scene, opts.signal, deps.openMotionHtmlRuntime, { kit: settings.figureKit === true, profile: settings.profileId, proportion: motionProportionOf(settings) });
+        const image = await renderHtmlReference(scene, opts.signal, deps.openMotionHtmlRuntime, { kit: settings.figureKit === true, profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE });
         if (image) references.push(image);
         continue;
       }

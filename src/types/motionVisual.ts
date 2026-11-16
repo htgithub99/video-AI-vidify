@@ -1,7 +1,7 @@
 import type { MotionSpec } from "./motionVideo.js";
 import type { MotionSceneFormat, MotionSceneView } from "../constants/motionProfiles/framing.js";
 export type MotionRemotionProfile = keyof typeof import("../constants/motionDrawStyles/index.js").MOTION_DRAW_STYLES;
-export type { MotionStyleFamily, MotionProportionId } from "../constants/motionDrawStyles/types.js";
+;
 export type MotionScenePacing = "few" | "medium" | "many";
 export interface MotionRenderBehavior {
   version: 1;
@@ -287,6 +287,8 @@ export interface MotionRemotionSpec {
   // How the figures of scenes written against the figure contract are drawn: true = "Bộ vẽ chuẩn", otherwise the scene's own drawing.
   figureKit?: boolean;
   proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId;
+  // The layout's camera over every scene (the scenes themselves are drawn once, whatever the layout).
+  layout?: import("../constants/motionLayouts/index.js").MotionLayoutId;
   assets: Record<string, MotionVectorAsset>;
   scenes: MotionRemotionTimedScene[];
   subtitles: NonNullable<MotionSpec["subtitles"]>;

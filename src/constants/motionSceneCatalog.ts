@@ -1,6 +1,6 @@
-export const MOTION_SCENE_GROUPS = ["character", "location", "vehicle", "tree", "building", "prop"] as const;
-export type MotionSceneGroup = (typeof MOTION_SCENE_GROUPS)[number];
-export interface MotionSceneTypeDef {
+const MOTION_SCENE_GROUPS = ["character", "location", "vehicle", "tree", "building", "prop"] as const;
+type MotionSceneGroup = (typeof MOTION_SCENE_GROUPS)[number];
+interface MotionSceneTypeDef {
   id: string;
   group: MotionSceneGroup;
   vi: string;
@@ -9,7 +9,7 @@ export interface MotionSceneTypeDef {
   animal?: boolean;
   uniform?: boolean;
 }
-export const MOTION_SCENE_TYPES: MotionSceneTypeDef[] = [
+const MOTION_SCENE_TYPES: MotionSceneTypeDef[] = [
   { id: "old_man", group: "character", vi: "Ông lão", en: "old man", senior: true },
   { id: "old_woman", group: "character", vi: "Bà cụ", en: "old woman", senior: true },
   { id: "middle_man", group: "character", vi: "Đàn ông trung niên", en: "middle-aged man" },

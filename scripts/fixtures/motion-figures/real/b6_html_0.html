@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html data-artifact="motion-html-scene" data-request-id="440dc695-74bb-40be-bc3d-fbc3a5ee9ac1">
+<head>
+<meta charset="utf-8">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111;overflow:hidden}#motion-canvas{display:block;width:100vw;height:100vh}</style>
+</head>
+<body>
+<canvas id="motion-canvas"></canvas>
+<script>
+const INK = '#16172a';
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (e0, e1, x) => {
+  const t = clamp((x - e0) / (e1 - e0 || 1), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+function hashSeed(s) {
+  const str = String(s || 'mohi-gap');
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function makeRng(seed) {
+  let s = hashSeed(seed) || 1;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function smoothPath(pts, closed) {
+  const p = new Path2D();
+  if (!pts || !pts.length) return p;
+  const n = pts.length;
+  if (closed) {
+    p.moveTo((pts[n - 1][0] + pts[0][0]) * 0.5, (pts[n - 1][1] + pts[0][1]) * 0.5);
+    for (let i = 0; i < n; i++) {
+      const cur = pts[i];
+      const nxt = pts[(i + 1) % n];
+      p.quadraticCurveTo(cur[0], cur[1], (cur[0] + nxt[0]) * 0.5, (cur[1] + nxt[1]) * 0.5);
+    }
+    p.closePath();
+  } else {
+    p.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < n - 1; i++) {
+      p.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) * 0.5, (pts[i][1] + pts[i + 1][1]) * 0.5);
+    }
+    if (n > 1) p.lineTo(pts[n - 1][0], pts[n - 1][1]);
+  }
+  return p;
+}
+function shape(ctx, p, fill, shade, lw, shadeFn) {
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill(p);
+  }
+  if (shade || shadeFn) {
+    ctx.save();
+    ctx.clip(p);
+    if (shadeFn) {
+      shadeFn(ctx);
+    } else {
+      ctx.fillStyle = shade;
+      ctx.fillRect(-600, -400, 2600, 1600);
+    }
+    ctx.restore();
+  }
+  if (lw > 0) {
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke(p);
+  }
+}
+function drawSmoke(ctx, cx, cy, r, fill, shade) {
+  const lobes = [
+    [-0.55, 0.12, 0.48], [-0.22, -0.35, 0.58], [0.24, -0.28, 0.54],
+    [0.58, 0.10, 0.45], [0.18, 0.34, 0.46], [-0.26, 0.32, 0.44]
+  ];
+  const pass = (ox, oy, sc, col) => {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    for (let i = 0; i < lobes.length; i++) {
+      const lx = cx + lobes[i][0] * r + ox;
+      const ly = cy + lobes[i][1] * r + oy;
+      const lr = lobes[i][2] * r * sc;
+      ctx.moveTo(lx + lr, ly);
+      ctx.arc(lx, ly, lr, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  };
+  pass(0, 2, 1.04, '#26201c');
+  pass(0, 4, 0.98, shade);
+  pass(0, -3, 0.96, fill);
+}
+if (!window.MotionFigures) {
+  const registry = {};
+  window.MotionFigures = {
+    use(defs) {
+      const api = {};
+      const keys = Object.keys(defs);
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        registry[k] = defs[k];
+        api[k] = (ctx, o) => {
+          const res = registry[k](ctx, o);
+          if (o && o.mark && res && res.box && window.motionMark) {
+            window.motionMark(ctx, o.mark, res.box.x, res.box.y, res.box.w, res.box.h);
+          }
+          return res;
+        };
+      }
+      return api;
+    },
+    phase(progress, count, cues) {
+      const p = clamp(progress, 0, 1);
+      const at = [];
+      for (let i = 0; i < count; i++) {
+        at.push(Array.isArray(cues) && typeof cues[i] === 'number' ? cues[i] : i / count);
+      }
+      let idx = 0;
+      for (let i = 1; i < count; i++) {
+        if (p >= at[i]) idx = i;
+      }
+      const start = at[idx];
+      const end = idx + 1 < count ? at[idx + 1] : 1;
+      return { at, index: idx, local: clamp((p - start) / (end - start || 1), 0, 1) };
+    },
+    track(keys, progress) {
+      const p = clamp(progress, 0, 1);
+      if (!keys || !keys.length) return { x: 0, y: 0, moving: false, distance: 0 };
+      let i = 0;
+      while (i < keys.length - 2 && p >= keys[i + 1].at) i++;
+      const k0 = keys[i];
+      const k1 = keys[Math.min(i + 1, keys.length - 1)];
+      const span = (k1.at - k0.at) || 1;
+      const rawT = clamp((p - k0.at) / span, 0, 1);
+      const prevMoved = i > 0 && (Math.abs(keys[i].x - keys[i - 1].x) > 1 || Math.abs(keys[i].y - keys[i - 1].y) > 1);
+      const nextMoves = i + 2 < keys.length && (Math.abs(keys[i + 2].x - k1.x) > 1 || Math.abs(keys[i + 2].y - k1.y) > 1);
+      let t = rawT;
+      if (!prevMoved && !nextMoves) t = rawT * rawT * (3 - 2 * rawT);
+      else if (!prevMoved) t = rawT * rawT * (2 - rawT);
+      else if (!nextMoves) t = 1 - (1 - rawT) * (1 - rawT) * (2 - (1 - rawT));
+      const out = Object.assign({}, k0);
+      const props = Object.keys(k1);
+      for (let j = 0; j < props.length; j++) {
+        const prop = props[j];
+        if (typeof k0[prop] === 'number' && typeof k1[prop] === 'number' && prop !== 'at' && prop !== 'facing') {
+          out[prop] = lerp(k0[prop], k1[prop], t);
+        }
+      }
+      let dist = 0;
+      for (let j = 0; j < i; j++) {
+        dist += Math.hypot((keys[j + 1].x || 0) - (keys[j].x || 0), (keys[j + 1].y || 0) - (keys[j].y || 0));
+      }
+      const segDx = (out.x || 0) - (k0.x || 0);
+      const segDy = (out.y || 0) - (k0.y || 0);
+      const segSign = (k1.facing === -1 && k1.x > k0.x) || (k1.facing === 1 && k1.x < k0.x) ? -1 : 1;
+      dist += Math.hypot(segDx, segDy) * segSign;
+      const totalSeg = Math.hypot((k1.x || 0) - (k0.x || 0), (k1.y || 0) - (k0.y || 0));
+      out.moving = totalSeg > 2 && rawT > 0.001 && rawT < 0.999;
+      out.distance = dist;
+      return out;
+    }
+  };
+}
+const FIG = window.MotionFigures.use({
+  person(ctx, o) {
+    const x = o.x || 0;
+    const y = o.y || 0;
+    const H = o.h || 148;
+    const W = o.w || Math.round(H * 0.38);
+    const r = H / 8;
+    const facing = o.facing === -1 ? -1 : 1;
+    const lw = clamp(H * 0.015, 1.1, 2.5);
+    const bob = o.bob || 0;
+    const lean = ((o.lean || 0) * Math.PI) / 180;
+    const stride = 0.9 * r;
+    const phase = ((o.distance || 0) / (stride || 1)) * Math.PI;
+    const isRun = o.pose === 'run';
+    const isWalk = o.pose === 'walk' || isRun;
+    const isRide = o.pose === 'ride';
+    const swing = isWalk ? Math.sin(phase) * (isRun ? 0.62 : 0.48) : 0;
+    const skin = o.skin || '#f8f8f6';
+    const topCol = o.top || '#6e5844';
+    const trimCol = o.trim || '#263047';
+    const pantsCol = o.pants || '#4a433b';
+    const bootCol = o.boots || '#3b2d22';
+    const capeCol = o.cape || null;
+    ctx.save();
+    ctx.translate(x, y);
+    if (!isRide) {
+      const shPath = new Path2D();
+      shPath.ellipse(0, 1, r * 1.45, r * 0.34, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(22, 23, 42, 0.26)';
+      ctx.fill(shPath);
+    }
+    ctx.scale(facing, 1);
+    const hipY = isRide ? -0.34 * H + bob * 0.3 : -0.46 * H + bob * 0.4;
+    const legLen = 0.46 * H;
+    if (isRide) {
+      const thighP = smoothPath([
+        [-r * 0.25, hipY], [r * 0.35, hipY + r * 0.1],
+        [r * 0.45, hipY + legLen * 0.52], [-r * 0.1, hipY + legLen * 0.52]
+      ], true);
+      shape(ctx, thighP, pantsCol, null, lw);
+      const shinP = smoothPath([
+        [r * 0.02, hipY + legLen * 0.46], [r * 0.38, hipY + legLen * 0.46],
+        [r * 0.25, hipY + legLen * 0.95], [-r * 0.12, hipY + legLen * 0.95]
+      ], true);
+      shape(ctx, shinP, bootCol, null, lw);
+    } else {
+      const drawLeg = (ang, ox) => {
+        ctx.save();
+        ctx.translate(ox, hipY);
+        ctx.rotate(ang);
+        const legP = smoothPath([
+          [-r * 0.34, 0], [r * 0.34, 0],
+          [r * 0.28, legLen * 0.84], [-r * 0.26, legLen * 0.84]
+        ], true);
+        shape(ctx, legP, pantsCol, null, lw, (c) => {
+          c.fillStyle = 'rgba(22,23,42,0.18)';
+          c.fillRect(-r * 0.4, 0, r * 0.28, legLen);
+        });
+        const bootP = smoothPath([
+          [-r * 0.28, legLen * 0.72], [r * 0.30, legLen * 0.72],
+          [r * 0.56, legLen], [-r * 0.32, legLen]
+        ], true);
+        shape(ctx, bootP, bootCol, null, lw, o.muddy ? (c) => {
+          c.fillStyle = '#5a4e3c';
+          c.fillRect(-r * 0.4, legLen * 0.86, r * 1.1, legLen * 0.2);
+        } : null);
+        ctx.restore();
+      };
+      drawLeg(-swing, -r * 0.22);
+      drawLeg(swing, r * 0.22);
+    }
+    ctx.save();
+    ctx.translate(0, hipY);
+    ctx.rotate(lean);
+    const shY = -0.26 * H;
+    const headCY = shY - r * 1.18;
+    const drawArm = (isFront) => {
+      let aRot = isFront ? -swing * 0.82 : swing * 0.82;
+      let elbowBend = 0.18;
+      if (o.clutchStone && isFront) {
+        aRot = -1.25;
+        elbowBend = -0.65;
+      } else if (o.pose === 'hold') {
+        aRot = isFront ? -0.68 : -0.45;
+        elbowBend = -0.35;
+      }
+      ctx.save();
+      ctx.translate(isFront ? -r * 0.14 : r * 0.28, shY + r * 0.16);
+      ctx.rotate(aRot);
+      const armL = 0.29 * H;
+      const armP = smoothPath([
+        [-r * 0.24, -r * 0.1], [r * 0.24, -r * 0.1],
+        [r * 0.20 + elbowBend * r * 0.5, armL], [-r * 0.18 + elbowBend * r * 0.5, armL]
+      ], true);
+      shape(ctx, armP, isFront && capeCol ? capeCol : topCol, null, lw, (c) => {
+        if (o.tornSleeve && isFront) {
+          c.fillStyle = skin;
+          c.fillRect(-r * 0.3, armL * 0.52, r * 0.6, armL * 0.24);
+        }
+        if (o.muddy && capeCol) {
+          c.fillStyle = '#5a4e3c';
+          c.fillRect(-r * 0.3, armL * 0.72, r * 0.65, armL * 0.3);
+        }
+      });
+      const hx = elbowBend * r * 0.5;
+      const hy = armL + r * 0.08;
+      const handP = new Path2D();
+      handP.arc(hx, hy, r * 0.22, 0, Math.PI * 2);
+      shape(ctx, handP, o.mitten && isFront ? '#4e3c2e' : skin, null, lw * 0.9, o.cutHand && !isFront ? (c) => {
+        c.strokeStyle = '#8b2626';
+        c.lineWidth = lw * 0.9;
+        c.beginPath();
+        c.moveTo(hx - r * 0.1, hy - r * 0.04);
+        c.lineTo(hx + r * 0.12, hy + r * 0.06);
+        c.stroke();
+      } : null);
+      if (o.clutchStone && isFront) {
+        const wsP = smoothPath([
+          [hx - r * 0.22, hy - r * 0.12], [hx + r * 0.22, hy - r * 0.14],
+          [hx + r * 0.24, hy + r * 0.12], [hx - r * 0.20, hy + r * 0.14]
+        ], true);
+        shape(ctx, wsP, '#838991', null, lw * 0.85);
+      }
+      ctx.restore();
+      const ox = isFront ? -r * 0.14 : r * 0.28;
+      const oy = shY + r * 0.16;
+      const rx = ox + hx * Math.cos(aRot) - hy * Math.sin(aRot);
+      const ry = oy + hx * Math.sin(aRot) + hy * Math.cos(aRot);
+      return [
+        x + facing * (rx * Math.cos(lean) - ry * Math.sin(lean)),
+        y + hipY + (rx * Math.sin(lean) + ry * Math.cos(lean))
+      ];
+    };
+    const backHandPos = drawArm(false);
+    if (capeCol) {
+      const sway = o.cloakSway || 0;
+      const capeP = smoothPath([
+        [-r * 0.62, shY + r * 0.05], [r * 0.45, shY + r * 0.05],
+        [r * 0.55 + sway, r * 0.48], [-r * 0.85 + sway * 1.3, r * 0.52]
+      ], true);
+      shape(ctx, capeP, capeCol, null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.22)';
+        c.fillRect(-r * 1.1, r * 0.12, r * 2.0, r * 0.55);
+      });
+    }
+    const torsoP = smoothPath([
+      [-r * 0.78, shY], [r * 0.78, shY],
+      [r * 0.88, r * 0.22], [-r * 0.88, r * 0.22]
+    ], true);
+    shape(ctx, torsoP, topCol, null, lw, (c) => {
+      c.fillStyle = 'rgba(22,23,42,0.18)';
+      c.fillRect(-r * 1.0, -r * 0.25, r * 0.62, r * 0.8);
+      c.fillStyle = trimCol;
+      c.fillRect(-r * 1.0, r * 0.08, r * 2.0, r * 0.15);
+      c.fillRect(-r * 0.12, shY, r * 0.24, r * 0.6);
+    });
+    const beltP = smoothPath([
+      [-r * 0.82, -r * 0.06], [r * 0.82, -r * 0.06],
+      [r * 0.84, r * 0.06], [-r * 0.84, r * 0.06]
+    ], true);
+    shape(ctx, beltP, '#3a2b1f', null, lw * 0.85);
+    const neckP = smoothPath([
+      [-r * 0.26, shY - r * 0.36], [r * 0.26, shY - r * 0.36],
+      [r * 0.30, shY + r * 0.06], [-r * 0.30, shY + r * 0.06]
+    ], true);
+    shape(ctx, neckP, skin, null, lw * 0.9);
+    const headP = new Path2D();
+    headP.arc(0, headCY, r, 0, Math.PI * 2);
+    shape(ctx, headP, skin, null, lw, (c) => {
+      c.fillStyle = '#d0d5dd';
+      c.beginPath();
+      c.arc(-r * 0.32, headCY + r * 0.12, r * 0.95, 0, Math.PI * 2);
+      c.fill();
+      if (o.stubble) {
+        c.fillStyle = 'rgba(58, 52, 48, 0.26)';
+        c.fillRect(-r, headCY + r * 0.24, r * 2, r * 0.8);
+      }
+    });
+    if (o.head === 'cap' || o.head === 'steppe') {
+      const capP = o.head === 'steppe'
+        ? smoothPath([
+          [-r * 1.12, headCY - r * 0.18], [-r * 0.92, headCY - r * 0.96],
+          [0, headCY - r * 1.24], [r * 0.92, headCY - r * 0.96],
+          [r * 1.12, headCY - r * 0.18], [0, headCY - r * 0.35]
+        ], true)
+        : smoothPath([
+          [-r * 1.06, headCY - r * 0.22], [-r * 0.88, headCY - r * 0.98],
+          [0, headCY - r * 1.12], [r * 0.88, headCY - r * 0.96],
+          [r * 1.14, headCY - r * 0.22], [0, headCY - r * 0.34]
+        ], true);
+      shape(ctx, capP, o.headColor || '#4d392a', null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.22)';
+        c.fillRect(-r * 1.2, headCY - r * 0.42, r * 2.4, r * 0.26);
+      });
+    }
+    const lookBack = o.lookBack ? -r * 0.24 : 0;
+    const ex1 = r * 0.24 + lookBack;
+    const ex2 = r * 0.66 + lookBack;
+    const ey = headCY - r * 0.04;
+    ctx.fillStyle = INK;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = lw * 0.95;
+    if (o.expression === 'scared' || o.expression === 'shout') {
+      for (let i = 0; i < 2; i++) {
+        const ex = i === 0 ? ex1 : ex2;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(ex, ey, r * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = INK;
+        ctx.beginPath();
+        ctx.arc(ex + (o.lookBack ? -r * 0.04 : r * 0.03), ey, r * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      for (let i = 0; i < 2; i++) {
+        const ex = i === 0 ? ex1 : ex2;
+        ctx.beginPath();
+        ctx.ellipse(ex, ey, r * 0.075, r * 0.105, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    const browTilt = o.heavyBrows || o.expression === 'angry' || o.expression === 'stern' ? 0.26 : -0.22;
+    ctx.lineWidth = o.heavyBrows ? lw * 1.35 : lw * 0.95;
+    ctx.beginPath();
+    ctx.moveTo(ex1 - r * 0.15, ey - r * 0.22 - browTilt * r * 0.2);
+    ctx.lineTo(ex1 + r * 0.15, ey - r * 0.22 + browTilt * r * 0.2);
+    ctx.moveTo(ex2 - r * 0.15, ey - r * 0.22 + browTilt * r * 0.2);
+    ctx.lineTo(ex2 + r * 0.15, ey - r * 0.22 - browTilt * r * 0.2);
+    ctx.stroke();
+    ctx.lineWidth = lw * 0.95;
+    if (o.scar) {
+      ctx.strokeStyle = '#7c2b2b';
+      ctx.beginPath();
+      ctx.moveTo(ex2 - r * 0.12, ey - r * 0.35);
+      ctx.lineTo(ex2 + r * 0.08, ey - r * 0.08);
+      ctx.stroke();
+      ctx.strokeStyle = INK;
+    }
+    const my = headCY + r * 0.42;
+    if (o.expression === 'shout') {
+      const mP = new Path2D();
+      mP.ellipse(r * 0.44 + lookBack, my, r * 0.17, r * 0.22, 0, 0, Math.PI * 2);
+      shape(ctx, mP, '#421c1c', null, lw * 0.8);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.26 + lookBack, my + r * 0.06);
+      ctx.quadraticCurveTo(r * 0.44 + lookBack, my - r * 0.06, r * 0.62 + lookBack, my + r * 0.06);
+      ctx.stroke();
+    }
+    if (o.hold === 'spear') {
+      const sx = r * 0.56;
+      const shaftP = smoothPath([
+        [sx - r * 0.07, -hipY], [sx + r * 0.07, -hipY],
+        [sx + r * 0.06, headCY - r * 2.1], [sx - r * 0.06, headCY - r * 2.1]
+      ], true);
+      shape(ctx, shaftP, '#7a593b', null, lw * 0.85);
+      const tipP = smoothPath([
+        [sx - r * 0.15, headCY - r * 2.05], [sx, headCY - r * 2.75],
+        [sx + r * 0.15, headCY - r * 2.05]
+      ], true);
+      shape(ctx, tipP, '#9aa2ab', null, lw * 0.85);
+    } else if (o.hold === 'bow') {
+      ctx.save();
+      ctx.translate(r * 0.65, shY + r * 0.4);
+      const bowP = smoothPath([
+        [0, -r * 1.15], [r * 0.48, 0], [0, r * 1.15],
+        [r * 0.34, 0]
+      ], true);
+      shape(ctx, bowP, '#6b4d32', null, lw * 0.85);
+      ctx.restore();
+    }
+    const frontHandPos = drawArm(true);
+    if (o.shield) {
+      ctx.save();
+      ctx.translate(r * 0.52, shY + r * 0.45);
+      const shP = smoothPath([
+        [-r * 0.36, -r * 0.45], [r * 0.36, -r * 0.45],
+        [r * 0.32, r * 0.35], [0, r * 0.62], [-r * 0.32, r * 0.35]
+      ], true);
+      shape(ctx, shP, o.shieldColor || '#694e36', null, lw * 0.95);
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.restore();
+    return {
+      box: { x: x - W * 0.5, y: y - H, w: W, h: H },
+      head: [x, y - H + r],
+      hand: frontHandPos,
+      backHand: backHandPos
+    };
+  },
+  animal(ctx, o) {
+    const x = o.x || 0;
+    const y = o.y || 0;
+    const H = o.h || 144;
+    const W = o.w || Math.round(H * 1.18);
+    const facing = o.facing === -1 ? -1 : 1;
+    const lw = clamp(H * 0.014, 1.1, 2.3);
+    const r = H / 4.2;
+    const col = o.color || '#6a4c35';
+    const maneCol = o.mane || '#2b221c';
+    const stride = 1.2 * r;
+    const phase = ((o.distance || 0) / (stride || 1)) * Math.PI;
+    const step = Math.sin(phase) * 0.46;
+    ctx.save();
+    ctx.translate(x, y);
+    const shPath = new Path2D();
+    shPath.ellipse(0, 2, r * 1.75, r * 0.32, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(22, 23, 42, 0.26)';
+    ctx.fill(shPath);
+    ctx.scale(facing, 1);
+    const legTop = -1.65 * r;
+    const drawHorseLeg = (ox, ang) => {
+      ctx.save();
+      ctx.translate(ox, legTop);
+      ctx.rotate(ang);
+      const upperP = smoothPath([
+        [-r * 0.16, 0], [r * 0.18, 0],
+        [r * 0.14, r * 0.82], [-r * 0.14, r * 0.82]
+      ], true);
+      shape(ctx, upperP, col, null, lw);
+      ctx.translate(0, r * 0.8);
+      ctx.rotate(-ang * 0.35);
+      const lowerP = smoothPath([
+        [-r * 0.12, 0], [r * 0.12, 0],
+        [r * 0.11, r * 0.72], [-r * 0.11, r * 0.72]
+      ], true);
+      shape(ctx, lowerP, col, null, lw);
+      const hoofP = smoothPath([
+        [-r * 0.14, r * 0.68], [r * 0.16, r * 0.68],
+        [r * 0.18, r * 0.85], [-r * 0.14, r * 0.85]
+      ], true);
+      shape(ctx, hoofP, '#292624', null, lw * 0.9);
+      ctx.restore();
+    };
+    drawHorseLeg(-r * 0.95, -step);
+    drawHorseLeg(r * 0.85, step);
+    const tailP = smoothPath([
+      [-r * 1.45, -2.55 * r], [-r * 1.85, -2.15 * r],
+      [-r * 1.72, -1.35 * r], [-r * 1.42, -1.85 * r]
+    ], true);
+    shape(ctx, tailP, maneCol, null, lw);
+    const bodyP = smoothPath([
+      [-r * 1.48, -2.25 * r], [-r * 0.95, -2.78 * r],
+      [r * 0.35, -2.74 * r], [r * 1.22, -2.55 * r],
+      [r * 1.32, -1.78 * r], [r * 0.65, -1.52 * r],
+      [-r * 0.78, -1.54 * r], [-r * 1.45, -1.78 * r]
+    ], true);
+    shape(ctx, bodyP, col, null, lw, (c) => {
+      c.fillStyle = 'rgba(22,23,42,0.18)';
+      c.fillRect(-r * 1.6, -2.0 * r, r * 3.2, r * 0.65);
+    });
+    const neckP = smoothPath([
+      [r * 0.65, -2.55 * r], [r * 1.18, -3.65 * r],
+      [r * 1.56, -3.52 * r], [r * 1.28, -1.95 * r]
+    ], true);
+    shape(ctx, neckP, col, null, lw);
+    const maneP = smoothPath([
+      [r * 0.62, -2.65 * r], [r * 1.05, -3.72 * r],
+      [r * 1.26, -3.62 * r], [r * 0.88, -2.55 * r]
+    ], true);
+    shape(ctx, maneP, maneCol, null, lw * 0.9);
+    const headP = smoothPath([
+      [r * 1.15, -3.68 * r], [r * 1.56, -3.72 * r],
+      [r * 2.12, -3.12 * r], [r * 1.92, -2.84 * r],
+      [r * 1.35, -3.08 * r]
+    ], true);
+    shape(ctx, headP, col, null, lw);
+    const earP = smoothPath([
+      [r * 1.24, -3.66 * r], [r * 1.32, -4.05 * r], [r * 1.44, -3.66 * r]
+    ], true);
+    shape(ctx, earP, col, null, lw * 0.85);
+    ctx.fillStyle = INK;
+    ctx.beginPath();
+    ctx.arc(r * 1.56, -3.44 * r, r * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+    const sadP = smoothPath([
+      [-r * 0.58, -2.76 * r], [r * 0.42, -2.76 * r],
+      [r * 0.36, -2.28 * r], [-r * 0.52, -2.28 * r]
+    ], true);
+    shape(ctx, sadP, '#4a3525', null, lw * 0.9);
+    if (o.rider) {
+      ctx.save();
+      ctx.scale(facing, 1);
+      FIG.person(ctx, Object.assign({}, o.rider, {
+        x: -facing * r * 0.08,
+        y: -2.52 * r + H * 0.42,
+        h: o.rider.h || Math.round(H * 0.96),
+        facing,
+        pose: 'ride'
+      }));
+      ctx.restore();
+    }
+    drawHorseLeg(-r * 0.78, step);
+    drawHorseLeg(r * 1.02, -step);
+    ctx.restore();
+    return {
+      box: { x: x - W * 0.5, y: y - H, w: W, h: H },
+      back: [x - facing * r * 0.08, y - 2.75 * r]
+    };
+  },
+  wall(ctx, o) {
+    const x = o.x || 1140;
+    const y = o.y || 564;
+    const w = o.w || 360;
+    const h = o.h || 84;
+    const lw = 1.8;
+    const wagXs = [x - 110, x + 95];
+    for (let i = 0; i < wagXs.length; i++) {
+      const wx = wagXs[i];
+      const ww = 135;
+      const tiltP = smoothPath([
+        [wx - ww * 0.36, y - h * 0.45], [wx - ww * 0.30, y - h],
+        [wx + ww * 0.30, y - h], [wx + ww * 0.36, y - h * 0.45]
+      ], true);
+      shape(ctx, tiltP, '#c2b9a5', null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.16)';
+        c.fillRect(wx - ww * 0.5, y - h * 0.68, ww, h * 0.25);
+      });
+      const bedP = smoothPath([
+        [wx - ww * 0.44, y - h * 0.48], [wx + ww * 0.44, y - h * 0.48],
+        [wx + ww * 0.40, y - h * 0.22], [wx - ww * 0.40, y - h * 0.22]
+      ], true);
+      shape(ctx, bedP, '#6b5038', null, lw);
+      const wheelXs = [wx - ww * 0.26, wx + ww * 0.26];
+      for (let j = 0; j < wheelXs.length; j++) {
+        const cx = wheelXs[j];
+        const wr = h * 0.22;
+        const cy = y - wr;
+        const wp = new Path2D();
+        wp.arc(cx, cy, wr, 0, Math.PI * 2);
+        shape(ctx, wp, '#543c28', null, lw);
+      }
+    }
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.moveTo(wagXs[0] + 55, y - h * 0.28);
+    ctx.quadraticCurveTo(wagXs[0] + 75, y - h * 0.14, wagXs[0] + 92, y - h * 0.22);
+    ctx.stroke();
+    return { box: { x: x - w * 0.5, y: y - h, w, h } };
+  },
+  prop(ctx, o) {
+    const x = o.x || 0;
+    const y = o.y || 0;
+    const lw = 1.8;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-0.18);
+    const stockP = smoothPath([
+      [-26, -4], [28, -3], [28, 3], [-26, 5]
+    ], true);
+    shape(ctx, stockP, '#7c5838', null, lw);
+    const prodP = smoothPath([
+      [20, -22], [26, -22], [26, 22], [20, 22]
+    ], true);
+    shape(ctx, prodP, '#5c646d', null, lw);
+    ctx.restore();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(x + 28, y + 8);
+    ctx.lineTo(x + 54, y + 4);
+    ctx.stroke();
+    return { box: { x: x - 30, y: y - 24, w: 86, h: 48 } };
+  }
+});
+const cache = {};
+function getGapData(seed) {
+  if (cache[seed]) return cache[seed];
+  const rng = makeRng(seed);
+  const tufts = [];
+  for (let i = 0; i < 40; i++) {
+    tufts.push({
+      x: -420 + rng() * 2120,
+      y: 615 + rng() * 220,
+      s: 0.7 + rng() * 0.75,
+      dark: rng() > 0.45
+    });
+  }
+  const farRiders = [];
+  for (let i = 0; i < 14; i++) {
+    farRiders.push({
+      x: 780 + i * 62 + rng() * 18,
+      y: 468 + rng() * 24,
+      h: 72 + rng() * 12,
+      ph: rng() * 6.28
+    });
+  }
+  cache[seed] = { tufts, farRiders };
+  return cache[seed];
+}
+window.motionScene = {
+  ready: Promise.resolve(),
+  async renderAt(input = {}) {
+    const canvas = document.getElementById('motion-canvas');
+    if (!canvas) return;
+    const w = Math.max(320, Number(input.width) || 1280);
+    const h = Math.max(180, Number(input.height) || 720);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    const motionEnabled = input.motionEnabled !== false;
+    const cameraEnabled = input.cameraEnabled !== false;
+    const progress = motionEnabled ? clamp(Number(input.progress) || 0, 0, 1) : 0;
+    const time = motionEnabled ? (Number(input.time) || 0) : 0;
+    const data = getGapData(input.seed || 'mohi-gap');
+    const ph = window.MotionFigures.phase(progress, 3, input.cues);
+    const camKeys = [
+      { at: 0, zoom: 1.0, focusX: 740, focusY: 368 },
+      { at: ph.at[1], zoom: 1.02, focusX: 650, focusY: 372 },
+      { at: ph.at[2], zoom: 1.04, focusX: 540, focusY: 378 },
+      { at: 1, zoom: 1.06, focusX: 460, focusY: 382 }
+    ];
+    const cam = cameraEnabled ? window.MotionFigures.track(camKeys, progress) : camKeys[0];
+    const youKeys = [
+      { at: 0, x: 930, y: 604, pose: 'run', facing: -1, lean: 12 },
+      { at: ph.at[1], x: 745, y: 604, pose: 'run', facing: -1, lean: 14 },
+      { at: ph.at[2], x: 545, y: 604, pose: 'run', facing: -1, lean: 15 },
+      { at: 1, x: 355, y: 604, pose: 'run', facing: -1, lean: 14 }
+    ];
+    const you = window.MotionFigures.track(youKeys, progress);
+    const tomasKeys = [
+      { at: 0, x: 995, y: 596, pose: 'run', facing: -1, lean: 12 },
+      { at: ph.at[1] * 1.08, x: 865, y: 596, pose: 'run', facing: -1, lean: 14 },
+      { at: ph.at[2] * 0.92, x: 1185, y: 596, pose: 'run', facing: -1, lean: 10 },
+      { at: 1, x: 1320, y: 596, pose: 'run', facing: -1, lean: 10 }
+    ];
+    const tomas = window.MotionFigures.track(tomasKeys, progress);
+    const janosKeys = [
+      { at: 0, x: 1045, y: 602, pose: 'run', facing: -1, lean: 10 },
+      { at: ph.at[1], x: 845, y: 602, pose: 'run', facing: -1, lean: 12 },
+      { at: ph.at[2], x: 785, y: 602, pose: 'run', facing: -1, lean: 8 },
+      { at: 1, x: 965, y: 602, pose: 'run', facing: -1, lean: 8 }
+    ];
+    const janos = window.MotionFigures.track(janosKeys, progress);
+    const r1Keys = [
+      { at: 0, x: 1265, y: 596, facing: -1 },
+      { at: ph.at[1], x: 1065, y: 596, facing: -1 },
+      { at: ph.at[2], x: 945, y: 596, facing: -1 },
+      { at: 1, x: 835, y: 596, facing: -1 }
+    ];
+    const r1 = window.MotionFigures.track(r1Keys, progress);
+    const r2Keys = [
+      { at: 0, x: 1385, y: 592, facing: -1 },
+      { at: ph.at[1], x: 1195, y: 592, facing: -1 },
+      { at: ph.at[2], x: 1075, y: 592, facing: -1 },
+      { at: 1, x: 975, y: 592, facing: -1 }
+    ];
+    const r2 = window.MotionFigures.track(r2Keys, progress);
+    ctx.save();
+    ctx.scale(w / 1280, h / 720);
+    ctx.fillStyle = '#9aa1a8';
+    ctx.fillRect(0, 0, 1280, 720);
+    ctx.save();
+    ctx.translate(640, 360);
+    ctx.scale(cam.zoom, cam.zoom);
+    ctx.translate(-cam.focusX, -cam.focusY);
+    const skyG = ctx.createLinearGradient(0, -260, 0, 450);
+    skyG.addColorStop(0, '#858e96');
+    skyG.addColorStop(1, '#bcc3ca');
+    ctx.fillStyle = skyG;
+    ctx.fillRect(-450, -260, 2180, 740);
+    // Thin smoke drifting from the camp behind at right
+    const drift = time * 6.0;
+    drawSmoke(ctx, 1020 + drift * 0.7, 240, 115, '#99979e', '#75737a');
+    drawSmoke(ctx, 1185 + drift * 0.9, 195, 145, '#8f8d94', '#6b6970');
+    drawSmoke(ctx, 1340 + drift * 0.8, 225, 130, '#96949b', '#727077');
+    // Far open horizon of fields
+    const farFieldP = smoothPath([
+      [-450, 446], [240, 442], [720, 446], [1240, 441], [1730, 445],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, farFieldP, '#7a8064', null, 1.5);
+    // Larger dim group of Mongol riders behind
+    for (let i = 0; i < data.farRiders.length; i++) {
+      const fr = data.farRiders[i];
+      FIG.animal(ctx, {
+        kind: 'horse',
+        x: fr.x - progress * 220,
+        y: fr.y,
+        h: fr.h,
+        facing: -1,
+        color: '#635346',
+        rider: {
+          h: Math.round(fr.h * 0.95),
+          top: '#69584a',
+          head: 'steppe',
+          hold: 'bow',
+          bob: Math.sin(time * 3.1 + fr.ph) * 1.1
+        }
+      });
+    }
+    // Midground open plain & wagon gap at right edge
+    const midFieldP = smoothPath([
+      [-450, 504], [220, 500], [680, 506], [1180, 500], [1730, 504],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, midFieldP, '#6b7054', null, 1.8);
+    FIG.wall(ctx, { kind: 'wagonFort', x: 1155, y: 566, w: 360, h: 86 });
+    // Foreground trampled mud and sparse grass with one outlined puddle
+    const fgMudP = smoothPath([
+      [-450, 578], [220, 574], [640, 580], [1120, 573], [1730, 578],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, fgMudP, '#5c5a44', null, 2.0, (c) => {
+      c.fillStyle = '#4c4837';
+      c.beginPath();
+      c.ellipse(930, 616, 175, 22, 0, 0, Math.PI * 2);
+      c.ellipse(480, 642, 230, 24, 0, 0, Math.PI * 2);
+      c.fill();
+    });
+    const puddleP = smoothPath([
+      [255, 648], [325, 640], [398, 644], [385, 658], [285, 659]
+    ], true);
+    shape(ctx, puddleP, '#788792', null, 1.7);
+    for (let i = 0; i < data.tufts.length; i++) {
+      const tf = data.tufts[i];
+      const tx = tf.x;
+      const ty = tf.y;
+      const s = tf.s;
+      const gp = smoothPath([
+        [tx - 9 * s, ty], [tx - 12 * s, ty - 11 * s], [tx - 4 * s, ty - 3 * s],
+        [tx, ty - 14 * s], [tx + 4 * s, ty - 3 * s], [tx + 12 * s, ty - 10 * s],
+        [tx + 9 * s, ty]
+      ], true);
+      shape(ctx, gp, tf.dark ? '#474f35' : '#596343', null, 1.1);
+    }
+    // Dropped crossbow and bolt in the mud near the gap
+    FIG.prop(ctx, { mark: 'crossbow', x: 965, y: 618 });
+    // Tomas briefly beside protagonist before vanishing behind riders
+    FIG.person(ctx, {
+      mark: 'tomas',
+      top: '#4b7a45',
+      _seed: true,
+      x: tomas.x,
+      y: tomas.y,
+      w: 56,
+      h: 148,
+      facing: -1,
+      pose: tomas.moving ? 'run' : tomas.pose,
+      distance: tomas.distance,
+      lean: tomas.lean,
+      expression: 'scared',
+      trim: '#222d47',
+      head: 'cap',
+      headColor: '#4a3728',
+      hold: 'spear',
+      tornSleeve: true,
+      stubble: true,
+      bob: Math.sin(time * 3.4 + 0.5) * 1.6
+    });
+    // Janos shouting to run
+    FIG.person(ctx, {
+      mark: 'janos',
+      top: '#7a5236',
+      _seed: true,
+      x: janos.x,
+      y: janos.y,
+      w: 56,
+      h: 150,
+      facing: -1,
+      pose: janos.moving ? 'run' : janos.pose,
+      distance: janos.distance,
+      lean: janos.lean,
+      expression: 'shout',
+      heavyBrows: true,
+      lookBack: true,
+      trim: '#b8943e',
+      head: 'cap',
+      headColor: '#5c6168',
+      hold: 'spear',
+      shield: true,
+      shieldColor: '#694e36',
+      stubble: true,
+      scar: true,
+      bob: Math.sin(time * 3.2 + 1.1) * 1.6
+    });
+    // Protagonist ("you") running with whetstone clutched to chest
+    FIG.person(ctx, {
+      mark: 'you',
+      x: you.x,
+      y: you.y,
+      w: 58,
+      h: 152,
+      facing: -1,
+      pose: you.moving ? 'run' : you.pose,
+      distance: you.distance,
+      lean: you.lean,
+      expression: 'scared',
+      clutchStone: true,
+      mitten: true,
+      cutHand: true,
+      top: '#6e5844',
+      trim: '#2d2620',
+      cape: '#524133',
+      boots: '#3d2e22',
+      head: 'cap',
+      headColor: '#4a3728',
+      muddy: true,
+      bob: Math.sin(time * 3.6) * 1.8,
+      cloakSway: Math.sin(time * 2.6) * 3.2
+    });
+    // Near Mongol horse archers closing in
+    FIG.animal(ctx, {
+      mark: 'riders',
+      kind: 'horse',
+      x: r1.x,
+      y: r1.y,
+      w: 174,
+      h: 148,
+      facing: -1,
+      distance: r1.distance,
+      color: '#5c4230',
+      mane: '#241c17',
+      rider: {
+        h: 142,
+        top: '#634935',
+        trim: '#3a2c22',
+        head: 'steppe',
+        headColor: '#473628',
+        hold: 'bow',
+        expression: 'angry',
+        bob: Math.sin(time * 3.5) * 1.6
+      }
+    });
+    FIG.animal(ctx, {
+      kind: 'horse',
+      x: r2.x,
+      y: r2.y,
+      w: 170,
+      h: 144,
+      facing: -1,
+      distance: r2.distance,
+      color: '#4f392a',
+      mane: '#1f1915',
+      rider: {
+        h: 138,
+        top: '#594230',
+        trim: '#362920',
+        head: 'steppe',
+        headColor: '#3f3024',
+        hold: 'bow',
+        expression: 'stern',
+        bob: Math.sin(time * 3.4 + 0.9) * 1.6
+      }
+    });
+    ctx.restore();
+    ctx.restore();
+  }
+};
+if (!window.__MOTION_HOST__) { const t0 = performance.now(), dur = 10, loop = (now) => { const t = ((now - t0) / 1000) % dur; window.motionScene.renderAt({ time: t, progress: t / dur, frame: Math.floor(t * 30), fps: 30, duration: dur, width: window.innerWidth || 1280, height: window.innerHeight || 720, mode: 'preview', motionEnabled: true, sceneEffectsEnabled: true, seed: 'preview', speaking: [] }); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+</script>
+</body>
+</html>

@@ -15,7 +15,7 @@ const IMAGE_DIMENSION_CONFIG = {
   ASPECT_SEPARATOR: SOURCE_TEXT_SYMBOL_16,
   MAX_RELATIVE_ERROR: 0.08,
 } as const;
-export interface ImageDimensions {
+interface ImageDimensions {
   width: number;
   height: number;
 }

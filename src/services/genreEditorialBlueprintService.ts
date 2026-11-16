@@ -102,7 +102,7 @@ import {
 } from "../constants/sourceText";
 import _ from "lodash";
 import { VideoGenre } from "../constants/enums";
-export interface GenreEditorialBlueprint {
+interface GenreEditorialBlueprint {
   id: string;
   narrativeEngine: string;
   visualGrammar: string;

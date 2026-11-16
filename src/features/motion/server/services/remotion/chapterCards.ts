@@ -13,7 +13,7 @@ const roman = (value: number): string => {
     }
   return out;
 };
-export const motionChapterCardHtml = (input: { number: number; title: string; subtitle?: string; profile: string }): string => {
+const motionChapterCardHtml = (input: { number: number; title: string; subtitle?: string; profile: string }): string => {
   const palette = C.PALETTE[input.profile] || C.PALETTE[C.FALLBACK_PROFILE];
   const data = JSON.stringify({ ...palette, number: roman(input.number), title: input.title, subtitle: input.subtitle || "", fade: C.FADE_SECONDS }).replace(C.LT, C.LT_ESCAPED);
   return C.HTML(data);

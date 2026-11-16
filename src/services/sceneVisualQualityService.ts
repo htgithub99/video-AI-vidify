@@ -43,13 +43,13 @@ export interface SceneVisualQuality {
   blockingErrors: string[];
   warnings: string[];
 }
-export interface SceneVisualQualityResult {
+interface SceneVisualQualityResult {
   success: boolean;
   approved: boolean;
   quality?: SceneVisualQuality;
   error?: string;
 }
-export interface SceneVisualValidationContext {
+interface SceneVisualValidationContext {
   purpose?: "scene" | "thumbnail" | "video";
   expectedHeadline?: string;
   layoutId?: string;

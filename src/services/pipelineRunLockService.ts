@@ -9,7 +9,7 @@ interface PipelineRunLock {
   expiresAt: number;
 }
 const PIPELINE_RUN_LOCK_VERSION = 2;
-export interface PipelineRunLease {
+interface PipelineRunLease {
   acquired: boolean;
   runId: string;
   targetKey: string;

@@ -5,52 +5,9 @@ import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
 import { RUNTIME_TEXT as RT_FLOW } from "../constants/runtimeText.js";
 import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea } from "../../../components/ui/Studio.js";
 import _ from "lodash";
-import {
-  SOURCE_TEMPLATE_00_00,
-  SOURCE_TEMPLATE_FLOWCLIP,
-  SOURCE_TEMPLATE_SYMBOL,
-  SOURCE_TEMPLATE_SYMBOL_5,
-  SOURCE_TEMPLATE_SYMBOL_6,
-  SOURCE_TEXT_0,
-  SOURCE_TEXT_00_00_00,
-  SOURCE_TEXT_01,
-  SOURCE_TEXT_02,
-  SOURCE_TEXT_03,
-  SOURCE_TEXT_AI_FLOW,
-  SOURCE_TEXT_AI_VIET_PROMPT_TU_YEU_CAU,
-  SOURCE_TEXT_AI_WRITES_PROMPTS_FROM_YOUR_CONCEPT,
-  SOURCE_TEXT_APPLICATION_JSON,
-  SOURCE_TEXT_BOLERO_TRU_TINH,
-  SOURCE_TEXT_BUTTON,
-  SOURCE_TEXT_CINEMATIC,
-  SOURCE_TEXT_CONTAINER,
-  SOURCE_TEXT_COPIED,
-  SOURCE_TEXT_CYBERPUNK_NEON,
-  SOURCE_TEXT_DANGER,
-  SOURCE_TEXT_DA_SAO_CHEP,
-  SOURCE_TEXT_FLOW_VIDEO_CLIPS,
-  SOURCE_TEXT_FLOW_VIDEO_CREATOR_STATE_V1,
-  SOURCE_TEXT_LO_FI_CHILLOUT,
-  SOURCE_TEXT_MD,
-  SOURCE_TEXT_METADATA,
-  SOURCE_TEXT_POST,
-  SOURCE_TEXT_PUT,
-  SOURCE_TEXT_SECONDARY,
-  SOURCE_TEXT_SM,
-  SOURCE_TEXT_SYMBOL_2,
-  SOURCE_TEXT_SYMBOL_3,
-  SOURCE_TEXT_TAO_10_VIDEO_DA_DANG_THEO,
-  SOURCE_TEXT_TAO_10_VIDEO_FLYCAM_GOC_RONG,
-  SOURCE_TEXT_TAO_10_VIDEO_KHONG_GIAN_QUAN,
-  SOURCE_TEXT_TAO_10_VIDEO_THANH_PHO_TUONG,
-  SOURCE_TEXT_THIEN_NHIEN_4K,
-  SOURCE_TEXT_UNSTYLED,
-  SOURCE_TEXT_VIDEO_CHUA_DAT_TEN,
-  SOURCE_TEXT_WAITING,
-  SOURCE_TEXT_XL,
-} from "../../../constants/sourceText";
+import { SOURCE_TEMPLATE_00_00, SOURCE_TEMPLATE_FLOWCLIP, SOURCE_TEMPLATE_SYMBOL, SOURCE_TEMPLATE_SYMBOL_5, SOURCE_TEMPLATE_SYMBOL_6, SOURCE_TEXT_0, SOURCE_TEXT_00_00_00, SOURCE_TEXT_01, SOURCE_TEXT_02, SOURCE_TEXT_03, SOURCE_TEXT_AI_FLOW, SOURCE_TEXT_AI_VIET_PROMPT_TU_YEU_CAU, SOURCE_TEXT_AI_WRITES_PROMPTS_FROM_YOUR_CONCEPT, SOURCE_TEXT_APPLICATION_JSON, SOURCE_TEXT_BOLERO_TRU_TINH, SOURCE_TEXT_BUTTON, SOURCE_TEXT_CINEMATIC, SOURCE_TEXT_CONTAINER, SOURCE_TEXT_COPIED, SOURCE_TEXT_CYBERPUNK_NEON, SOURCE_TEXT_DA_SAO_CHEP, SOURCE_TEXT_FLOW_VIDEO_CLIPS, SOURCE_TEXT_FLOW_VIDEO_CREATOR_STATE_V1, SOURCE_TEXT_LO_FI_CHILLOUT, SOURCE_TEXT_METADATA, SOURCE_TEXT_POST, SOURCE_TEXT_PUT, SOURCE_TEXT_SECONDARY, SOURCE_TEXT_SYMBOL_2, SOURCE_TEXT_SYMBOL_3, SOURCE_TEXT_TAO_10_VIDEO_DA_DANG_THEO, SOURCE_TEXT_TAO_10_VIDEO_FLYCAM_GOC_RONG, SOURCE_TEXT_TAO_10_VIDEO_KHONG_GIAN_QUAN, SOURCE_TEXT_TAO_10_VIDEO_THANH_PHO_TUONG, SOURCE_TEXT_THIEN_NHIEN_4K, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_VIDEO_CHUA_DAT_TEN, SOURCE_TEXT_WAITING, SOURCE_TEXT_XL } from "../../../constants/sourceText";
 import { readBlobAsDataUrl } from "../../../lib/fileUtils";
-import { DestructiveActionNotice } from "../../../components/common/DestructiveActionNotice";
+import { ConfirmDeleteModal } from "../../../components/common/ConfirmDeleteModal";
 import { delayAsync } from "../../../lib/asyncUtils";
 import { getErrorMessage } from "../../../utils/errorUtils";
 import { useEffect, useState } from "react";
@@ -470,7 +427,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                         onClick={() => setRequest(sample.text)}
                         className={cn(RT_FLOW.RELATIVE_H_8_PX_3_ROUNDED_XL_BORDER_FONT_BOLD, {
                           "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected,
-                          "bg-white/80 dark:bg-slate-955/90 border-slate-200 dark:border-slate-800 !text-[#1e293b] hover:!text-[#6b21a8] dark:!text-slate-300 dark:hover:!text-white hover:border-purple-400/60 dark:hover:border-purple-500/40 hover:bg-purple-50/60 dark:hover:bg-slate-900/90": !isSelected,
+                          "bg-slate-955/90 border-slate-800 !text-slate-300 hover:!text-white hover:border-purple-500/40 hover:bg-slate-900/90": !isSelected,
                         })}>
                         <span>{sample.title}</span>
                       </Button>
@@ -559,7 +516,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
               </div>
               {clips.length > 0 && (
                 <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_1_5)}>
-                  <CopyButton onClick={handleCopyAllPrompts} className={cn(RT_FLOW.BTN_ICON_TINY_W_7_H_7_MIN_W_28PX)} title={flowTexts.COPY_ALL} copied={isCopiedAll} copiedTitle={isVi ? SOURCE_TEXT_DA_SAO_CHEP : SOURCE_TEXT_COPIED} iconClassName={RT_SHARED.W_4_H_4} copiedIconClassName={RT_FLOW.W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD} />
+                  <CopyButton onClick={handleCopyAllPrompts} className={cn(RT_FLOW.BTN_ICON_TINY_W_7_H_7_MIN_W_28PX)} title={flowTexts.COPY_ALL} copied={isCopiedAll} copiedTitle={isVi ? SOURCE_TEXT_DA_SAO_CHEP : SOURCE_TEXT_COPIED} iconClassName={RT_SHARED.W_4_H_4} copiedIconClassName={RT_FLOW.W_4_H_4_TEXT_EMERALD_400_SHRINK_0_D3C71C} />
                   <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleClearAllPrompts} disabled={!!busy} className={cn(RT_FLOW.BTN_ICON_TINY_W_7_H_7_MIN_W_28PX_9DA0C7)} title={flowTexts.CLEAR_ALL}>
                     <Trash2 className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} />
                   </Button>
@@ -706,63 +663,33 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
           </div>
         </Modal>
       )}
-      <Modal
+      <ConfirmDeleteModal
         isOpen={Boolean(clipToDelete)}
         onClose={() => setClipToDelete(null)}
-        maxWidth={SOURCE_TEXT_MD}
-        title={
-          <span className={cn(RT_FLOW.INLINE_FLEX_ITEMS_CENTER_GAP_2_TEXT_SLATE_100)}>
-            <Trash2 className={cn(RT_SHARED.W_4_H_4_TEXT_ROSE_500_SHRINK_0)} />
-            <span className={cn(RT_FLOW.TEXT_SM_FONT_BOLD)}>{flowTexts.CONFIRM_DELETE}</span>
-          </span>
-        }>
-        <div className={cn(RT_FLOW.SPACE_Y_4_TEXT_LEFT_P_1)}>
-          <p className={cn(RT_FLOW.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_300_LEADING_RELAXED)}>{flowTexts.CONFIRM_DELETE_BODY}</p>
-          {clipToDelete && (
-            <div className={cn(RT_FLOW.P_3_ROUNDED_XL_BG_SLATE_955_BORDER_BORDER_SLATE)}>
-              {SOURCE_TEXT_SYMBOL_3}
-              {clipToDelete.prompt}
-              {SOURCE_TEXT_SYMBOL_3}
-            </div>
-          )}
-          <DestructiveActionNotice className={cn(RT_FLOW.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER)} iconClassName={cn(RT_FLOW.W_4_H_4_TEXT_ROSE_400_SHRINK_0)}>
-            {flowTexts.IRREVERSIBLE}
-          </DestructiveActionNotice>
-          <div className={cn(RT_FLOW.FLEX_JUSTIFY_END_ITEMS_CENTER_GAP_2_5_PT_3)}>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_SECONDARY} size={SOURCE_TEXT_SM} onClick={() => setClipToDelete(null)} className={cn(RT_FLOW.H_9_PX_4_ROUNDED_XL_TEXT_XS_FONT_SEMIBOLD)}>
-              {flowTexts.CANCEL}
-            </Button>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmDeleteClip} className={cn(RT_FLOW.H_9_PX_5_ROUNDED_XL_TEXT_XS_FONT_BOLD)}>
-              {flowTexts.DELETE}
-            </Button>
+        onConfirm={confirmDeleteClip}
+        title={flowTexts.CONFIRM_DELETE}
+        message={flowTexts.CONFIRM_DELETE_BODY}
+        warning={flowTexts.IRREVERSIBLE}
+        cancelLabel={flowTexts.CANCEL}
+        confirmLabel={flowTexts.DELETE}>
+        {clipToDelete && (
+          <div className={cn(RT_FLOW.P_3_ROUNDED_XL_BG_SLATE_955_BORDER_BORDER_SLATE)}>
+            {SOURCE_TEXT_SYMBOL_3}
+            {clipToDelete.prompt}
+            {SOURCE_TEXT_SYMBOL_3}
           </div>
-        </div>
-      </Modal>
-      <Modal
+        )}
+      </ConfirmDeleteModal>
+      <ConfirmDeleteModal
         isOpen={showClearAllModal}
         onClose={() => setShowClearAllModal(false)}
-        maxWidth={SOURCE_TEXT_MD}
-        title={
-          <span className={cn(RT_FLOW.INLINE_FLEX_ITEMS_CENTER_GAP_2_TEXT_SLATE_100)}>
-            <Trash2 className={cn(RT_SHARED.W_4_H_4_TEXT_ROSE_500_SHRINK_0)} />
-            <span className={cn(RT_FLOW.TEXT_SM_FONT_BOLD)}>{flowTexts.CLEAR_ALL}</span>
-          </span>
-        }>
-        <div className={cn(RT_FLOW.SPACE_Y_4_TEXT_LEFT_P_1)}>
-          <p className={cn(RT_FLOW.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_300_LEADING_RELAXED)}>{flowTexts.CLEAR_ALL_CONFIRM(clips.length)}</p>
-          <DestructiveActionNotice className={cn(RT_FLOW.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER)} iconClassName={cn(RT_FLOW.W_4_H_4_TEXT_ROSE_400_SHRINK_0)}>
-            {flowTexts.IRREVERSIBLE}
-          </DestructiveActionNotice>
-          <div className={cn(RT_FLOW.FLEX_JUSTIFY_END_ITEMS_CENTER_GAP_2_5_PT_3)}>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_SECONDARY} size={SOURCE_TEXT_SM} onClick={() => setShowClearAllModal(false)} className={cn(RT_FLOW.H_9_PX_4_ROUNDED_XL_TEXT_XS_FONT_SEMIBOLD)}>
-              {flowTexts.CANCEL}
-            </Button>
-            <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_DANGER} size={SOURCE_TEXT_SM} onClick={confirmClearAllPrompts} className={cn(RT_FLOW.H_9_PX_5_ROUNDED_XL_TEXT_XS_FONT_BOLD)}>
-              {flowTexts.CLEAR_PROMPTS}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={confirmClearAllPrompts}
+        title={flowTexts.CLEAR_ALL}
+        message={flowTexts.CLEAR_ALL_CONFIRM(clips.length)}
+        warning={flowTexts.IRREVERSIBLE}
+        cancelLabel={flowTexts.CANCEL}
+        confirmLabel={flowTexts.CLEAR_PROMPTS}
+      />
     </StudioPage>
   );
 }

@@ -9,7 +9,7 @@ import { motionResponseErrors, normalizeMotionResponseText } from "./motionRespo
 import { MOTION_EDITORIAL_POLICY as E } from "../constants/motionEditorialPolicy.js";
 import type { MotionScenePlan, MotionStoryAnalysis, MotionStorySource, MotionVideoDna, MotionVideoDnaSettings } from "../types/motionVideo.js";
 export const VIDEO_DNA_PLANNING_INSTRUCTIONS = MR.MOTION_TEXT_BEFORE_WRITING_SCENES_WORK_SIMULTANEOUSLY_AS_A_CONTENT_RESEARCHER;
-export const MOTION_VIDEO_FORMATS = {
+const MOTION_VIDEO_FORMATS = {
   story: MR.MOTION_TEXT_NARRATED_STORY_WITH_CHARACTERS_AND_SCENES_FICTION_FOLK_TALE_TRUE_,
   documentary: MR.MOTION_TEXT_CHRONOLOGICAL_OR_ANTHOLOGY_DOCUMENTARY_BUILT_FROM_REAL_EVENTS_PEO,
   explainer: MR.MOTION_TEXT_EXPLAINS_HOW_OR_WHY_SOMETHING_WORKS_DIAGRAMS_COMPARISONS_STEP_BY_,

@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html data-artifact="motion-html-scene" data-request-id="d16abf05-7d24-46ef-aaaf-94baf197c3f4">
+<head>
+<meta charset="utf-8">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111;overflow:hidden}#motion-canvas{display:block;width:100vw;height:100vh}</style>
+</head>
+<body>
+<canvas id="motion-canvas"></canvas>
+<script>
+const INK = '#16172a';
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (e0, e1, x) => {
+  const t = clamp((x - e0) / (e1 - e0 || 1), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+function hashSeed(s) {
+  const str = String(s || 'sajo-bombard');
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function makeRng(seed) {
+  let s = hashSeed(seed) || 1;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function smoothPath(pts, closed) {
+  const p = new Path2D();
+  if (!pts || !pts.length) return p;
+  const n = pts.length;
+  if (closed) {
+    p.moveTo((pts[n - 1][0] + pts[0][0]) * 0.5, (pts[n - 1][1] + pts[0][1]) * 0.5);
+    for (let i = 0; i < n; i++) {
+      const cur = pts[i];
+      const nxt = pts[(i + 1) % n];
+      p.quadraticCurveTo(cur[0], cur[1], (cur[0] + nxt[0]) * 0.5, (cur[1] + nxt[1]) * 0.5);
+    }
+    p.closePath();
+  } else {
+    p.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < n - 1; i++) {
+      p.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) * 0.5, (pts[i][1] + pts[i + 1][1]) * 0.5);
+    }
+    if (n > 1) p.lineTo(pts[n - 1][0], pts[n - 1][1]);
+  }
+  return p;
+}
+function shape(ctx, p, fill, shade, lw, shadeFn) {
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill(p);
+  }
+  if (shade || shadeFn) {
+    ctx.save();
+    ctx.clip(p);
+    if (shadeFn) {
+      shadeFn(ctx);
+    } else {
+      ctx.fillStyle = shade;
+      ctx.fillRect(-600, -400, 2600, 1600);
+    }
+    ctx.restore();
+  }
+  if (lw > 0) {
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke(p);
+  }
+}
+function drawSmokePuff(ctx, cx, cy, r, fill, shade) {
+  const lobes = [
+    [-0.55, 0.12, 0.48], [-0.22, -0.35, 0.58], [0.24, -0.28, 0.54],
+    [0.58, 0.10, 0.45], [0.18, 0.34, 0.46], [-0.26, 0.32, 0.44]
+  ];
+  const pass = (ox, oy, sc, col) => {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    for (let i = 0; i < lobes.length; i++) {
+      const lx = cx + lobes[i][0] * r + ox;
+      const ly = cy + lobes[i][1] * r + oy;
+      const lr = lobes[i][2] * r * sc;
+      ctx.moveTo(lx + lr, ly);
+      ctx.arc(lx, ly, lr, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  };
+  pass(0, 2, 1.04, '#26201c');
+  pass(0, 4, 0.98, shade);
+  pass(0, -3, 0.96, fill);
+}
+if (!window.MotionFigures) {
+  const registry = {};
+  window.MotionFigures = {
+    use(defs) {
+      const api = {};
+      const keys = Object.keys(defs);
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        registry[k] = defs[k];
+        api[k] = (ctx, o) => {
+          const res = registry[k](ctx, o);
+          if (o && o.mark && res && res.box && window.motionMark) {
+            window.motionMark(ctx, o.mark, res.box.x, res.box.y, res.box.w, res.box.h);
+          }
+          return res;
+        };
+      }
+      return api;
+    },
+    phase(progress, count, cues) {
+      const p = clamp(progress, 0, 1);
+      const at = [];
+      for (let i = 0; i < count; i++) {
+        at.push(Array.isArray(cues) && typeof cues[i] === 'number' ? cues[i] : i / count);
+      }
+      let idx = 0;
+      for (let i = 1; i < count; i++) {
+        if (p >= at[i]) idx = i;
+      }
+      const start = at[idx];
+      const end = idx + 1 < count ? at[idx + 1] : 1;
+      return { at, index: idx, local: clamp((p - start) / (end - start || 1), 0, 1) };
+    },
+    track(keys, progress) {
+      const p = clamp(progress, 0, 1);
+      if (!keys || !keys.length) return { x: 0, y: 0, moving: false, distance: 0 };
+      let i = 0;
+      while (i < keys.length - 2 && p >= keys[i + 1].at) i++;
+      const k0 = keys[i];
+      const k1 = keys[Math.min(i + 1, keys.length - 1)];
+      const span = (k1.at - k0.at) || 1;
+      const rawT = clamp((p - k0.at) / span, 0, 1);
+      const prevMoved = i > 0 && (Math.abs(keys[i].x - keys[i - 1].x) > 1 || Math.abs(keys[i].y - keys[i - 1].y) > 1);
+      const nextMoves = i + 2 < keys.length && (Math.abs(keys[i + 2].x - k1.x) > 1 || Math.abs(keys[i + 2].y - k1.y) > 1);
+      let t = rawT;
+      if (!prevMoved && !nextMoves) t = rawT * rawT * (3 - 2 * rawT);
+      else if (!prevMoved) t = rawT * rawT * (2 - rawT);
+      else if (!nextMoves) t = 1 - (1 - rawT) * (1 - rawT) * (2 - (1 - rawT));
+      const out = Object.assign({}, k0);
+      const props = Object.keys(k1);
+      for (let j = 0; j < props.length; j++) {
+        const prop = props[j];
+        if (typeof k0[prop] === 'number' && typeof k1[prop] === 'number' && prop !== 'at' && prop !== 'facing') {
+          out[prop] = lerp(k0[prop], k1[prop], t);
+        }
+      }
+      let dist = 0;
+      for (let j = 0; j < i; j++) {
+        dist += Math.hypot((keys[j + 1].x || 0) - (keys[j].x || 0), (keys[j + 1].y || 0) - (keys[j].y || 0));
+      }
+      dist += Math.hypot((out.x || 0) - (k0.x || 0), (out.y || 0) - (k0.y || 0));
+      const totalSeg = Math.hypot((k1.x || 0) - (k0.x || 0), (k1.y || 0) - (k0.y || 0));
+      out.moving = totalSeg > 2 && rawT > 0.001 && rawT < 0.999;
+      out.distance = dist;
+      return out;
+    }
+  };
+}
+const FIG = window.MotionFigures.use({
+  person(ctx, o) {
+    const x = o.x || 0;
+    const y = o.y || 0;
+    const H = o.h || 168;
+    const W = o.w || Math.round(H * 0.38);
+    const r = H / 8;
+    const facing = o.facing === -1 ? -1 : 1;
+    const lw = clamp(H * 0.015, 1.3, 2.6);
+    const bob = o.bob || 0;
+    const lean = ((o.lean || 0) * Math.PI) / 180;
+    const stride = 0.9 * r;
+    const phase = ((o.distance || 0) / (stride || 1)) * Math.PI;
+    const isWalk = o.pose === 'walk' || o.pose === 'run';
+    const isCrouch = o.pose === 'crouch' || o.pose === 'block';
+    const isFall = o.pose === 'fall';
+    const crouchY = isCrouch ? H * 0.14 : (isFall ? H * 0.24 : 0);
+    const swing = isWalk ? Math.sin(phase) * 0.48 : 0;
+    const skin = o.skin || '#f8f8f6';
+    const topCol = o.top || '#6e5844';
+    const trimCol = o.trim || '#263047';
+    const pantsCol = o.pants || '#4a433b';
+    const bootCol = o.boots || '#3b2d22';
+    const capeCol = o.cape || null;
+    ctx.save();
+    ctx.translate(x, y);
+    const shPath = new Path2D();
+    shPath.ellipse(0, 1, r * 1.48, r * 0.34, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(22, 23, 42, 0.28)';
+    ctx.fill(shPath);
+    ctx.scale(facing, 1);
+    const hipY = -0.46 * H + crouchY + bob * 0.4;
+    const legLen = Math.max(r * 1.1, 0.46 * H - crouchY * 0.85);
+    const drawLeg = (ang, ox) => {
+      ctx.save();
+      ctx.translate(ox, hipY);
+      ctx.rotate(ang + (isFall ? -0.55 : (isCrouch ? -0.22 : 0)));
+      const legP = smoothPath([
+        [-r * 0.34, 0], [r * 0.34, 0],
+        [r * 0.28, legLen * 0.84], [-r * 0.26, legLen * 0.84]
+      ], true);
+      shape(ctx, legP, pantsCol, null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.18)';
+        c.fillRect(-r * 0.4, 0, r * 0.28, legLen);
+      });
+      const bootP = smoothPath([
+        [-r * 0.28, legLen * 0.72], [r * 0.30, legLen * 0.72],
+        [r * 0.56, legLen], [-r * 0.32, legLen]
+      ], true);
+      shape(ctx, bootP, bootCol, null, lw, o.muddy ? (c) => {
+        c.fillStyle = '#5a4e3c';
+        c.fillRect(-r * 0.4, legLen * 0.86, r * 1.1, legLen * 0.2);
+      } : null);
+      ctx.restore();
+    };
+    drawLeg(-swing, -r * 0.22);
+    drawLeg(swing, r * 0.22);
+    ctx.save();
+    ctx.translate(0, hipY);
+    const fAng = lean + (isFall ? -0.68 : (isCrouch ? 0.26 : 0));
+    ctx.rotate(fAng);
+    const shY = -0.26 * H;
+    const headCY = shY - r * 1.18;
+    const drawArm = (isFront) => {
+      let aRot = isFront ? -swing * 0.75 : swing * 0.75;
+      let elbowBend = 0.18;
+      if (o.pose === 'block' || o.pose === 'raise') {
+        aRot = isFront ? -2.25 : -1.95;
+        elbowBend = -0.35;
+      } else if (o.pose === 'crouch') {
+        aRot = isFront ? -1.45 : -0.75;
+        elbowBend = -0.35;
+      } else if (o.pose === 'fall') {
+        aRot = isFront ? -1.8 : 0.7;
+        elbowBend = 0.25;
+      } else if (o.pose === 'hold') {
+        aRot = isFront ? -0.72 : -0.45;
+        elbowBend = -0.35;
+      }
+      ctx.save();
+      ctx.translate(isFront ? -r * 0.14 : r * 0.28, shY + r * 0.16);
+      ctx.rotate(aRot);
+      const armL = 0.29 * H;
+      const armP = smoothPath([
+        [-r * 0.24, -r * 0.1], [r * 0.24, -r * 0.1],
+        [r * 0.20 + elbowBend * r * 0.5, armL], [-r * 0.18 + elbowBend * r * 0.5, armL]
+      ], true);
+      shape(ctx, armP, isFront && capeCol ? capeCol : topCol, null, lw, (c) => {
+        if (o.tornSleeve && isFront) {
+          c.fillStyle = skin;
+          c.fillRect(-r * 0.3, armL * 0.52, r * 0.6, armL * 0.24);
+        }
+        if (o.muddy && capeCol) {
+          c.fillStyle = '#5a4e3c';
+          c.fillRect(-r * 0.3, armL * 0.72, r * 0.65, armL * 0.3);
+        }
+      });
+      const hx = elbowBend * r * 0.5;
+      const hy = armL + r * 0.08;
+      const handP = new Path2D();
+      handP.arc(hx, hy, r * 0.22, 0, Math.PI * 2);
+      shape(ctx, handP, skin, null, lw * 0.9);
+      ctx.restore();
+      const ox = isFront ? -r * 0.14 : r * 0.28;
+      const oy = shY + r * 0.16;
+      const rx = ox + hx * Math.cos(aRot) - hy * Math.sin(aRot);
+      const ry = oy + hx * Math.sin(aRot) + hy * Math.cos(aRot);
+      return [
+        x + facing * (rx * Math.cos(fAng) - ry * Math.sin(fAng)),
+        y + hipY + (rx * Math.sin(fAng) + ry * Math.cos(fAng))
+      ];
+    };
+    const backHandPos = drawArm(false);
+    if (capeCol) {
+      const sway = o.cloakSway || 0;
+      const capeP = smoothPath([
+        [-r * 0.62, shY + r * 0.05], [r * 0.45, shY + r * 0.05],
+        [r * 0.55 + sway, r * 0.48], [-r * 0.85 + sway * 1.3, r * 0.52]
+      ], true);
+      shape(ctx, capeP, capeCol, null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.22)';
+        c.fillRect(-r * 1.1, r * 0.12, r * 2.0, r * 0.55);
+      });
+    }
+    const torsoP = smoothPath([
+      [-r * 0.78, shY], [r * 0.78, shY],
+      [r * 0.88, r * 0.22], [-r * 0.88, r * 0.22]
+    ], true);
+    shape(ctx, torsoP, topCol, null, lw, (c) => {
+      c.fillStyle = 'rgba(22,23,42,0.18)';
+      c.fillRect(-r * 1.0, -r * 0.25, r * 0.62, r * 0.8);
+      c.fillStyle = trimCol;
+      c.fillRect(-r * 1.0, r * 0.08, r * 2.0, r * 0.15);
+      c.fillRect(-r * 0.12, shY, r * 0.24, r * 0.6);
+    });
+    const beltP = smoothPath([
+      [-r * 0.82, -r * 0.06], [r * 0.82, -r * 0.06],
+      [r * 0.84, r * 0.06], [-r * 0.84, r * 0.06]
+    ], true);
+    shape(ctx, beltP, '#3a2b1f', null, lw * 0.85);
+    const neckP = smoothPath([
+      [-r * 0.26, shY - r * 0.36], [r * 0.26, shY - r * 0.36],
+      [r * 0.30, shY + r * 0.06], [-r * 0.30, shY + r * 0.06]
+    ], true);
+    shape(ctx, neckP, skin, null, lw * 0.9);
+    const headP = new Path2D();
+    headP.arc(0, headCY, r, 0, Math.PI * 2);
+    shape(ctx, headP, skin, null, lw, (c) => {
+      c.fillStyle = '#d0d5dd';
+      c.beginPath();
+      c.arc(-r * 0.32, headCY + r * 0.12, r * 0.95, 0, Math.PI * 2);
+      c.fill();
+      if (o.stubble) {
+        c.fillStyle = 'rgba(58, 52, 48, 0.26)';
+        c.fillRect(-r, headCY + r * 0.24, r * 2, r * 0.8);
+      }
+    });
+    if (o.head === 'cap') {
+      const capP = smoothPath([
+        [-r * 1.06, headCY - r * 0.22], [-r * 0.88, headCY - r * 0.98],
+        [0, headCY - r * 1.12], [r * 0.88, headCY - r * 0.96],
+        [r * 1.14, headCY - r * 0.22], [0, headCY - r * 0.34]
+      ], true);
+      shape(ctx, capP, o.headColor || '#4d392a', null, lw, (c) => {
+        c.fillStyle = 'rgba(22,23,42,0.22)';
+        c.fillRect(-r * 1.2, headCY - r * 0.42, r * 2.4, r * 0.26);
+      });
+    }
+    const ex1 = r * 0.24;
+    const ex2 = r * 0.66;
+    const ey = headCY - r * 0.04;
+    ctx.fillStyle = INK;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = lw * 0.95;
+    for (let i = 0; i < 2; i++) {
+      const ex = i === 0 ? ex1 : ex2;
+      ctx.beginPath();
+      ctx.ellipse(ex, ey, r * 0.075, r * 0.105, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const browTilt = o.expression === 'angry' || o.expression === 'stern' ? 0.26 : -0.18;
+    ctx.beginPath();
+    ctx.moveTo(ex1 - r * 0.15, ey - r * 0.22 - browTilt * r * 0.2);
+    ctx.lineTo(ex1 + r * 0.15, ey - r * 0.22 + browTilt * r * 0.2);
+    ctx.moveTo(ex2 - r * 0.15, ey - r * 0.22 + browTilt * r * 0.2);
+    ctx.lineTo(ex2 + r * 0.15, ey - r * 0.22 - browTilt * r * 0.2);
+    ctx.stroke();
+    if (o.scar) {
+      ctx.strokeStyle = '#7c2b2b';
+      ctx.beginPath();
+      ctx.moveTo(ex2 - r * 0.12, ey - r * 0.35);
+      ctx.lineTo(ex2 + r * 0.08, ey - r * 0.08);
+      ctx.stroke();
+      ctx.strokeStyle = INK;
+    }
+    const my = headCY + r * 0.42;
+    if (o.expression === 'shout') {
+      const mP = new Path2D();
+      mP.ellipse(r * 0.44, my, r * 0.16, r * 0.20, 0, 0, Math.PI * 2);
+      shape(ctx, mP, '#421c1c', null, lw * 0.8);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.26, my + r * 0.04);
+      ctx.quadraticCurveTo(r * 0.44, my - r * 0.04, r * 0.62, my + r * 0.04);
+      ctx.stroke();
+    }
+    if (o.hold === 'spear') {
+      const sx = r * 0.56;
+      const shaftP = smoothPath([
+        [sx - r * 0.07, -hipY], [sx + r * 0.07, -hipY],
+        [sx + r * 0.06, headCY - r * 2.1], [sx - r * 0.06, headCY - r * 2.1]
+      ], true);
+      shape(ctx, shaftP, '#7a593b', null, lw * 0.85);
+      const tipP = smoothPath([
+        [sx - r * 0.15, headCY - r * 2.05], [sx, headCY - r * 2.75],
+        [sx + r * 0.15, headCY - r * 2.05]
+      ], true);
+      shape(ctx, tipP, '#9aa2ab', null, lw * 0.85);
+    } else if (o.hold === 'crossbow') {
+      ctx.save();
+      if (o.pose === 'block' || o.pose === 'raise') {
+        ctx.translate(r * 0.25, headCY - r * 1.45);
+        ctx.rotate(-0.18);
+      } else {
+        ctx.translate(r * 0.45, shY + r * 0.48);
+        ctx.rotate(-0.12);
+      }
+      const stockP = smoothPath([
+        [-r * 0.55, -r * 0.12], [r * 1.48, -r * 0.08],
+        [r * 1.48, r * 0.10], [-r * 0.55, r * 0.16]
+      ], true);
+      shape(ctx, stockP, '#7c5838', null, lw * 0.9);
+      const prodP = smoothPath([
+        [r * 1.28, -r * 0.85], [r * 1.45, -r * 0.85],
+        [r * 1.45, r * 0.85], [r * 1.28, r * 0.85]
+      ], true);
+      shape(ctx, prodP, '#5c646d', null, lw * 0.9);
+      ctx.restore();
+    }
+    const frontHandPos = drawArm(true);
+    if (o.shield) {
+      ctx.save();
+      if (o.pose === 'crouch' || o.pose === 'block') {
+        ctx.translate(r * 0.35, headCY - r * 0.85);
+        ctx.rotate(-1.25);
+      } else {
+        ctx.translate(r * 0.55, shY + r * 0.45);
+      }
+      const shP = smoothPath([
+        [-r * 0.36, -r * 0.45], [r * 0.36, -r * 0.45],
+        [r * 0.32, r * 0.35], [0, r * 0.62], [-r * 0.32, r * 0.35]
+      ], true);
+      shape(ctx, shP, o.shieldColor || '#694e36', null, lw * 0.95);
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.restore();
+    return {
+      box: { x: x - W * 0.5, y: y - H, w: W, h: H },
+      head: [x, y - H + r],
+      hand: frontHandPos,
+      backHand: backHandPos
+    };
+  },
+  prop(ctx, o) {
+    const x = o.x || 0;
+    const y = o.y || 0;
+    const r = o.r || 32;
+    const lw = 2.1;
+    if (o.kind === 'stone') {
+      const stP = smoothPath([
+        [x - r * 0.96, y - r * 0.25], [x - r * 0.52, y - r * 0.92],
+        [x + r * 0.38, y - r * 0.96], [x + r * 0.98, y - r * 0.28],
+        [x + r * 0.72, y + r * 0.68], [x - r * 0.28, y + r * 0.88],
+        [x - r * 0.88, y + r * 0.48]
+      ], true);
+      shape(ctx, stP, '#6c7078', null, lw, (c) => {
+        c.fillStyle = 'rgba(22, 23, 42, 0.28)';
+        c.beginPath();
+        c.arc(x + r * 0.28, y + r * 0.28, r * 0.92, 0, Math.PI * 2);
+        c.fill();
+      });
+      return { box: { x: x - r, y: y - r, w: r * 2, h: r * 2 } };
+    }
+    if (o.kind === 'trebuchet') {
+      const w = o.w || 68;
+      const h = o.h || 54;
+      const frameP = smoothPath([
+        [x - w * 0.5, y], [x - w * 0.18, y - h * 0.62],
+        [x + w * 0.18, y - h * 0.62], [x + w * 0.5, y],
+        [x + w * 0.36, y], [x, y - h * 0.46], [x - w * 0.36, y]
+      ], true);
+      shape(ctx, frameP, '#4a3b2e', null, 1.5);
+      const armP = smoothPath([
+        [x - w * 0.38, y - h * 0.32], [x + w * 0.44, y - h * 0.98],
+        [x + w * 0.48, y - h * 0.92], [x - w * 0.34, y - h * 0.26]
+      ], true);
+      shape(ctx, armP, '#5c4938', null, 1.4);
+      return { box: { x: x - w * 0.5, y: y - h, w, h } };
+    }
+    const splP = smoothPath([
+      [x - 24, y - 4], [x + 18, y - 9], [x + 26, y + 3], [x - 16, y + 8]
+    ], true);
+    shape(ctx, splP, '#694e36', null, 1.5);
+    return { box: { x: x - 26, y: y - 10, w: 52, h: 20 } };
+  }
+});
+const cache = {};
+function getSceneData(seed) {
+  if (cache[seed]) return cache[seed];
+  const rng = makeRng(seed);
+  const splinters = [];
+  for (let i = 0; i < 16; i++) {
+    splinters.push({
+      x: -260 + rng() * 1820,
+      y: 625 + rng() * 180,
+      ang: (rng() - 0.5) * 0.9
+    });
+  }
+  const arrowList = [];
+  for (let i = 0; i < 11; i++) {
+    arrowList.push({
+      sx: 780 + rng() * 680,
+      sy: 90 + rng() * 140,
+      ex: 160 + rng() * 760,
+      ey: 540 + rng() * 70,
+      off: rng()
+    });
+  }
+  const levies = [
+    { x: 165, y: 592, h: 162, top: '#4b7a45', hold: 'spear', shield: true, ph: 0.4, scatter: -25 },
+    { x: 245, y: 602, h: 166, top: '#6d5843', hold: 'spear', shield: true, ph: 1.5, scatter: -18 },
+    { x: 645, y: 598, h: 166, top: '#4b7a45', hold: 'spear', shield: true, ph: 2.3, scatter: -55 },
+    { x: 745, y: 604, h: 168, top: '#6d5843', hold: 'spear', shield: true, ph: 0.9, scatter: 68 },
+    { x: 840, y: 596, h: 164, top: '#5a6b48', hold: 'spear', shield: true, ph: 3.1, scatter: 82 },
+    { x: 945, y: 602, h: 166, top: '#6d5843', hold: 'spear', shield: false, ph: 1.8, scatter: 64 }
+  ];
+  cache[seed] = { splinters, arrowList, levies };
+  return cache[seed];
+}
+window.motionScene = {
+  ready: Promise.resolve(),
+  async renderAt(input = {}) {
+    const canvas = document.getElementById('motion-canvas');
+    if (!canvas) return;
+    const w = Math.max(320, Number(input.width) || 1280);
+    const h = Math.max(180, Number(input.height) || 720);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    const motionEnabled = input.motionEnabled !== false;
+    const cameraEnabled = input.cameraEnabled !== false;
+    const progress = motionEnabled ? clamp(Number(input.progress) || 0, 0, 1) : 0;
+    const time = motionEnabled ? (Number(input.time) || 0) : 0;
+    const data = getSceneData(input.seed || 'sajo-bombard');
+    const ph = window.MotionFigures.phase(progress, 3, input.cues);
+    const camKeys = [
+      { at: 0, zoom: 1.0, focusX: 635, focusY: 376 },
+      { at: ph.at[1], zoom: 1.02, focusX: 625, focusY: 364 },
+      { at: ph.at[2], zoom: 1.03, focusX: 615, focusY: 354 },
+      { at: 1, zoom: 1.02, focusX: 620, focusY: 366 }
+    ];
+    const cam = cameraEnabled ? window.MotionFigures.track(camKeys, progress) : camKeys[0];
+    const youKeys = [
+      { at: 0, x: 465, y: 606, pose: 'hold', expression: 'worried', lean: 4 },
+      { at: ph.at[1] * 0.9, x: 458, y: 606, pose: 'block', expression: 'scared', lean: 14 },
+      { at: ph.at[1], x: 455, y: 606, pose: 'block', expression: 'scared', lean: 16 },
+      { at: ph.at[2], x: 462, y: 606, pose: 'crouch', expression: 'stern', lean: 10 },
+      { at: 1, x: 468, y: 606, pose: 'hold', expression: 'stern', lean: 4 }
+    ];
+    const you = window.MotionFigures.track(youKeys, progress);
+    const arcT = smoothstep(0.02, ph.at[1] * 0.95, progress);
+    const stoneX = lerp(1240, 695, arcT);
+    const stoneY = lerp(110, 588, arcT) - Math.sin(arcT * Math.PI) * 195;
+    const impactBurst = smoothstep(ph.at[1] * 0.78, ph.at[1] * 0.96, progress) * (1 - smoothstep(ph.at[1], ph.at[2] * 1.15, progress));
+    const scatterT = smoothstep(ph.at[1] * 0.75, ph.at[1] * 1.1, progress) * (1 - smoothstep(ph.at[2] * 0.85, 1, progress));
+    const duckT = smoothstep(ph.at[1] * 0.85, ph.at[1] * 1.15, progress) * (1 - smoothstep(ph.at[2] * 0.88, 1, progress));
+    ctx.save();
+    ctx.scale(w / 1280, h / 720);
+    ctx.fillStyle = '#333b4d';
+    ctx.fillRect(0, 0, 1280, 720);
+    ctx.save();
+    ctx.translate(640, 360);
+    ctx.scale(cam.zoom, cam.zoom);
+    ctx.translate(-cam.focusX, -cam.focusY);
+    const skyG = ctx.createLinearGradient(0, -260, 0, 470);
+    skyG.addColorStop(0, '#2a3347');
+    skyG.addColorStop(0.55, '#6e5854');
+    skyG.addColorStop(1, '#cf8859');
+    ctx.fillStyle = skyG;
+    ctx.fillRect(-450, -260, 2180, 760);
+    const drift = time * 6.5;
+    drawSmokePuff(ctx, 260 + drift, 185, 145, '#59545c', '#3d3a42');
+    drawSmokePuff(ctx, 790 + drift * 0.8, 160, 175, '#665b5e', '#463f45');
+    drawSmokePuff(ctx, 1140 + drift * 0.9, 215, 160, '#5e5459', '#403a40');
+    const farBankP = smoothPath([
+      [-450, 456], [280, 450], [820, 444], [1280, 440], [1730, 446],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, farBankP, '#4a4e46', null, 1.5);
+    FIG.prop(ctx, { kind: 'trebuchet', x: 890, y: 446, w: 66, h: 52 });
+    FIG.prop(ctx, { kind: 'trebuchet', x: 1035, y: 444, w: 72, h: 56 });
+    FIG.prop(ctx, { kind: 'trebuchet', x: 1175, y: 445, w: 64, h: 50 });
+    const riverP = smoothPath([
+      [-450, 488], [240, 486], [680, 490], [1160, 485], [1730, 488],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, riverP, '#324459', null, 1.7, (c) => {
+      c.fillStyle = '#263547';
+      c.fillRect(-450, 520, 2180, 460);
+    });
+    const nearBankP = smoothPath([
+      [-450, 534], [220, 530], [640, 536], [1120, 529], [1730, 534],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, nearBankP, '#4c493a', null, 2.0, (c) => {
+      c.fillStyle = '#3d392d';
+      c.beginPath();
+      c.ellipse(695, 602, 145, 24, 0, 0, Math.PI * 2);
+      c.ellipse(340, 638, 190, 22, 0, 0, Math.PI * 2);
+      c.ellipse(980, 646, 210, 25, 0, 0, Math.PI * 2);
+      c.fill();
+    });
+    for (let i = 0; i < data.splinters.length; i++) {
+      const sp = data.splinters[i];
+      ctx.save();
+      ctx.translate(sp.x, sp.y);
+      ctx.rotate(sp.ang);
+      FIG.prop(ctx, { kind: 'splinter', x: 0, y: 0 });
+      ctx.restore();
+    }
+    for (let i = 0; i < data.levies.length; i++) {
+      const lv = data.levies[i];
+      const isStruck = i === 2 || i === 3 || i === 4;
+      const sx = lv.x + lv.scatter * scatterT;
+      let lvPose = 'hold';
+      if (isStruck && scatterT > 0.35) lvPose = 'fall';
+      else if (duckT > 0.35) lvPose = 'crouch';
+      FIG.person(ctx, {
+        mark: i === 2 ? 'levies' : undefined,
+        x: sx,
+        y: lv.y,
+        w: Math.round(lv.h * 0.38),
+        h: lv.h,
+        facing: 1,
+        pose: lvPose,
+        expression: isStruck && scatterT > 0.2 ? 'shout' : 'stern',
+        top: lv.top,
+        trim: '#263047',
+        head: 'cap',
+        hold: lv.hold,
+        shield: lv.shield,
+        shieldColor: '#694e36',
+        muddy: true,
+        bob: Math.sin(time * 2.4 + lv.ph) * 1.5
+      });
+    }
+    FIG.person(ctx, {
+      top: '#4b7a45',
+      _seed: true,
+      x: 335,
+      y: 606,
+      w: 64,
+      h: 170,
+      facing: 1,
+      pose: duckT > 0.25 ? 'crouch' : 'hold',
+      expression: 'stern',
+      trim: '#222d47',
+      head: 'cap',
+      headColor: '#4a3728',
+      hold: 'spear',
+      shield: true,
+      shieldColor: '#5e4934',
+      tornSleeve: true,
+      stubble: true,
+      bob: Math.sin(time * 2.3 + 0.7) * 1.5
+    });
+    FIG.person(ctx, {
+      x: 545,
+      y: 608,
+      w: 64,
+      h: 172,
+      facing: 1,
+      pose: duckT > 0.2 ? 'crouch' : 'hold',
+      expression: 'stern',
+      top: '#6b5541',
+      trim: '#b8943e',
+      head: 'cap',
+      headColor: '#5c6168',
+      hold: 'spear',
+      shield: true,
+      shieldColor: '#694e36',
+      stubble: true,
+      scar: true,
+      bob: Math.sin(time * 2.2 + 1.4) * 1.5
+    });
+    FIG.person(ctx, {
+      mark: 'you',
+      x: you.x,
+      y: you.y,
+      w: 66,
+      h: 172,
+      facing: 1,
+      pose: you.pose,
+      lean: you.lean,
+      expression: you.expression,
+      top: '#6e5844',
+      trim: '#2d2620',
+      cape: '#524133',
+      boots: '#3d2e22',
+      head: 'cap',
+      headColor: '#4a3728',
+      hold: 'crossbow',
+      muddy: true,
+      bob: Math.sin(time * 2.7) * 1.7,
+      cloakSway: Math.sin(time * 2.1) * 2.4
+    });
+    if (impactBurst > 0.02) {
+      drawSmokePuff(ctx, 695, 578, 56 * impactBurst + 18, '#6e6563', '#453e3d');
+    }
+    FIG.prop(ctx, {
+      mark: 'stone',
+      kind: 'stone',
+      x: stoneX,
+      y: stoneY,
+      r: 30
+    });
+    const flamePoints = [];
+    for (let i = 0; i < data.arrowList.length; i++) {
+      const ar = data.arrowList[i];
+      const cycle = clamp((progress * 1.35 + ar.off * 0.55) % 1.0, 0, 1);
+      const ax = lerp(ar.sx, ar.ex, cycle);
+      const ay = lerp(ar.sy, ar.ey, cycle) - Math.sin(cycle * Math.PI) * 95;
+      const dx = ar.ex - ar.sx;
+      const dy = (ar.ey - ar.sy) - Math.cos(cycle * Math.PI) * 95 * Math.PI;
+      const ang = Math.atan2(dy, dx);
+      ctx.save();
+      ctx.translate(ax, ay);
+      ctx.rotate(ang);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(-24, 0);
+      ctx.lineTo(14, 0);
+      ctx.stroke();
+      const tipP = smoothPath([
+        [10, -4], [20, 0], [10, 4]
+      ], true);
+      shape(ctx, tipP, '#8d96a0', null, 1.3);
+      ctx.restore();
+      flamePoints.push({ x: ax + Math.cos(ang) * 12, y: ay + Math.sin(ang) * 12, mark: i === 0 });
+    }
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = 'rgba(84, 98, 136, 0.35)';
+    ctx.fillRect(-450, -260, 2180, 1240);
+    ctx.restore();
+    const flicker = 0.85 + 0.15 * Math.sin(time * 8.0);
+    for (let i = 0; i < flamePoints.length; i++) {
+      const fp = flamePoints[i];
+      const fg = ctx.createRadialGradient(fp.x, fp.y, 2, fp.x, fp.y, 26 * flicker);
+      fg.addColorStop(0, 'rgba(255, 210, 110, 0.85)');
+      fg.addColorStop(0.5, 'rgba(242, 118, 42, 0.45)');
+      fg.addColorStop(1, 'rgba(242, 118, 42, 0)');
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.arc(fp.x, fp.y, 26 * flicker, 0, Math.PI * 2);
+      ctx.fill();
+      const flP = smoothPath([
+        [fp.x - 6, fp.y], [fp.x, fp.y - 12 * flicker],
+        [fp.x + 6, fp.y], [fp.x, fp.y + 5]
+      ], true);
+      shape(ctx, flP, '#f08232', null, 1.1);
+      if (fp.mark && window.motionMark) {
+        window.motionMark(ctx, 'arrows', fp.x - 24, fp.y - 18, 48, 36);
+      }
+    }
+    if (impactBurst > 0.02) {
+      const ig = ctx.createRadialGradient(695, 588, 8, 695, 588, 145 * impactBurst);
+      ig.addColorStop(0, 'rgba(255, 175, 84, 0.55)');
+      ig.addColorStop(1, 'rgba(255, 175, 84, 0)');
+      ctx.fillStyle = ig;
+      ctx.beginPath();
+      ctx.arc(695, 588, 145 * impactBurst, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.restore();
+  }
+};
+if (!window.__MOTION_HOST__) { const t0 = performance.now(), dur = 10, loop = (now) => { const t = ((now - t0) / 1000) % dur; window.motionScene.renderAt({ time: t, progress: t / dur, frame: Math.floor(t * 30), fps: 30, duration: dur, width: window.innerWidth || 1280, height: window.innerHeight || 720, mode: 'preview', motionEnabled: true, sceneEffectsEnabled: true, seed: 'preview', speaking: [] }); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+</script>
+</body>
+</html>

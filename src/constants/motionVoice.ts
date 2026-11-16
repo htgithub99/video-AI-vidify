@@ -42,7 +42,7 @@ export const MOTION_VOICE = {
     WORDS_EXT: ".words.json",
     NORMALIZE: "NFC",
     UI: {
-      vi: { LABEL: "Kiểm tra giọng", ON: "Whisper bật", OFF: "Tắt", HINT: "Đối chiếu lời đọc bằng nhận dạng tự động, tạo lại câu nghi vấn và giữ phương án tốt nhất. Khác biệt nhận dạng chưa chắc là lỗi phát âm. Kiểm tra này độc lập với review ảnh." },
+      vi: { LABEL: "Kiểm tra giọng", ON: "Whisper bật", OFF: "Tắt", HINT: "Nghe lại lời đọc bằng nhận dạng giọng, đọc lại câu nghi sai và giữ bản tốt nhất." },
       en: { LABEL: "Voice check", ON: "Whisper on", OFF: "Off", HINT: "Compare speech using automatic recognition, retry uncertain lines and keep the best candidate. Recognition differences are not confirmed pronunciation errors. Independent of image review." },
     },
     MERGE_GAP: 0.08,
@@ -212,11 +212,11 @@ export const MOTION_VOICE_CHANNEL_TEXT = {
     CHANNEL_NAME_PLACEHOLDER: "VD: Kể chuyện ma, Phim hành động, Tin tức đời sống...",
     RESET_PREVIEW: "Đặt lại câu đọc",
     CHANNELS: "Kênh giọng",
-    CHANNELS_HINT: "Mỗi kênh/chủ đề dùng một giọng người kể cố định cho mọi video. Có thể gán thêm giọng cố định cho các vai.",
+    CHANNELS_HINT: "Mỗi kênh dùng một giọng kể cố định; có thể gán giọng cho từng vai.",
     MULTI_VOICE: "Phân vai giọng",
     MULTI_VOICE_ON: "Nhiều giọng",
     MULTI_VOICE_OFF: "Một giọng",
-    MULTI_VOICE_HINT: "Bật: nhân vật dùng giọng riêng. Tắt: người kể đọc toàn bộ lời dẫn và lời thoại bằng giọng đã chọn, giữ nhịp đọc tham chiếu. Áp dụng cho cả Kho và Remotion; audio tải lên được giữ nguyên.",
+    MULTI_VOICE_HINT: "Bật: mỗi nhân vật một giọng. Tắt: người kể đọc toàn bộ. Audio tải lên giữ nguyên.",
     NEW_CHANNEL: "Thêm kênh",
     CHANNEL_NAME: "Tên kênh / chủ đề",
     NARRATOR: "Giọng người kể",
@@ -667,7 +667,8 @@ export const MOTION_VOICE_SPEED = {
   },
 } as const;
 export const MOTION_VOICE_PACING = {
-  VERSION: 12,
+  // 13: character lines are evened phrase by phrase like the narration.
+  VERSION: 13,
   // Each phrase between two punctuation pauses is brought to the line's own speaking rate (never by more than PHRASE_STRETCH).
   PHRASE_LOG: (phrases: number, before: number, after: number): string => `Cân tốc độ từng cụm: ${phrases} cụm giữa các dấu câu được đưa về tốc độ chung của câu; độ lệch lớn nhất giữa các cụm ${(before * 100).toFixed(0)}% → khoảng ${(after * 100).toFixed(0)}%.`,
   NARRATOR_CADENCE: { FIT_MARGIN: 1.12, PHRASE_STRETCH: 0.18, PHRASE_MIN_UNITS: 4, PHRASE_MIN_SECONDS: 0.6, LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
@@ -713,7 +714,7 @@ export const MOTION_VOICE_PACING = {
   HORROR: { key: "horror", narrationTempo: 1.04, dialogueTempo: 0.94, clauseGap: 0.3, sentenceGap: 0.5, suspenseGap: 0.72, revealGap: 0.56, revealWords: 6, gaps: { FIRST: [0.15, 0.3], SAME_SPEAKER: [0.4, 0.65], SPEAKER_CHANGE: [0.4, 0.65], BEAT_END: [0.5, 0.88] } },
   LOG: (key: string, split: number): string => `Nhịp đọc "${key}": giữ câu kể liền mạch, tốc độ người kể ổn định; khoảng nghỉ theo câu và đổi người nói (${split} lượt cần chia).`,
 } as const;
-export interface MotionVoiceFx {
+interface MotionVoiceFx {
   pitch: number;
   vibrato: number;
   vibratoHz: number;

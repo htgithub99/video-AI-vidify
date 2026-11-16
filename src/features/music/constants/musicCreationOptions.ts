@@ -34,7 +34,7 @@ export const MUSIC_CREATION_OPTIONS = {
   TEXT: {
     vi: {
       analyze: "AI phân tích",
-      analysisHint: "Khi sáng tác, AI phân tích phong cách từ nguồn tham khảo và tự lưu vào danh sách phong cách để dùng lại.",
+      analysisHint: "AI phân tích phong cách từ nguồn tham khảo và lưu lại để dùng sau.",
       sourceRequired: "Hãy thêm nguồn tham khảo để AI phân tích phong cách âm nhạc.",
       styleSaved: "Đã lưu phong cách AI phân tích vào danh sách.",
       reanalyze: "Phân tích lại phong cách",
