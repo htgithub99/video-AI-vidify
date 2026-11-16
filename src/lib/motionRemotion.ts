@@ -58,6 +58,7 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
         renderBehavior: state.renderBehavior,
         profileId: (figures && typeof figures.profileId === "string" && Object.hasOwn(V.PROFILES, figures.profileId) ? figures.profileId : state.settings.profileId) as MotionRemotionSpec["profileId"],
         figureKit: (figures ?? state.settings).figureKit === true,
+        eraYear: state.eraYear,
         proportion: motionProportionOf(figures ?? state.settings),
         layout: motionLayoutOf({ profileId: figures?.profileId ?? state.settings.profileId, layout: (figures ?? state.settings).layout, figureKit: (figures ?? state.settings).figureKit }),
         assets: {},

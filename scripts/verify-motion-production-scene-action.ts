@@ -131,7 +131,17 @@ try {
   const record = JSON.parse(await fs.readFile(path.join(root, "productions", "scene-action.json"), "utf8"));
   assert.ok(Object.values(record.result.script.gen.remotion.scenes).flat().every((scene: any) => scene.html?.status === "ready"), "The deleted scene is drawn again");
   assert.ok(!record.sceneActions?.length, "No action is left waiting");
-  process.stdout.write("Production scene actions passed: idle runs answer not-live, actions after the scene builder start at once next to the voice, the deleted scene is drawn again, the video is compiled after them.\n");
+  // A scene redrawn on the page after the run stopped goes back into the production; an older or equal copy changes nothing.
+  const pageScenes = structuredClone(record.result.script.gen.remotion.scenes);
+  const redrawn = pageScenes.b1[0];
+  redrawn.html = { ...redrawn.html, html: "<html>new</html>", hash: "redrawn", attempts: 9 };
+  redrawn.htmlRequest = { id: "page", status: "received", attempt: 9 };
+  assert.equal(service.syncMotionProductionScenes("scene-action", pageScenes), 1, "The newer page scene is written back");
+  assert.equal(service.syncMotionProductionScenes("scene-action", pageScenes), 0, "Writing the same scene again changes nothing");
+  const synced = JSON.parse(await fs.readFile(path.join(root, "productions", "scene-action.json"), "utf8"));
+  assert.equal(synced.result.script.gen.remotion.scenes.b1[0].html.hash, "redrawn");
+  assert.equal(synced.result.compiled, undefined, "The old compiled video is dropped so the next export uses the new scene");
+  process.stdout.write("Production scene actions passed: idle runs answer not-live, actions after the scene builder start at once next to the voice, the deleted scene is drawn again, the video is compiled after them; page redraws after the run are written back.\n");
 } finally {
   if (previousStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;
   else process.env.VIDIFY_STORAGE_DIR = previousStorage;

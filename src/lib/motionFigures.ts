@@ -6,10 +6,11 @@ import { motionSceneBlueprint } from "./motionSceneBlueprint.js";
 // How a scene is shown or exported: its figures by the scene's own functions ("Dựng cảnh AI") or by the standard kit in
 // the chosen drawing style ("Bộ vẽ chuẩn"), and the layout's camera over the scene the AI drew once.
 export type MotionFigureScene = { shot?: string; kind?: string; sceneTemplate?: string };
-export type MotionFigureRender = { kit?: boolean; profile?: string; proportion?: string; layout?: string; scene?: MotionFigureScene };
+export type MotionFigureRender = { kit?: boolean; profile?: string; proportion?: string; layout?: string; year?: number; scene?: MotionFigureScene };
 // The renderer a compiled video or scene preview asks for, for one scene.
-export const motionFigureRenderOf = (spec: { figureKit?: boolean; profileId?: string; proportion?: string; layout?: string } | undefined, scene?: MotionFigureScene): MotionFigureRender => ({
+export const motionFigureRenderOf = (spec: { figureKit?: boolean; profileId?: string; proportion?: string; layout?: string; eraYear?: number } | undefined, scene?: MotionFigureScene): MotionFigureRender => ({
   kit: spec?.figureKit === true,
+  year: spec?.eraYear,
   profile: spec?.profileId,
   proportion: spec?.proportion,
   layout: motionLayoutOf({ profileId: spec?.profileId, layout: spec?.layout, figureKit: spec?.figureKit }),
@@ -18,13 +19,13 @@ export const motionFigureRenderOf = (spec: { figureKit?: boolean; profileId?: st
 // Names one way of showing the figures, so a picture captured another way is known to be out of date.
 export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `${render?.kit ? `kit:${render.profile || ""}:${render.proportion || ""}` : "ai"}|${motionLayoutOf({ profileId: render?.profile, layout: render?.layout, figureKit: render?.kit })}`;
 export const motionHtmlUsesFigures = (html: string): boolean => F.USES.test(html);
-// The view the page applies over the scene: the style layer ("Bộ vẽ chuẩn" only) and the camera's shot with the plan's
-// focal people as its subjects.
+// The view the page applies over the scene: the style layer ("Bộ vẽ chuẩn" only), the camera's shot with the plan's
+// focal people as its subjects, and the story's year (what the kit builds bridges of when a scene does not say).
 export const motionFigureView = (render?: MotionFigureRender) => {
   const style = render?.kit && render.profile ? F.STYLES[motionDrawStyle(render.profile).kitLook] || null : null;
   const shot = motionCameraShot(motionLayoutOf({ profileId: render?.profile, layout: render?.layout, figureKit: render?.kit }), render?.scene);
   const focus = shot === "wide" ? [] : (motionSceneBlueprint(render?.scene?.sceneTemplate, { shot: render?.scene?.shot, kind: render?.scene?.kind })?.items || []).filter((item) => item.focal && item.fn === "person").map((item) => item.id);
-  return { style, shot, focus };
+  return { style, shot, focus, ...(Number.isFinite(render?.year) ? { year: render!.year } : {}) };
 };
 // Adds the figure table (and, for "Bộ vẽ chuẩn", the kit) and the view to a scene written against the figure contract.
 // Scenes from before the contract are returned unchanged.

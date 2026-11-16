@@ -1,5 +1,6 @@
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionLanguage } from "../../../../../lib/motionLanguage.js";
+import { motionAnalysisEraYear } from "../../../../../lib/motionEra.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
@@ -131,6 +132,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     resolvedSettings: { layoutRevision: L.REVISION, effectRevision: L.EFFECT_REVISION, sceneRevision: L.SCENE_REVISION, behavior },
     profileId: settings.profileId,
     figureKit: settings.figureKit === true,
+    eraYear: motionAnalysisEraYear(analysis) ?? state.eraYear,
     proportion: motionProportionOf(settings),
     layout: motionLayoutOf(settings),
     assets: Object.fromEntries(Object.entries(state.assets).filter(([key]) => used.has(key))),

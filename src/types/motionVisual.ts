@@ -261,6 +261,8 @@ export interface MotionRemotionState {
   profileRevision?: number;
   invalidAssets?: Record<string, { asset: MotionVectorAsset; reason: string }>;
   renderBehavior?: MotionRenderBehavior;
+  // The year the story takes place (from the analysis), carried to scene previews.
+  eraYear?: number;
   layoutRevision?: number;
   locations?: Record<string, { environment: string; backgroundKey?: string }>;
   stagingRevision?: number;
@@ -304,6 +306,8 @@ export interface MotionRemotionSpec {
   fontFamily?: string;
   music?: MotionSpec["music"];
   renderBehavior?: MotionRenderBehavior;
+  // The year the story takes place (from the analysis), so the figure kit builds bridges and the like as they were then.
+  eraYear?: number;
   resolvedSettings?: { layoutRevision: number; effectRevision: number; sceneRevision?: number; behavior: MotionRenderBehavior };
 }
 export type MotionRenderSpec = MotionSpec | MotionRemotionSpec;

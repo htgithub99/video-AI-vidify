@@ -69,6 +69,21 @@ export const MOTION_HTML_QUALITY = {
     `PREVIOUS ANSWER REJECTED: the scene barely moves (only ${(changed * 100).toFixed(1)}% of the picture changes between progress 0.1 and 0.9 and the focal subject does not move). Animate the SCENE's MOTION line on the focal subject across progress 0 to 1 with the key moment at 0.5, add small living motion, and answer again with the complete HTML.`,
   MISSING_FEEDBACK: (items: string[]) =>
     `PREVIOUS ANSWER REJECTED: at progress 0.5 these REQUIRED elements were missing, outside the frame or too small: ${items.join("; ")}. Draw each one clearly (focal elements in the foreground or midground at the size the SCALE rule gives, never smaller than the stated minimum), mark it with window.motionMark, and answer again with the complete HTML.`,
+  // A person option that tries to place, hide or redraw a limb is not in OPTIONS: the kit ignores it, so the hands do not
+  // go where the scene meant and the scene usually draws an extra limb of its own beside the figure.
+  FAULT_PREFIX: "!fault:option:",
+  // Hiding a limb (suppressFrontArm, hideArm…) means the scene draws that limb itself: a new drawing. Placing one with an
+  // invented option (frontHandPos…) only leaves the hand at the pose's place: a warning.
+  LIMB_HIDE: /^(suppress|hide|no|without|omit|skip|remove)[A-Z_]/,
+  LIMB_OPTION_ISSUE: (keys: string[]) => `FIG.person ẩn tay/chân rồi tự vẽ lại: ${keys.join(", ")}`,
+  LIMB_PLACE_ISSUE: (keys: string[]) => `FIG.person đặt tay bằng tuỳ chọn không có (tay giữ ở tư thế mặc định): ${keys.join(", ")}`,
+  // A person option that sets the posture outside pose: the kit draws the pose it is given instead, a new drawing.
+  POSE_PREFIX: "!fault:pose:",
+  POSE_OPTION_ISSUE: (keys: string[]) => `FIG.person đặt tư thế bằng tuỳ chọn không có (nhân vật sẽ sai tư thế): ${keys.join(", ")}`,
+  POSE_OPTION_FEEDBACK: (keys: string[]) =>
+    `PREVIOUS ANSWER REJECTED: FIG.person was given posture options that are not in OPTIONS (${keys.join(", ")}). The kit ignores them and draws the pose option, so the figure stands where you meant it to sit, lie, kneel or crouch. Set the posture only with pose (sit, lie, kneel, crouch, fall...), switching pose at the moment it changes, and answer again with the complete HTML.`,
+  LIMB_OPTION_FEEDBACK: (keys: string[]) =>
+    `PREVIOUS ANSWER REJECTED: FIG.person was given options that are not in OPTIONS (${keys.join(", ")}). The kit ignores them, so the hands do not go where you meant, and an arm, hand or leg drawn by your own code beside a figure doubles its limb in another style. Place a hand only with reachAt or pointAt [x, y] and the pose (hold, carry, point, push, clap...), never hide a limb, never draw an arm, hand, leg or head outside the figure's own function, and answer again with the complete HTML.`,
   MISSING_ITEM: (id: string, why: "unmarked" | "outside" | "small", size?: number, min = 0.12) =>
     why === "unmarked" ? `${id} (not drawn or not marked)` : why === "outside" ? `${id} (mostly outside the frame)` : `${id} (${((size || 0) * 100).toFixed(0)}% of the frame, needs ${Math.round(min * 100)}%)`,
   MAX_TOP_CUT: 0.25,

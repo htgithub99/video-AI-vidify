@@ -19,6 +19,7 @@ import { motionDurationQa } from "../../../../lib/motionQa.js";
 import { MOTION_VOICE_LIBRARY } from "../../../../constants/motionVoice.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../../../constants/motionVideo.js";
 import { MotionJobStatus as S, MotionStoryJobKind as K, type MotionStoryJobState, type MotionStoryAnalysis, type MotionStoryScript, type MotionVoiceTrack, type MotionSeoPack, type MotionResultItem, type MotionProductionResult, type MotionProductionJobState } from "../../../../types/motionVideo.js";
+import type { MotionRemotionScene } from "../../../../types/motionVisual.js";
 import { logger } from "../../../../lib/logger.js";
 import { closeChatBrowserIfIdle } from "../../../../server/services/chatUiPlanningService.js";
 import { closeMotionStandaloneBrowser } from "./motionStoryService.js";
@@ -1011,12 +1012,44 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     store.save(id, record, owner);
     return { live: true, queued: !started, count: action.ids.length };
   };
+  // Scenes rebuilt on the page while no run is going (redraw, retry, the scenes still missing) are written back into the
+  // production, scene by scene, wherever the page's scene is a newer attempt: reloading the page or resuming the run
+  // then keeps them, and the next export draws them instead of the old ones.
+  const syncMotionProductionScenes = (id: string, scenes: Record<string, MotionRemotionScene[]> | undefined): number => {
+    if (!scenes || active.has(id)) return 0;
+    const current = read(id);
+    if (!current?.result.script?.gen?.remotion || (current.owner && motionProcessAlive(current.owner.pid))) return 0;
+    const owner = store.acquire(id);
+    try {
+      const record = read(id);
+      const remotion = record?.result.script?.gen?.remotion;
+      if (!record || !remotion) return 0;
+      const attemptOf = (scene: MotionRemotionScene | undefined) => Math.max(scene?.html?.attempts || 0, scene?.htmlRequest?.attempt || 0);
+      let count = 0;
+      for (const [group, list] of Object.entries(remotion.scenes || {}))
+        remotion.scenes[group] = (list || []).map((scene) => {
+          const page = scenes[group]?.find((item) => item.id === scene.id);
+          if (!page?.html?.html || !(attemptOf(page) > attemptOf(scene) || (attemptOf(page) === attemptOf(scene) && page.html.hash !== scene.html?.hash && !scene.html?.html))) return scene;
+          count++;
+          return page;
+        });
+      if (!count) return 0;
+      delete record.result.compiled;
+      delete record.result.rendered;
+      delete record.steps[P.STAGES.RENDER];
+      log(record, VISUAL.LOG_SCENES_SYNCED(count));
+      store.save(id, record, owner);
+      return count;
+    } finally {
+      store.release(id, owner);
+    }
+  };
   const getMotionProductionLogs = (id: string, after = 0) => {
     const record = active.get(id)?.record || read(id);
     if (!record) return undefined;
     logs.seed(id, record.job.log);
     return logs.read(id, after);
   };
-  return { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes, actMotionProductionScenes };
+  return { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes, actMotionProductionScenes, syncMotionProductionScenes };
 };
-export const { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes, actMotionProductionScenes } = createMotionProductionService();
+export const { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes, actMotionProductionScenes, syncMotionProductionScenes } = createMotionProductionService();

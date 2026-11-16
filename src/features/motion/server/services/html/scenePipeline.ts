@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import _ from "lodash";
+import { motionAnalysisEraYear } from "../../../../../lib/motionEra.js";
 import { motionPlanVarietyIssues } from "../../../../../lib/motionPlanVariety.js";
 import { MOTION_PLAN_VARIETY } from "../../../../../constants/motionPlanVariety.js";
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
@@ -13,7 +14,7 @@ import { AsyncResource } from "node:async_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML } from "../../../../../constants/motionHtmlTemplate.js";
 import { MOTION_HTML_QUALITY } from "../../../../../constants/motionHtmlQuality.js";
-import { motionHtmlCutLarge, motionHtmlErrorSignature, motionHtmlFocalMoved, motionHtmlMissing, motionHtmlRequired, motionHtmlRuntimeFeedback, motionHtmlScriptIssue } from "../../../../../lib/motionHtmlQuality.js";
+import { motionHtmlCutLarge, motionHtmlErrorSignature, motionHtmlFigureFaults, motionHtmlFocalMoved, motionHtmlMissing, motionHtmlRequired, motionHtmlRuntimeFeedback, motionHtmlScriptIssue } from "../../../../../lib/motionHtmlQuality.js";
 import { motionHtmlVisualDirection, motionHtmlPacingDirection, motionHtmlLanguageDirection } from "../../../../../lib/motionHtmlAuthoring.js";
 import { motionHtmlSource, motionHtmlPlanContext, motionHtmlPlanSource, motionHtmlPlanCurrent, motionHtmlPlanSourceMatches, motionSceneOnScreen, motionCompactScene } from "../../../../../lib/motionHtmlScene.js";
 import { motionPlanSettings, motionSceneCurrent, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
@@ -512,7 +513,16 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
           const issues: string[] = [],
             notes: string[] = [],
             minor: string[] = [];
-          const keyMarks = await runtime.marks();
+          // Fault marks (a person option the kit cannot honour) are taken out of every frame's marks and judged on their own.
+          const limbOptions = new Set<string>(),
+            poseOptions = new Set<string>();
+          const marksNow = async () => {
+            const read = motionHtmlFigureFaults(await runtime.marks());
+            read.limbOptions.forEach((key) => limbOptions.add(key));
+            read.poseOptions.forEach((key) => poseOptions.add(key));
+            return read.marks;
+          };
+          const keyMarks = await marksNow();
           const cut = motionHtmlCutLarge(keyMarks, MOTION_HTML_QUALITY.MAX_TOP_CUT);
           if (cut.length) minor.push(MOTION_HTML_QUALITY.CUT_ISSUE(cut));
           // A scene plays several actions in turn, so a subject may enter late or leave early: presence and relations are
@@ -520,9 +530,9 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
           const sampled = [keyMarks];
           if (settings.motion) {
             const start = await frameAt(MOTION_HTML_QUALITY.START_PROGRESS, false);
-            const startMarks = await runtime.marks();
+            const startMarks = await marksNow();
             const end = await frameAt(MOTION_HTML_QUALITY.END_PROGRESS, false);
-            const endMarks = await runtime.marks();
+            const endMarks = await marksNow();
             sampled.push(startMarks, endMarks);
             const change = await runtime.change(start, end, MOTION_HTML_QUALITY.CHANGE_SIZE, MOTION_HTML_QUALITY.CHANGE_THRESHOLD, MOTION_HTML.THUMBNAIL_STILL.canvas, MOTION_HTML.THUMBNAIL_STILL.context);
             if (!motionHtmlFocalMoved(required, startMarks, endMarks) && change.changed < MOTION_HTML_QUALITY.MIN_CHANGED) {
@@ -574,6 +584,17 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
           if (relations.apart.length) minor.push(MOTION_SCENE_BLUEPRINT.APART_ISSUE(relations.apart));
           if (relations.blocked.length) minor.push(MOTION_SCENE_BLUEPRINT.BLOCKED_ISSUE(relations.blocked));
           if (relations.stacked.length) minor.push(MOTION_SCENE_BLUEPRINT.STACKED_ISSUE(relations.stacked));
+          const hidden = [...limbOptions].filter((key) => MOTION_HTML_QUALITY.LIMB_HIDE.test(key));
+          const placed = [...limbOptions].filter((key) => !hidden.includes(key));
+          if (hidden.length) {
+            issues.push(MOTION_HTML_QUALITY.LIMB_OPTION_ISSUE(hidden));
+            notes.push(MOTION_HTML_QUALITY.LIMB_OPTION_FEEDBACK([...limbOptions]));
+          }
+          if (placed.length) minor.push(MOTION_HTML_QUALITY.LIMB_PLACE_ISSUE(placed));
+          if (poseOptions.size) {
+            issues.push(MOTION_HTML_QUALITY.POSE_OPTION_ISSUE([...poseOptions]));
+            notes.push(MOTION_HTML_QUALITY.POSE_OPTION_FEEDBACK([...poseOptions]));
+          }
           if (settings.castLooks) motionSceneCastLearn(settings.castLooks, keyMarks);
           if (!figures && !isMap) minor.push(MOTION_FIGURES.MISSING_WARNING);
           return { image: await runtime.still(keyFrame, MOTION_HTML.THUMBNAIL_STILL), issues, notes, minor };
@@ -785,6 +806,7 @@ export const createMotionHtmlSceneStreamer = (initialAnalysis: MotionStoryAnalys
   state.htmlSfx = opts.sfx !== false;
   state.settings = settings;
   state.renderBehavior = normalizeMotionRenderBehavior(opts.renderBehavior, undefined);
+  state.eraYear = motionAnalysisEraYear(analysis);
   state.groupingRevision = 1001;
   state.pacingRevision = 1;
   const slots = new MotionPriorityPool(MOTION_STORY_CONFIG.WORKER_IDS.length);
@@ -914,6 +936,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   const aspect = opts.aspect || RT_MAINTENANCE.VALUE_16_9;
   const [width, height] = aspect === RT_MAINTENANCE.VALUE_9_16 ? [720, 1280] : aspect === RT_MAINTENANCE.VALUE_1_1 ? [1000, 1000] : aspect === RT_MAINTENANCE.VALUE_4_5 ? [800, 1000] : [1280, 720];
   state.renderBehavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, script.gen?.characterMotion);
+  state.eraYear = motionAnalysisEraYear(analysis);
   const save = _.throttle(() => {
     if (opts.signal?.aborted) return;
     state.updatedAt = Date.now();

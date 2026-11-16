@@ -998,6 +998,10 @@ export function useMotionStudio() {
           )) as MotionStoryScript;
           if (!flowCancelled.current && !stateRef.current.automationPaused && !missingMotionChapters(result, analysis).length) requestVoice(result, analysis);
           patch({ script: result });
+          // Scenes rebuilt here while the production is stopped go back into it, or a reload or a resume would bring the old ones back.
+          const owner = stateRef.current;
+          if (owner.productionId && owner.activeStoryJobId !== owner.productionId && result.gen?.remotion?.scenes)
+            void motionRequest(API_ROUTES.MOTION_PRODUCTION_SYNC_SCENES, { productionId: owner.productionId, scenes: result.gen.remotion.scenes }).catch((error) => toast.error(MOTION_VISUAL.SYNC_SCENES_FAILED + _.toString((error as Error)?.message)));
           setCompiled(null);
           failed = new Set([
             ...(result.gen?.failed || []),

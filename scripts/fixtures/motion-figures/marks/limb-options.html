@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>*{margin:0}#motion-canvas{display:block;width:100vw;height:100vh}</style></head>
+<body>
+<canvas id="motion-canvas"></canvas>
+<script>
+(function () {
+  const FIG = window.MotionFigures.use({ person(ctx, o) { ctx.fillStyle = o.top || '#777'; ctx.fillRect(o.x - o.h / 8, o.y - o.h, o.h / 4, o.h); } });
+  window.motionScene = {
+    ready: Promise.resolve(),
+    async renderAt(input) {
+      const canvas = document.getElementById('motion-canvas');
+      canvas.width = input.width || 1280;
+      canvas.height = input.height || 720;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#cbd6dd';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Options the kit knows (reachAt, armor) next to invented ones that place or hide a hand.
+      FIG.person(ctx, { mark: 'tomas', x: 420, y: 650, h: 420, armor: 'mail', reachAt: [600, 400], frontHandPos: [40, -200], suppressFrontArm: true });
+      FIG.person(ctx, { mark: 'you', x: 820, y: 650, h: 420, arms: 'raise', backHandPos: [20, -180] });
+    },
+  };
+})();
+</script>
+</body>
+</html>
