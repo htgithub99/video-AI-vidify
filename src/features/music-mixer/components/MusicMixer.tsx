@@ -642,19 +642,22 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     setBusy(true);
     const abortController = new AbortController();
     abortRef.current = abortController;
-    projectIdRef.current = SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}`, `${crypto.randomUUID()}`);
+    // Only "Tuyển chọn" asks the AI (it ranks the tracks and writes the playlist SEO); "Ngẫu nhiên" and "Theo tên" mix
+    // locally and never open the AI.
+    const useAi = trackOrder === SOURCE_TEXT_FEATURED;
+    projectIdRef.current = useAi ? SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}`, `${crypto.randomUUID()}`) : null;
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStart, tracks.length, MUSIC_MIXER_SERVER.LOG_MIX_START(resultCount, songsPerResult));
     try {
       const source = trackOrder === SOURCE_TEXT_NAME ? _.clone(uniqueTracks).sort((a, b) => a.file.name.localeCompare(b.file.name)) : _.shuffle(uniqueTracks);
       const folders: ResultFolder[] = distributeMusicMixerTracks(source, songsPerResult, resultCount).map((folderTracks, index) => ({ name: SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_MIXER_SERVER.EMPTY_MIX_NAME_PREFIX}`, `${String(index + 1).padStart(2, SOURCE_TEXT_0)}`), tracks: folderTracks }));
-      folderProjectIdsRef.current = _.map(folders, (folder) => SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${projectIdRef.current}`), SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`)));
+      folderProjectIdsRef.current = !useAi ? [] : _.map(folders, (folder) => SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${projectIdRef.current}`), SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`)));
       const foldersWithSeo: ResultFolder[] = [];
       const maxConcurrentFolders = MUSIC_MIXER_SERVER.MAX_CONCURRENT_FOLDERS;
       for (let batchStart = 0; batchStart < folders.length; batchStart += maxConcurrentFolders) {
         const batch = _.slice(folders, batchStart, batchStart + maxConcurrentFolders);
         const batchResults = await Promise.all(
           _.map(batch, async (folder) => {
-            if (!_.every(folder.tracks, (track) => track.sourcePath)) return { ...folder, seo: createSeo(folder), seoOptions: [] };
+            if (!useAi || !_.every(folder.tracks, (track) => track.sourcePath)) return { ...folder, seo: createSeo(folder), seoOptions: [] };
             const folderProjectId = SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${projectIdRef.current}`), SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`));
             const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_RANK, {
               method: SOURCE_TEXT_POST,
