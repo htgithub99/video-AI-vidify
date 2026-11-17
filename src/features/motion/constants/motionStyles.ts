@@ -397,7 +397,7 @@ export const MOTION_REMOTION_STYLES = {
   REASON: "min-w-0 line-clamp-2 break-words text-[10px] leading-4",
   ATTEMPT: "mx-2 min-w-0 line-clamp-2 break-words text-[10px] leading-4 text-slate-400",
   CAPTION: "min-w-0 px-2 py-1 text-[11px] leading-4 text-slate-300 truncate",
-  MESSAGE: "min-w-0 px-2 pb-1 text-[10px] leading-4 text-sky-300 line-clamp-2 break-words",
+  MESSAGE: "mx-2 mb-1 min-w-0 max-h-8 text-[10px] leading-4 text-sky-300 line-clamp-2 break-words",
   SCORECARD: "text-[11px] leading-4 text-slate-400 truncate",
 } as const;
 export const MOTION_RULE_STYLES = {

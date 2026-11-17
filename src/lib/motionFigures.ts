@@ -19,7 +19,7 @@ export const motionFigureRenderOf = (spec: { figureKit?: boolean; profileId?: st
   scene: scene && { shot: scene.shot, kind: scene.kind, sceneTemplate: scene.sceneTemplate },
 });
 // Names one way of showing the figures, so a picture captured another way is known to be out of date.
-export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `${render?.kit ? `kit:${render.profile || ""}:${render.proportion || ""}` : "ai"}|${motionLayoutOf({ profileId: render?.profile, layout: render?.layout, figureKit: render?.kit })}|${motionMovementOf({ profileId: render?.profile, movement: render?.movement })}`;
+export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `${render?.kit ? `kit:${render.profile || ""}:${render.proportion || ""}` : "ai"}|${motionLayoutOf({ profileId: render?.profile, layout: render?.layout, figureKit: render?.kit })}|${motionMovementOf({ profileId: render?.profile, movement: render?.movement })}|r${F.RENDER_REVISION}`;
 export const motionHtmlUsesFigures = (html: string): boolean => F.USES.test(html);
 // The view the page applies over the scene: the style layer ("Bộ vẽ chuẩn" only), the camera's shot with the plan's
 // focal people as its subjects and its focal things (the key visual) kept in view, and the story's year (what the kit builds bridges of when a scene does not say).

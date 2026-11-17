@@ -4,10 +4,13 @@
 // start and then holds; the smooth styles keep their camera and walk.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { motionHtmlFigures, motionFigureView, motionFigureRenderKey } from "../src/lib/motionFigures.js";
+import { motionHtmlFigures, motionFigureView, motionFigureRenderKey, motionHtmlUsesFigures } from "../src/lib/motionFigures.js";
 import { motionHtmlFrame } from "../src/lib/motionHtmlScene.js";
 import { normalizeMotionVisualSettings } from "../src/lib/motionVisual.js";
 
+// A scene that reaches the figure table through a variable (with its own stand-in) still gets the table, the kit and
+// the chosen drawing style, so its people are drawn and marked by the kit.
+assert.ok(motionHtmlUsesFigures("const MF = window.MotionFigures || fallbackMF; const FIG = MF.use({});"), "the figure table is found when used through a variable");
 assert.equal(motionFigureView({ kit: true, profile: "cutout" }).movement, "cutout", "the cut-out style moves as a cut-out");
 assert.equal(motionFigureView({ kit: true, profile: "history" }).movement, "smooth", "other styles move smoothly");
 // "Chuyển động" is its own choice: any drawing style can move as a cut-out, and the cut-out style can move smoothly.
@@ -106,6 +109,28 @@ const talk = await page.evaluate(async () => {
   return { moved };
 });
 assert.ok(talk.moved > 0, "the person the narration has speaking moves the mouth");
+
+// A thought bubble or inset keeps the scene's own little picture: inside it the scene's own functions draw (never the
+// kit), and the box it gets carries the bubble's centre and radius.
+const DEVICE = `<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
+var FIG = window.MotionFigures.use({ prop: function (c, o) { window.__own = (window.__own || 0) + 1; c.fillStyle = '#123456'; c.fillRect(o.x - 10, o.y - 10, 20, 20); } });
+window.motionScene = { ready: Promise.resolve(), renderAt: async function () {
+  var c = document.getElementById('motion-canvas').getContext('2d'); window.__own = 0;
+  FIG.device(c, { kind: 'inset', x: 640, y: 300, r: 80 }, function (dc, box) { window.__box = box; FIG.prop(dc, { kind: 'whetstone', x: box.cx, y: box.cy, w: 50, h: 30 }); });
+  FIG.prop(c, { kind: 'crate', x: 200, y: 600, w: 60, h: 60 });
+} };
+</script></body></html>`;
+await page.setContent(motionHtmlFigures(DEVICE, { kit: true, profile: "cutout", layout: "wide" } as never));
+await page.evaluate("window.__name = function (f) { return f; }");
+const device = await page.evaluate(async () => { await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false }); const b = (window as any).__box; return { own: (window as any).__own, cx: b && b.cx, cy: b && b.cy, r: b && b.r }; });
+assert.equal(device.own, 1, "inside the bubble the scene's own function draws; outside it the kit does");
+assert.deepEqual([device.cx, device.cy, device.r], [640, 300, 80], "the bubble's box gives its centre and radius");
+// A scene with its own device function draws the whole bubble its own way (frame, tail and picture): nothing standard.
+await page.setContent(motionHtmlFigures(DEVICE.replace("prop: function", "device: function (c, o, draw) { window.__ownDevice = 1; draw(c, { x: o.x - 10, y: o.y - 10, w: 20, h: 20, cx: o.x, cy: o.y, r: 10 }); }, prop: function"), { kit: true, profile: "cutout", layout: "wide" } as never));
+await page.evaluate("window.__name = function (f) { return f; }");
+const own = await page.evaluate(async () => { const c = (document.getElementById("motion-canvas") as HTMLCanvasElement).getContext("2d")!; await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false }); return { own: (window as any).__ownDevice, edge: c.getImageData(640 + 70, 300, 1, 1).data[3] }; });
+assert.equal(own.own, 1, "the scene's own device function draws the bubble");
+assert.equal(own.edge, 0, "and no standard bubble is drawn around it");
 
 // The place and time title: a storybook caption at the top centre, shown at the scene's start and gone after a few seconds;
 // the dip covers the whole frame.
