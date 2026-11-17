@@ -1,5 +1,5 @@
-// Small scenery for the sketch and comic skins: rocks and boulders with facets and cracks, a cut stump with rings and roots,
-// a felled log with bark lines and an end grain, and grass clumps of ink blades. Other scenery kinds return null (core drawer).
+// Small scenery for every skin: rocks and boulders with facets and cracks, a cut stump with rings and roots,
+// a felled log with bark lines and an end grain, and grass clumps of ink blades. Other scenery kinds return null.
 export const SKIN_PART_SCENERY = `(c, o, K) => {
   const kind = o.kind;
   if (["rock", "boulder", "stump", "log", "grass"].indexOf(kind) < 0) return null;
@@ -10,7 +10,7 @@ export const SKIN_PART_SCENERY = `(c, o, K) => {
   c.save();
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
   c.scale(K.num(o.facing, 1) < 0 ? -1 : 1, 1);
-  if (kind !== "grass") { c.fillStyle = "rgba(20,16,12,0.2)"; c.fill(K.ell(0, 0.02 * R, (kind === "boulder" ? 1.3 : kind === "log" ? 1.2 : 0.8) * R, 0.1 * R)); }
+  if (kind !== "grass") { K.shadow(c, K.ell(0, 0.02 * R, (kind === "boulder" ? 1.3 : kind === "log" ? 1.2 : 0.8) * R, 0.1 * R), 0.2, 0.1 * R); }
   if (kind === "rock" || kind === "boulder") {
     const s = kind === "boulder" ? 1.6 : 1, pts = [];
     for (let i = 0; i <= 8; i++) { const a = Math.PI + (i / 8) * Math.PI, rr = (0.8 + rnd(i) * 0.25) * s; pts.push([Math.cos(a) * rr * 0.9, Math.sin(a) * rr * 0.62]); }

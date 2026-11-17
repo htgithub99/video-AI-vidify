@@ -1,4 +1,4 @@
-// Modern and civilian vehicles for the sketch and comic skins, side view: taxi, police car, bus, bicycle, motorbike,
+// Modern and civilian vehicles for every skin, side view: taxi, police car, bus, bicycle, motorbike,
 // steam train, jet, airliner, helicopter, airship, balloon, submarine, rocket, missile. Flat skin-ink drawing with
 // panel lines, rivets and simple shading; footprints follow the core kit (units of R, ground y = 0, front toward +x).
 export const SKIN_PART_VEHICLE2 = `(c, o0, K) => {
@@ -25,7 +25,7 @@ export const SKIN_PART_VEHICLE2 = `(c, o0, K) => {
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
   c.scale(f, 1);
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
-  if (!air && !sea) { c.fillStyle = "rgba(20,16,12,0.24)"; c.fill(K.ell(0, 0, (kind === "train" ? 3.1 : /bicycle|motorbike/.test(kind) ? 1.3 : 2.4) * R, 0.2 * R)); }
+  if (!air && !sea) { K.shadow(c, K.ell(0, 0, (kind === "train" ? 3.1 : /bicycle|motorbike/.test(kind) ? 1.3 : 2.4) * R, 0.2 * R), 0.24, 0.2 * R); }
   if (air) { c.translate(0, Math.sin(t * 1.3 + K.num(o.seed, 0)) * 0.08 * R); c.rotate(-K.num(o.tilt, 0) * Math.PI / 180); }
   if (sea) c.translate(0, Math.sin(t * 1.6) * 0.05 * R);
   switch (kind) {

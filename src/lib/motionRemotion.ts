@@ -12,7 +12,7 @@ import { MOTION_REMOTION_STAGING as S } from "../constants/motionRemotionStaging
 import { normalizeRemotionRelations } from "./motionRemotionStaging.js";
 import { separateRemotionSubjects } from "./motionRemotionVisibility.js";
 import { normalizeMotionRenderBehavior } from "./motionRenderBehavior.js";
-import { motionProportionOf } from "./motionDrawStyle.js";
+import { motionMovementOf, motionProportionOf } from "./motionDrawStyle.js";
 import { motionLayoutOf } from "./motionLayout.js";
 import { MOTION_ASPECT_BASE } from "../constants/motionVideo.js";
 import { MOTION_REMOTION_SPACE as SPACE } from "../constants/motionRemotionSpace.js";
@@ -36,7 +36,7 @@ const remotionAssetAnchors = (raw: unknown, required: string[] = []): MotionVect
   return anchors;
 };
 // figures: the "Cách dựng" choice to preview with (the current one in the editor); defaults to the one the scenes were built with.
-export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState, figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown; layout?: unknown }): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
+export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState, figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown; layout?: unknown; movement?: unknown }): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
   if (scene.renderer === RT_MAINTENANCE.HTML_CANVAS) {
     if (!scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status) || !state || state.settings.mode !== RT_MAINTENANCE.REMOTION) return { error: scene.htmlRequest?.error };
     if (scene.html.figures !== true) return { error: V.LEGACY_SCENE };
@@ -60,6 +60,7 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
         figureKit: (figures ?? state.settings).figureKit === true,
         eraYear: state.eraYear,
         proportion: motionProportionOf(figures ?? state.settings),
+        movement: motionMovementOf(figures ?? state.settings),
         layout: motionLayoutOf({ profileId: figures?.profileId ?? state.settings.profileId, layout: (figures ?? state.settings).layout, figureKit: (figures ?? state.settings).figureKit }),
         assets: {},
         scenes: [{ ...scene, nodes: [], startFrame: 0, endFrame: frames }],

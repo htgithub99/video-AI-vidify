@@ -1,4 +1,4 @@
-// Sketch-skin horse, traced from the standing saddled horse of reference video 1 (frame 498, facing left).
+// The horse (also mule and donkey) for every skin, traced from the standing saddled horse of reference video 1 (frame 498, facing left).
 // Reference units: hooves on y=552, withers y=212, nose x=198, buttock x=705. m() mirrors to kit space (head toward +x).
 // Line width matches the people next to it (LW of their head unit p = R/1.6); near legs share one union outline with the body.
 export const SKIN_PART_HORSE_REAL = `(c, o, K) => {
@@ -58,8 +58,7 @@ export const SKIN_PART_HORSE_REAL = `(c, o, K) => {
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
   c.scale(f * s, s);
-  c.fillStyle = "rgba(20,16,12,0.22)";
-  c.fill(K.ell(451 - 528, 0, 200, 12));
+  K.shadow(c, K.ell(451 - 528, 0, 200, 12), 0.22, 12);
   c.translate(0, -bob + lieDy);
   const far = [legPath(legs.ff, run ? 0.7 : K.PI, false), legPath(legs.fh, run ? K.PI + 0.9 : K.PI * 1.5, true)];
   far.forEach((L) => K.paint(c, L.path, D, w));
@@ -73,8 +72,7 @@ export const SKIN_PART_HORSE_REAL = `(c, o, K) => {
   const parts = [body, head].concat(near.map((L) => L.path));
   c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = ol; c.lineWidth = w * 2;
   parts.forEach((p) => c.stroke(p));
-  c.fillStyle = B;
-  parts.forEach((p) => c.fill(p));
+  parts.forEach((p) => K.fill(c, p, B, 0, { R: 150, hatch: false }));
   near.forEach((L) => hoof(L.hoof, L.ang, "#3a302c"));
   const det = (pts, k) => K.line(c, pts.map(m), w * (k || 0.7), ol);
   det([[398, 388], [391, 366], [396, 348]]);

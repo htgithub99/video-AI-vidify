@@ -22,6 +22,9 @@ export interface MotionHtmlArtifact {
   error?: string;
   warnings?: string[];
   fallback?: boolean;
+  // The things the scene calls that the standard kit cannot draw (the scene's own drawing shows them): what the object
+  // library still lacks, counted on the project's scorecard.
+  gaps?: import("../lib/motionObjectCatalog.js").MotionCatalogGap[];
 }
 export interface MotionHtmlPendingSubmission {
   prompt: string;
@@ -66,6 +69,10 @@ export interface MotionHtmlFrameInput {
   places?: string[];
   header?: boolean;
   cues?: number[];
+  /** Black over the whole frame, 0..1: the cut-out style dips to black into and out of a jump in time. */
+  dip?: number;
+  // Seconds into the scene for its place and time title (a still frame shows the title as the scene opens).
+  headerTime?: number;
   /** Chapter title drawn over this frame by the scene host (lower third); `t` is seconds since it appeared. */
   titleCard?: import("./motionVisual.js").MotionTitleCard & { t: number };
 }

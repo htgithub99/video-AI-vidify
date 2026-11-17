@@ -95,10 +95,12 @@ const { motionCameraShot, motionLayoutOf } = await import("../src/lib/motionLayo
   assert.equal(motionLayoutOf({ profileId: "sketch", figureKit: true }), "stage", "Tự động in Bộ vẽ chuẩn follows the style");
 }
 const { MOTION_HTML_QUALITY: QQ } = await import("../src/constants/motionHtmlQuality.js");
-const reviewPrompt = QQ.REVIEW_PROMPT("You shove the rider off the bridge.", "protagonist (focal): You; rider (focal): Mongol rider", "rider falls into the river", "the protagonist shoves a rider off the bridge");
+const reviewPrompt = QQ.REVIEW_PROMPT({ narration: "You shove the rider off the bridge.", message: "You push the rider into the river", keyVisual: "you, the rider falling, the bridge", required: "protagonist (focal): You; rider (focal): Mongol rider", motion: "rider falls into the river", event: "the protagonist shoves a rider off the bridge" });
 assert.match(reviewPrompt, /NARRATION: You shove/);
 assert.match(reviewPrompt, /MUST BE VISIBLE: protagonist/);
 assert.match(reviewPrompt, /JSON only/);
+assert.match(reviewPrompt, /MESSAGE: You push the rider/);
+assert.match(reviewPrompt, /"shows"/);
 assert.equal("0. x\n6. MOTION: rider falls -> gone".match(QQ.MOTION_LINE)?.[1], "rider falls -> gone");
 assert.equal("Exact approved event: a man runs.\n1. SUBJECTS".match(QQ.EVENT_LINE)?.[1], "a man runs.");
 console.log("motion html quality ok");

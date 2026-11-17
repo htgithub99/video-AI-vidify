@@ -6,7 +6,7 @@ import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../../constants/motionRemotionLayout.js";
 import { motionPlanSettings, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
-import { motionProportionOf } from "../../../../../lib/motionDrawStyle.js";
+import { motionMovementOf, motionProportionOf } from "../../../../../lib/motionDrawStyle.js";
 import { motionLayoutOf } from "../../../../../lib/motionLayout.js";
 import { layoutRemotionNodes, validateRemotionSpec, remotionStateMissingScenes } from "../../../../../lib/motionRemotion.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSceneComposition.js";
@@ -134,6 +134,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     figureKit: settings.figureKit === true,
     eraYear: motionAnalysisEraYear(analysis) ?? state.eraYear,
     proportion: motionProportionOf(settings),
+    movement: motionMovementOf(settings),
     layout: motionLayoutOf(settings),
     assets: Object.fromEntries(Object.entries(state.assets).filter(([key]) => used.has(key))),
     scenes: timedScenes.map(compactTimedScene),

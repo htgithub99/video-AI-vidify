@@ -1,4 +1,4 @@
-// Front and back views of every kit animal for the sketch and comic skins (animal coming toward or going away from the camera).
+// Front and back views of every kit animal for every skin (animal coming toward or going away from the camera).
 // Called from horse.ts and quad.ts through K.part("quadView") when view is front or back. Sizes follow the core ANIMALS table.
 // Front: rear legs behind, barrel body, chest, neck, face with eyes, nostrils, ears, horns. Back: rump, tail, legs, ears over the back.
 export const SKIN_PART_QUAD_VIEW = `(c, o, K) => {
@@ -41,8 +41,7 @@ export const SKIN_PART_QUAD_VIEW = `(c, o, K) => {
   c.save();
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
-  c.fillStyle = "rgba(20,16,12,0.22)";
-  c.fill(K.ell(0, 0, Bw * 0.75 * R, 0.14 * R));
+  K.shadow(c, K.ell(0, 0, Bw * 0.75 * R, 0.14 * R), 0.22, 0.14 * R);
   const bob = moving ? Math.abs(Math.sin(ph)) * (run ? 0.06 : 0.02) : 0;
   c.translate(0, -bob * R);
   const farX = Bw * 0.24, nearX = Bw * 0.3;

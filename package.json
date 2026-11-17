@@ -104,7 +104,9 @@
     "audit:unused": "tsx scripts/audit-unused-code.ts",
     "test:clipboard": "tsx scripts/verify-clipboard-feedback.ts",
     "check:refactor": "tsc --noEmit && npm run lint:source && npm run audit:source && npm run format:check && npm run format:python:check && npm run format:powershell:check && npm run test:code-maintenance && npm run test:feature-boundaries && npm run test:feature-workspaces && npm run test:clipboard",
-    "test:motion-profile-risks": "tsx scripts/verify-motion-profile-prompts.ts"
+    "test:motion-profile-risks": "tsx scripts/verify-motion-profile-prompts.ts",
+    "test:motion-object-catalog": "tsx scripts/verify-motion-object-catalog.ts",
+    "test:motion-devices": "tsx scripts/verify-motion-devices.ts"
   },
   "dependencies": {
     "@google/genai": "latest",

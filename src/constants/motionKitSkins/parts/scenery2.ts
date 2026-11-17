@@ -1,4 +1,4 @@
-// The remaining scenery for the sketch and comic skins: landforms, water, sky bodies, weather and plants.
+// The remaining scenery for every skin: landforms, water, sky bodies, weather and plants.
 // Same options and footprints as the core kit (x, y, r, width, height, count, seed). Sun and moon keep the core
 // clamp-into-frame logic (the hook runs after it).
 export const SKIN_PART_SCENERY2 = `(c, o, K) => {

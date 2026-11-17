@@ -1,4 +1,4 @@
-// The remaining effects for the sketch and comic skins: steam, incense, embers and sparks, muzzle flash, splash,
+// The remaining effects for every skin: steam, incense, embers and sparks, muzzle flash, splash,
 // ripples and waves, shockwave, crater, lightning, light rays, glow, wisp and magic, fireflies, falling leaves and
 // petals, sandstorm and heat haze. Same options as the core kit; tint kinds (night, dusk, fog…) stay with the core.
 export const SKIN_PART_EFFECT2 = `(c, o, K) => {

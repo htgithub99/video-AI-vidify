@@ -1,6 +1,7 @@
 import type { MotionKitSkin } from "./types.js";
+import { MOTION_KIT_THINGS_DRAW } from "./draw.js";
 export const HORROR_SKIN: MotionKitSkin = {
   id: "horror",
   params: { waterLook: { day: "#76858a", night: "#3a454a", ripple: "faint" }, ol: "#1c1a18", skin: "#cdc6be", skinShade: "#b4ada4", mitten: "#cdc6be", hip: 0.5, top: 1.36, hem: 0.05, head: 2.22, shX: 0.4, shY: 1.06, upper: 0.46, fore: 0.42, thigh: 0.2, shin: 0.2, foot: 0.12, arm: 0.19, leg: 0.27, hipX: 0.26, hand: 0.13, lw: 0.07, pants: 0, boots: "#ded9d0", top0: "#5c4a3a", folk: true },
-  draw: { "scenery:river": "water", "scenery:sea": "water", "scenery:lake": "water", "scenery:pond": "water", "scenery:swamp": "water", "scenery:stream": "water", "scenery:puddle": "water" },
+  draw: MOTION_KIT_THINGS_DRAW,
 };

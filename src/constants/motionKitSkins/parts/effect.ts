@@ -1,7 +1,7 @@
-// Effects for the sketch and comic skins, drawn like the reference videos: outlined puffy smoke clouds,
+// Effects for every skin, drawn like the reference videos: outlined puffy smoke clouds,
 // a dirt-and-smoke shell burst with flying clods (video 2 "beyond the next hedge"), flat flame tongues for fires,
 // dust clouds. Kinds: explosion, impact, smoke, darkSmoke, whiteSmoke, smokeColumn, dust, dustTrail, fire, bonfire, burning, debris.
-// Every other effect (tints, rays, glow, magic…) returns null and uses the core drawer with the skin style layer.
+// Every other effect (tints, rays, glow, magic…) returns null.
 export const SKIN_PART_EFFECT = `(c, o, K) => {
   const kind = o.kind;
   const LIST = ["explosion", "impact", "smoke", "darkSmoke", "whiteSmoke", "smokeColumn", "dust", "dustTrail", "fire", "bonfire", "burning", "debris"];

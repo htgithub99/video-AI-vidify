@@ -44,8 +44,8 @@ for (const entry of pages) {
   await page.goto("file://" + path.resolve(dir, entry.file));
   await page.evaluate(async () => { await window.motionScene.ready; });
   for (let frame = 0; frame <= Math.max(...SAMPLE); frame++) {
-    const { marks, path: view, edges } = await page.evaluate(async ({ frame, edgeRects, measure }) => {
-      const input = { time: frame / 30, progress: frame / 89, frame, fps: 30, duration: 3, width: 1280, height: 720, mode: "export", motionEnabled: true, cameraEnabled: true, sceneEffectsEnabled: true, seed: "s", speaking: [], cues: [0] };
+    const { marks, path: view, edges } = await page.evaluate(async ({ frame, edgeRects, measure, camera }) => {
+      const input = { time: frame / 30, progress: frame / 89, frame, fps: 30, duration: 3, width: 1280, height: 720, mode: "export", motionEnabled: true, cameraEnabled: camera, sceneEffectsEnabled: true, seed: "s", speaking: [], cues: [0] };
       let blank = null;
       if (edgeRects) {
         window.__benchBlank = true;
@@ -60,7 +60,7 @@ for (const entry of pages) {
       const paint = edgeRects && new Function("return " + measure)();
       const path = window.__motionViewHooks && window.__motionViewHooks.path;
       return { marks: window.__motionMarks.slice(), path: path ? { z: path.z, subjects: path.subjects } : path, edges: edgeRects && Object.fromEntries(Object.entries(edgeRects).map(([id, rect]) => [id, paint(rect, blank)])) };
-    }, { frame, edgeRects: entry.scene === "edges" ? EDGE_RECTS : null, measure: painted.toString() });
+    }, { frame, edgeRects: entry.scene === "edges" ? EDGE_RECTS : null, measure: painted.toString(), camera: entry.camera !== false });
     if (!SAMPLE.includes(frame)) continue;
     if (edges) checkEdges(`${entry.file}@${frame}`, edges);
     if (entry.layout) { (cameras[entry.file] ||= []).push({ frame, view, marks }); }
@@ -75,11 +75,12 @@ await browser.close();
 // real scene's "free" marks are drawn by the scene relative to a figure (a whetstone at the returned hand, hooves inside
 // the scene's own horse), so they follow the figure the renderer drew.
 const real = JSON.parse(fs.readFileSync(new URL("./fixtures/motion-figures/real/scenes.json", import.meta.url), "utf8"));
+const hopping = new Set(pages.filter((entry) => entry.hops).map((entry) => entry.mode));
 for (const [key, modes] of Object.entries(boxes)) {
   const free = real[key.split("@")[0]]?.free || [];
   const base = (modes.ai || []).filter((mark) => !free.includes(mark.id));
   for (const [mode, marks] of Object.entries(modes)) {
-    if (mode === "ai") continue;
+    if (mode === "ai" || hopping.has(mode)) continue;
     // A group marks every member with its id, so the n-th mark of an id is compared with the n-th one.
     const seen = {};
     for (const mark of base) {

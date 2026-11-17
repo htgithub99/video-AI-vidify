@@ -1868,7 +1868,9 @@ export const analyzeStory = async (
   checkpoint();
   opts.log?.(EDITORIAL_POLICY.PROFILE_LOG);
   const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
-  const videoDna = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
+  const withLanguage = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
+  // One period for the whole production: the analysis's era (its year drives what every scene and the figure kit build).
+  const videoDna = typeof raw.era === "string" && raw.era.trim() && withLanguage.era ? { ...withLanguage, era: { ...withLanguage.era, storyPeriod: raw.era.trim() } } : withLanguage;
   opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
   return complete(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target, opts.videoGenre, htmlAuthoring), raw), raw.renameMap));
 };

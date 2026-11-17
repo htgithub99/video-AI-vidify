@@ -1,4 +1,4 @@
-// The remaining 46 props for the sketch and comic skins: furniture, lamps, ritual and folk items, tools, weapons on the
+// The remaining 46 props for every skin: furniture, lamps, ritual and folk items, tools, weapons on the
 // ground. Flat skin-ink drawing with material marks; footprints follow the core kit (units of R, ground y = 0).
 export const SKIN_PART_PROP2 = `(c, o, K) => {
   const kind = o.kind;
@@ -23,7 +23,7 @@ export const SKIN_PART_PROP2 = `(c, o, K) => {
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
   c.scale(K.num(o.facing, 1) < 0 ? -1 : 1, 1);
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
-  if (stdShadow) { c.fillStyle = "rgba(20,16,12,0.2)"; c.fill(E(0, 0.02, 1.0, 0.09)); }
+  if (stdShadow) { K.shadow(c, E(0, 0.02, 1.0, 0.09), 0.2, 0.09 * R); }
   switch (kind) {
     case "chair": { beam([[-0.38, 0], [-0.38, -1.85]], 0.08); beam([[0.4, 0], [0.4, -0.85]], 0.08); fl(rr(-0.5, -0.92, 0.5, -0.78, 0.03), wood); [-1.2, -1.55].forEach((y) => beam([[-0.38, y], [-0.08, y]], 0.06)); beam([[-0.3, 0], [-0.3, -0.85]], 0.07, dark); break; }
     case "bed": { fl(rr(-1.65, -0.75, 1.6, -0.4, 0.04), wood); legs(-1.5, 1.45, -0.4, 0.09); beam([[-1.6, -0.4], [-1.6, -1.5]], 0.12); fl(rr(-1.55, -0.95, 1.55, -0.72, 0.1), cloth, { hatch: false }); fl(rr(-1.45, -1.12, -0.85, -0.92, 0.1), paper, { hatch: false }); fl(S([[-0.6, -0.95], [-0.4, -1.08], [1.4, -1.05], [1.55, -0.95], [1.5, -0.75], [-0.6, -0.75]]), o.color || red, { hatch: false }); break; }

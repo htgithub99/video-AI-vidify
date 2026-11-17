@@ -40,6 +40,17 @@ export const MOTION_HTML_WRITING = {
   LINE_ID: (index: number): string => `L${index + 1}`,
   LINE_ID_PATTERN: /^L(\d+)$/,
   PLAN_LINES: "Line IDs are the short ids L1, L2… given in lines; use them for fromLineId and toLineId.",
+  // A scene is an illustration of what is being said, read in about two seconds: one message, one key picture.
+  READABILITY: [
+    "READABLE PICTURES: every scene is a simple illustration a viewer understands in about two seconds while the line is spoken, never a full film shot.",
+    "message: one plain sentence a viewer must take from the picture (\"Tomas presses his whetstone into your palm\"); keyVisual: the one picture that says it: who (at most two people acting), doing what, to which object, plus one cue of place or time. A line that packs several actions, a quote, a number or a feeling keeps only what the picture can show: the main visible action in the scene, the rest as phases, a device or the next scene.",
+    "Shot follows the message: two or three people and a small object are a medium or close shot, a crowd or a march a wide shot, positions and routes a map, the state of one object a close shot of it. The object the message turns on is drawn larger than life (about one and a half to two times) and held where it is seen (chest height, in the open).",
+    "devices: what the picture cannot show by itself is shown by these, never by written words: thought (a picture bubble over a person showing what is said, heard or feared: burning village, riders), emote (a sign over a head: alarm, question, sweat, sleep, shiver, anger), inset (a round close-up of a small object in a corner), count (a small block of figures beside a big one for numbers and odds), arrow (who goes where), spotlight (light on the subject, the rest dimmed), time (sun or moon moving for time passing), sound (rings from a horn, drum, bell or shout), speed (streaks behind a fast rider, runner or vehicle), impact (a burst where a blow, shot or crash lands). Write each as 'device: subject — what it shows'; at most two per scene; [] when the picture says it alone.",
+    "Name things the scene draws with the plain word for that object (wagon, cottage, raft, spear, market stall) and give what it is built of when it matters (thatch, timber, stone).",
+  ].join("\n"),
+  PERIOD: (era: string): string => `PERIOD: ${era}. Every building, vehicle, tool, weapon and costume is as it was then and there.`,
+  PREVIOUS: (scenes: { setting?: string; shot?: string; kind?: string; message?: string }[]): string =>
+    `PREVIOUS SCENES (the last ones before these lines, newest last): ${JSON.stringify(scenes)}. Continue from them and change the shot size or the subject's side when the setting stays.`,
   MAP_KIND: "map",
   TEMPLATE_KEY: /^\d+$/,
   TEMPLATE_NUMBERED: /^\s*\d+\./,

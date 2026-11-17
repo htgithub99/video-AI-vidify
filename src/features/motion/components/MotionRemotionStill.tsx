@@ -14,7 +14,7 @@ const MotionHtmlLiveStill = ({ document, onReady, className }: { document: Motio
   const scene = document.scenes[0];
   const frame = useRef<HTMLIFrameElement>(null);
   const token = useMemo(() => `${RT_MAINTENANCE.MOTION}${Math.random().toString(36).slice(2)}`, [scene?.html?.hash]);
-  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token, motionFigureRenderOf(document, scene as MotionFigureScene)) : ""), [scene, token, document.figureKit, document.profileId, document.proportion, document.layout]);
+  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token, motionFigureRenderOf(document, scene as MotionFigureScene)) : ""), [scene, token, document.figureKit, document.profileId, document.proportion, document.layout, document.movement]);
   useEffect(() => {
     const listen = (event: MessageEvent) => {
       if (event.source === frame.current?.contentWindow && event.data?.token === token) onReady();

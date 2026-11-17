@@ -1,0 +1,39 @@
+// The last things of the full list: the Vietnamese dao, a needle, fields, ditches and ponds on the ground; a hull on the
+// slipway and a burnt-out tank as standing things; and the combine harvester.
+import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
+
+const props = [
+  { id: "dao", from: 100, to: 1900, names: ["vietSabre", "machete", "broadsabre"] },
+  { id: "sewingNeedle", names: ["needle", "needleAndThread"] },
+  { id: "moat", to: 1700, names: ["ditch", "castleMoat"], fit: "ground" as const },
+  { id: "wheatField", names: ["grainField", "barleyField"], fit: "ground" as const },
+  { id: "cornField", names: ["maizeField"], fit: "ground" as const },
+  { id: "irrigationCanal", names: ["canal", "irrigationDitch"], fit: "ground" as const },
+  { id: "fishPond", names: ["pond"], fit: "ground" as const },
+];
+
+const propBody = `
+    case "dao": beam([[-1.4, -0.3], [-0.85, -0.3]], 0.16, leather); for (let x = -1.35; x < -0.9; x += 0.12) ln([[x, -0.38], [x + 0.05, -0.22]], 0.4, rope); fl(E(-0.8, -0.3, 0.06, 0.2), gold); fl(S([[-0.75, -0.36], [0.6, -0.42], [1.2, -0.55], [1.45, -0.7], [1.3, -0.35], [0.6, -0.22], [-0.75, -0.24]]), steel); ln([[-0.7, -0.33], [1.0, -0.42]], 0.4, K.shade(steel, 0.8)); fl(rect(-1.55, -0.38, -1.4, -0.22), gold); break;
+    case "sewingNeedle": fl(S([[-0.9, -0.14], [0.9, -0.1], [1.05, -0.12], [0.9, -0.14]]), steel); fl(E(-0.7, -0.12, 0.12, 0.035), black, { hatch: false }); { const p = new Path2D(); p.moveTo(-0.7 * R, -0.12 * R); p.bezierCurveTo(-1.1 * R, -0.7 * R, -1.6 * R, 0.1 * R, -2.0 * R, -0.35 * R); c.lineWidth = w * 0.7; c.strokeStyle = red; c.stroke(p); } fl(S([[-2.4, -0.05], [-2.4, -0.55], [-1.95, -0.6], [-1.95, -0.05]]), red); fl(rect(-2.5, -0.62, -1.85, -0.55), wood); fl(rect(-2.5, -0.06, -1.85, 0), wood); break;
+    case "moat": { fl(S([[-3.2, -0.05], [-2.6, 0.35], [2.6, 0.35], [3.2, -0.05]]), T(night ? "#3e5a6a" : "#5e8aa0"), { hatch: false }); fl(rect(-3.4, -0.1, 3.4, 0), K.shade(stone, 0.9)); for (let x = -3.2; x < 3.2; x += 0.5) ln([[x, -0.1], [x, 0]], 0.3); for (let i = 0; i < 4; i++) { const x = -2 + i * 1.3 + Math.sin(t + i) * 0.2; ln([[x, 0.15], [x + 0.4, 0.15]], 0.5, white); } break; }
+    case "wheatField": case "cornField": { const wheat = kind === "wheatField"; fl(rect(-3.0, -0.12, 3.0, 0.05), T(night ? "#6a5a3a" : "#9a7a4a"), { hatch: false }); for (let i = 0; i < (wheat ? 30 : 14); i++) { const x = -2.9 + i * (wheat ? 0.2 : 0.43), sw = Math.sin(t * 1.5 + i * 0.5) * 0.06, h = wheat ? 0.9 + rnd(i) * 0.2 : 1.6 + rnd(i) * 0.3; if (wheat) { ln([[x, 0], [x + sw, -h]], 0.6, T("#c8a84a")); ln([[x + sw, -h], [x + sw * 1.2, -h - 0.3]], 2.2, straw); ln([[x + sw * 1.2, -h - 0.3], [x + sw * 1.2 + 0.04, -h - 0.45]], 0.4, straw); } else { beam([[x, 0], [x + sw, -h]], 0.05, green); [0.4, 0.8, 1.2].forEach((k, j) => ln([[x + sw * k, -h * k / 1.3], [x + sw * k + (j % 2 ? 0.3 : -0.3), -h * k / 1.3 + 0.12]], 1.6, green)); fl(E(x + sw + 0.07, -h * 0.65, 0.06, 0.16), T("#e8c43a")); ln([[x + sw, -h], [x + sw - 0.05, -h - 0.25]], 0.5, T("#c8a84a")); } } break; }
+    case "irrigationCanal": fl(S([[-3.2, -0.12], [-3.0, 0.08], [3.0, 0.08], [3.2, -0.12]]), T("#7a5a3a"), { hatch: false }); fl(rect(-3.0, -0.1, 3.0, 0.02), T(night ? "#4e6680" : "#7aa8c0"), { hatch: false }); for (let i = 0; i < 5; i++) { const x = ((i * 1.3 + t * 0.6) % 6) - 3; ln([[x, -0.05], [x + 0.35, -0.05]], 0.5, white); } [-3.2, 3.2].forEach((x) => fl(E(x, -0.18, 0.4, 0.12), green, { hatch: false })); break;
+    case "fishPond": fl(E(0, -0.05, 2.6, 0.45), T("#7a6a4a")); fl(E(0, -0.05, 2.35, 0.36), T(night ? "#3e5a6a" : "#5e8aa0"), { hatch: false }); for (let i = 0; i < 3; i++) { const x = -1.2 + i * 1.1 + Math.sin(t * 0.8 + i) * 0.3, y = -0.05 + (i % 2) * 0.12; fl(E(x, y, 0.22, 0.07), T("#e8823a"), { hatch: false }); fl(P([[x - 0.2, y], [x - 0.35, y - 0.07], [x - 0.35, y + 0.07]]), T("#e8823a"), { hatch: false }); } [[1.6, -0.15], [-1.8, 0.05]].forEach(([x, y]) => { fl(E(x, y, 0.32, 0.09), green, { hatch: false }); fl(E(x, y - 0.08, 0.1, 0.08), T("#e8a0b4")); }); for (let i = 0; i < 5; i++) ln([[2.4 + i * 0.08, -0.15], [2.45 + i * 0.1, -0.9 - rnd(i) * 0.3]], 0.5, olive); break;`;
+
+const builds = [
+  { id: "shipyardHull", from: -1500, names: ["shipyard", "slipway", "shipUnderConstruction"] },
+  { id: "wreckedTank", from: 1916, names: ["destroyedTank", "burntTank", "tankWreck"] },
+];
+
+const buildBody = `
+    case "shipyardHull": { beam([[-3.4, 0], [3.4, -0.8]], 0.12, dark); for (let x = -3.0; x <= 3.0; x += 1.0) beam([[x, -0.1 - (x + 3.4) * 0.12], [x, -0.1 - (x + 3.4) * 0.12 + 0.3]], 0.12, dark); c.save(); c.rotate(-0.12); fl(S([[-2.8, -0.6], [-2.6, -1.7], [2.4, -1.7], [3.0, -2.1], [2.7, -0.9], [1.6, -0.45], [-2.2, -0.4]]), wood); clip(S([[-2.8, -0.6], [-2.6, -1.7], [2.4, -1.7], [3.0, -2.1], [2.7, -0.9], [1.6, -0.45], [-2.2, -0.4]]), () => { for (let x = -2.8; x < 3.0; x += 0.45) { ln([[x, -2.2], [x + 0.1, -0.3]], 0.6, dark); } fl(rect(0.3, -2.2, 3.1, -0.3), T("#e8dcc4"), { hatch: false }); }); for (let x = 0.4; x < 2.9; x += 0.4) beam([[x, -0.5], [x - 0.05, -1.75]], 0.07, wood); c.restore(); [[-3.0, 2.6], [3.2, 3.4]].forEach(([x, h]) => beam([[x, 0], [x, -h]], 0.1, dark)); beam([[-3.0, -2.6], [-1.0, -2.6]], 0.08, dark); ln([[-1.2, -2.6], [-1.2, -1.9]], 0.5, rope); break; }
+    case "wreckedTank": { const body = T("#4a4a40"); c.save(); c.rotate(0.07); fl(S([[-2.4, -0.25], [-2.6, -0.85], [-2.2, -1.2], [2.1, -1.2], [2.6, -0.8], [2.4, -0.25]]), body); for (let x = -2.1; x < 2.2; x += 0.55) ring(x, -0.55, 0.22, K.shade(body, 0.8)); fl(S([[-1.2, -1.2], [-1.0, -1.85], [0.6, -1.9], [0.9, -1.2]]), body); fl(S([[0.6, -1.65], [1.6, -1.5], [2.2, -1.05], [2.3, -0.95], [1.6, -1.35], [0.6, -1.5]]), body); fl(E(-0.3, -1.5, 0.25, 0.18), black); c.restore(); clip(S([[-2.6, -0.2], [-2.6, -2.0], [1.0, -2.0], [1.0, -0.2]]), () => { c.fillStyle = "rgba(24,18,14,0.4)"; for (let i = 0; i < 7; i++) c.fill(E(-2.0 + rnd(i) * 2.8, -0.6 - rnd(i + 9) * 1.2, 0.35, 0.16)); }); fl(S([[2.5, 0], [2.7, -0.35], [3.3, -0.25], [3.4, 0]]), T("#2a2a26")); for (let i = 0; i < 5; i++) fl(rect(2.6 + i * 0.16, -0.22, 2.7 + i * 0.16, -0.08), K.shade(body, 0.7), { hatch: false }); if (o.smoking) smoke(-0.3, -1.7, 1.2); break; }`;
+
+const machines = [{ id: "combineHarvester", from: 1930, names: ["combine", "harvester"] }];
+
+const machineBody = `
+    case "combineHarvester": { const col = T(o.color || "#3a8a3a"); fl(S([[-2.4, -0.7], [-2.5, -2.6], [-1.8, -2.9], [0.8, -2.9], [1.0, -1.0], [1.4, -0.7]]), col); fl(rect(0.0, -3.7, 1.0, -2.9), col); fl(rect(0.1, -3.6, 0.9, -3.0), glass); fl(rect(-0.1, -3.85, 1.1, -3.7), K.shade(col, 0.8)); beam([[-2.2, -2.8], [-3.2, -3.4], [-3.4, -2.6]], 0.2, col); fl(S([[1.4, -0.4], [1.3, -1.3], [3.2, -1.3], [3.3, -0.4]]), T("#d8a83a")); for (let i = 0; i < 6; i++) { const a = spin + i * Math.PI / 3; ln([[2.3, -0.85], [2.3 + Math.cos(a) * 0.4, -0.85 + Math.sin(a) * 0.4]], 0.7); } fl(rect(1.3, -0.45, 3.35, -0.3), iron); beam([[1.0, -1.1], [1.4, -0.9]], 0.15, iron); wheel(-0.6, 0.85, 8, T("#d8a83a")); wheel(-2.0, 0.5, 6, T("#d8a83a")); if (o.smoking) smoke(-1.5, -3.2, 0.8); break; }`;
+
+export const MOTION_LIBRARY_FINISH_PROPS: MotionLibraryPart = { part: "lib_finishProps", fn: "prop", items: props, js: motionLibraryPart(props, propBody, 0) };
+export const MOTION_LIBRARY_FINISH_BUILDINGS: MotionLibraryPart = { part: "lib_finishBuildings", fn: "building", items: builds, js: motionLibraryPart(builds, buildBody, 0) };
+export const MOTION_LIBRARY_FINISH_MACHINES: MotionLibraryPart = { part: "lib_finishMachines", fn: "vehicle", items: machines, js: motionLibraryPart(machines, machineBody, 2.6) };

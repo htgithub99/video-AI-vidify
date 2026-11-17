@@ -1,3 +1,4 @@
+import { motionCatalogKinds } from "../src/lib/motionObjectCatalog.js";
 import path from "node:path";
 import os from "node:os";
 process.env.VIDIFY_STORAGE_DIR = path.join(os.tmpdir(), "motion-speed-fixes-" + process.pid);
@@ -98,11 +99,13 @@ assert.deepEqual(routed.slice(0, 2).map((row) => row.provider), ["gemini-chat", 
 assert.notEqual(routed[2].provider, "gemini-chat", "a scene leaves an AI that failed twice in a row");
 assert.ok(routeLogs.some((line) => line.includes(routed[2].provider)));
 const scenePrompt = routed[0].prompt;
-assert.ok(scenePrompt.startsWith(motionHtmlRuleLines(MOTION_HTML.OUTPUT)));
-assert.ok(scenePrompt.includes(MOTION_FIGURES.DOC), "every scene is written against the figure table");
+assert.ok(scenePrompt.startsWith(MOTION_HTML.SCENE_LABEL), "what the picture shows comes first");
+assert.ok(scenePrompt.includes(motionHtmlRuleLines(MOTION_HTML.OUTPUT)));
+assert.ok(scenePrompt.includes("FIGURE TABLE (mandatory)"), "every scene is written against the figure table");
+assert.ok(!scenePrompt.includes(MOTION_FIGURES.DOC(motionCatalogKinds())), "the figure table lists the kinds this scene needs, not every kind");
 assert.equal(scenePrompt.split(MOTION_HTML.GRAPHICS).length, 2, "style rules appear once");
 assert.doesNotMatch(scenePrompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE|kopje|cowhide|chainmail|screaming|Unconscious/i);
-assert.ok(scenePrompt.length < 26000, "scene prompt stays bounded (figure table included): " + scenePrompt.length);
+assert.ok(scenePrompt.length < 29000, "scene prompt stays bounded (the figure table lists the period's core kinds and the ones the scene names): " + scenePrompt.length);
 const horrorCtrl = new AbortController();
 let horrorPrompt = "";
 await assert.rejects(
@@ -167,7 +170,7 @@ await assert.rejects(
     log: () => undefined,
   }),
 );
-assert.ok(castPrompt.includes(cardsA) && castPrompt.indexOf(cardsA) < castPrompt.indexOf("SCENE (source data)"), "cast cards precede the scene");
+assert.ok(castPrompt.includes(cardsA) && castPrompt.indexOf(cardsA) > castPrompt.indexOf("SCENE (source data)") && castPrompt.indexOf(cardsA) < castPrompt.indexOf(MOTION_HTML.GRAPHICS), "cast cards follow the scene, before the drawing rules");
 assert.match(castPrompt, /faces its direction[\s\S]*seated rider is drawn with the horse \(as the rider option of its FIG\.animal call\)/, "motion direction and the rider rule are in a riding scene");
 assert.doesNotMatch(scenePrompt, /COUPLED MECHANICS/, "a scene without riders, vehicles or props gets no coupled mechanics");
 const { motionHtmlMechanics } = await import("../src/lib/motionHtmlMechanics.js");
@@ -180,10 +183,12 @@ const { motionHtmlFigureDoc } = await import("../src/lib/motionHtmlFigure.js");
 assert.ok(scenePrompt.includes(motionHtmlFigureDoc({ profileId: "history" })) && horrorPrompt.includes(motionHtmlFigureDoc({ profileId: "horror" })), "scene prompts carry the measured figure design");
 assert.match(motionHtmlFigureDoc({}), /groundY/, "figures stand on the drawn ground");
 assert.match(scenePrompt, /hand-drawn[\s\S]*one Path2D/, "outline belongs to its shape");
-assert.match(scenePrompt, /only advances when the SCENE says/, "a gathering group does not charge");
+assert.match(scenePrompt, /advances only when the SCENE says so/, "a gathering group does not charge");
 assert.match(scenePrompt, /never drawn while a clip is active/, "a ground clip cannot hide the figures");
-assert.match(motionHtmlFigureDoc({}), /legs visible from the hem at -0.9r/, "legs show below the torso");
-assert.match(scenePrompt, /no flat base line, never a row of equal bumps/, "clouds have a rounded underside");
+assert.match(motionHtmlFigureDoc({ proportion: "chibi" }), /legs from the hem at 0.9r/, "legs show below the torso");
+assert.match(motionHtmlFigureDoc({}), /six and a half heads/, "the round-head style is drawn near real proportions by default");
+assert.doesNotMatch(motionHtmlFigureDoc({ profileId: "history", proportion: "balanced" }), /Big-head proportions/, "one set of body numbers per proportion");
+assert.match(scenePrompt, /lobes of different sizes, no flat base/, "clouds have a rounded underside");
 assert.match(scenePrompt, /never write names next to people/, "labels stay off the subjects");
 assert.match(scenePrompt, /camX follows groupX at most 1:1[\s\S]*distance travelled/, "the camera never outruns marchers and steps follow distance");
 assert.doesNotMatch(motionHtmlFigureDoc({}), /torsoY=-28|headR\+4/, "no fixed pixel offsets");

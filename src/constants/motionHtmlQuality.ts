@@ -1,5 +1,9 @@
 export const MOTION_HTML_QUALITY = {
   KEY_PROGRESS: 0.5,
+  // Seconds of the cut-out style's dip to black at a jump in time.
+  DIP_SECONDS: 0.45,
+  // When a still frame's place and time title is caught: fully shown.
+  TITLE_STILL_SECONDS: 1.2,
   START_PROGRESS: 0.1,
   END_PROGRESS: 0.9,
   TAIL_FROM: 0.93,
@@ -41,10 +45,21 @@ export const MOTION_HTML_QUALITY = {
     "Consecutive scenes never repeat the same shot size with the same subject placement: change the shot size, the camera angle or the side the focal subject stands on. A loose prop (rope, tool, basket, stone) stays at most about half a standing person's height unless the narration makes it the subject. A map labels every place the narration names and draws an arrow for each movement; every arrow starts at a named place and ends at a named place, and the site of a battle or siege carries a battle mark, so a viewer who only sees the map knows who goes from where to where and where the fight is. In a scene with a river, lake or sea, say for every subject whether it is on the near bank, the far bank, a bridge, a boat or in the water.",
   ].join("\n"),
   // Scene rules for every scene (written against the figure table; the kit is never on the page while it is written).
+  // The last lines of the drawing prompt: the AI checks its own page before answering.
+  CHECKLIST: [
+    "CHECK BEFORE ANSWERING (fix the code until every line holds):",
+    "1. The MESSAGE reads at a glance: the acting subjects are whole, in the open, not covered by anything nearer, and the key object is visible in a hand or in the open.",
+    "2. Every FIG call uses only the OPTIONS of its function (kinds from the lists, the scene's period, build and states by name); people in or on a thing are their own FIG.person calls.",
+    "3. Each of your FIG functions draws inside the box o gives (x, y on the ground, h tall, w wide) and returns it.",
+    "4. Every REQUIRED id is marked on the call that draws it.",
+    "5. Only the DEVICES listed are drawn, with no words in them.",
+    "6. Every variable is declared before use, no division can be by zero, no value can be NaN, every save() has its restore() and every clip() closes right after its detail.",
+    "7. At progress 0, 0.5 and 1 the main subjects are inside the frame with a margin and nothing jumps between frames.",
+  ].join("\n"),
   OUTPUT: [
-    "BODY DETAILS AND FIGURE ITEMS: apply every body detail the SCENE states with the person option for it (barefoot: true, wounded: true, and the pose, expression and hold options); weapons, shields, scrolls, buckets and everyday objects a person carries are hold options or FIG.prop kinds; add no object the SCENE does not name. A wagon fort or a wall of chained wagons is FIG.wall kind 'wagonFort', never a stone wall. A bridge always crosses water and both its ends rest on land: draw the river first, then FIG.bridge where the crossing is: over a river that runs across the frame it goes from the near bank (from) to the far bank (to), and people and riders crossing stand ON its deck between the two banks while people waiting stand on the near bank at its end; over a narrow stream or moat it is the side view centred on the water with a span longer than the water is wide. Never a bridge on dry ground, beside the water or cut by the frame edge.",
+    "BODY DETAILS AND FIGURE ITEMS: apply every body detail the SCENE states with the person option for it (barefoot: true, wounded: true, and the pose, expression and hold options); weapons, shields, scrolls, buckets and everyday objects a person carries are hold options or FIG.prop kinds; add no object the SCENE does not name. A bridge crosses water with both ends on land: from the near bank (from) to the far bank (to) over a river across the frame (people crossing stand on its deck), the side view over a narrow stream; never on dry ground or cut by the frame edge.",
     "REQUIRED MARKS: for each id in the SCENE's REQUIRED line pass mark: 'id' to the FIG call that draws it (one figure of a group carries the group's id); only for a shape you draw yourself call window.motionMark && window.motionMark(ctx, 'id', x, y, w, h) with its bounding box inside the same transforms; never mark what you did not draw.",
-    "MOTION (you write the complete motion, first frame to last; nothing changes it afterwards, in either renderer). KEEP IT SIMPLE AND STABLE: each acting subject has at most three phases and 3-6 keyframes, every pose held at least about 1.5 s. 1. One keyframe list per acting person, animal, group or vehicle, covering progress 0 to 1 in the spoken order of the SCENE's MOTION line: const ph = MotionFigures.phase(input.progress, 3, input.cues); const heroKeys = [{at: 0, x: 300, y: 610, pose: 'stand', facing: 1}, {at: ph.at[1], x: 520, y: 610, pose: 'walk'}, {at: ph.at[2], x: 520, y: 610, pose: 'point'}, {at: 1, x: 520, y: 610, pose: 'stand'}] (ph.at[i] = when phase i's narration line starts). 2. Every frame: const hero = MotionFigures.track(heroKeys, input.progress) gives the numbers on one smooth curve (speed carries through a keyframe where the move continues and through the first and last frame, so nothing pauses after the cut or stops mid-walk), the started keyframe's other values, hero.moving and hero.distance; draw FIG.person(ctx, {...look, x: hero.x, y: hero.y, h, w, pose: hero.moving ? 'walk' : hero.pose, distance: hero.distance, facing: hero.facing}). Walk, run or ride only while the keyframes really move the subject, always with distance; a pose changes where the subject has stopped, through a related pose (stand -> crouch -> kneel). Every position, size and camera value comes from a track or one clamped smoothstep (only for a move that starts and stops inside the scene): nothing jumps, restarts or slides. 3. The camera has its own slow continuous track; what already moves when the scene opens, camera included, is under way from frame 0. 4. Living motion (breathing, cloth, flags, flame, smoke, water, a slow look around) is a smooth sin/cos of input.time to the last frame; the main action is still completing in the final tenth and no scene ends on a still picture. 5. No % wrap, no move played twice, no fading of people, animals or vehicles (who leaves walks out of the frame). cameraEnabled=false keeps the opening framing while subjects still move.",
+    "MOTION (you write all of it, first frame to last, the same in both renderers). KEEP IT SIMPLE: each acting subject has at most three phases and 3-6 keyframes, each pose held about 1.5 s or more. 1. One keyframe list per acting person, animal, group or vehicle in the spoken order of the SCENE's MOTION line: const ph = MotionFigures.phase(input.progress, 3, input.cues); const heroKeys = [{at: 0, x: 300, y: 610, pose: 'stand', facing: 1}, {at: ph.at[1], x: 520, y: 610, pose: 'walk'}, {at: ph.at[2], x: 520, y: 610, pose: 'point'}, {at: 1, x: 520, y: 610, pose: 'stand'}] (ph.at[i] = when phase i's line starts). 2. Every frame: const hero = MotionFigures.track(heroKeys, input.progress) (one smooth curve; hero.moving, hero.distance); FIG.person(ctx, {...look, x: hero.x, y: hero.y, h, w, pose: hero.moving ? 'walk' : hero.pose, distance: hero.distance, facing: hero.facing}). Walk, run or ride only while the keyframes move the subject, with distance; poses change where the subject has stopped, through a related pose (stand -> crouch -> kneel). Every position, size and camera value comes from a track or one clamped smoothstep: nothing jumps, restarts or slides. 3. The camera has its own slow continuous track, under way from frame 0. 4. Living motion (breathing, cloth, flags, flame, smoke, water) is a smooth sin/cos of input.time; background people only bob and turn their heads; the main action is still completing in the final tenth. 5. No % wrap, no move played twice, no fading of people, animals or vehicles. cameraEnabled=false keeps the opening framing while subjects still move.",
     "Smoke, fire and loose foreground objects never cover a face or the acting subject; add no object the SCENE does not name. Loose ground props (rope, tools, baskets, sacks) stay under half a standing person's height unless the SCENE makes them the subject. Declare every variable before use and end every statement with a semicolon.",
   ].join("\n"),
   BLANK: {
@@ -58,7 +73,7 @@ export const MOTION_HTML_QUALITY = {
     "MAP SCENE (this scene is a map, not a staged scene: the figure, ground-line, scale and cast rules above do not apply, and no person, animal, vehicle or building is drawn at scene size).",
     "1. Surface: the map surface is your own drawing over the full 1280x720 in the chosen drawing style (parchment or flat land and sea, coastlines, rivers, hills and forests as inked shapes), with no border line; pans and push-ins stay inside it. Never leave the surface as an empty sheet.",
     "2. Places: every place the SCENE names gets a marker (FIG.icon kind pin, house, flag or crown, or a dot or ring) and its name with FIG.label, at most 6 names, spread so no two overlap.",
-    "3. Movement: each march, retreat, voyage or attack is one FIG.arrow whose grow follows the progress of its phase (MotionFigures.phase), so the route draws itself while the narrator tells it; each force is a FIG.icon (flag, shield, person) with a short FIG.label, travelling along its arrow. Every arrow starts at a labelled place and its head lands on a labelled destination marker, never in empty space: when the SCENE names no destination, end the arrow at the place the REQUIRED line gives as the destination, or label the arrow's end with where it leads. The site of a battle, ambush or siege is marked with FIG.icon kind 'swords' and its name; an opposing force has its own icon, colour and label, placed where it waits or comes from.",
+    "3. Movement: each march, retreat, voyage or attack is one FIG.arrow whose grow follows the progress of its phase (MotionFigures.phase), so the route draws itself while the narrator tells it; each force is a FIG.icon (infantry, cavalry, armor, fleet, or a flag) with a short FIG.label, travelling along its arrow. Every arrow starts at a labelled place and its head lands on a labelled destination marker, never in empty space: when the SCENE names no destination, end the arrow at the place the REQUIRED line gives as the destination, or label the arrow's end with where it leads. The site of a battle, ambush or siege is marked with FIG.icon kind 'swords' and its name; an opposing force has its own icon, colour and label, placed where it waits or comes from.",
     "4. Focus and life: the place being spoken about pulses (a ring driven by input.time), the camera pans or pushes gently toward it, and small motion (pulsing markers, drifting waves or clouds) continues until the last frame.",
   ].join("\n"),
   VARIETY: (shot: string, setting: string) =>
@@ -92,17 +107,22 @@ export const MOTION_HTML_QUALITY = {
   REVIEW_FILE: "review-",
   MOTION_LINE: /^[ \t]*(?:\d+\.\s*)?MOTION\s*:\s*(.+)$/im,
   EVENT_LINE: /Exact approved event:\s*([^\n]+)/i,
-  REVIEW_PROMPT: (narration: string, required: string, motion: string, event: string) =>
+  // The picture check asks what the frame says before it is told: a viewer who sees it for two seconds must get the
+  // scene's message.
+  REVIEW_PROMPT: (c: { narration: string; message: string; keyVisual: string; required: string; motion: string; event: string }) =>
     [
-      "You check one frame (the middle of the scene) of an illustrated story video against what the narrator says at that moment. Judge only content, never drawing style, colours or small details.",
-      `NARRATION: ${narration}`,
-      event ? `EVENT TO SHOW: ${event}` : "",
-      required ? `MUST BE VISIBLE: ${required}` : "",
-      motion ? `ACTION: ${motion}` : "",
-      "Answer with JSON only: {\"ok\": true} when the frame clearly shows this moment, or {\"ok\": false, \"problems\": [\"...\"]} with at most 5 short, concrete problems when something is clearly wrong: a required person, animal or object missing or unrecognisable, the action not happening, people or things in impossible places (fire or people standing on open water, things floating in the sky, a bridge that does not cross the water, a building cut in half), the wrong side of a river, or a scene that contradicts the narration (night for day, a crowd for one man, the wrong era).",
+      "You check one frame (the middle of the scene) of an illustrated story video. A viewer sees it for two seconds while the narrator speaks; the picture must make the scene's message clear. Judge only content, never drawing style, colours or small details.",
+      "First write in \"shows\" one short sentence of what the frame shows, as a viewer would say it. Then compare it with what the scene must say:",
+      c.message ? `MESSAGE: ${c.message}` : "",
+      c.keyVisual ? `KEY VISUAL: ${c.keyVisual}` : "",
+      `NARRATION: ${c.narration}`,
+      c.event ? `EVENT TO SHOW: ${c.event}` : "",
+      c.required ? `MUST BE VISIBLE: ${c.required}` : "",
+      c.motion ? `ACTION: ${c.motion}` : "",
+      "Answer with JSON only: {\"shows\": \"...\", \"ok\": true} when a viewer gets the message, or {\"shows\": \"...\", \"ok\": false, \"problems\": [\"...\"]} with at most 5 short, concrete problems: the key subject, action or object missing, too small or unrecognisable, the eye drawn to something else, people or things in impossible places (fire or people standing on open water, things floating in the sky, a bridge that does not cross the water, a building cut in half), the wrong side of a river, or a frame that contradicts the narration (night for day, a crowd for one man, the wrong era).",
     ].filter(Boolean).join("\n"),
   REVIEW_FEEDBACK: (problems: string[]) =>
-    `PREVIOUS ANSWER REJECTED BY THE PICTURE CHECK: ${problems.join("; ")}. Redraw the scene so the middle frame shows the narrated moment correctly and answer again with the complete HTML.`,
+    `PREVIOUS ANSWER REJECTED BY THE PICTURE CHECK: ${problems.join("; ")}. Redraw the scene so the middle frame makes the MESSAGE clear at a glance and answer again with the complete HTML.`,
   REVIEW_LOG: (id: string, problems: string[]) => `Cảnh HTML ${id}: AI duyệt ảnh thấy chưa đúng nội dung (${problems.join("; ")}) – tạo lại 1 lần kèm yêu cầu sửa.`,
   REVIEW_SKIP_LOG: (id: string, reason: string) => `Cảnh HTML ${id}: bỏ qua bước AI duyệt ảnh (${reason}).`,
   FLAT_ISSUE: "Câu trả lời của AI bị mất xuống dòng nên code dính thành một dòng và lỗi cú pháp",

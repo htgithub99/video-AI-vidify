@@ -13,7 +13,7 @@ const out = path.resolve(process.argv[2] || "storage/tmp/figures-bench");
 fs.mkdirSync(out, { recursive: true });
 const looks = new Map<string, string>();
 for (const [id, style] of Object.entries(MOTION_DRAW_STYLES)) if (!looks.has(style.kitLook)) looks.set(style.kitLook, id);
-const pages: { file: string; scene: string; mode: string; layout?: string }[] = [];
+const pages: { file: string; scene: string; mode: string; layout?: string; camera?: boolean; hops?: boolean }[] = [];
 // The fixture scenes, plus the code-built fallback scenes, which are written on the same figure table.
 const camp = motionSceneBlueprint("2. SETTING: dusty camp at dusk.\n5. REQUIRED: refugee (focal): a man; you (focal): b; riders (support): horsemen; wagon (support): covered wagon; tent (support): army tent\n6. MOTION: refugee runs in -> grabs your sleeve\n7. INTERACT: refugee -> you", { shot: "wide" })!;
 const map = motionSceneBlueprint("5. REQUIRED: army (focal): tokens; pest (support): marker", { shot: "overhead", kind: "map" })!;
@@ -30,7 +30,10 @@ for (const [scene, html] of scenes) {
   for (const [look, profile] of looks) {
     const file = `${scene}__${look}.html`;
     fs.writeFileSync(path.join(out, file), motionHtmlFigures(html, { kit: true, profile, proportion: motionProportionOf({ profileId: profile }), layout: "wide" }));
-    pages.push({ file, scene, mode: look });
+    // The fit of each look is compared over the scene as drawn. The cut-out look brings its own camera and draws walkers a
+    // step ahead of their even track as they hop (both checked by verify-motion-cutout): its pages are rendered with the
+    // camera off and checked for errors, blank frames and edges, not for boxes equal to the scene's own drawing.
+    pages.push({ file, scene, mode: look, ...(MOTION_DRAW_STYLES[profile as keyof typeof MOTION_DRAW_STYLES].movement === "cutout" ? { camera: false, hops: true } : {}) });
   }
   // The layouts' cameras over the real scenes, as drawn by the scene and by one kit look.
   if (real[scene])

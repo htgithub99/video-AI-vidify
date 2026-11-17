@@ -32,4 +32,4 @@ export const motionEraYear = (period?: string): number | undefined => {
   }
   return WORDS.find(([words]) => words.test(text))?.[1];
 };
-export const motionAnalysisEraYear = (analysis?: Pick<MotionStoryAnalysis, "era" | "videoDna"> | null): number | undefined => motionEraYear(analysis?.videoDna?.era?.storyPeriod) ?? motionEraYear(analysis?.era);
+export const motionAnalysisEraYear = (analysis?: Pick<MotionStoryAnalysis, "era" | "videoDna"> | null): number | undefined => motionEraYear(analysis?.era) ?? motionEraYear(analysis?.videoDna?.era?.storyPeriod);

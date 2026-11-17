@@ -5,12 +5,12 @@ import { motionRenderBehaviorFor } from "./motionRenderBehavior.js";
 import { MOTION_SCENE_PACING } from "../constants/motionScenePacing.js";
 import { motionVideoGenre } from "../constants/motionGenre.js";
 import { MOTION_ILLUSTRATION_PROFILES } from "../constants/motionIllustrationProfiles.js";
-import { motionIsProportion } from "./motionDrawStyle.js";
+import { motionIsMovement, motionIsProportion } from "./motionDrawStyle.js";
 import { motionIsLayout } from "./motionLayout.js";
 import { MOTION_DRAW_STYLE_ALIAS } from "../constants/motionDrawStyles/index.js";
 import type { MotionRemotionProfile, MotionRenderSpec, MotionRemotionSpec, MotionScenePacing, MotionVisualSettings } from "../types/motionVisual.js";
 export const normalizeMotionVisualSettings = (raw?: unknown): MotionVisualSettings => {
-  const base = (profileId: MotionRemotionProfile, figureKit: boolean, pacing: { pacing?: MotionScenePacing }, proportion?: unknown, layout?: unknown): MotionVisualSettings => ({ version: 1, mode: RT_SHARED.REMOTION, engine: RT_SHARED.REMOTION, profileId, componentRevision: V.COMPONENT_REVISION, ...(figureKit ? { figureKit: true } : {}), ...pacing, ...(motionIsProportion(proportion) ? { proportion } : {}), ...(motionIsLayout(layout) ? { layout } : {}) });
+  const base = (profileId: MotionRemotionProfile, figureKit: boolean, pacing: { pacing?: MotionScenePacing }, proportion?: unknown, layout?: unknown, movement?: unknown): MotionVisualSettings => ({ version: 1, mode: RT_SHARED.REMOTION, engine: RT_SHARED.REMOTION, profileId, componentRevision: V.COMPONENT_REVISION, ...(figureKit ? { figureKit: true } : {}), ...pacing, ...(motionIsProportion(proportion) ? { proportion } : {}), ...(motionIsLayout(layout) ? { layout } : {}), ...(motionIsMovement(movement) ? { movement } : {}) });
   if (raw == null) return base(RT_SHARED.HISTORY, false, {});
   if (typeof raw !== "object" || Array.isArray(raw)) throw new Error(V.INVALID);
   const value = { ...(raw as Record<string, unknown>) };
@@ -20,7 +20,7 @@ export const normalizeMotionVisualSettings = (raw?: unknown): MotionVisualSettin
   if (value.version !== 1) throw new Error(V.INVALID);
   if (value.mode === V.LEGACY_LIBRARY) return base(V.LEGACY_LIBRARY_PROFILE, true, pacing);
   if (value.mode === RT_SHARED.REMOTION && (value.engine == null || value.engine === RT_SHARED.REMOTION) && typeof value.profileId === "string" && Object.hasOwn(V.PROFILES, value.profileId) && (value.componentRevision == null || value.componentRevision === V.COMPONENT_REVISION))
-    return base(value.profileId as MotionRemotionProfile, value.figureKit === true, pacing, value.proportion, value.layout);
+    return base(value.profileId as MotionRemotionProfile, value.figureKit === true, pacing, value.proportion, value.layout, value.movement);
   throw new Error(V.INVALID);
 };
 export const motionVisualSettingsFor = (input: Record<string, any>): MotionVisualSettings => {
@@ -32,7 +32,7 @@ export const motionVisualSettingsFor = (input: Record<string, any>): MotionVisua
 };
 // What the scene plan and the drawings depend on. "Cách dựng", the drawing style, the proportion and the layout are applied
 // when the scenes are shown, so one set of scenes serves every choice of them.
-export const motionPlanSettings = (settings: MotionVisualSettings): Partial<MotionVisualSettings> => ({ ...settings, profileId: undefined, layout: undefined, figureKit: undefined, proportion: undefined });
+export const motionPlanSettings = (settings: MotionVisualSettings): Partial<MotionVisualSettings> => ({ ...settings, profileId: undefined, layout: undefined, figureKit: undefined, proportion: undefined, movement: undefined });
 // A scene drawn on the figure table serves both "Cách dựng" choices; a scene from before it has to be drawn again.
 export const motionSceneCurrent = (artifact: { figures?: boolean } | undefined): boolean => artifact?.figures === true;
 export const isRemotionSpec = (spec: MotionRenderSpec | null | undefined): spec is MotionRemotionSpec => !!spec && RT_CORE.ENGINE in spec && spec.engine === RT_SHARED.REMOTION;

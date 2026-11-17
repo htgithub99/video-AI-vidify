@@ -1,0 +1,49 @@
+// Boats and road and rail vehicles not in the base kit (side view, front toward +x).
+import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
+
+const items = [
+  { id: "basketBoat", names: ["coracle", "thungChai", "roundBoat"], fit: "rigid" as const },
+  { id: "dragonBoat", from: -300 },
+  { id: "bambooRaft", names: ["bePhao"] },
+  { id: "pickupTruck", from: 1925, names: ["pickup", "ute"] },
+  { id: "ambulance", from: 1905 },
+  { id: "fireTruck", from: 1905, names: ["fireEngine"] },
+  { id: "semiTruck", from: 1930, names: ["lorryTrailer", "tractorTrailer", "containerTruck"] },
+  { id: "subwayTrain", from: 1900, names: ["metro", "underground", "commuterTrain"] },
+  { id: "speedboat", from: 1910, names: ["motorboat"] },
+  { id: "containerShip", from: 1956, names: ["cargoShip", "freighter"] },
+  { id: "bulldozer", from: 1925, names: ["dozer"] },
+  { id: "constructionCrane", from: 1880, names: ["towerCrane"] },
+  { id: "excavator", from: 1930, names: ["digger"] },
+  { id: "steamTrain", from: 1830, to: 1960, names: ["steamLocomotive", "puffingBilly"] },
+  { id: "bullockWagon", to: 1900, names: ["oxWagon"] },
+  { id: "dogSled", names: ["sledDogs"] },
+  { id: "camelCaravan", names: ["caravan"] },
+  { id: "elephantHowdah", names: ["warElephant", "howdah"] },
+];
+
+const helpers = `const water = (hw) => { for (let i = 0; i < 4; i++) { const x = -hw + 0.3 + i * (2 * hw - 0.6) / 3 + Math.sin(t + i) * 0.1; ln([[x, 0.15], [x + 0.35, 0.12], [x + 0.6, 0.15]], 0.45, T("#5a7a8a")); } };
+  const cab = (x0, x1, top, col) => { fl(S([[x0, -0.5], [x0, top], [x1 - 0.4, top], [x1, top + 0.6], [x1 + 0.1, -0.5]]), col); fl(P([[x0 + 0.15, top + 0.12], [x1 - 0.45, top + 0.12], [x1 - 0.1, top + 0.6], [x0 + 0.15, top + 0.6]]), glass, { hatch: false }); };
+  const animal = (kind2, x, s, extra) => { const part = K.part && K.part(kind2 === "horse" ? "horse" : "quad"); if (part) part(c, Object.assign({ kind: kind2, x: x * R, y: 0, r: R * s, facing: 1, pose: moving ? "walk" : "stand", t, seed: K.num(o.seed, 3) }, extra || {}), K); };`;
+
+const body = `
+    case "basketBoat": water(1.2); fl(S([[-1.0, -0.6], [-0.9, 0.0], [0.9, 0.0], [1.0, -0.6]]), T("#4a3a28")); clip(S([[-1.0, -0.6], [-0.9, 0.0], [0.9, 0.0], [1.0, -0.6]]), () => { for (let x = -1.0; x < 1.0; x += 0.16) ln([[x, -0.6], [x + 0.08, 0]], 0.35, straw); }); fl(E(0, -0.6, 1.0, 0.12), straw); break;
+    case "dragonBoat": water(3.0); fl(S([[-2.9, -0.5], [-2.5, 0.1], [2.4, 0.1], [2.8, -0.5]]), red); for (let i = 0; i < 12; i++) fl(E(-2.3 + i * 0.42, -0.3, 0.12, 0.08), gold, { hatch: false }); fl(S([[2.7, -0.5], [3.0, -1.3], [3.4, -1.25], [3.2, -0.95], [2.95, -0.45]]), red); ring(3.1, -1.15, 0.05, black); fl(S([[-2.8, -0.5], [-3.2, -1.1], [-2.9, -0.4]]), gold); for (let i = 0; i < 6; i++) beam([[-1.8 + i * 0.7, -0.4], [-2.1 + i * 0.7, 0.3]], 0.04); break;
+    case "bambooRaft": water(2.4); for (let i = 0; i < 6; i++) { fl(rect(-2.2, -0.42 + i * 0.07, 2.2, -0.34 + i * 0.07), T("#b8a45a"), { hatch: false }); } [-1.5, 0, 1.5].forEach((x) => ln([[x, -0.45], [x, 0.0]], 0.8, rope)); beam([[1.2, -0.4], [2.4, -2.0]], 0.05, T("#8a7a3a")); break;
+    case "pickupTruck": fl(S([[-2.2, -0.5], [-2.2, -1.0], [-0.1, -1.0], [-0.1, -0.5]]), red); cab(-0.1, 1.2, -1.6, red); fl(S([[1.2, -1.0], [2.2, -0.95], [2.25, -0.5], [1.2, -0.5]]), red); wheel(-1.4, 0.45); wheel(1.4, 0.45); break;
+    case "ambulance": fl(S([[-2.2, -0.45], [-2.2, -2.1], [0.6, -2.1], [0.6, -0.45]]), white); cab(0.6, 1.8, -1.7, white); fl(S([[1.8, -1.1], [2.3, -1.0], [2.3, -0.45], [1.8, -0.45]]), white); fl(rect(-1.1, -1.65, -0.9, -1.05), red, { hatch: false }); fl(rect(-1.3, -1.45, -0.7, -1.25), red, { hatch: false }); ln([[-2.2, -0.9], [2.3, -0.9]], 1.2, red); fl(rect(0.8, -2.25, 1.1, -2.1), blue, { hatch: false }); wheel(-1.4, 0.45); wheel(1.5, 0.45); break;
+    case "fireTruck": fl(S([[-2.6, -0.45], [-2.6, -1.4], [0.8, -1.4], [0.8, -0.45]]), red); cab(0.8, 2.0, -1.8, red); fl(S([[2.0, -1.1], [2.5, -1.0], [2.5, -0.45], [2.0, -0.45]]), red); beam([[-2.5, -1.6], [0.6, -1.9]], 0.1, steel); for (let i = 0; i < 7; i++) ln([[-2.3 + i * 0.42, -1.55], [-2.3 + i * 0.42, -1.85]], 0.5, steel); ring(-1.4, -0.95, 0.3, white); wheel(-1.7, 0.45); wheel(1.6, 0.45); break;
+    case "semiTruck": fl(rect(-3.2, -2.2, 0.8, -0.6), white); ln([[-3.2, -1.0], [0.8, -1.0]], 0.5); cab(1.0, 2.4, -2.2, blue); fl(S([[2.4, -1.2], [2.9, -1.1], [2.9, -0.5], [2.4, -0.5]]), blue); beam([[1.2, -2.2], [1.2, -2.6]], 0.06, steel); [-2.6, -2.0, 1.4, 2.4].forEach((x) => wheel(x, 0.42)); break;
+    case "subwayTrain": fl(S([[-3.2, -0.4], [-3.2, -2.2], [2.8, -2.2], [3.2, -1.6], [3.2, -0.4]]), steel); for (let i = 0; i < 6; i++) fl(rect(-2.9 + i * 0.95, -1.9, -2.3 + i * 0.95, -1.2), glass, { hatch: false }); ln([[-3.2, -1.0], [3.2, -1.0]], 1.2, red); [-2.4, -1.8, 1.8, 2.4].forEach((x) => wheel(x, 0.25, 0, T("#3a3a3e"))); break;
+    case "speedboat": water(2.4); fl(S([[-2.2, -0.75], [-2.0, 0.05], [1.4, 0.05], [2.4, -0.7]]), white); ln([[-2.1, -0.4], [2.2, -0.55]], 1.4, red); fl(P([[-0.4, -0.75], [0.2, -1.3], [0.6, -1.3], [0.5, -0.75]]), glass); fl(rect(-2.4, -0.9, -2.1, -0.3), black); break;
+    case "containerShip": water(3.4); fl(S([[-3.3, -1.1], [-3.0, 0.1], [2.9, 0.1], [3.4, -1.2]]), T("#3a4a6a")); fl(rect(-3.3, -1.3, 3.4, -1.1), red); { const cols2 = [red, blue, green, T("#e8a83a"), white]; for (let r = 0; r < 3; r++) for (let i = 0; i < 7; i++) fl(rect(-2.6 + i * 0.62, -1.75 - r * 0.42, -2.02 + i * 0.62, -1.35 - r * 0.42), cols2[(i + r * 2) % 5]); } fl(rect(-3.2, -3.2, -2.7, -1.3), white); for (let i = 0; i < 3; i++) fl(rect(-3.1, -3.0 + i * 0.5, -2.8, -2.8 + i * 0.5), glass, { hatch: false }); break;
+    case "bulldozer": fl(rect(-1.8, -0.75, 1.0, -0.05), black); for (let i = 0; i < 5; i++) ring(-1.5 + i * 0.6, -0.4, 0.22, T("#4a4a4e")); fl(rect(-1.6, -1.6, 0.8, -0.75), T("#e8b83a")); fl(rect(-1.4, -2.6, -0.2, -1.6), T("#e8b83a")); fl(rect(-1.25, -2.45, -0.35, -1.75), glass, { hatch: false }); fl(S([[1.2, -1.4], [1.7, -1.5], [1.9, -0.6], [1.6, 0.0], [1.2, 0.0]]), T("#c89a2a")); beam([[0.8, -1.0], [1.3, -0.8]], 0.12, T("#4a4a4e")); break;
+    case "constructionCrane": fl(rect(-0.8, -0.4, 0.8, 0), concrete()); for (let y = -0.4; y > -6.0; y -= 0.5) { ln([[-0.25, y], [0.25, y - 0.5]], 0.5, T("#e8b83a")); ln([[-0.25, y], [-0.25, y - 0.5]], 0.7, T("#e8b83a")); ln([[0.25, y], [0.25, y - 0.5]], 0.7, T("#e8b83a")); } ln([[-1.5, -6.0], [3.5, -6.0]], 1.6, T("#e8b83a")); ln([[-1.5, -6.3], [3.5, -6.3]], 1.2, T("#e8b83a")); fl(rect(-1.6, -6.3, -0.9, -5.6), concrete()); ln([[2.8, -6.0], [2.8, -3.5]], 0.6); fl(rect(2.6, -3.5, 3.0, -3.2), iron); break;
+    case "excavator": fl(rect(-1.8, -0.7, 0.6, -0.05), black); for (let i = 0; i < 4; i++) ring(-1.5 + i * 0.65, -0.37, 0.22, T("#4a4a4e")); fl(rect(-1.6, -1.6, 0.4, -0.7), T("#e8b83a")); fl(rect(-0.4, -2.5, 0.4, -1.6), T("#e8b83a")); fl(rect(-0.3, -2.4, 0.3, -1.75), glass, { hatch: false }); beam([[0.3, -1.4], [1.6, -2.8]], 0.2, T("#e8b83a")); beam([[1.6, -2.8], [2.3, -1.2]], 0.16, T("#e8b83a")); fl(S([[2.0, -1.2], [2.6, -1.3], [2.5, -0.6], [2.1, -0.7]]), iron); break;
+    case "steamTrain": fl(rect(-2.6, -1.9, -1.2, -0.6), black); fl(rect(-2.5, -1.75, -1.75, -1.25), glass, { hatch: false }); fl(rect(-1.2, -1.5, 1.6, -0.6), black); fl(E(1.6, -1.05, 0.15, 0.45), T("#3a3a3e")); fl(rect(0.9, -2.3, 1.25, -1.5), black); fl(E(1.07, -2.3, 0.26, 0.08), black); fl(rect(-0.2, -1.8, 0.2, -1.5), gold); ln([[-2.6, -0.6], [1.8, -0.6]], 0.8, red); [-1.8, -0.6].forEach((x) => wheel(x, 0.45, 8, red)); wheel(0.6, 0.45, 8, red); wheel(1.4, 0.3, 6, red); fl(P([[1.7, -0.6], [2.1, -0.1], [1.7, -0.1]]), iron); if (o.smoking) smoke(1.1, -3.0, 0.6); break;
+    case "bullockWagon": animal("ox", 2.7, 0.8); fl(rect(-2.0, -1.5, 0.9, -1.15), wood); fl(S([[-2.0, -1.5], [-1.7, -2.3], [0.6, -2.3], [0.9, -1.5]]), cloth); beam([[0.9, -1.3], [2.6, -1.9]], 0.08); woodWheel(-1.5, 0.75); woodWheel(0.4, 0.75); break;
+    case "dogSled": fl(rect(-2.2, -0.7, -0.6, -0.45), wood); beam([[-2.4, -0.05], [-0.4, -0.05], [-0.2, -0.3]], 0.05, dark); beam([[-2.2, -0.45], [-2.3, -1.2]], 0.05, dark); ln([[-0.6, -0.5], [2.6, -0.5]], 0.6, rope); [0.4, 1.6].forEach((x) => animal("wolf", x, 0.38, { color: "#a8a8b0" })); break;
+    case "camelCaravan": [-2.4, 0, 2.4].forEach((x, i) => animal("camel", x, 0.55)); ln([[-1.6, -1.7], [-0.6, -1.8]], 0.5, rope); ln([[0.8, -1.7], [1.8, -1.8]], 0.5, rope); [-2.6, -0.2].forEach((x) => fl(E(x, -2.1, 0.45, 0.3), cloth)); break;
+    case "elephantHowdah": animal("elephant", 0, 0.75); fl(S([[-0.9, -2.7], [-0.9, -3.3], [0.7, -3.3], [0.7, -2.7]]), red); fl(S([[-1.0, -3.3], [-0.1, -3.9], [0.8, -3.3]]), gold); fl(rect(-1.0, -2.75, 0.8, -2.55), gold); break;`;
+
+export const MOTION_LIBRARY_TRANSPORT: MotionLibraryPart = { part: "lib_transport", fn: "vehicle", items, js: motionLibraryPart(items, body, 1.8, helpers + `\n  const concrete = () => T(night ? "#7a7a7a" : "#a8a8a4");`) };

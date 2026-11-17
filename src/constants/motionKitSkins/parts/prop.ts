@@ -1,6 +1,6 @@
-// Props for the sketch and comic skins, redrawn flat with skin ink and material marks (wood grain, burlap seams,
+// Props for every skin, redrawn flat with skin ink and material marks (wood grain, burlap seams,
 // iron bands, stone joints, straw strokes) for the kinds history scenes use most. Footprints follow the core kit
-// (units of R, ground y = 0). Unlisted kinds return null (core drawer + skin style layer).
+// (units of R, ground y = 0). Unlisted kinds return null (the kit draws nothing for a name it does not know).
 export const SKIN_PART_PROP = `(c, o, K) => {
   const kind = o.kind;
   const LIST = ["fence", "sandbags", "barbedWire", "barrel", "crate", "sack", "cart", "campfire", "bonfirePit", "haystack", "woodpile", "well", "table", "bench", "weaponRack", "spearStand", "banner", "torch", "ladder", "bridge", "gravestone", "cross", "cannonballs", "chest", "mapTable", "stake", "basket", "jar", "tombMound"];
@@ -22,10 +22,10 @@ export const SKIN_PART_PROP = `(c, o, K) => {
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
   c.scale(K.num(o.facing, 1) < 0 ? -1 : 1, 1);
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
-  if (["barbedWire", "banner", "torch", "stake"].indexOf(kind) < 0) { c.fillStyle = "rgba(20,16,12,0.2)"; c.fill(K.ell(0, 0.02 * R, 1.2 * R, 0.1 * R)); }
+  if (["barbedWire", "banner", "torch", "stake"].indexOf(kind) < 0) { K.shadow(c, K.ell(0, 0.02 * R, 1.2 * R, 0.1 * R), 0.2, 0.1 * R); }
   switch (kind) {
-    case "fence": { [0.6, 1.0].forEach((y) => beam([[-0.15, -y], [2.95, -y + 0.03]], 0.12, K.shade(wood, 0.9))); for (let i = 0; i < 5; i++) { const x = i * 0.7; fl(P([[x - 0.1, 0], [x - 0.1, -1.1], [x, -1.25], [x + 0.1, -1.1], [x + 0.1, 0]]), wood, { hatch: false }); } break; }
-    case "sandbags": { for (let r = 0; r < 4; r++) for (let i = 0; i < 4 - r; i++) bag(-0.9 + i * 0.6 + r * 0.3, -r * 0.3, 0.6); break; }
+    case "fence": { const n = Math.max(2, Math.round(K.num(o.count, 5))); [0.6, 1.0].forEach((y) => beam([[-0.15, -y], [(n - 1) * 0.7 + 0.15, -y + 0.03]], 0.12, K.shade(wood, 0.9))); for (let i = 0; i < n; i++) { const x = i * 0.7; fl(P([[x - 0.1, 0], [x - 0.1, -1.1], [x, -1.25], [x + 0.1, -1.1], [x + 0.1, 0]]), wood, { hatch: false }); } break; }
+    case "sandbags": { const n = Math.max(2, Math.round(K.num(o.count, 4))); for (let r = 0; r < Math.min(4, n); r++) for (let i = 0; i < n - r; i++) bag(-(n - 1) * 0.3 + i * 0.6 + r * 0.3, -r * 0.3, 0.6); break; }
     case "barbedWire": { [-1.9, 0, 1.9].forEach((x) => { beam([[x - 0.3, 0], [x + 0.3, -0.95]], 0.07, wood); beam([[x + 0.3, 0], [x - 0.3, -0.95]], 0.07, wood); }); c.lineWidth = w * 0.45; c.strokeStyle = iron; c.beginPath(); for (let i = 0; i <= 40; i++) { const a = i / 40 * Math.PI * 16, x = -2.2 + i / 40 * 4.4; c.lineTo(x * R + Math.cos(a) * 0.12 * R, (-0.55 + Math.sin(a) * 0.3) * R); } c.stroke(); for (let i = 0; i < 14; i++) ln([[-2.1 + i * 0.32, -0.3], [-2.0 + i * 0.32, -0.38]], 0.6, iron); break; }
     case "barrel": { const p = S([[-0.55, 0], [-0.62, -0.7], [-0.55, -1.4], [0.55, -1.4], [0.62, -0.7], [0.55, 0]]); fl(p, wood); clip(p, () => { [-0.3, 0, 0.3].forEach((x) => ln([[x, -1.45], [x * 1.08, 0]], 0.4)); [-0.25, -1.15].forEach((y) => { c.fillStyle = K.toneOf(iron); c.fillRect(-0.7 * R, (y - 0.06) * R, 1.4 * R, 0.12 * R); }); }); c.lineWidth = w; c.strokeStyle = ol; c.stroke(p); K.paint(c, K.ell(0, -1.4 * R, 0.55 * R, 0.1 * R), K.shade(wood, 1.12), w * 0.8); break; }
     case "crate": { const p = P([[-0.65, 0], [-0.65, -1.25], [0.65, -1.25], [0.65, 0]]); fl(p, wood); clip(p, () => { grain(-0.65, -1.25, 0.65, 0, false); }); beam([[-0.6, -0.05], [0.6, -1.2]], 0.08, K.shade(wood, 0.85)); [[-0.65, -1.25, 0.65, -1.12], [-0.65, -0.13, 0.65, 0]].forEach(([a, b, d, e]) => K.paint(c, P([[a, b], [d, b], [d, e], [a, e]]), K.shade(wood, 0.85), w * 0.6)); break; }

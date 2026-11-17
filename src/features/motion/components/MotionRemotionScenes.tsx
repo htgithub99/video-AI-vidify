@@ -14,7 +14,7 @@ import { MotionRemotionStill } from "./MotionRemotionStill.js";
 import { ConfirmDeleteModal } from "../../../components/common/ConfirmDeleteModal";
 import type { MotionRemotionSpec, MotionRemotionScene, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { MotionStoryScript } from "../../../types/motionVideo.js";
-export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown; layout?: unknown }; busy?: boolean; /** A one-click production is running: single-scene redo/delete go to it, whole-set actions wait. */ production?: boolean; writing?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void; onRedo?: (scene: MotionRemotionScene) => void; onRetryFailed?: () => void; onDelete?: (scene: MotionRemotionScene) => void; onDeleteAll?: () => void }> = ({ script, language, renderBehavior, figures, busy = false, production = false, writing = false, onOpen, onRedo, onRetryFailed, onDelete, onDeleteAll }) => {
+export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown; layout?: unknown; movement?: unknown }; busy?: boolean; /** A one-click production is running: single-scene redo/delete go to it, whole-set actions wait. */ production?: boolean; writing?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void; onRedo?: (scene: MotionRemotionScene) => void; onRetryFailed?: () => void; onDelete?: (scene: MotionRemotionScene) => void; onDeleteAll?: () => void }> = ({ script, language, renderBehavior, figures, busy = false, production = false, writing = false, onOpen, onRedo, onRetryFailed, onDelete, onDeleteAll }) => {
   const [page, setPage] = useState<number>(STUDIO_PAGINATION.FIRST_PAGE);
   const progress = remotionSceneProgress(renderBehavior && script.gen?.remotion ? { ...script, gen: { ...script.gen, remotion: { ...script.gen.remotion, renderBehavior } } } : script, busy, language, figures);
   const pagination = getPagination(progress.total, page, V.SCENES_PER_PAGE);
@@ -22,6 +22,7 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
   const showCards = progress.planned;
   const lang = language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI;
   const text = V.TEXT[lang];
+  const scorecard = !busy ? script.gen?.remotion?.scorecard : undefined;
   const [pendingDelete, setPendingDelete] = useState<{ scene?: MotionRemotionScene; title: string } | null>(null);
   const confirmDelete = () => {
     const target = pendingDelete;
@@ -40,6 +41,11 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
           </Button>
         )}
       </div>
+      {scorecard && (
+        <p className={S.SCORECARD} title={scorecard.gaps.map((gap) => `${gap.fn} ${gap.kind}${gap.scenes > 1 ? ` ×${gap.scenes}` : ""}`).join(RT_MAINTENANCE.NEWLINE)}>
+          {text.scorecard({ ...scorecard, gaps: scorecard.gaps.length })}
+        </p>
+      )}
       {progress.failed > 0 && onRetryFailed && (
         <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.RETRY} disabled={busy || production} onClick={onRetryFailed}>
           {text.retryFailedScenes(progress.failed)}
@@ -108,6 +114,16 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
                 {RT_MOTION.CAPTION_SEPARATOR}
                 {entry.narration || entry.scene?.purpose}
               </p>
+              {entry.scene?.message && (
+                <p className={S.MESSAGE} title={entry.scene.keyVisual || entry.scene.message}>
+                  {text.sceneMessage(entry.scene.message)}
+                </p>
+              )}
+              {!!entry.scene?.offMessage?.length && (
+                <p className={S.FAILURE} title={entry.scene.offMessage.join(RT_MAINTENANCE.NEWLINE)}>
+                  {text.offMessage(entry.scene.offMessage.join("; "))}
+                </p>
+              )}
               {entry.scene && (onRedo || onDelete) && (
                 <div className={S.ACTIONS}>
                   {onRedo && (

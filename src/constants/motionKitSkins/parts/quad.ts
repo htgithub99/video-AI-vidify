@@ -1,4 +1,4 @@
-// General quadruped for the sketch and comic skins: every kit animal except horse, mule and donkey (those use horse.ts).
+// General quadruped for every skin: every kit animal except horse, mule and donkey (those use horse.ts).
 // Sizes follow the core ANIMALS table (units of R, ground y=0, head toward +x), so scenes keep their scale.
 // Build: far legs (darker), tail, then body + neck + head + near legs stroked as one merged outline, then details.
 // Legs are tapered and jointed (knee in front, hock behind), with hooves or paws. Gait is locked to distance like the horse.
@@ -22,6 +22,16 @@ export const SKIN_PART_QUAD = `(c, o, K) => {
     lion: { L: 2.9, D: 1.05, back: 1.95, legW: 0.34, neck: [0.5, -0.45, 0.64], head: [0.78, 0.25, 0.7], col: "#d9a85a", ruff: "#8a5a2a", tail: "long", ears: "round", paw: 1, snoutK: 0.3 },
     bear: { L: 2.7, D: 1.35, back: 2.0, legW: 0.44, neck: [0.4, -0.3, 0.75], head: [0.8, 0.35, 0.66], col: "#5a3e2a", tail: "short", ears: "round", muzzle: "#a8835a", paw: 1, snoutK: 0.45, hump: 0.35 },
     zebra: { L: 2.9, D: 1.1, back: 2.4, legW: 0.3, neck: [1.3, -1.05, 0.52], head: [1.1, 0.95, 0.5], col: "#f2efe8", stripes: "#1e1e22", mane: "#1e1e22", tail: "tuft", ears: "pointed", hoof: 1 },
+    rabbit: { L: 1.3, D: 0.75, back: 0.95, legW: 0.16, neck: [0.25, -0.5, 0.4], head: [0.55, 0.35, 0.42], col: "#b8a48a", tail: "short", ears: "long", paw: 1, snoutK: 0.25 },
+    leopard: { L: 2.7, D: 0.9, back: 1.75, legW: 0.3, neck: [0.5, -0.45, 0.58], head: [0.72, 0.25, 0.64], col: "#e2b05a", spots: "#3a2a1a", belly: "#f2e6d0", tail: "long", ears: "round", paw: 1, snoutK: 0.3 },
+    giraffe: { L: 2.6, D: 1.0, back: 3.4, legW: 0.22, neck: [2.6, -1.35, 0.4], head: [0.8, 0.6, 0.4], col: "#e0b060", spots: "#8a5a2a", mane: "#8a5a2a", tail: "tuft", ears: "pointed", horns: "short", hoof: 1 },
+    hippo: { L: 3.2, D: 1.5, back: 1.9, legW: 0.5, neck: [0.2, -0.2, 1.1], head: [1.15, 0.75, 0.9], col: "#7a6e78", tail: "short", ears: "round", snout: 1, hoof: 1 },
+    rhino: { L: 3.2, D: 1.45, back: 2.1, legW: 0.5, neck: [0.25, -0.2, 1.0], head: [1.15, 0.5, 0.75], col: "#8a8682", tail: "short", ears: "pointed", horns: "nose", hoof: 1 },
+    reindeer: { L: 2.6, D: 1.0, back: 2.1, legW: 0.24, neck: [0.9, -0.9, 0.45], head: [0.85, 0.5, 0.45], col: "#7a6450", tail: "short", ears: "pointed", horns: "antler", hoof: 1, rumpPatch: "#e8e0d0" },
+    moose: { L: 3.0, D: 1.2, back: 2.6, legW: 0.28, neck: [0.7, -0.6, 0.6], head: [1.1, 0.6, 0.55], col: "#4a3a2c", tail: "short", ears: "side", horns: "antler", hoof: 1, hump: 0.3 },
+    yak: { L: 3.0, D: 1.4, back: 2.2, legW: 0.4, neck: [0.4, -0.3, 0.85], head: [0.9, 0.55, 0.75], col: "#3a302a", wool: 1, face: "#3a302a", tail: "tuft", ears: "side", horns: "wide", hoof: 1, hump: 0.4 },
+    bison: { L: 3.1, D: 1.45, back: 2.3, legW: 0.42, neck: [0.3, -0.25, 0.95], head: [0.85, 0.55, 0.8], col: "#5a3e28", tail: "tuft", ears: "side", horns: "short", hoof: 1, hump: 0.7 },
+    llama: { L: 2.2, D: 0.9, back: 2.0, legW: 0.2, neck: [1.5, -1.35, 0.36], head: [0.7, 0.45, 0.4], col: "#e8dcc4", wool: 1, face: "#e8dcc4", tail: "short", ears: "pointed", hoof: 1, pad: 1 },
     deer: { L: 2.6, D: 0.92, back: 2.15, legW: 0.2, neck: [1.0, -1.05, 0.4], head: [0.85, 0.55, 0.42], col: "#a8743e", tail: "short", ears: "pointed", horns: "antler", hoof: 1, rumpPatch: "#f0e6d4" },
   };
   const A = SP[o.kind];
@@ -92,8 +102,7 @@ export const SKIN_PART_QUAD = `(c, o, K) => {
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
   c.scale(f, 1);
-  c.fillStyle = "rgba(20,16,12,0.22)";
-  c.fill(K.ell(0, 0, L * 0.6 * R, 0.13 * R));
+  K.shadow(c, K.ell(0, 0, L * 0.6 * R, 0.13 * R), 0.22, 0.13 * R);
   c.translate(0, -bob * R);
   if (lieDy) c.translate(0, lieDy * R);
   if (sitA) { c.translate(piv[0] * R, piv[1] * R); c.rotate(sitA); c.translate(-piv[0] * R, -piv[1] * R); }
@@ -120,7 +129,7 @@ export const SKIN_PART_QUAD = `(c, o, K) => {
   const parts = [body, neck, head].concat(hump ? [hump] : [], near.map((Lp) => Lp.path));
   c.save(); c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = ol; c.lineWidth = w * 2; parts.forEach((p) => c.stroke(p)); c.restore();
   const all = new Path2D(); parts.forEach((p) => all.addPath(p));
-  K.fill(c, all, B, 0, { R, dx: 0, dy: -0.22 * R, box, hatch: ink });
+  K.fill(c, all, B, 0, { R, dx: 0, dy: -0.22 * R, box, hatch: ink, parts });
   near.forEach((Lp) => foot(Lp, K.shade(B, 0.9)));
   c.save(); c.clip(all);
   if (A.stripes) { c.strokeStyle = K.toneOf(A.stripes); c.lineCap = "round"; for (let i = 0; i < 10; i++) { const x = (-L * 0.48 + i * L * 0.1) * R; c.lineWidth = 0.1 * R; c.beginPath(); c.moveTo(x, (backY - 0.1) * R); c.quadraticCurveTo(x + 0.15 * R, ((backY + bellyY) / 2) * R, x - 0.05 * R, (backY + A.D * 0.7) * R); c.stroke(); } [0.3, 0.55].forEach((u) => { const p = hpt(u, -0.5), q = hpt(u + 0.05, 0.1); c.beginPath(); c.moveTo(p[0] * R, p[1] * R); c.lineTo(q[0] * R, q[1] * R); c.stroke(); }); }
@@ -138,11 +147,14 @@ export const SKIN_PART_QUAD = `(c, o, K) => {
   lineR([[-L * 0.3, backY + 0.35], [-L * 0.36, bellyY - 0.15]], 0.55);
   if (A.ruff) { const c0 = hpt(0.3, 0); const rr = []; for (let i = 0; i < 14; i++) { const a = (i / 14) * K.PI * 2, k = i % 2 ? 0.95 : 1.12; rr.push([c0[0] + Math.cos(a) * hd * 1.05 * k, c0[1] + Math.sin(a) * hd * 1.05 * k]); } const rp = S(rr); K.fill(c, rp, A.ruff, w, { R, box }); K.fill(c, head, B, w, { R, box, hatch: false }); }
   const earB = hpt(0.15, -0.48), earB2 = hpt(0.32, -0.5), up = [-ph_[0], -ph_[1]];
-  if (A.ears === "pointed" || A.ears === "long") { const k = A.ears === "long" ? 0.75 : 0.36; K.paint(c, S([earB, [earB[0] + up[0] * k - 0.04, earB[1] + up[1] * k], earB2]), B, w); }
+  if (A.ears === "pointed") K.paint(c, S([earB, [earB[0] + up[0] * 0.36 - 0.04, earB[1] + up[1] * 0.36], earB2]), B, w);
+  // Long ears (a rabbit): two upright leaf-shaped ears, pink inside.
+  if (A.ears === "long") [[-0.08, 0.95], [0.1, 0.8]].forEach(([dx, k]) => { const m = [(earB[0] + earB2[0]) / 2 + dx, (earB[1] + earB2[1]) / 2]; K.paint(c, S([[m[0] - 0.09, m[1]], [m[0] + up[0] * k * 0.5 - 0.13, m[1] + up[1] * k * 0.5], [m[0] + up[0] * k, m[1] + up[1] * k], [m[0] + up[0] * k * 0.5 + 0.11, m[1] + up[1] * k * 0.5], [m[0] + 0.09, m[1]]]), B, w); K.paint(c, S([[m[0] - 0.03, m[1] - 0.05], [m[0] + up[0] * k * 0.5 - 0.06, m[1] + up[1] * k * 0.5], [m[0] + up[0] * k * 0.85, m[1] + up[1] * k * 0.85], [m[0] + up[0] * k * 0.5 + 0.05, m[1] + up[1] * k * 0.5], [m[0] + 0.03, m[1] - 0.05]]), "#e8b4ae", 0); });
   if (A.ears === "round") K.paint(c, K.ell(earB[0] * R, (earB[1] - 0.05) * R, 0.15 * R, 0.15 * R), K.shade(B, 0.9), w);
   if (A.ears === "side") K.paint(c, K.ell((earB[0] - 0.12) * R, (earB[1] + 0.08) * R, 0.24 * R, 0.1 * R, 0.35), K.shade(B, 0.9), w);
   if (A.ears === "flop") K.paint(c, S([earB, [earB[0] - 0.18, earB[1] + 0.12], [earB[0] - 0.12, earB[1] + 0.48], [earB[0] + 0.08, earB[1] + 0.32]]), K.shade(B, 0.75), w);
   if (A.horns === "curve" || A.horns === "short" || A.horns === "wide") { const b = hpt(0.2, -0.52), len = A.horns === "short" ? 0.25 : A.horns === "wide" ? 0.7 : 0.45; K.paint(c, S([[b[0] - 0.06, b[1]], [b[0] - (A.horns === "wide" ? 0.45 : 0.05), b[1] - len * 0.6], [b[0] + (A.horns === "wide" ? -0.65 : 0.12), b[1] - len], [b[0] + 0.08, b[1] - 0.02]]), "#e8e0cc", w * 0.8); }
+  if (A.horns === "nose") { const a = hpt(0.78, -0.42); K.paint(c, S([[a[0] - 0.12, a[1] + 0.06], [a[0] + 0.04, a[1] - 0.62], [a[0] + 0.16, a[1] + 0.06]]), "#d8ccb4", w * 0.8); const b = hpt(0.5, -0.5); K.paint(c, S([[b[0] - 0.08, b[1] + 0.04], [b[0] + 0.0, b[1] - 0.3], [b[0] + 0.1, b[1] + 0.04]]), "#d8ccb4", w * 0.8); }
   if (A.horns === "back") K.paint(c, S([[earB2[0], earB2[1]], [earB2[0] - 0.25, earB2[1] - 0.35], [earB2[0] - 0.55, earB2[1] - 0.3], [earB2[0] - 0.3, earB2[1] - 0.2], [earB2[0] + 0.08, earB2[1] + 0.02]]), "#cfc4ae", w * 0.8);
   if (A.horns === "antler" && !o.doe) { const b = earB2; const br = (pts) => { const q = pts.map(([x, y]) => [x * R, y * R]); K.line(c, q, 0.07 * R + w * 2, ol); K.line(c, q, 0.07 * R, "#8a6a44"); }; br([b, [b[0] - 0.1, b[1] - 0.5], [b[0] - 0.4, b[1] - 0.95]]); br([[b[0] - 0.1, b[1] - 0.45], [b[0] + 0.22, b[1] - 0.8]]); br([[b[0] - 0.25, b[1] - 0.75], [b[0] - 0.05, b[1] - 1.05]]); }
   if (A.mane) K.paint(c, S([[L * 0.2, backY - 0.02], [nt[0] - pn[0] * nw * 0.4, nt[1] - pn[1] * nw * 0.4 - 0.05], [nt[0] - pn[0] * nw * 0.2, nt[1] - pn[1] * nw * 0.2 + 0.1], [L * 0.25, backY + 0.12]]), K.toneOf(A.mane), w * 0.8);

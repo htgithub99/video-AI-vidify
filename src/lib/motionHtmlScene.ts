@@ -8,6 +8,7 @@ import { motionVisualBeatGroups } from "./motionScenePacing.js";
 import { motionPlanSettings, motionVisualSettingsFor } from "./motionVisual.js";
 import { MOTION_HTML, MOTION_HTML_REPAIR as R } from "../constants/motionHtmlTemplate.js";
 import { MOTION_HTML_QUALITY } from "../constants/motionHtmlQuality.js";
+import { motionMovementOf } from "./motionDrawStyle.js";
 const motionHtmlIdentities = (analysis: MotionStoryAnalysis) => ({
   cast: analysis.cast.map(({ key, name, alias, role, description, look, marks, skin, carries, gender, age }) => ({ key, name, alias, role, description, look, marks, skin, carries, gender, age })),
   places: analysis.places.map(({ key, name, description, interior, time }) => ({ key, name, description, interior, time })),
@@ -202,6 +203,15 @@ export const motionHtmlFrame = (spec: MotionRemotionSpec, scene: MotionRemotionS
   // The chapter title runs on the real clock, so it animates even when the scene itself holds still.
   const titleTime = (frame - scene.startFrame) / spec.fps;
   const titleCard = scene.titleCard && titleTime >= 0 && titleTime < scene.titleCard.seconds ? { ...scene.titleCard, t: titleTime } : undefined;
+  // The cut-out style dips to black into a scene that jumps in time (its time card shows a new date) and out of the scene
+  // before one; every other cut is straight.
+  const dip = (() => {
+    if (motionMovementOf(spec) !== "cutout") return 0;
+    const at = spec.scenes.findIndex((item) => item.id === scene.id), next = at >= 0 ? spec.scenes[at + 1] : undefined;
+    const into = at > 0 && scene.timeLabel ? 1 - titleTime / MOTION_HTML_QUALITY.DIP_SECONDS : 0;
+    const out = next?.timeLabel ? 1 - (duration - titleTime) / MOTION_HTML_QUALITY.DIP_SECONDS : 0;
+    return Math.min(1, Math.max(0, into, out));
+  })();
   return {
     ...(titleCard ? { titleCard } : {}),
     time: local / spec.fps,
@@ -220,6 +230,9 @@ export const motionHtmlFrame = (spec: MotionRemotionSpec, scene: MotionRemotionS
     places: scene.places,
     header: scene.places ? !!scene.timeLabel : undefined,
     cues: enabled ? scene.cues : undefined,
+    ...(dip > 0 ? { dip } : {}),
+    // A still frame (motion off) shows the scene as it opens: its place and time title in full.
+    ...(enabled ? {} : { headerTime: MOTION_HTML_QUALITY.TITLE_STILL_SECONDS }),
   };
 };
 export const motionSceneOnScreen = (items: { scene: MotionRemotionScene; beats: MotionBeat[] }[], analysis: MotionStoryAnalysis): void => {

@@ -1,4 +1,4 @@
-// Trees for the sketch and comic skins, one drawer for every kit tree kind.
+// Trees for every skin, one drawer for every kit tree kind.
 // Sketch (video 1): flat muted crown made of merged bumps, one darker side, a few scallop lines.
 // Comic (video 2): the same build with ink hatching on the shadow side (skin param hatch), leaf ticks and bark lines.
 // Footprints follow the core kit (units of R, ground at y=0): oak ±1.3 × 3.8, pine 4.5, palm 5.3, cypress 4.8, bush ±1.3 × 1.05, banyan ±2.1.
@@ -54,7 +54,7 @@ export const SKIN_PART_TREE = `(c, o, K) => {
   c.save();
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
-  if (kind !== "bush") { c.fillStyle = "rgba(20,16,12,0.18)"; c.fill(K.ell(0, 0, 1.0 * R, 0.13 * R)); }
+  if (kind !== "bush") { K.shadow(c, K.ell(0, 0, 1.0 * R, 0.13 * R), 0.18, 0.13 * R); }
   switch (kind) {
     case "pine": case "cypress": {
       const col = o.color || (night ? K.organic.pineNight : K.organic.pine);

@@ -8,8 +8,7 @@ export const SKIN_PART_CART_RIG = `(c, a, K) => {
   c.save();
   c.translate(K.num(a.ox, 0), K.num(a.oy, 0));
   c.scale(f, 1);
-  c.fillStyle = "rgba(20,16,12,0.2)";
-  c.fill(K.ell(cx, 0, 1.2 * R, 0.12 * R));
+  K.shadow(c, K.ell(cx, 0, 1.2 * R, 0.12 * R), 0.2, 0.12 * R);
   const shaft = [[cx + 0.9 * R, bodyY + 0.75 * R], [a.hitch[0], a.hitch[1]]];
   K.line(c, shaft, 0.1 * R + w * 2, ol); K.line(c, shaft, 0.1 * R, dark);
   const bx = K.smooth([[cx - 1.05 * R, bodyY], [cx - 1.05 * R, bodyY], [cx + 1.05 * R, bodyY], [cx + 1.05 * R, bodyY], [cx + 0.95 * R, bodyY + 0.85 * R], [cx + 0.95 * R, bodyY + 0.85 * R], [cx - 0.95 * R, bodyY + 0.85 * R], [cx - 0.95 * R, bodyY + 0.85 * R]], true);

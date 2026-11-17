@@ -31,6 +31,8 @@ import { MOTION_HTML } from "../../../../constants/motionHtmlTemplate.js";
 import { motionHtmlFigureDoc } from "../../../../lib/motionHtmlFigure.js";
 import { motionHtmlFigures, motionHtmlFiguresIssue } from "../../../../lib/motionFigures.js";
 import { motionProportionOf } from "../../../../lib/motionDrawStyle.js";
+import { motionCatalogKinds } from "../../../../lib/motionObjectCatalog.js";
+import { motionAnalysisEraYear } from "../../../../lib/motionEra.js";
 import { MOTION_FIGURES } from "../../../../constants/motionFigures.js";
 import { PROMPT_REFERENCE_DOC } from "../../../../constants/promptSourceData.js";
 import { motionHtmlSource } from "../../../../lib/motionHtmlScene.js";
@@ -86,7 +88,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         // The thumbnail page is written against the same figure table as the scenes; the kit draws its figures when it is captured.
         const render = { kit: true, profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE };
         const htmlExec: MotionAiExecution = { ...exec, outputFormat: RT_MAINTENANCE.HTML, singleResponse: true };
-        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, MOTION_HTML.GRAPHICS, PROMPT_REFERENCE_DOC.WRAP(PROMPT_REFERENCE_DOC.FIGURE_NAME, [motionHtmlFigureDoc(settings), MOTION_FIGURES.DOC].join(RT_MAINTENANCE.NEWLINE)), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
+        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, MOTION_HTML.GRAPHICS, PROMPT_REFERENCE_DOC.WRAP(PROMPT_REFERENCE_DOC.FIGURE_NAME, [motionHtmlFigureDoc(settings), MOTION_FIGURES.DOC(motionCatalogKinds(motionAnalysisEraYear(analysis), JSON.stringify(analysis)))].join(RT_MAINTENANCE.NEWLINE)), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
         let reason = "";
         for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
           opts.signal?.throwIfAborted();

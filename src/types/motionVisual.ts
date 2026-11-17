@@ -26,7 +26,7 @@ export interface MotionRemotionEffect {
   direction?: "up" | "ground" | "left" | "right";
   intensity?: number;
 }
-export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; figureKit?: boolean; pacing?: MotionScenePacing; proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId; layout?: import("../constants/motionLayouts/index.js").MotionLayoutId };
+export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; figureKit?: boolean; pacing?: MotionScenePacing; proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId; layout?: import("../constants/motionLayouts/index.js").MotionLayoutId; movement?: import("../constants/motionDrawStyles/types.js").MotionMovement };
 export interface MotionVectorAsset {
   key: string;
   inputKey: string;
@@ -126,6 +126,16 @@ export interface MotionSceneActionPlan {
 }
 export interface MotionRemotionScene {
   renderer?: "html-canvas";
+  // The plan's picture: kind (here|cutaway|map|detail), shot size, place, the one sentence a viewer must take from it, the
+  // picture that says it and the devices (thought, emote, inset, count, arrow, spotlight, time, sound, speed, impact) that show the rest.
+  kind?: string;
+  shot?: string;
+  setting?: string;
+  message?: string;
+  keyVisual?: string;
+  devices?: string[];
+  // What the picture check found when a drawing missed the message (kept for the project's scorecard).
+  offMessage?: string[];
   places?: string[];
   timeLabel?: string;
   sceneTemplate?: string;
@@ -238,6 +248,8 @@ export interface MotionSceneDesign {
   continuityNotes?: string;
 }
 export interface MotionRemotionState {
+  // The scorecard of the last scene run (see motionSceneScorecard).
+  scorecard?: import("../lib/motionSceneScorecard.js").MotionSceneScorecard;
   renderer?: "html-canvas";
   htmlPlanSources?: Record<string, string>;
   // Look of each named person, taken from the first scene that drew them and applied to every later scene.
@@ -300,6 +312,8 @@ export interface MotionRemotionSpec {
   proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId;
   // The layout's camera over every scene (the scenes themselves are drawn once, whatever the layout).
   layout?: import("../constants/motionLayouts/index.js").MotionLayoutId;
+  // How the figures and the camera move ("Chuyển động"): smooth, or the cut-out storybook.
+  movement?: import("../constants/motionDrawStyles/types.js").MotionMovement;
   assets: Record<string, MotionVectorAsset>;
   scenes: MotionRemotionTimedScene[];
   subtitles: NonNullable<MotionSpec["subtitles"]>;

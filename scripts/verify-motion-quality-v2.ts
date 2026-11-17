@@ -1,3 +1,4 @@
+import { MOTION_CATALOG_RUNTIME } from "../src/lib/motionObjectCatalog.js";
 import assert from "node:assert/strict";
 import { MOTION_HTML_QUALITY } from "../src/constants/motionHtmlQuality.js";
 import { motionSceneBlueprint, motionSafeSceneSource, motionSceneCastSeed, motionSceneCastLearn, type MotionCastLooks } from "../src/lib/motionSceneBlueprint.js";
@@ -112,7 +113,7 @@ console.log("motion quality v2 ok");
 {
   const run = (kit?: Record<string, any>) => {
     const marks: any[] = [];
-    const win: Record<string, any> = { MotionKit: kit, __motionMarks: marks, motionMark: (_c: unknown, id: string, x: number, y: number, w: number, h: number) => marks.push({ id, x, y, w, h }) };
+    const win: Record<string, any> = { MotionKit: kit, __motionCatalog: MOTION_CATALOG_RUNTIME, __motionMarks: marks, motionMark: (_c: unknown, id: string, x: number, y: number, w: number, h: number) => marks.push({ id, x, y, w, h }) };
     new Function("window", MOTION_FIGURES.SCRIPT)(win);
     return { F: win.MotionFigures, marks };
   };
@@ -198,7 +199,7 @@ console.log("motion quality v2 ok");
   assert.ok(motionHtmlFiguresIssue("MotionKit.person(ctx, {})") && !motionHtmlFiguresIssue(page));
   // The view over the scene: the style layer only for "Bộ vẽ chuẩn", the layout's shot for the scene, never for a map.
   const viewOf = (render: Parameters<typeof motionFigureView>[0]) => motionFigureView(render);
-  assert.deepEqual(viewOf({ kit: false, profile: "comic", layout: "wide" }), { style: null, shot: "wide", focus: [] }, "Dựng cảnh AI · Toàn cảnh shows the scene as drawn");
+  assert.deepEqual(viewOf({ kit: false, profile: "comic", layout: "wide" }), { style: null, shot: "wide", focus: [], movement: "smooth" }, "Dựng cảnh AI · Toàn cảnh shows the scene as drawn");
   assert.equal(viewOf({ kit: true, profile: "comic", layout: "wide" }).style?.finish, "grain");
   assert.equal(viewOf({ kit: true, profile: "horror", layout: "wide" }).style?.finish, "vignette");
   assert.equal(viewOf({ kit: false, layout: "close", scene: { shot: "medium" } }).shot, "mcu");

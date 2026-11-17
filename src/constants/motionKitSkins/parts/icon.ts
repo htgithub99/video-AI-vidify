@@ -1,4 +1,4 @@
-// Icons for the sketch and comic skins, drawn like the infographic cards of reference video 2: chunky ink outlines,
+// Icons for every skin, drawn like the infographic cards of reference video 2: chunky ink outlines,
 // flat fills with one shade side, small inner detail lines (clock ticks, page lines, coin rims, gear teeth).
 // All 59 kit icons; same call contract as the core icon drawers (c, s = size, col, t), origin at the icon centre.
 export const SKIN_PART_ICON = `(c, a, K) => {
@@ -71,6 +71,19 @@ export const SKIN_PART_ICON = `(c, a, K) => {
     case "phone": fl(R(-0.42, -0.9, 0.42, 0.9, 0.12), "#2e2e32"); pt(R(-0.32, -0.7, 0.32, 0.6, 0.03), col || "#7a9ab8", 0.5); pt(E(0, 0.75, 0.06, 0.06), "#8a8a90", 0.3); break;
     case "computer": fl(R(-0.9, -0.75, 0.9, 0.4, 0.06), "#3a3a40"); pt(R(-0.78, -0.63, 0.78, 0.28, 0.02), col || "#7a9ab8", 0.5); fl(P([[-0.2, 0.4], [0.2, 0.4], [0.3, 0.75], [-0.3, 0.75]]), "#6a6a70", { hatch: false }); ln([[-0.5, 0.78], [0.5, 0.78]], 1.2); break;
     case "arrowUp": case "arrowDown": { const d = kind === "arrowUp" ? 1 : -1; fl(P([[0, -0.9 * d], [0.75, -0.1 * d], [0.3, -0.1 * d], [0.3, 0.9 * d], [-0.3, 0.9 * d], [-0.3, -0.1 * d], [-0.75, -0.1 * d]]), col || (d > 0 ? "#5a8a4a" : "#a83a2e")); break; }
+    // Forces on a map, drawn in the story's period (window.__motionView.year): spearmen, musketeers or riflemen; riders;
+    // a chariot or a tank; a galley, a sailing ship or a steamship; a castle or a concrete bunker.
+    case "infantry": case "cavalry": case "armor": case "fleet": case "fortress": {
+      const yr = window.__motionView && window.__motionView.year != null ? +window.__motionView.year : 1900, cc = col || "#6a5a48";
+      fl(E(0, 0, 0.95, 0.95), "#f2ead6");
+      if (kind === "infantry") { fl(E(-0.05, -0.45, 0.17, 0.17), cc); fl(S([[-0.3, 0.75], [-0.32, -0.15], [-0.05, -0.28], [0.22, -0.15], [0.2, 0.75]]), cc); if (yr <= 1450) { ln([[0.45, 0.8], [0.45, -0.8]], 1); fl(P([[0.38, -0.7], [0.45, -0.95], [0.52, -0.7]]), "#bcc2ca"); fl(E(-0.35, 0.15, 0.3, 0.38), "#a8382e"); } else { ln([[0.4, 0.75], [0.4, -0.65]], 1.4); ln([[0.4, -0.65], [0.4, -0.9]], 0.6, "#bcc2ca"); if (yr > 1900) fl(S([[-0.3, -0.5], [-0.25, -0.68], [0.15, -0.68], [0.22, -0.5]]), "#6a7350"); else fl(P([[-0.32, -0.55], [-0.05, -0.75], [0.25, -0.55]]), "#2a2a30"); } }
+      else if (kind === "cavalry") { fl(S([[-0.55, 0.75], [-0.5, 0.0], [-0.2, -0.45], [0.1, -0.75], [0.25, -0.62], [0.6, -0.3], [0.65, -0.1], [0.3, -0.05], [0.2, 0.3], [0.35, 0.75]]), cc); fl(P([[0.02, -0.68], [0.08, -0.9], [0.18, -0.7]]), cc); pt(E(0.22, -0.4, 0.05, 0.05), "#f2ead6"); ln([[-0.25, -0.4], [-0.45, 0.2]], 0.8, "#2a2a30"); if (yr <= 1650) { ln([[-0.75, -0.55], [0.75, -0.95]], 0.9); } else ln([[-0.6, -0.8], [-0.3, -0.25]], 1.0, "#bcc2ca"); }
+      else if (kind === "armor") { if (yr >= 1916) { fl(R(-0.75, 0.05, 0.75, 0.5, 0.2), cc); for (let i = 0; i < 5; i++) pt(E(-0.56 + i * 0.28, 0.28, 0.1, 0.1), "#4a4c52", 0.6); fl(R(-0.4, -0.3, 0.3, 0.08, 0.1), cc); ln([[0.25, -0.12], [0.88, -0.22]], 1.6); } else { fl(E(-0.2, 0.3, 0.42, 0.42), "#8a6444"); for (let i = 0; i < 6; i++) { const an = i * Math.PI / 3 + T; ln([[-0.2, 0.3], [-0.2 + Math.cos(an) * 0.38, 0.3 + Math.sin(an) * 0.38]], 0.5); } fl(P([[-0.55, -0.35], [0.4, -0.35], [0.35, 0.05], [-0.5, 0.05]]), cc); ln([[0.35, -0.15], [0.9, 0.05]], 0.9); } }
+      else if (kind === "fleet") { if (yr <= 1500) { fl(S([[-0.85, 0.1], [0.85, 0.05], [0.6, 0.45], [-0.6, 0.45]]), cc); for (let i = 0; i < 6; i++) ln([[-0.5 + i * 0.2, 0.35], [-0.6 + i * 0.2, 0.75]], 0.5); ln([[0, 0.1], [0, -0.8]], 0.8); fl(P([[0, -0.75], [0.5, -0.15], [0, -0.1]]), "#e6dcc4"); } else if (yr <= 1860) { fl(S([[-0.85, 0.2], [0.85, 0.2], [0.55, 0.6], [-0.6, 0.6]]), cc); [-0.4, 0.05, 0.45].forEach((x, i) => { ln([[x, 0.2], [x, -0.75 + i * 0.1]], 0.6); fl(R(x - 0.2, -0.6 + i * 0.1, x + 0.2, -0.05, 0.05), "#e6dcc4"); }); } else { fl(P([[-0.9, 0.15], [0.9, 0.15], [0.65, 0.55], [-0.75, 0.55]]), cc); fl(R(-0.45, -0.25, 0.4, 0.15, 0.05), "#8a8e96"); fl(R(-0.15, -0.65, 0.12, -0.25, 0.03), "#2a2a30"); ln([[0.3, -0.1], [0.75, -0.25]], 1.0); } }
+      else { if (yr <= 1850) { fl(P([[-0.65, 0.75], [-0.65, -0.35], [-0.45, -0.35], [-0.45, -0.55], [-0.25, -0.55], [-0.25, -0.35], [0.25, -0.35], [0.25, -0.55], [0.45, -0.55], [0.45, -0.35], [0.65, -0.35], [0.65, 0.75]]), cc); fl(S([[-0.18, 0.75], [-0.18, 0.25], [0, 0.1], [0.18, 0.25], [0.18, 0.75]]), "#3a3028"); } else { fl(S([[-0.85, 0.55], [-0.7, -0.1], [-0.3, -0.4], [0.3, -0.4], [0.7, -0.1], [0.85, 0.55]]), cc); fl(R(-0.4, 0.0, 0.4, 0.14, 0.03), "#2a2a30"); } }
+      c.lineWidth = w * 0.7; c.strokeStyle = ol; c.stroke(E(0, 0, 0.95, 0.95));
+      break;
+    }
     default: return null;
   }
   return true;

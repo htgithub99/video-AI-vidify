@@ -97,7 +97,7 @@ export const MOTION_SCENE_BLUEPRINT = {
     { fn: "prop", kind: "gate", re: /\bgates?\b/i, wide: true },
     { fn: "crowd", kind: "mounted", re: /\b(riders|horsemen|cavalry|knights|lancers|horse archers|hussars|dragoons)\b/i },
     { fn: "crowd", kind: "foot", re: /\b(arm(?:y|ies)|troops|soldiers|lev(?:y|ies)|column|crowd|mob|ranks|archers|warriors|guards|villagers|refugees|men|women|people|infantry|militia|peasants|prisoners|sailors|crew|workers|children|citizens|pilgrims|monks|legion(?:arie)?s?|regiment|battalion|compan(?:y|ies)|squad|host|defenders|attackers|enemies|survivors|comrades)\b/i },
-    { fn: "animal", kind: "horse", re: /\b(horse|warhorse|stallion|mare|pony|mount)\b/i },
+    { fn: "animal", kind: "horse", re: /\b(horse|stallion|mare|pony|mount)\b/i },
     { fn: "animal", kind: "ox", re: /\b(ox|oxen|bull|cattle)\b/i },
     { fn: "animal", kind: "cow", re: /\bcows?\b/i },
     { fn: "animal", kind: "dog", re: /\b(dogs?|hounds?)\b/i },
@@ -150,8 +150,8 @@ export const MOTION_SCENE_BLUEPRINT = {
   TRANSPORT_ERROR: (id: string, tries: number, reason: string) => `Dựng cảnh tạm dừng: AI dựng cảnh không trả được bài cho cảnh ${id} sau ${tries} lần gửi liên tiếp (${reason}). Kiểm tra tab AI đã chọn (đăng nhập, giới hạn lượt, mạng) rồi bấm chạy tiếp; các cảnh đã dựng được giữ nguyên.`,
   EXEC_ERROR: (id: string, tries: number, reason: string) => `Dựng cảnh tạm dừng: cảnh ${id} lỗi ${tries} lần liền và không dựng được cảnh dự phòng (${reason}). Bấm vẽ lại riêng cảnh này hoặc chạy tiếp; các cảnh đã dựng được giữ nguyên.`,
   PLAN_ERROR: (tries: number, reason: string) => `Chia phân cảnh tạm dừng: AI plan cảnh lỗi ${tries} lần liên tiếp (${reason}). Kiểm tra tab AI đã chọn (đăng nhập, giới hạn lượt, mạng) rồi bấm chạy tiếp; phần đã làm được giữ nguyên.`,
-  SUMMARY_LOG: (c: { total: number; first: number; redrawn: number; warned: number; fallback: number; model: string }) =>
-    `Tổng kết dựng cảnh (${c.model}): ${c.total} cảnh · đạt ngay lần đầu ${c.first} (${c.total ? Math.round((c.first / c.total) * 100) : 0}%) · phải vẽ lại ${c.redrawn} · còn cảnh báo ${c.warned} · cảnh dự phòng do code dựng ${c.fallback}.`,
+  SUMMARY_LOG: (c: { total: number; first: number; redrawn: number; warned: number; offMessage: number; fallback: number; gaps: { fn: string; kind: string; scenes: number }[]; model: string }) =>
+    `Tổng kết dựng cảnh (${c.model}): ${c.total} cảnh · đạt ngay lần đầu ${c.first} (${c.total ? Math.round((c.first / c.total) * 100) : 0}%) · phải vẽ lại ${c.redrawn} · còn cảnh báo ${c.warned} · lần đầu lệch thông điệp ${c.offMessage} · cảnh dự phòng do code dựng ${c.fallback} · đồ vật bộ vẽ chưa có ${c.gaps.length}${c.gaps.length ? ` (${c.gaps.slice(0, 12).map((gap) => `${gap.fn} ${gap.kind}${gap.scenes > 1 ? ` ×${gap.scenes}` : ""}`).join(", ")}${c.gaps.length > 12 ? ", …" : ""})` : ""}.`,
   EXEC_LIMIT: 3,
   TRANSPORT_LIMIT: 6,
 } as const;
