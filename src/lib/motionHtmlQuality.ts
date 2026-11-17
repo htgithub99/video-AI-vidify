@@ -121,9 +121,8 @@ export const motionHtmlCutLarge = (marks: MotionHtmlMark[], maxCut: number): str
     .map((entry) => entry.id)
     .filter((id, index, list) => list.indexOf(id) === index);
 
-/** Splits the figure table's fault marks (a person option the kit cannot honour: a limb or a posture) from the real marks of a frame. */
-export const motionHtmlFigureFaults = (marks: MotionHtmlMark[]): { marks: MotionHtmlMark[]; limbOptions: string[]; poseOptions: string[] } => {
-  const keys = (prefix: string) => [...new Set(marks.filter((mark) => mark.id.startsWith(prefix)).map((mark) => mark.id.slice(prefix.length)))];
-  const faulty = (mark: MotionHtmlMark) => mark.id.startsWith(Q.FAULT_PREFIX) || mark.id.startsWith(Q.POSE_PREFIX);
-  return { marks: marks.some(faulty) ? marks.filter((mark) => !faulty(mark)) : marks, limbOptions: keys(Q.FAULT_PREFIX), poseOptions: keys(Q.POSE_PREFIX) };
+/** Splits the figure table's fault marks (options left out of a call: outside the figure vocabulary) from the real marks of a frame. */
+export const motionHtmlFigureFaults = (marks: MotionHtmlMark[]): { marks: MotionHtmlMark[]; dropped: string[] } => {
+  const faulty = (mark: MotionHtmlMark) => mark.id.startsWith(Q.DROP_PREFIX);
+  return { marks: marks.some(faulty) ? marks.filter((mark) => !faulty(mark)) : marks, dropped: [...new Set(marks.filter(faulty).map((mark) => mark.id.slice(Q.DROP_PREFIX.length)))] };
 };

@@ -99,3 +99,14 @@ import { motionSceneCastLearn, motionSceneCastPrompt } from "../src/lib/motionSc
   assert.match(motionSceneCastPrompt(looks, ["you", "miklos"])!, /CAST LOOK .*you \{"top":"#7a2e2a","head":"kettle"\}/);
   console.log("cast looks ok");
 }
+
+// The plan's FIGURES line gives each id its options in the vocabulary's words; the scene drawn by code from the plan
+// wears them (a value per phase when it changes).
+{
+  const { motionSceneFigures, motionSceneBlueprint: plan } = await import("../src/lib/motionSceneBlueprint.js");
+  const template = "5. REQUIRED: you (focal): crossbowman; drover (focal): limping man\n8. FIGURES: you: person, outfit soldier, top #6e5038, hold crossbow, pose sit -> sit, expression worried -> surprised; drover: person, outfit peasant, wounded, pose walk -> point; log: prop log";
+  assert.deepEqual(motionSceneFigures(template), { you: { outfit: "soldier", top: "#6e5038", hold: "crossbow", pose: ["sit", "sit"], expression: ["worried", "surprised"] }, drover: { outfit: "peasant", wounded: true, pose: ["walk", "point"] }, log: {} });
+  const items = plan(template, { shot: "medium" })!.items;
+  assert.deepEqual(items.find((item) => item.id === "you")?.look?.hold, "crossbow", "the fallback scene carries the FIGURES options");
+  console.log("FIGURES line: options per id for the fallback scene.");
+}

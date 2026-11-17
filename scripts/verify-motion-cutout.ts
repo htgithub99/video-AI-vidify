@@ -7,6 +7,8 @@ import { chromium } from "playwright";
 import { motionHtmlFigures, motionFigureView, motionFigureRenderKey, motionHtmlUsesFigures } from "../src/lib/motionFigures.js";
 import { motionHtmlFrame } from "../src/lib/motionHtmlScene.js";
 import { normalizeMotionVisualSettings } from "../src/lib/motionVisual.js";
+import { MOTION_FIGURES } from "../src/constants/motionFigures.js";
+import { MOTION_HTML_WRITING } from "../src/constants/motionHtmlWriting.js";
 
 // A scene that reaches the figure table through a variable (with its own stand-in) still gets the table, the kit and
 // the chosen drawing style, so its people are drawn and marked by the kit.
@@ -132,6 +134,107 @@ const own = await page.evaluate(async () => { const c = (document.getElementById
 assert.equal(own.own, 1, "the scene's own device function draws the bubble");
 assert.equal(own.edge, 0, "and no standard bubble is drawn around it");
 
+// A thing called without a kind is named by its mark ('wagons' is a wagon, drawn by the kit); a rider's banner and a
+// banner prop wear the scene's colour; a generic helmet is the period's; arrows are kept for maps.
+const NAMED = `<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
+var FIG = window.MotionFigures.use({ vehicle: function (c, o) { window.__ownVehicle = (window.__ownVehicle || 0) + 1; }, prop: function () {}, animal: function () {} });
+window.motionScene = { ready: Promise.resolve(), renderAt: async function () {
+  var c = document.getElementById('motion-canvas').getContext('2d'); window.__ownVehicle = 0; c.fillStyle = '#ffffff'; c.fillRect(0, 0, 1280, 720);
+  FIG.vehicle(c, { mark: 'wagons', x: 200, y: 600, w: 220, h: 110 });
+  FIG.animal(c, { kind: 'horse', x: 640, y: 600, h: 260, facing: 1, rider: { pose: 'ride', hold: 'banner', itemColor: '#1f60ff', head: 'helmet' } });
+  FIG.prop(c, { kind: 'banner', x: 1050, y: 600, w: 120, h: 300, color: '#00c040' });
+} };
+</script></body></html>`;
+await page.setContent(motionHtmlFigures(NAMED, { kit: true, profile: "cutout", layout: "wide", year: 1241 } as never));
+await page.evaluate("window.__name = function (f) { return f; }");
+const named = await page.evaluate(async () => {
+  const c = (document.getElementById("motion-canvas") as HTMLCanvasElement).getContext("2d")!;
+  await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false });
+  const count = (x: number, w: number, test: (r: number, g: number, b: number) => boolean) => { const d = c.getImageData(x, 0, w, 720).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (test(d[i], d[i + 1], d[i + 2])) n++; return n; };
+  return { own: (window as any).__ownVehicle, blue: count(450, 400, (r, g, b) => b > 200 && r < 80), green: count(950, 250, (r, g, b) => g > 150 && r < 60 && b < 100) };
+});
+assert.equal(named.own, 0, "a wagon named only by its mark is drawn by the kit");
+assert.ok(named.blue > 300, "a rider's banner is drawn in the scene's colour");
+assert.ok(named.green > 300, "a banner prop's cloth is the scene's colour");
+assert.ok(!JSON.stringify(MOTION_HTML_WRITING).includes("arrow (who goes where)") && MOTION_FIGURES.DOC({ vehicle: "", building: "", animal: "", tree: "", prop: "", wall: "" }).includes("arrow (maps only)"), "arrows are only for maps");
+
+// One content, two renderers: every call's options are put in the vocabulary's words before either renderer draws
+// (the scene's own function gets exactly what the kit gets); a figure a scene function draws inside another (a wagon's
+// team) goes through the table, so the kit draws it too; an arrow is drawn only on a map.
+const SAME = `<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
+var IMPL = {
+  person: function (c, o) { window.__seen = o; return { hand: [o.x + 10, o.y - 60] }; },
+  animal: function (c, o) { c.fillStyle = '#00ffff'; c.fillRect(o.x - 40, o.y - o.h, 80, o.h); },
+  vehicle: function (c, o) { IMPL.animal(c, { kind: 'ox', x: o.x + 140, y: o.y, h: 90 }); c.fillStyle = '#ff00ff'; c.fillRect(o.x - 100, o.y - 100, 200, 100); },
+  arrow: function (c, o) { window.__ownArrow = (window.__ownArrow || 0) + 1; }
+};
+var FIG = window.MotionFigures.use(IMPL);
+window.motionScene = { ready: Promise.resolve(), renderAt: async function () {
+  var c = document.getElementById('motion-canvas').getContext('2d'); window.__ownAnimal = 0; window.__ownVehicle = 0; window.__ownArrow = 0; c.fillStyle = '#ffffff'; c.fillRect(0, 0, 1280, 720);
+  FIG.person(c, { mark: 'you', x: 300, y: 600, h: 200, cloak: '#123456', holding: 'banner', expression: 'terrified', pose: 'sitting', blackPalm: true, frontHandPos: [1, 2] });
+  FIG.vehicle(c, { kind: 'wagon', x: 700, y: 600, w: 220, h: 110 });
+  FIG.arrow(c, { from: [100, 100], to: [400, 100], width: 8 });
+} };
+</script></body></html>`;
+const sameRun = async (kit: boolean, kind: string) => {
+  // A fresh page each time: a kit left on an earlier page's window would draw for "Dựng cảnh AI" too.
+  const page = await browser.newPage();
+  await page.setContent(motionHtmlFigures(SAME, { kit, profile: "cutout", layout: "wide", year: 1241, scene: { kind } } as never));
+  await page.evaluate("window.__name = function (f) { return f; }; window.__motionMarks = [];");
+  return page.evaluate(async () => {
+    const W = window as any, c = (document.getElementById("motion-canvas") as HTMLCanvasElement).getContext("2d")!;
+    await W.motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false });
+    const count = (x: number, y: number, w: number, h: number, test: (r: number, g: number, b: number) => boolean) => { const d = c.getImageData(x, y, w, h).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (test(d[i], d[i + 1], d[i + 2])) n++; return n; };
+    const ink = count(780, 480, 160, 130, (r, g, b) => r < 200 && !(r < 30 && g > 230 && b > 230));
+    return { seen: W.__seen, ownAnimal: count(780, 480, 160, 130, (r, g, b) => r < 30 && g > 230 && b > 230), ownVehicle: count(580, 480, 220, 130, (r, g, b) => r > 230 && g < 30 && b > 230), ownArrow: W.__ownArrow, ox: ink, dropped: (W.__motionMarks || []).map((m: any) => m.id).filter((id: string) => id.startsWith("!fault:drop:")).sort() };
+  }).finally(() => page.close());
+};
+const aiSame = await sameRun(false, "here");
+const kitSame = await sameRun(true, "here"), kitMap = await sameRun(true, "map");
+assert.deepEqual(aiSame.seen, { mark: "you", x: 300, y: 600, h: 200, cloak: "#123456", holding: "banner", expression: "terrified", pose: "sitting", blackPalm: true }, "the scene's own function gets its own words for the options both renderers draw, and nothing that was left out");
+assert.deepEqual(aiSame.dropped, ["!fault:drop:person.frontHandPos"], "an option outside the vocabulary is left out and reported (a hand's look is the hands' colour)");
+assert.ok(aiSame.ownAnimal > 1000 && aiSame.ownVehicle > 1000, "Dựng cảnh AI: the wagon and the team inside it are the scene's own drawing");
+assert.equal(kitSame.ownVehicle, 0, "Bộ vẽ chuẩn: the kit draws the wagon");
+assert.equal(kitSame.ownAnimal, 0, "and the team the scene drew inside it is drawn by the kit too");
+assert.ok(kitSame.ox > 400, "so the team is still there");
+assert.equal(aiSame.ownArrow + kitSame.ownArrow, 0, "no arrow on a scene that is not a map");
+assert.equal(kitMap.ownArrow, 0, "a map's arrow is the kit's in Bộ vẽ chuẩn");
+const aiMap = await sameRun(false, "map");
+// Option names that say what they are (holdingSpear, sootFace, broad, seated) are read as those options; a held thing the
+// hold words lack (a horn) is drawn as its own prop in the hand, by the table, in both renderers.
+{
+  const page = await browser.newPage();
+  await page.setContent(motionHtmlFigures(`<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
+var FIG = window.MotionFigures.use({ person: function (c, o) { (window.__seen = window.__seen || {})[o.x] = o; return { hand: [o.x + 20, o.y - 100] }; }, prop: function (c, o) { window.__prop = o.kind; } });
+window.motionScene = { ready: Promise.resolve(), renderAt: async function () { var c = document.getElementById('motion-canvas').getContext('2d'); FIG.person(c, { x: 300, y: 600, h: 200, holdingSpear: true, sootFace: true, broad: true, seated: true, shield: '#3a4e6c' }); FIG.person(c, { x: 700, y: 600, h: 200, hold: 'horn' }); } };
+</script></body></html>`, { kit: false, profile: "cutout", layout: "wide" } as never));
+  const words = await page.evaluate(async () => { const W = window as any; await W.motionScene.renderAt({ progress: 0.5, time: 1, duration: 4 }); return { prop: W.__prop, first: W.__seen[300], second: W.__seen[700] }; });
+  await page.close();
+  assert.deepEqual(words.first, { x: 300, y: 600, h: 200, holdingSpear: true, sootFace: true, broad: true, seated: true, shield: "#3a4e6c" }, "option names that say what they are are kept (in the scene's own words for its function)");
+  assert.equal(words.second.hold, undefined, "a held thing outside the hold words is not a hold option (in neither renderer)");
+  assert.equal(words.prop, "horn", "it is a prop in the hand, for both renderers");
+}
+assert.equal(aiMap.ownArrow, 1, "and the scene's own on a map in Dựng cảnh AI");
+
+// A lying figure's head point is where its head is drawn (a bandage, an emote or a held thing follows it), in every style;
+// a ferry before engines is a railed scow, not a raft.
+for (const profile of ["cutout", "history"]) {
+  const page = await browser.newPage();
+  await page.setContent(motionHtmlFigures(`<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
+var FIG = window.MotionFigures.use({});
+window.motionScene = { ready: Promise.resolve(), renderAt: async function () { var c = document.getElementById('motion-canvas').getContext('2d'); window.__lie = FIG.person(c, { x: 400, y: 600, h: 200, pose: 'lie', wounded: true }); window.__stand = FIG.person(c, { x: 800, y: 600, h: 200, pose: 'stand' }); } };
+</script></body></html>`, { kit: true, profile, layout: "wide", year: 1241 } as never));
+  const heads = await page.evaluate(async () => { const W = window as any; await W.motionScene.renderAt({ progress: 0.5, time: 1, duration: 4 }); return { lie: W.__lie.head, stand: W.__stand.head }; });
+  await page.close();
+  assert.ok(heads.lie[1] > 600 - 200 * 0.35 && Math.abs(heads.lie[0] - 400) > 200 * 0.25, `${profile}: a lying figure's head is low beside its body`);
+  assert.ok(heads.stand[1] < 600 - 200 * 0.6, `${profile}: a standing figure's head is at the top`);
+}
+{
+  const { MOTION_CATALOG_RUNTIME } = await import("../src/lib/motionObjectCatalog.js");
+  const ferry = MOTION_CATALOG_RUNTIME.entries[MOTION_CATALOG_RUNTIME.words.vehicle.ferry];
+  assert.deepEqual(ferry.variants[0].kit, ["vehicle", "ferry"], "a ferry before engines is drawn as a ferry");
+}
+
 // The place and time title: a storybook caption at the top centre, shown at the scene's start and gone after a few seconds;
 // the dip covers the whole frame.
 const TITLED = SCENE.replace("FIG.person(c, { x: 1000", "FIG.header(c, { text: 'Thăng Long, 1407' }); FIG.person(c, { x: 1000");
@@ -146,4 +249,4 @@ assert.ok(title.shown.light > 300, "the place and year show at the top at the sc
 assert.equal(title.gone.light, 0, "and fade away after a few seconds");
 assert.equal(title.black.centre, 0, "the dip covers the frame");
 await browser.close();
-console.log("Cut-out movement (its own choice): puppet drawings (two held drawings per repeated action, entrances, speaking mouths), dips at time jumps, a storybook title, shots at the narration cues with a closer frame and a short push-in, people, animals and vehicles carried along as one held drawing that hops and rocks.");
+console.log("Cut-out movement (its own choice): puppet drawings (two held drawings per repeated action, entrances, speaking mouths), dips at time jumps, a storybook title, shots at the narration cues with a closer frame and a short push-in, people, animals and vehicles carried along as one held drawing that hops and rocks; things named by their mark, banners in the scene's colour, arrows only on maps; one set of options for both renderers, figures drawn inside others drawn by the kit too.");

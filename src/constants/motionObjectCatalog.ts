@@ -34,9 +34,9 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   vehicle("raft", ALWAYS),
   vehicle("canoe", ALWAYS, "canoe", ["dugout"]),
   vehicle("rowboat", ALWAYS, "rowboat", ["rowingBoat", "skiff", "dinghy"]),
-  // A boat is a rowing boat until motors; a ferry or barge before steam is a flat raft-like craft.
+  // A boat is a rowing boat until motors; a ferry or barge before steam is a flat-bottomed scow with a railed side.
   { id: "boat", fn: "vehicle", names: [], fit: "elastic", variants: [{ to: 1899, kit: ["vehicle", "rowboat"] }, { from: 1900, kit: ["vehicle", "boat"] }], builds: ["wood", "modern"] },
-  { id: "ferry", fn: "vehicle", names: ["barge"], fit: "elastic", to: 1850, variants: [{ kit: ["vehicle", "raft"] }] },
+  { id: "ferry", fn: "vehicle", names: ["barge", "scow", "ferryboat"], fit: "elastic", to: 1850, variants: [{ kit: ["vehicle", "ferry"] }] },
   vehicle("longship", { from: 700, to: 1100 }, "longship", ["drakkar"]),
   vehicle("trireme", { from: -700, to: 400 }, "trireme", ["galley", "bireme"]),
   vehicle("galleon", { from: 1500, to: 1800 }, "galleon", ["carrack", "frigate"]),

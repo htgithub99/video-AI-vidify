@@ -31,9 +31,9 @@ import { motionRenameText } from "../../../../../lib/motionRename.js";
 import { motionHtmlCastCards, motionHtmlContinuity } from "../../../../../lib/motionHtmlCast.js";
 import { motionHtmlFigureDoc } from "../../../../../lib/motionHtmlFigure.js";
 import { MOTION_FIGURES } from "../../../../../constants/motionFigures.js";
-import { motionFigureRenderKey, motionHtmlFiguresIssue, motionHtmlUsesFigures } from "../../../../../lib/motionFigures.js";
+import { motionFigureOwnExtras, motionFigureRenderKey, motionHtmlFiguresIssue, motionHtmlUsesFigures } from "../../../../../lib/motionFigures.js";
 import { motionHtmlMechanics } from "../../../../../lib/motionHtmlMechanics.js";
-import { motionHtmlDrawIssue, motionHtmlRuleLines } from "../../../../../lib/motionHtmlPrompt.js";
+import { motionHtmlRepairDraw, motionHtmlRuleLines } from "../../../../../lib/motionHtmlPrompt.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson, motionAiRoutes } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
@@ -305,8 +305,8 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   // camera are applied when the scene is shown, so neither is part of the drawing request. Checks see the whole frame.
   const graphics = MOTION_HTML.GRAPHICS;
   const output = MOTION_HTML.OUTPUT;
-  const figureDoc = [motionHtmlFigureDoc({ profileId: settings.profile, proportion: settings.proportion }), MOTION_FIGURES.DOC(motionCatalogKinds(settings.year, [scene.text, scene.message, scene.keyVisual, scene.setting, scene.sceneTemplate, scene.drawingNote].filter(Boolean).join(" "))), motionMovementOf({ profileId: settings.profile, movement: settings.movement }) === "cutout" ? MOTION_FIGURES.CUTOUT_RULES : ""].filter(Boolean).join(RT_MAINTENANCE.NEWLINE);
-  const render = { kit: settings.figureKit === true, profile: settings.profile, proportion: motionProportionOf({ profileId: settings.profile, proportion: settings.proportion }), layout: MOTION_LAYOUT_WIDE };
+  const figureDoc = [motionHtmlFigureDoc({ profileId: settings.profile, proportion: settings.proportion }), MOTION_FIGURES.DOC(motionCatalogKinds(settings.year, [scene.text, scene.message, scene.keyVisual, scene.setting, scene.sceneTemplate, scene.drawingNote].filter(Boolean).join(" ")), scene.devices || []), motionMovementOf({ profileId: settings.profile, movement: settings.movement }) === "cutout" ? MOTION_FIGURES.CUTOUT_RULES : ""].filter(Boolean).join(RT_MAINTENANCE.NEWLINE);
+  const render = { kit: settings.figureKit === true, profile: settings.profile, proportion: motionProportionOf({ profileId: settings.profile, proportion: settings.proportion }), layout: MOTION_LAYOUT_WIDE, scene: { shot: settings.shot, kind: settings.kind, sceneTemplate: scene.sceneTemplate } };
   const picture = MOTION_HTML.PICTURE(scene);
   const key = motionInputKey([MOTION_HTML.VERSION, output, graphics, figureDoc, picture, scene.sceneTemplate, settings.width, settings.height, scene.drawingNote, settings.language, settings.cast, settings.continuity]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
@@ -481,14 +481,15 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       lastSource = source;
       const scriptIssue = motionHtmlScriptIssue(source);
       if (scriptIssue) throw Object.assign(new Error(scriptIssue.reason), { motionHtmlExecution: true, motionHtmlFlattened: scriptIssue.flattened });
+      // A call to the kit cannot be repaired (the kit is not on the page in "Dựng cảnh AI"): one new drawing. Erasing
+      // composite modes are repaired here (painted normally), never a new request.
       const kitIssue = motionHtmlFiguresIssue(source);
-      const drawIssue = kitIssue || motionHtmlDrawIssue(source);
-      if (drawIssue) {
-        const retry = kitIssue ? MOTION_FIGURES.KIT_CALL_RETRY : MOTION_HTML.ERASE_RETRY;
-        if (!prompt.includes(retry)) prompt = [prompt, retry].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
-        throw Object.assign(new Error(drawIssue), { motionHtmlExecution: true, motionHtmlDraw: true });
+      if (kitIssue) {
+        if (!prompt.includes(MOTION_FIGURES.KIT_CALL_RETRY)) prompt = [prompt, MOTION_FIGURES.KIT_CALL_RETRY].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+        throw Object.assign(new Error(kitIssue), { motionHtmlExecution: true, motionHtmlDraw: true });
       }
-      const html = source;
+      const repairs: string[] = [];
+      const html = motionHtmlRepairDraw(source, repairs);
       const figures = motionHtmlUsesFigures(html);
       scene.html = {
         version: 1,
@@ -515,18 +516,15 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         try {
           const frameAt = (progress: number, effects = true, camera = true) => runtime.render({ time: progress * settings.seconds, progress, frame: Math.round(progress * settings.seconds * 30), fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, cameraEnabled: camera, sceneEffectsEnabled: effects, seed: key, speaking: [] });
           const keyFrame = await frameAt(MOTION_HTML_QUALITY.KEY_PROGRESS);
-          // One request, one scene: only a drawing that cannot serve the scene (its focal subject absent, or no motion when
-          // motion is on) asks for a new drawing. Everything else is recorded on the scene as a warning for the user.
+          // One request, one scene: what the checks find (a focal subject absent, no motion, a frozen tail...) is recorded
+          // on the scene as warnings for the user, never a new drawing.
           const issues: string[] = [],
-            notes: string[] = [],
             minor: string[] = [];
           // Fault marks (a person option the kit cannot honour) are taken out of every frame's marks and judged on their own.
-          const limbOptions = new Set<string>(),
-            poseOptions = new Set<string>();
+          const dropped = new Set<string>();
           const marksNow = async () => {
             const read = motionHtmlFigureFaults(await runtime.marks());
-            read.limbOptions.forEach((key) => limbOptions.add(key));
-            read.poseOptions.forEach((key) => poseOptions.add(key));
+            read.dropped.forEach((key) => dropped.add(key));
             return read.marks;
           };
           const keyMarks = await marksNow();
@@ -544,7 +542,6 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
             const change = await runtime.change(start, end, MOTION_HTML_QUALITY.CHANGE_SIZE, MOTION_HTML_QUALITY.CHANGE_THRESHOLD, MOTION_HTML.THUMBNAIL_STILL.canvas, MOTION_HTML.THUMBNAIL_STILL.context);
             if (!motionHtmlFocalMoved(required, startMarks, endMarks) && change.changed < MOTION_HTML_QUALITY.MIN_CHANGED) {
               issues.push(MOTION_HTML_QUALITY.STATIC_ISSUE(change.changed));
-              notes.push(MOTION_HTML_QUALITY.STATIC_FEEDBACK(change.changed));
             }
             // The last stretch of the scene must still be alive with the camera held, or the viewer sees a frozen picture.
             const tailFrom = await frameAt(MOTION_HTML_QUALITY.TAIL_FROM, false, false);
@@ -583,7 +580,6 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
           const soft = missing.filter((text) => (!focalIds.has(missingId(text)) || !absent(text)) && !(named && MOTION_SCENE_BLUEPRINT.UNMARKED.test(text)));
           if (hard.length) {
             issues.push(MOTION_HTML_QUALITY.MISSING_ISSUE(hard));
-            notes.push(MOTION_HTML_QUALITY.MISSING_FEEDBACK(hard));
           }
           if (soft.length) minor.push(MOTION_HTML_QUALITY.MISSING_ISSUE(soft));
           if (isMap && !MOTION_HTML_QUALITY.MAP_ARROW.test(page)) minor.push(MOTION_HTML_QUALITY.MAP_NO_ARROW);
@@ -593,20 +589,12 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
           if (relations.apart.length) minor.push(MOTION_SCENE_BLUEPRINT.APART_ISSUE(relations.apart));
           if (relations.blocked.length) minor.push(MOTION_SCENE_BLUEPRINT.BLOCKED_ISSUE(relations.blocked));
           if (relations.stacked.length) minor.push(MOTION_SCENE_BLUEPRINT.STACKED_ISSUE(relations.stacked));
-          const hidden = [...limbOptions].filter((key) => MOTION_HTML_QUALITY.LIMB_HIDE.test(key));
-          const placed = [...limbOptions].filter((key) => !hidden.includes(key));
-          if (hidden.length) {
-            issues.push(MOTION_HTML_QUALITY.LIMB_OPTION_ISSUE(hidden));
-            notes.push(MOTION_HTML_QUALITY.LIMB_OPTION_FEEDBACK([...limbOptions]));
-          }
-          if (placed.length) minor.push(MOTION_HTML_QUALITY.LIMB_PLACE_ISSUE(placed));
-          if (poseOptions.size) {
-            issues.push(MOTION_HTML_QUALITY.POSE_OPTION_ISSUE([...poseOptions]));
-            notes.push(MOTION_HTML_QUALITY.POSE_OPTION_FEEDBACK([...poseOptions]));
-          }
+          if (dropped.size) minor.push(MOTION_HTML_QUALITY.DROP_ISSUE([...dropped]));
+          const extras = motionFigureOwnExtras(page);
+          if (extras.length) minor.push(MOTION_HTML_QUALITY.OWN_EXTRA_ISSUE(extras));
           if (settings.castLooks) motionSceneCastLearn(settings.castLooks, keyMarks);
           if (!figures && !isMap) minor.push(MOTION_FIGURES.MISSING_WARNING);
-          return { image: await runtime.still(keyFrame, MOTION_HTML.THUMBNAIL_STILL), issues, notes, minor };
+          return { image: await runtime.still(keyFrame, MOTION_HTML.THUMBNAIL_STILL), issues, minor };
         } finally {
           await runtime.close();
         }
@@ -614,12 +602,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       // Nothing is repaired by code: the scene is shown exactly as the AI wrote it; faults become warnings or one new drawing.
       const checked = await inspect(html);
       const drawn = html;
-      if (checked.issues.length && qualityTries < MOTION_HTML_QUALITY.QUALITY_RETRIES) {
-        qualityTries++;
-        candidate = { html: drawn, image: checked.image, issues: checked.issues, attempt: attempt.attempt };
-        opts.log(MOTION_HTML_QUALITY.RETRY_LOG(scene.id, checked.issues));
-        throw Object.assign(new Error(checked.issues.join("; ")), { motionHtmlExecution: true, motionHtmlQuality: checked.notes.join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR) });
-      }
+      // One request per scene: what the checks find is kept on the scene as warnings, never a new drawing.
       if (!checked.issues.length && opts.review && qualityTries < MOTION_HTML_QUALITY.QUALITY_RETRIES) {
         // The scene already passed every code check: show it now, then let the AI review it. A review finding asks for one
         // corrected drawing; if that one fails, this drawing is kept.
@@ -638,8 +621,8 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         }
       }
       const image = checked.image;
-      if (checked.issues.length || checked.minor.length) {
-        scene.html.warnings = [...checked.issues, ...checked.minor];
+      if (checked.issues.length || checked.minor.length || repairs.length) {
+        scene.html.warnings = [...checked.issues, ...checked.minor, ...repairs];
         if (checked.issues.length) opts.log(MOTION_HTML_QUALITY.WARN_LOG(scene.id, checked.issues));
       } else delete scene.html.warnings;
       scene.html.thumbnail = image;

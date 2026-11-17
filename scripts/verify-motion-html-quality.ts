@@ -81,7 +81,7 @@ assert.match(MOTION_HTML.ON_SCREEN_TEXT(undefined, false), /no place sign/);
 // A layout is the camera over the scene the AI drew once: the shot size per layout and plan shot, never a drawing rule.
 const { motionCameraShot, motionLayoutOf } = await import("../src/lib/motionLayout.js");
 {
-  assert.match(MOTION_HTML.OUTPUT, /SCALE: size people by shot/, "the scene keeps one generic size rule");
+  assert.match(MOTION_HTML.OUTPUT, /SCALE: people by shot/, "the scene keeps one generic size rule");
   assert.equal(motionCameraShot("wide", { shot: "close" }), "wide", "Toàn cảnh is the AI's whole frame");
   assert.equal(motionCameraShot("stage", { shot: "medium" }), "full");
   assert.equal(motionCameraShot("medium", { shot: "medium" }), "cowboy");

@@ -18,6 +18,8 @@ interface MotionBlueprintItem {
   travelFrom?: number;
   count?: number;
   spread?: number;
+  // The plan's FIGURES options for this id (a value per phase when it changes: pose sit -> stand).
+  look?: Record<string, string | string[] | true>;
 }
 interface MotionSceneBlueprint {
   shot: string;
@@ -61,6 +63,26 @@ const drafts = (template: string): Draft[] => {
       seen.add(id);
       return [{ id, focal: match[2]?.toLowerCase() === Q.FOCAL, ...classify(id) }];
     });
+};
+// The plan's FIGURES line ("FIGURES: you: person, outfit soldier, hold crossbow, pose sit -> stand; ..."): each id's options
+// in the figure vocabulary's words; a value that changes by phase is a list.
+export const motionSceneFigures = (template: string): Record<string, Record<string, string | string[] | true>> => {
+  const line = template.match(B.FIGURES_LINE)?.[1] || "";
+  const out: Record<string, Record<string, string | string[] | true>> = {};
+  for (const entry of line.split(/\s*;\s*/)) {
+    const at = entry.indexOf(":");
+    if (at <= 0) continue;
+    const id = motionHtmlMarkId(entry.slice(0, at));
+    const look: Record<string, string | string[] | true> = {};
+    for (const part of entry.slice(at + 1).split(/\s*,\s*/).slice(1)) {
+      const words = part.trim().split(/\s+/);
+      if (!words[0] || !/^[a-z][A-Za-z]*$/.test(words[0])) continue;
+      const value = words.slice(1).join(" ");
+      look[words[0]] = !value ? true : value.includes("->") ? value.split(/\s*->\s*/) : value;
+    }
+    if (id) out[id] = look;
+  }
+  return out;
 };
 const pairsOf = (template: string, ids: Set<string>): [string, string][] => {
   const line = template.match(B.INTERACT_LINE)?.[1] || "";
@@ -109,6 +131,7 @@ export const motionSceneBlueprint = (template: string | undefined, input: { shot
   const { groundY } = B.SHOTS[shot];
   // The shot's own size, never below what the focal check asks for (the layout's camera frames the scene when it is shown).
   const r = Math.min(B.MAX_R, Math.max(B.SHOTS[shot].r, Math.ceil(((input.focalMin || 0) * B.WORLD.height * B.FOCAL_MARGIN) / B.PERSON_HEIGHT)));
+  const looks = motionSceneFigures(text);
   const pairs = pairsOf(text, new Set(list.map((item) => item.id)));
   // Without an INTERACT line, two focal people are the scene's exchange: they stand together and face each other.
   const explicit = pairs.length > 0;
@@ -199,7 +222,7 @@ export const motionSceneBlueprint = (template: string | undefined, input: { shot
   }
   const setting = text.match(B.SETTING_SECTION)?.[0] || text;
   const time = pick(B.TIME, setting, "day");
-  return { shot, groundY, r, map, time, ground: pick(B.GROUND, setting, B.DEFAULT_GROUND), mist: B.MIST_RE.test(setting), explicit, items: list.map((item) => placed.get(item.id)!).filter(Boolean) };
+  return { shot, groundY, r, map, time, ground: pick(B.GROUND, setting, B.DEFAULT_GROUND), mist: B.MIST_RE.test(setting), explicit, items: list.map((item) => placed.get(item.id)!).filter(Boolean).map((item) => (looks[item.id] ? { ...item, look: looks[item.id] } : item)) };
 };
 const centre = (mark: MotionHtmlMark) => mark.x + mark.w / 2;
 // Checks a drawing against the blueprint's relations, from the boxes the figure table recorded: an acting pair must stand together
@@ -279,6 +302,7 @@ export const motionSafeSceneSource = (plan: MotionSceneBlueprint): string => {
     const k = smooth(0.08, 0.92, p), cam = input.cameraEnabled === false ? 0 : smooth(0.3, 1, p), zoom = 1 + 0.07 * cam;
     const at = (it) => (it.travelFrom === undefined ? it.x : lerp(it.travelFrom, it.x, k));
     const by = Object.fromEntries(P.items.map((it) => [it.id, it]));
+    const phased = (look) => Object.fromEntries(Object.entries(look || {}).map(([key, v]) => [key, Array.isArray(v) ? v[Math.min(v.length - 1, Math.floor(p * v.length))] : v]));
     ctx.translate(640, P.groundY); ctx.scale(zoom, zoom); ctx.translate(-640, -P.groundY);
     const sky = SKY[P.time] || SKY.day, top = P.groundY - 3.6 * P.r;
     let g = ctx.createLinearGradient(0, -200, 0, top); g.addColorStop(0, sky[0]); g.addColorStop(1, sky[1]);
@@ -292,7 +316,8 @@ export const motionSafeSceneSource = (plan: MotionSceneBlueprint): string => {
       const x = at(it), moving = it.travelFrom !== undefined && k < 1, walked = it.travelFrom === undefined ? undefined : Math.abs(x - it.travelFrom);
       const base = { mark: it.id, x, y: it.y, h: it.box[0], w: it.box[1], facing: it.facing, seed: it.seed };
       const goal = it.target && by[it.target];
-      if (it.fn === 'person') return FIG.person(ctx, Object.assign(base, { pose: moving ? 'walk' : goal ? (p > 0.45 ? 'point' : 'talk') : it.focal ? 'talk' : 'stand', distance: walked, pointAt: goal && !moving ? [at(goal), goal.y - 0.7 * goal.box[0]] : undefined, lean: it.focal ? lerp(0, 6, cam) : 0 }));
+      const lk = phased(it.look);
+      if (it.fn === 'person') return FIG.person(ctx, Object.assign(base, lk, { pose: moving ? 'walk' : lk.pose || (goal ? (p > 0.45 ? 'point' : 'talk') : it.focal ? 'talk' : 'stand'), distance: walked, pointAt: goal && !moving ? [at(goal), goal.y - 0.7 * goal.box[0]] : undefined, lean: it.focal ? lerp(0, 6, cam) : 0 }));
       if (it.fn === 'crowd') {
         const n = Math.max(2, it.count || 6), rows = 2, cols = Math.ceil(n / rows), step = (it.spread || 6 * it.size) / cols;
         for (let i = n - 1; i >= 0; i--) {
@@ -301,7 +326,7 @@ export const motionSafeSceneSource = (plan: MotionSceneBlueprint): string => {
         }
         return;
       }
-      if (it.fn === 'animal') return FIG.animal(ctx, Object.assign(base, { kind: it.kind, pose: moving ? 'walk' : 'stand', distance: walked }));
+      if (it.fn === 'animal') return FIG.animal(ctx, Object.assign(base, lk, { kind: lk.kind || it.kind, pose: moving ? 'walk' : lk.pose || 'stand', distance: walked }));
       if (it.fn === 'vehicle') return FIG.vehicle(ctx, Object.assign(base, { kind: it.kind, moving, distance: walked }));
       if (it.fn === 'building') return FIG.building(ctx, Object.assign(base, { kind: it.kind }));
       if (it.kind === 'bridge') return FIG.bridge(ctx, Object.assign(base, { y: it.y - it.box[0] }));

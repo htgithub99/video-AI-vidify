@@ -152,6 +152,8 @@ export const MOTION_SCENE_BLUEPRINT = {
   PLAN_ERROR: (tries: number, reason: string) => `Chia phân cảnh tạm dừng: AI plan cảnh lỗi ${tries} lần liên tiếp (${reason}). Kiểm tra tab AI đã chọn (đăng nhập, giới hạn lượt, mạng) rồi bấm chạy tiếp; phần đã làm được giữ nguyên.`,
   SUMMARY_LOG: (c: { total: number; first: number; redrawn: number; warned: number; offMessage: number; fallback: number; gaps: { fn: string; kind: string; scenes: number }[]; model: string }) =>
     `Tổng kết dựng cảnh (${c.model}): ${c.total} cảnh · đạt ngay lần đầu ${c.first} (${c.total ? Math.round((c.first / c.total) * 100) : 0}%) · phải vẽ lại ${c.redrawn} · còn cảnh báo ${c.warned} · lần đầu lệch thông điệp ${c.offMessage} · cảnh dự phòng do code dựng ${c.fallback} · đồ vật bộ vẽ chưa có ${c.gaps.length}${c.gaps.length ? ` (${c.gaps.slice(0, 12).map((gap) => `${gap.fn} ${gap.kind}${gap.scenes > 1 ? ` ×${gap.scenes}` : ""}`).join(", ")}${c.gaps.length > 12 ? ", …" : ""})` : ""}.`,
-  EXEC_LIMIT: 3,
+  // A broken drawing gets exactly one new drawing; when that one breaks too, the scene drawn by code from the plan stands in.
+  EXEC_LIMIT: 2,
+  FIGURES_LINE: /^[ \t]*(?:\d+\.\s*)?FIGURES\s*:\s*(.+)$/im,
   TRANSPORT_LIMIT: 6,
 } as const;

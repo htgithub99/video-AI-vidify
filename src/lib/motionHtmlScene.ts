@@ -183,7 +183,10 @@ export const motionHtmlSource = (raw: unknown): string => {
     const bodyStart = openScript.index + openScript[0].length;
     const closeScript = doc.slice(bodyStart).match(/<\/script>/i);
     const rawJs = closeScript?.index !== undefined ? doc.slice(bodyStart, bodyStart + closeScript.index) : doc.slice(bodyStart);
-    const fixedJs = jsSyntaxValid(rawJs) ? rawJs : repairJsSyntax(rawJs);
+    // Typographic quotes the AI wrote for code quotes (outside any string) are straight quotes; then unbalanced brackets
+    // and a cut-off end are closed.
+    const straight = jsSyntaxValid(rawJs) ? rawJs : rawJs.replace(/[\u201C\u201D]/g, R.DOUBLE_QUOTE).replace(/[\u2018\u2019]/g, R.SINGLE_QUOTE);
+    const fixedJs = jsSyntaxValid(straight) ? straight : repairJsSyntax(straight);
     const tail = closeScript?.index !== undefined ? doc.slice(bodyStart + closeScript.index) : R.SCRIPT_BODY_HTML_CLOSE;
     doc = doc.slice(0, bodyStart) + fixedJs + tail;
   }

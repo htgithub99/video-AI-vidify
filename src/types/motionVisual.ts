@@ -127,7 +127,7 @@ export interface MotionSceneActionPlan {
 export interface MotionRemotionScene {
   renderer?: "html-canvas";
   // The plan's picture: kind (here|cutaway|map|detail), shot size, place, the one sentence a viewer must take from it, the
-  // picture that says it and the devices (thought, emote, inset, count, arrow, spotlight, time, sound, speed, impact) that show the rest.
+  // picture that says it and the devices (thought, emote, inset, count, spotlight, time, sound, speed, impact) that show the rest.
   kind?: string;
   shot?: string;
   setting?: string;

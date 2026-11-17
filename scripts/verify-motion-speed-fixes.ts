@@ -105,7 +105,7 @@ assert.ok(scenePrompt.includes("FIGURE TABLE (mandatory)"), "every scene is writ
 assert.ok(!scenePrompt.includes(MOTION_FIGURES.DOC(motionCatalogKinds())), "the figure table lists the kinds this scene needs, not every kind");
 assert.equal(scenePrompt.split(MOTION_HTML.GRAPHICS).length, 2, "style rules appear once");
 assert.doesNotMatch(scenePrompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE|kopje|cowhide|chainmail|screaming|Unconscious/i);
-assert.ok(scenePrompt.length < 29000, "scene prompt stays bounded (the figure table lists the period's core kinds and the ones the scene names): " + scenePrompt.length);
+assert.ok(scenePrompt.length < 21000, "scene prompt stays bounded (lean rules, devices only when listed) (the figure table lists the period's core kinds and the ones the scene names): " + scenePrompt.length);
 const horrorCtrl = new AbortController();
 let horrorPrompt = "";
 await assert.rejects(
@@ -181,16 +181,16 @@ assert.ok(!onlyNamed.includes("Pulleine") && !onlyNamed.includes("Durnford") && 
 assert.equal(motionHtmlCastCards(castAnalysis, [], "A colonel waits."), "", "a title alone does not pull in a named officer");
 const { motionHtmlFigureDoc } = await import("../src/lib/motionHtmlFigure.js");
 assert.ok(scenePrompt.includes(motionHtmlFigureDoc({ profileId: "history" })) && horrorPrompt.includes(motionHtmlFigureDoc({ profileId: "horror" })), "scene prompts carry the measured figure design");
-assert.match(motionHtmlFigureDoc({}), /groundY/, "figures stand on the drawn ground");
-assert.match(scenePrompt, /hand-drawn[\s\S]*one Path2D/, "outline belongs to its shape");
+assert.match(motionHtmlFigureDoc({}), /ground point \(o.x, o.y\)/, "figures stand on their ground point");
+assert.match(scenePrompt, /Flat cartoon[\s\S]*one closed Path2D/, "outline belongs to its shape");
 assert.match(scenePrompt, /advances only when the SCENE says so/, "a gathering group does not charge");
-assert.match(scenePrompt, /never drawn while a clip is active/, "a ground clip cannot hide the figures");
+assert.match(scenePrompt, /every clip\(\) sits in its own save\(\)\/restore\(\)/, "a ground clip cannot hide the figures");
 assert.match(motionHtmlFigureDoc({ proportion: "chibi" }), /legs from the hem at 0.9r/, "legs show below the torso");
 assert.match(motionHtmlFigureDoc({}), /six and a half heads/, "the round-head style is drawn near real proportions by default");
 assert.doesNotMatch(motionHtmlFigureDoc({ profileId: "history", proportion: "balanced" }), /Big-head proportions/, "one set of body numbers per proportion");
-assert.match(scenePrompt, /lobes of different sizes, no flat base/, "clouds have a rounded underside");
-assert.match(scenePrompt, /never write names next to people/, "labels stay off the subjects");
-assert.match(scenePrompt, /camX follows groupX at most 1:1[\s\S]*distance travelled/, "the camera never outruns marchers and steps follow distance");
+assert.match(scenePrompt, /a cloud one lumpy outline/, "clouds are one outline");
+assert.match(scenePrompt, /never write names next to anything/, "labels stay off the subjects");
+assert.match(scenePrompt, /never move, pan or zoom a camera[\s\S]*legs step from o.distance/, "the layout owns the camera and steps follow distance");
 assert.doesNotMatch(motionHtmlFigureDoc({}), /torsoY=-28|headR\+4/, "no fixed pixel offsets");
 assert.doesNotMatch(scenePrompt, /overlapping (?:outlined )?(?:puffs|circles)|lumpy blobs|capsule|corner radius/, "no geometric shape recipes");
 assert.doesNotMatch(scenePrompt, /legs down both flanks/, "one rider rule only");
