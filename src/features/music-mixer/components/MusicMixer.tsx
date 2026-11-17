@@ -218,7 +218,7 @@ import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types";
 import { API_ROUTES } from "../../../constants";
 import { MUSIC_MIXER_SERVER } from "../../../constants/musicMixer";
-import { deduplicateMusicMixerTracks, distributeMusicMixerTracks, getMusicMixerTrackKey } from "../services/musicMixerTracks";
+import { countMusicMixerSongs, deduplicateMusicMixerTracks, distributeMusicMixerTracks, getMusicMixerTrackKey } from "../services/musicMixerTracks";
 import { recordWorkflowActivity } from "../../../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../../../constants/workflowActivity";
 type Track = { file: File; name?: string; path: string; folder: string; folderPath?: string; sourcePath?: string; sourceUrl?: string; size?: number; durationSeconds?: number };
@@ -635,7 +635,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     if (abortRef.current || !uniqueTracks.length || songsPerResult < 1 || resultCount < 1) {
       return;
     }
-    if (songsPerResult > uniqueTracks.length) {
+    // A mix never repeats a song (two files with one title count once).
+    if (songsPerResult > countMusicMixerSongs(uniqueTracks)) {
       setError(text.INSUFFICIENT);
       return;
     }
