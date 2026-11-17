@@ -82,9 +82,20 @@ const puppet = await page.evaluate(async () => {
   const ink = (o: any) => { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, 1280, 720); K.person(c, Object.assign({ x: 640, y: 600, r: 40, facing: 1, noShadow: true }, o)); const d = c.getImageData(0, 0, 1280, 720).data; let n = 0, sx = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 100) { n++; sx += ((i - 3) / 4) % 1280; } return { n, mx: n ? sx / n : 0 }; };
   const hands = new Set<string>();
   for (let t = 0; t < 3; t += 0.05) { const res = K.person(c, { x: 640, y: 600, r: 40, pose: "chop", hold: "axe", t, noShadow: true }); hands.add(res.hand.map((v: number) => Math.round(v)).join(",")); }
-  return { hands: hands.size, hidden: ink({ pose: "stand", t: 0.5, enter: { at: 1, from: "left" } }).n, coming: ink({ pose: "stand", t: 1.05, enter: { at: 1, from: "left" } }).mx, arrived: ink({ pose: "stand", t: 2, enter: { at: 1, from: "left" } }).mx };
+  // A walker is one held drawing carried along: at each footfall (no hop, no rock) the figure is the same picture.
+  const step = 2 * 0.28 * (1.25 + 1.1) * 40, at = (d: number) => { const res = K.person(c, { x: 640, y: 600, r: 40, pose: "walk", distance: d, t: 0, noShadow: true }); return [res.hand[0] - 640, res.hand[1], res.backHand[0] - 640].map((v: number) => Math.round(v)).join(","); };
+  const held = new Set([at(step + 0.01), at(2 * step + 0.01), at(5 * step + 0.01)]).size;
+  // Animals and vehicles move the same way: at each footfall a running horse and a cart are the same picture (above the
+  // ground line: the soft ground shadow is not part of the drawing).
+  const pic = (fn: string, o: any) => { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, 1280, 720); K[fn](c, Object.assign({ x: 640, y: 600, r: 30, facing: 1, noShadow: true, t: 0 }, o)); return Array.from(c.getImageData(400, 300, 480, 288).data).join(","); };
+  const horse = new Set([1, 2, 4].map((k) => pic("animal", { kind: "horse", pose: "run", distance: k * 45 }))).size;
+  const cart = new Set([1, 3].map((k) => pic("vehicle", { kind: "cart", moving: true, distance: k * 1.3 * 30 }))).size;
+  return { horse, cart, held, hands: hands.size, hidden: ink({ pose: "stand", t: 0.5, enter: { at: 1, from: "left" } }).n, coming: ink({ pose: "stand", t: 1.05, enter: { at: 1, from: "left" } }).mx, arrived: ink({ pose: "stand", t: 2, enter: { at: 1, from: "left" } }).mx };
 });
 assert.ok(puppet.hands <= 2, "a repeated action switches between two held drawings");
+assert.equal(puppet.held, 1, "a walker is one held drawing carried along (the legs do not step)");
+assert.equal(puppet.horse, 1, "a running horse is one held drawing carried along");
+assert.equal(puppet.cart, 1, "a moving cart is one held drawing (the wheels do not turn)");
 assert.equal(puppet.hidden, 0, "a person entering later is unseen before it enters");
 assert.ok(puppet.coming < puppet.arrived - 20 && Math.abs(puppet.arrived - 640) < 40, "and comes in from its side to its place");
 const talk = await page.evaluate(async () => {
@@ -110,4 +121,4 @@ assert.ok(title.shown.light > 300, "the place and year show at the top at the sc
 assert.equal(title.gone.light, 0, "and fade away after a few seconds");
 assert.equal(title.black.centre, 0, "the dip covers the frame");
 await browser.close();
-console.log("Cut-out movement (its own choice): puppet drawings (two held drawings per repeated action, entrances, speaking mouths), dips at time jumps, a storybook title, shots at the narration cues with a closer frame and a short push-in, walkers that step and hop.");
+console.log("Cut-out movement (its own choice): puppet drawings (two held drawings per repeated action, entrances, speaking mouths), dips at time jumps, a storybook title, shots at the narration cues with a closer frame and a short push-in, people, animals and vehicles carried along as one held drawing that hops and rocks.");
