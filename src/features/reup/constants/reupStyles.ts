@@ -1,6 +1,6 @@
 import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_LOG_SECTIONS } from "../../motion/constants/motionLogSections.js";
-import { MOTION_STYLES as M } from "../../motion/constants/motionStyles.js";
+import { MOTION_REMOTION_STYLES as R, MOTION_STYLES as M } from "../../motion/constants/motionStyles.js";
 /** The Reup screen wears Video Motion's look: its classes are reused here, only Reup's own pieces are added. */
 export const REUP_STYLES = {
   PAGE: MR.MOTION_TEXT_SPACE_Y_6_W_FULL,
@@ -61,13 +61,21 @@ export const REUP_STYLES = {
   LOG_RERUN: "shrink-0 text-[10px] font-semibold text-purple-300 hover:text-purple-200 hover:underline underline-offset-2",
   BAR: M.H_2,
   WARN_BOX: "rounded-xl border border-amber-400/40 bg-amber-400/5 p-3 space-y-1",
-  SEGMENTS: "max-h-80 overflow-y-auto custom-scrollbar space-y-1.5 pr-1",
-  SEGMENT: "flex items-start gap-2.5 rounded-xl border border-slate-800 bg-slate-955/60 p-2",
-  SEGMENT_IMG: "w-24 h-14 shrink-0 object-cover rounded-md border border-slate-800 bg-slate-900",
-  SEGMENT_BODY: "min-w-0 flex-1 space-y-0.5",
-  SEGMENT_TIME: "text-[10px] font-mono text-slate-500",
-  SEGMENT_TEXT: "text-[11px] leading-relaxed text-slate-200 line-clamp-2",
-  SEGMENT_VALUE: "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300",
+  /** Video Motion's scene grid (MOTION_REMOTION_STYLES), with Reup's frame image and summary lines. */
+  SCENES: R.PANEL,
+  SCENES_HEAD: R.HEAD,
+  SCENES_COUNT: R.COUNT,
+  SCENES_SUMMARY: "text-[11px] leading-relaxed text-slate-300 line-clamp-3",
+  SCENES_GRID: R.GRID,
+  SCENE_CARD: R.CARD,
+  SCENE_IMAGE: "block w-full aspect-video object-cover bg-slate-950",
+  /** Download icon beside the caption, always visible (an icon over a bright frame could not be seen). */
+  SCENE_DOWNLOAD: "btn-icon-tiny shrink-0 w-7 h-7 !p-0 rounded-lg flex items-center justify-center cursor-pointer text-slate-300 hover:text-purple-300",
+  SCENE_CAPTION_ROW: "flex items-center gap-1 pr-1 min-w-0",
+  SCENE_PENDING: `${R.PENDING} bg-slate-955/60`,
+  SCENE_STATUS: `${R.PENDING_CONTENT} ${R.STATUS}`,
+  SCENE_CAPTION: `${R.CAPTION} flex-1`,
+  SCENE_TEXT: "min-w-0 px-2 pb-2 text-[10px] leading-4 text-slate-400 line-clamp-2 break-words",
   OUTPUT: "space-y-3 pt-3 first:pt-0 border-t first:border-t-0 border-slate-800/80",
   OUTPUT_TITLE: "text-[11px] font-bold font-mono uppercase tracking-wider text-purple-300",
   PAIR: "grid grid-cols-1 sm:grid-cols-2 gap-2.5",

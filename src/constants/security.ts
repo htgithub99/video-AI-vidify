@@ -378,6 +378,10 @@ export const ImageGenMessages = {
   GLOBAL_CHROME_CLOSED_EXTERNAL: "Trình duyệt Chrome toàn cục đã bị đóng từ bên ngoài.",
   CONFIG_CHANGED_FORCE_NEW_ROOM: "Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.",
   CHROME_MODE_CHANGED: "[Trình duyệt] Chế độ Chrome thay đổi (Headless: {0} -> {1}). Đang khởi động lại trình duyệt...",
+  CHROME_MODE_SWITCHED: "[Trình duyệt] Chrome đang chạy ẩn từ lần trước – đóng để mở lại ở chế độ hiện như cấu hình.",
+  CHROME_MODE_KEPT: "[Trình duyệt] Chrome đang chạy ở chế độ {0} và còn tác vụ khác dùng – giữ nguyên, chưa chuyển sang chế độ {1} như cấu hình.",
+  CHROME_MODE_HIDDEN: "ẩn",
+  CHROME_MODE_SHOWN: "hiện",
 } as const;
 export const UIConstants = { INFINITY: "∞", LANG_VI: "VN", LANG_EN: "EN", MOUSE_DOWN_EVENT: "mousedown" } as const;
 export const getClientEnvironmentLicenseKey = (): string => {

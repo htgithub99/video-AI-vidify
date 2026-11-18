@@ -17,6 +17,8 @@ interface Stored {
   presetSettings?: Partial<Record<ReupPresetId, ReupSettings>>;
   jobId?: string;
   sourcePath?: string;
+  /** The footage rights confirmed for this source (asked again when another source is chosen). */
+  rights?: ReupRights | "";
 }
 export interface ReupJobSummary {
   id: string;
@@ -84,6 +86,7 @@ export const useReupStudio = (lang: Lang) => {
       setPreset(reupPreset(saved.preset).id);
       setPresetSettings(_.mapValues(saved.presetSettings || {}, (value, key) => cleanReupSettings(value, key as ReupPresetId)));
       if (saved.sourcePath) setSourcePath(saved.sourcePath);
+      if (saved.rights === "own" || saved.rights === "licensed") setRights(saved.rights);
       if (saved.jobId) await openJob(saved.jobId);
       else if (saved.sourcePath) await motionRequest<{ source: ReupSource }>(REUP_URL.SOURCE, { path: saved.sourcePath }).then((r) => setSource(r.source), _.noop);
       setLoaded(true);
@@ -91,10 +94,17 @@ export const useReupStudio = (lang: Lang) => {
     void reloadVoiceChannels();
     void reloadResults();
   }, [openJob, reloadResults, reloadVoiceChannels]);
+  // Rights are confirmed per source: choosing another file asks again (a reload keeps them).
+  const rightsFor = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!source) return;
+    if (rightsFor.current && rightsFor.current !== source.path) setRights("");
+    rightsFor.current = source.path;
+  }, [source]);
   useEffect(() => {
     if (!loaded) return;
-    void jsonUtils.setAsyncItem<Stored>(REUP_STORAGE.STATE, { preset, presetSettings, jobId: job?.id, sourcePath });
-  }, [loaded, preset, presetSettings, job?.id, sourcePath]);
+    void jsonUtils.setAsyncItem<Stored>(REUP_STORAGE.STATE, { preset, presetSettings, jobId: job?.id, sourcePath, rights });
+  }, [loaded, preset, presetSettings, job?.id, sourcePath, rights]);
   useEffect(() => {
     if (!job || job.status !== "running") return;
     const timer = setInterval(() => {
@@ -149,10 +159,7 @@ export const useReupStudio = (lang: Lang) => {
       toast.error(errorText(error));
     }
   }, []);
-  const newJob = useCallback(() => {
-    setJob(null);
-    setRights("");
-  }, []);
+  const newJob = useCallback(() => setJob(null), []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
   return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, voiceChannels, reloadVoiceChannels, start, cancel, rerun, approveScript, saveVideo, newJob };
 };

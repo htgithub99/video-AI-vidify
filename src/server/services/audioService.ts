@@ -39,7 +39,8 @@ export async function initPlaywright() {
     appLog(SOURCE_TEXT_PLAYWRIGHT_CONNECTING);
     const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
     const ctx = browser.contexts()[0];
-    const page = await ctx.newPage();
+    // Reuse the Labs home tab an earlier start left open (never a Flow project or a chat) instead of adding one per app start.
+    const page = ctx.pages().find((p) => !p.isClosed() && _.trimEnd(p.url(), "/") === _.trimEnd(EXTERNAL_URLS.GOOGLE_LABS, "/")) || (await ctx.newPage());
     await page.addInitScript(SOURCE_TEXT_IF_TYPEOF_WINDOW_UNDEFINED_IF_WINDOW);
     page.on(SOURCE_TEXT_REQUEST, (req) => {
       const auth = req.headers()[SOURCE_TEXT_AUTHORIZATION];

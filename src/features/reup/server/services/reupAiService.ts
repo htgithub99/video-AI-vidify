@@ -2,6 +2,7 @@ import fs from "fs";
 import _ from "lodash";
 import { runInMotionAiSession, runMotionAi, type MotionAiImage } from "../../../motion/server/services/motionStoryService.js";
 import { isChatAttachmentError } from "../../../../server/services/chatSubmissionRecovery.js";
+import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../../../constants/cinematicConstants.js";
 import type { MotionAiExecution } from "../../../../types/motionVideo.js";
 import { REUP_FOLDER, REUP_OVERLAY, REUP_UPLOAD } from "../../constants/reupConfig.js";
 import { REUP_ARTIFACT, REUP_PROMPT } from "../../constants/reupPrompts.js";
@@ -33,7 +34,9 @@ const image = (sheet: Pick<ReupSheet, "file" | "index">): MotionAiImage => ({ na
 export const withReupAi = <T>(job: ReupJob, fn: () => Promise<T>, log: Log, signal?: AbortSignal): Promise<T> => runInMotionAiSession(job.id, fn, aiLog(log), false, signal);
 /**
  * Step 2 — scene map. Sheets go out in the biggest batches the chosen AI accepts per message; batches run in
- * parallel on the room pool. A refused upload halves the batch (remembered for next time).
+ * parallel on the room pool. A refused upload halves the batch (remembered for next time). When the AI declines to
+ * look at the pictures (a content refusal, e.g. Gemini's "can't help with that image"), the batch is re-sent one sheet
+ * at a time and sheets still refused are left out of the map — their footage is simply not used.
  */
 export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSignal): Promise<ReupSceneMap> => {
   const choice = job.settings.visionAi;
@@ -45,23 +48,40 @@ export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSi
   log(api ? REUP_LOG.UPLOAD_API(first.length, job.sheets.length) : REUP_LOG.UPLOAD_PLAN(choice.provider, Math.min(limit, job.sheets.length), first.length, job.sheets.length));
   const badText = job.bad.map((b) => `${Math.round(b.start)}-${Math.round(b.end)}s`).join(", ");
   let done = 0;
+  let refused = 0;
+  // Requests planned so far: grows when a batch is split, so "batch n/N" stays true.
+  let planned = first.length;
+  const split = <T>(chunks: T[][]): T[][] => {
+    planned += chunks.length - 1;
+    return chunks;
+  };
   const parts: ReupScenePart[] = [];
   const ask = async (sheets: ReupSheet[], exec: MotionAiExecution, halvings: number): Promise<void> => {
     if (!api && sheets.length > limit) {
-      await Promise.all(_.chunk(sheets, limit).map((chunk) => ask(chunk, exec, halvings)));
+      await Promise.all(split(_.chunk(sheets, limit)).map((chunk) => ask(chunk, exec, halvings)));
       return;
     }
     const span = { start: reupSheetSpan(sheets[0], job.source.duration).start, end: reupSheetSpan(_.last(sheets)!, job.source.duration).end };
     const items = job.source.items?.filter((it) => it.end > span.start && it.start < span.end);
-    const prompt = REUP_PROMPT.SCENES({ sheets: sheets.map((s) => ({ index: s.index, start: s.start, interval: s.interval, count: s.count, cols: s.cols })), duration: job.source.duration, part: parts.length + 1, parts: Math.max(first.length, parts.length + 1), bad: badText, items, photoSeconds: REUP_FOLDER.PHOTO_SECONDS });
+    const prompt = REUP_PROMPT.SCENES({ sheets: sheets.map((s) => ({ index: s.index, start: s.start, interval: s.interval, count: s.count, cols: s.cols })), duration: job.source.duration, part: parts.length + 1, parts: planned, bad: badText, items, photoSeconds: REUP_FOLDER.PHOTO_SECONDS });
     try {
       const raw = await runMotionAi(prompt, REUP_ARTIFACT.SCENES, exec, signal, aiLog(log), sheets.map(image));
       const part = cleanScenePart(raw, span, job.bad, `b${sheets[0].index}_`);
       parts.push(part);
       done += sheets.length;
-      log(REUP_LOG.SCENE_BATCH(parts.length, first.length, part.segments.length));
+      log(REUP_LOG.SCENE_BATCH(parts.length + refused, planned, part.segments.length));
     } catch (error) {
       if (signal?.aborted) throw error;
+      if ((error as Error)?.message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR) {
+        if (sheets.length > 1) {
+          log(REUP_LOG.VISION_REFUSED_SPLIT(choice.provider, sheets.length), "warn");
+          for (const one of split(sheets.map((sheet) => [sheet]))) await ask(one, exec, REUP_UPLOAD.HALVINGS);
+          return;
+        }
+        refused++;
+        log(REUP_LOG.VISION_REFUSED_SKIP(choice.provider, span.start, span.end), "warn");
+        return;
+      }
       if (!api && isChatAttachmentError(error) && sheets.length > 1 && halvings < REUP_UPLOAD.HALVINGS) {
         const next = Math.max(1, Math.floor(sheets.length / 2));
         if (next < limit) {
@@ -69,13 +89,13 @@ export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSi
           limit = next;
           learnReupUploadLimit(choice.provider, next);
         }
-        await Promise.all(_.chunk(sheets, next).map((chunk) => ask(chunk, exec, halvings + 1)));
+        await Promise.all(split(_.chunk(sheets, next)).map((chunk) => ask(chunk, exec, halvings + 1)));
         return;
       }
       if (choice.allowFallback && exec.strictProvider) {
         const size = Math.min(REUP_UPLOAD.FALLBACK_BATCH, sheets.length);
         log(REUP_LOG.UPLOAD_FALLBACK(size), "warn");
-        await Promise.all(_.chunk(sheets, size).map((chunk) => ask(chunk, reupExec(choice), REUP_UPLOAD.HALVINGS)));
+        await Promise.all(split(_.chunk(sheets, size)).map((chunk) => ask(chunk, reupExec(choice), REUP_UPLOAD.HALVINGS)));
         return;
       }
       throw error;
@@ -83,7 +103,7 @@ export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSi
   };
   await Promise.all(first.map((batch) => ask(batch, reupExec(choice, !api), 0)));
   const map = mergeSceneParts(parts);
-  if (!map.segments.length) throw new Error(REUP_ERROR.NO_SCENES);
+  if (!map.segments.length) throw new Error(refused ? REUP_ERROR.VISION_REFUSED(choice.provider) : REUP_ERROR.NO_SCENES);
   log(REUP_LOG.SCENES(map.segments.length));
   return map;
 };

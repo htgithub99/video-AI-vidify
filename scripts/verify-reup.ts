@@ -6,6 +6,7 @@ import path from "path";
 import { spawnSync } from "child_process";
 import { REUP_UPLOAD } from "../src/features/reup/constants/reupConfig.js";
 import { reupJobSettings, reupMusicMood, reupPresetDefaults, reupPresetRules } from "../src/features/reup/constants/reupPresets.js";
+import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.js";
 import { REUP_COMMENTARY } from "../src/features/reup/constants/reupCommentary.js";
 import { REUP_PROMPT } from "../src/features/reup/constants/reupPrompts.js";
 import { pickReupStyle } from "../src/features/reup/lib/reupCommentary.js";
@@ -15,7 +16,7 @@ import { reupUnbackedClaims } from "../src/features/reup/lib/reupFacts.js";
 import { cleanScenePart, mergeSceneParts, reupBadRanges, reupSheetBatches, reupUploadLimit } from "../src/features/reup/lib/reupSceneMap.js";
 import { cleanReupSettings } from "../src/features/reup/lib/reupSettings.js";
 import { ReupFootageLedger, mergeSpans, reupSectionSeconds, spanLength } from "../src/features/reup/lib/reupTimeline.js";
-import { reupAlignCues, reupKaraokeAss, reupPhrases, reupShotPieces, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../src/features/reup/lib/reupSpeech.js";
+import { reupAlignCues, reupClipSubtitles, reupKaraokeAss, reupPhrases, reupSentences, reupShotPieces, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../src/features/reup/lib/reupSpeech.js";
 import type { ReupJob, ReupShot } from "../src/features/reup/types/reup.js";
 let passed = 0;
 const check = (name: string, fn: () => void) => {
@@ -149,6 +150,17 @@ check("subtitles: narration cut into short lines by clause (words, or characters
   const times = reupSubtitleTimes(["one two", "three four"], [{ w: "one", s: 0.1, e: 0.4 }, { w: "two", s: 0.5, e: 0.8 }, { w: "three", s: 2.0, e: 2.3 }, { w: "four", s: 2.4, e: 2.8 }], 3);
   assert.deepEqual(times.map((t) => [t.start, t.end]), [[0, 1.95], [2, 3]]);
   assert.ok(reupSubtitleAss(times, { width: 1920, height: 1080, font: "Arial" }).includes("Dialogue: 0,0:00:02.00,0:00:03.00,S,,0,0,0,,three four"));
+});
+check("refusal: Gemini's \"Sorry I can't help with that image\" is a refusal (no pointless retry), JSON is not", () => {
+  assert.ok(CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_PATTERN.test("Sorry I can't help with that image. Try uploading another image or describing the image you tried to upload and I can help you that way."));
+  assert.ok(!CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_PATTERN.test("Sorry for the wait — here is the JSON"));
+});
+check("voice: read sentence by sentence (long ones cut at a comma), subtitles timed by each clip like Video Motion", () => {
+  const sentences = reupSentences("Ừ. Anh ấy dựng lều bên suối, rồi nhóm lửa thật nhanh. Tại sao lại chọn chỗ này? Vì gió thổi ngược dòng nước, giữ khói không bay vào lều, và mặt đất ở đây khô ráo hơn hẳn so với bãi đá phía dưới.", 80);
+  assert.deepEqual(sentences.map((x) => x.length <= 80), [true, true, true, true]);
+  assert.equal(sentences[0], "Ừ. Anh ấy dựng lều bên suối, rồi nhóm lửa thật nhanh.", "a stub sentence joins the next");
+  const subs = reupClipSubtitles([{ text: "Short one.", start: 0, end: 1.2 }, { text: "Anh ấy dựng lều bên suối, rồi nhóm lửa thật nhanh giữa trời mưa lạnh.", start: 1.2, end: 6 }], 8, 18);
+  assert.deepEqual(subs.map((l) => [l.start, l.end]), [[0, 1.2], [1.2, 2.9], [2.95, 4.55], [4.6, 6]], "each line stays inside its own clip");
 });
 check("speech: phrases cut at pauses and sentence ends; cues timed by spoken words", () => {
   const words = [["Welcome", 0, 0.4], ["to", 0.45, 0.6], ["Tixi.", 0.62, 1.1], ["We", 2.0, 2.2], ["sell", 2.25, 2.5], ["old", 2.55, 2.8], ["cameras", 2.85, 3.4]].map(([w, s, e]) => ({ w: w as string, s: s as number, e: e as number }));

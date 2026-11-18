@@ -293,7 +293,7 @@ import { jsonUtils } from "../../lib/json.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { CINEMATIC_CHAT_MODEL_LABELS } from "../../constants/cinematicConstants.js";
 import { FLOW_AUTOMATION_MESSAGES, GROK_AUTOMATION_MESSAGES } from "../../constants/messages.js";
-import { appError, appLog, createAppError } from "../../lib/logger.js";
+import { appError, appLog, appWarn, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
 import { AiPlanningChatModel, AiPlanningFallbackProvider, GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio, ProjectLanguage, GEMINI_CHAT_MEDIA_SELECTORS, VisualConfig } from "../../types.js";
 import { selectGeminiThinkingModel } from "./geminiModelService.js";
@@ -1776,7 +1776,7 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
   if (preferSharedChrome) {
     const runningHeadless = await getSharedChromeHeadlessMode();
     if (runningHeadless !== null && runningHeadless !== requestedHeadless) {
-      await closeIdleSharedChrome(true).catch(() => false);
+      await switchSharedChromeMode(requestedHeadless, runningHeadless);
       await closeAppBrowserAfterTask(true, true).catch(() => false);
     }
     const sharedBrowser = (await connectToSharedChromeBrowser()) || (await launchSharedChromeBrowser(chromeHeadless));
@@ -1857,6 +1857,35 @@ const getSharedChromeHeadlessMode = async (): Promise<boolean | null> => {
   }
 };
 const isSharedChromeRunning = async (): Promise<boolean> => (await getSharedChromeHeadlessMode()) !== null;
+/**
+ * The shared Chrome is running in the other mode (a hidden Chrome left by an earlier run survives app restarts).
+ * Closed when idle; a hidden one is also closed when none of this app's work is in it (a run's own browser hold
+ * would otherwise block the switch), since no one can be looking at its tabs. Otherwise the mode is kept and said so:
+ * the "show browser" setting is never ignored silently.
+ */
+const switchSharedChromeMode = async (requestedHeadless: boolean, runningHeadless: boolean): Promise<void> => {
+  if (await closeIdleSharedChrome(true).catch(() => false)) return;
+  // This launch itself is in flight (activeBrowserLaunchPromise) and holds the run's browser lease: neither counts as other work.
+  const working = !!activeBrowserInstance || sharedChromeTasks.switching || activeFlowVideoGenerationCount > SecurityConstants.ZERO || globalBatchPages.some((page) => !page.isClosed()) || [...routedSharedSessions.values()].some((session) => session.context.browser()?.isConnected());
+  if (runningHeadless && !working) {
+    appLog(ImageGenMessages.CHROME_MODE_SWITCHED);
+    try {
+      const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
+      const cdp = await (browser as Browser).newBrowserCDPSession();
+      await cdp.send(SOURCE_TEXT_BROWSER_CLOSE as any).catch(() => undefined);
+    } catch {}
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      if (!(await isSharedChromeRunning())) {
+        sharedChromeLaunchedByApp = false;
+        activeBrowserHeadless = undefined;
+        return;
+      }
+      await delayAsync(250);
+    }
+  }
+  const mode = (headless: boolean): string => (headless ? ImageGenMessages.CHROME_MODE_HIDDEN : ImageGenMessages.CHROME_MODE_SHOWN);
+  appWarn(ImageGenMessages.CHROME_MODE_KEPT, mode(runningHeadless), mode(requestedHeadless));
+};
 const waitForSharedChromeExit = async (): Promise<boolean> => {
   for (let attempt = 0; attempt < 6; attempt += 1) {
     if (!(await isSharedChromeRunning())) return true;

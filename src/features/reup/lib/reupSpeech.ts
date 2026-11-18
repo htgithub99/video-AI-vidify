@@ -122,6 +122,37 @@ export const reupSubtitleLines = (text: string, maxWords: number, maxChars: numb
     })
     .filter(Boolean);
 };
+/**
+ * Narration cut into sentences, each read as its own clip (like Video Motion's per-line voice): the clips' lengths then
+ * time subtitles and picture changes exactly, with no listening back. Sentences over `max` characters are cut at a
+ * comma, then a space; very short ones join the next so the read keeps its flow.
+ */
+export const reupSentences = (text: string, max: number, min = 12): string[] => {
+  const parts = (text.replace(/\s+/g, " ").trim().match(/[^.!?…。！？]+(?:[.!?…。！？]+["')\]」』]*|$)/gu) || []).map((p) => p.trim()).filter(Boolean);
+  const cut = (sentence: string): string[] => {
+    const out: string[] = [];
+    let rest = sentence;
+    while (rest.length > max) {
+      const head = rest.slice(0, max);
+      const clause = Math.max(head.lastIndexOf(", "), head.lastIndexOf("、"), head.lastIndexOf("，")) + 1;
+      const space = head.lastIndexOf(" ");
+      const at = clause > max / 3 ? clause : space > max / 3 ? space : max;
+      out.push(rest.slice(0, at).trim());
+      rest = rest.slice(at).trim();
+    }
+    return rest ? [...out, rest] : out;
+  };
+  const merged: string[] = [];
+  for (const part of parts.flatMap(cut)) {
+    const last = merged[merged.length - 1];
+    if (last && last.length < min && last.length + part.length + 1 <= max) merged[merged.length - 1] = `${last} ${part}`;
+    else merged.push(part);
+  }
+  return merged;
+};
+/** Subtitle lines of a narration read clip by clip: each clip's lines share its exact span (by text length inside it). */
+export const reupClipSubtitles = (clips: { text: string; start: number; end: number }[], maxWords: number, maxChars: number): ReupSubLine[] =>
+  clips.flatMap((clip) => reupSubtitleTimes(reupSubtitleLines(clip.text, maxWords, maxChars), [], clip.end - clip.start).map((line) => ({ text: line.text, start: _.round(clip.start + line.start, 2), end: _.round(clip.start + line.end, 2) })));
 /** Subtitle lines timed inside one narration: starts matched to the spoken words, each line held until the next. */
 export const reupSubtitleTimes = (lines: string[], words: ReupWord[], total: number): ReupSubLine[] => {
   const starts = lines.length > 1 ? reupAlignCues(lines, words, total) : [0];

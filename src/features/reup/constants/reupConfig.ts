@@ -85,7 +85,8 @@ export const REUP_FONTS: Record<"latin" | "ja" | "ko", { file: string; family: s
     { file: "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc", family: "Noto Sans CJK KR" },
   ],
 };
-export const REUP_VOICE = { RETRY_MS: 17000, RETRIES: 24, BUSY: /queue|429|too many|busy|limit|full|đầy|hàng đợi/i } as const;
+/** Voice: busy retries, and the longest sentence read as one clip (VieNeu refuses past 1800 characters). */
+export const REUP_VOICE = { RETRY_MS: 17000, RETRIES: 24, SENTENCE_MAX: 300, WORK_DIR: "reup", BUSY: /queue|429|too many|busy|limit|full|đầy|hàng đợi/i } as const;
 /** Folder sources (photo reports): photos and clips laid end to end; a low-resolution proxy stands in for the source. */
 export const REUP_FOLDER = { PHOTO_SECONDS: 5, IMAGE_EXT: /\.(jpe?g|png|webp|bmp)$/i, VIDEO_EXT: /\.(mp4|mov|m4v|mkv|avi|webm)$/i, PROXY_HEIGHT: 360, PROXY_FPS: 2, MAX_ITEMS: 400 } as const;
 /** Chapter cards, callouts, the closing call to action, karaoke subtitles and narration subtitle lines (words or, for unspaced scripts, characters per line). */
