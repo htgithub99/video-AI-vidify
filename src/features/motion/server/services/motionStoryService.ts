@@ -1262,12 +1262,9 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     const basePrompt = editorialContext + (exec.bible && !bibleSent ? MOTION_STORY_CONFIG.BIBLE_WRAP(exec.bible.text) : MR.MOTION_TEXT_EMPTY) + prompt;
     const singleMessage = motionPromptSingleMessage(artifactType);
     const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
-    const fullPrompt =
-      exec.outputFormat === RT_MAINTENANCE.HTML
-        ? `${taskPrompt}${MOTION_HTML.IDENTITY(artifactType, String(requestId))}`
-        : singleMessage
-          ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity))
-          : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
+    const fullPrompt = singleMessage
+      ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity))
+      : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
     log?.(PROMPT.LOG(artifactType, fullPrompt.length, images?.length || 0));
     const measurement = motionPromptMeasurement(prompt, fullPrompt, editorialContext.length, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")), singleMessage);
     if (measurement.overflow) log?.(singleMessage ? PROMPT.SINGLE_MESSAGE_LOG(artifactType, measurement.finalChars) : PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
@@ -1416,7 +1413,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         artifactType,
         requestId,
         signal: roomCtrl.signal,
-        oneGeneration: exec.singleResponse === true && (artifactType === SCENE_COMPOSITION.ARTIFACT || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML) || exec.outputFormat === RT_MAINTENANCE.HTML),
+        oneGeneration: exec.singleResponse === true && (artifactType === SCENE_COMPOSITION.ARTIFACT || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML)),
         closeRoomOnComplete: !run,
         allowDefaultGeminiModel: true,
         allowFallback: false,
@@ -1445,7 +1442,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         else await closeChatPlanningRoom({ provider, projectId, workerId }, true);
       });
       exec.responseReceived?.(r.text);
-      const result = exec.outputFormat === RT_MAINTENANCE.HTML ? r.text : extractMotionRoomJson(r.text);
+      const result = extractMotionRoomJson(r.text);
       run?.roomRecoveries.delete(workerId!);
       if (run) (run.roomTurns ||= new Map()).set(workerId!, (run.roomTurns.get(workerId!) || 0) + 1);
       if (run && bibleKey()) (run.bibles ||= new Map()).set(workerId!, bibleKey()!);
@@ -1477,7 +1474,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         log?.(MOTION_STORY_CONFIG.ROOM_REFUSAL_LOG(provider));
         throw caught;
       }
-      const salvaged = exec.outputFormat === RT_MAINTENANCE.HTML ? undefined : salvageRoomJson(diag?.lastCandidate, artifactType, requestId, exec.responseSchema, diag);
+      const salvaged = salvageRoomJson(diag?.lastCandidate, artifactType, requestId, exec.responseSchema, diag);
       if (salvaged) {
         log?.(MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG);
         roomOk = true;
@@ -1507,7 +1504,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       const isTimeoutError = _.get(caught, RT_MAINTENANCE.CODE) === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE;
       const unsent =
         !recovered && !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || isTimeoutError || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
-      if (!captchaRetry && exec.singleResponse && !unsent && exec.outputFormat !== RT_MAINTENANCE.HTML && artifactType !== MOTION_HTML.PLAN && artifactType !== MOTION_HTML.ARTIFACT) {
+      if (!captchaRetry && exec.singleResponse && !unsent && artifactType !== MOTION_HTML.PLAN && artifactType !== MOTION_HTML.ARTIFACT) {
         roomOk = submission.completed;
         throw caught;
       }
@@ -1525,7 +1522,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
             const resumeSignal = AbortSignal.any(_.compact([signal, run?.signal, AbortSignal.timeout(AIR.RESUME_MS)]));
             const result = await resumeChatPlanningResponse({ provider, model: exec.model as AiPlanningChatModel, prompt: fullPrompt, projectId, workerId, artifactType, requestId, signal: resumeSignal, chromeHeadless: exec.chromeHeadless !== false, submission, reloadPendingResponse: check > 0 });
             exec.responseReceived?.(result.text);
-            const parsed = exec.outputFormat === RT_MAINTENANCE.HTML ? result.text : extractMotionRoomJson(result.text);
+            const parsed = extractMotionRoomJson(result.text);
             roomOk = true;
             return parsed;
           } catch (resumeError) {
@@ -1636,10 +1633,10 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   countMotionRequest(MOTION_STORY_CONFIG.API_PROVIDER, log);
   const { fullPrompt } = requestPrompt();
   const contents = images?.length ? [{ role: MOTION_TEXT_USER, parts: [{ text: fullPrompt }, ..._.map(images, (im) => ({ inlineData: { mimeType: im.mimeType, data: fs.readFileSync(im.path).toString(MOTION_TEXT_BASE64) } }))] }] : fullPrompt;
-  const response = await generateContentWithRetry({ contents, task: { capability: AiTaskCapability.ScriptWriting }, config: { responseMimeType: exec.outputFormat === RT_MAINTENANCE.HTML ? RT_MAINTENANCE.TEXT_PLAIN : MOTION_TEXT_APPLICATION_JSON } });
+  const response = await generateContentWithRetry({ contents, task: { capability: AiTaskCapability.ScriptWriting }, config: { responseMimeType: MOTION_TEXT_APPLICATION_JSON } });
   const text = _.isString(response) ? response : response?.candidates?.[0]?.content?.parts?.[0]?.text || response?.text || MR.MOTION_TEXT_EMPTY;
   exec.responseReceived?.(text);
-  return exec.outputFormat === RT_MAINTENANCE.HTML ? text : extractJson(text);
+  return extractJson(text);
 };
 const slugKey = (s: string): string => _.trim(_.deburr(_.toString(s).replace(MP.VIETNAMESE_D_LOWER, MOTION_TEXT_D).replace(MP.VIETNAMESE_D_UPPER, MOTION_TEXT_D_2)).toLowerCase().replace(MP.SLUG_LOWER_INVALID, MOTION_TEXT_SYMBOL_30), MOTION_TEXT_SYMBOL_30).slice(0, 24) || MOTION_TEXT_NV;
 const { TIMES, WEATHERS, SHOTS, VISUALS, FRAMES, HOOKS } = MOTION_RESPONSE_VALUES;

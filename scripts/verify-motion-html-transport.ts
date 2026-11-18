@@ -28,15 +28,15 @@ const original = { ...C };
 Object.assign(C, { RESPONSE_POLL_MS: 5, RESPONSE_STABLE_POLLS: 2, RESPONSE_STABLE_POLLS_MATCHED: 2, INVALID_RESPONSE_STABLE_POLLS: 4 });
 try {
   const page = await browser.newPage();
-  const html = '<!DOCTYPE html><html data-artifact="motion-html-scene" data-request-id="html-request"><head></head><body><canvas id="motion-canvas"></canvas><script>window.motionScene={ready:Promise.resolve(),renderAt:()=>{}};</script></body></html>';
+  // A scene comes back as one JSON spec in a code block (Gemini shows it as a "JSON" block), with its request identity
+  // first: the transport reads it as complete JSON, never waits for an HTML document and never asks for a retry.
+  const spec = { artifactType: "motion-html-scene", requestId: "scene-request", horizon: 310, time: "day", ground: "grass", items: [{ id: "you", fn: "person", x: 400, y: 600, h: 220, focal: true }] };
   for (const selector of [C.GEMINI_RESPONSE_SELECTOR, C.CHATGPT_RESPONSE_SELECTOR]) {
-    const markup = selector === C.GEMINI_RESPONSE_SELECTOR ? '<model-response><message-content><pre><code></code></pre></message-content></model-response>' : '<div data-message-author-role="assistant" data-message-id="html-response"><div class="markdown"><pre><code></code></pre></div></div>';
+    const markup = selector === C.GEMINI_RESPONSE_SELECTOR ? '<model-response><message-content><pre><code></code></pre></message-content></model-response>' : '<div data-message-author-role="assistant" data-message-id="scene-response"><div class="markdown"><pre><code></code></pre></div></div>';
     await page.setContent(markup);
-    await page.locator("code").evaluate((node, text) => { node.textContent = text; }, html);
-    const snapshots = await getChatResponseSnapshots(page, selector, "motion-html-scene");
-    assert.equal(snapshots[0].text, html);
-    const raw = await waitForStableResponse(page, selector, "button.stop", 0, [], [], undefined, "motion-html-scene", "html-request", AbortSignal.timeout(5000));
-    assert.equal(raw, html, "Complete HTML crosses provider transport unchanged, not as JSON identity metadata");
+    await page.locator("code").evaluate((node, text) => { node.textContent = text; }, JSON.stringify(spec, null, 2));
+    const raw = await waitForStableResponse(page, selector, "button.stop", 0, [], [], undefined, "motion-html-scene", "scene-request", AbortSignal.timeout(5000));
+    assert.deepEqual(extractJson(raw), spec, "a scene spec crosses the provider transport as JSON with its identity");
   }
   for (const candidate of [malformed, ...(archived ? [archived] : [])]) {
     const payload = parseAiJson<any>(candidate);
@@ -47,6 +47,6 @@ try {
   }
   process.stdout.write("PASS: invalid apostrophe escapes repaired in the real saved six-scene response and browser transport; valid escapes preserved.\n");
   assert.deepEqual(chatResponseIdentity(JSON.stringify({ artifactType: "motion-story-chapter", requestId: "json-request", beats: [{ narration: '<html data-artifact="wrong" data-request-id="wrong">' }] })), { artifactType: "motion-story-chapter", requestId: "json-request" });
-  process.stdout.write("PASS: Gemini/ChatGPT DOM extraction preserves complete raw HTML, response identity does not leak into JSON payloads.\n");
+  process.stdout.write("PASS: Gemini/ChatGPT scene specs read as JSON with their identity; identity does not leak from inside JSON payloads.\n");
 } finally { Object.assign(C, original); await browser.close(); }
 process.exit(0);

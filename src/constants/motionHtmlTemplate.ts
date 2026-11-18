@@ -23,7 +23,6 @@ export const MOTION_HTML = {
   VIEW_SETTINGS: ["profileId", "layout", "proportion", "movement"] as readonly string[],
   SWITCH_AFTER: 2,
   SWITCH_LOG: (id: string, from: string, to: string): string => `Cảnh HTML ${id}: ${from} lỗi 2 lần liền – chuyển cảnh này sang ${to}.`,
-  IDENTITY: (artifact: string, requestId: string): string => `\n<html> carries data-artifact='${artifact}' data-request-id='${requestId}'.`,
   TEMPLATE: [
     "Write each sceneTemplate in English as concise production prose (never spoken narration), with no SVG, coordinates, or code:",
     "0. SCENE THEME & TYPE: scene name/type, tone, the exact approved event. A map only shows routes, positions or movement across a region; an event that happens at one place (an attack, siege, sack or fall of a town, a battle moment, an arrival, a speech) is a story scene at that place with its people and buildings. A map scene is drawn only as a map (parchment, inked terrain, small settlement marks, routes and arrows) and never mixes in full-size buildings, trees, people or horses. The map fills the whole frame at every camera position: its surface runs past every frame edge, it has no border line, and pans and push-ins stay inside it; mountain ranges are rows of inked peaks along the range, never flat blobs; every river joins another river, a lake or the sea, or runs off the map edge, never stopping in open land.",

@@ -252,7 +252,7 @@ try {
   ] as const) {
     assert.ok(service.config.PROVIDER_ERROR_RESPONSE_PATTERN.test(failureText));
     const native = { ...request(`html-native-${artifactType}-${menu}`, 1), artifactType, oneGeneration: true };
-    const expected = artifactType === MOTION_HTML.ARTIFACT ? V.HTML_RESPONSE(artifactType, native.requestId) : JSON.stringify({ artifactType, requestId: native.requestId, scenes: [], ready: true });
+    const expected = artifactType === MOTION_HTML.ARTIFACT ? V.SCENE_RESPONSE(artifactType, native.requestId) : JSON.stringify({ artifactType, requestId: native.requestId, scenes: [], ready: true });
     let generated = 0;
     service.providerGenerators[P.GeminiChat] = async (item: any) => {
       generated++;
@@ -375,7 +375,7 @@ try {
     assert.equal(item.prompt, bounded.prompt, "A new room must receive the full context even when another worker already switched Chrome");
     const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
     boundedRooms.push(room);
-    if (boundedRooms.length > CHAT_ROOM_RECOVERY.SAME_ROOM_RETRIES + 1) return V.HTML_RESPONSE(item.artifactType, item.requestId);
+    if (boundedRooms.length > CHAT_ROOM_RECOVERY.SAME_ROOM_RETRIES + 1) return V.SCENE_RESPONSE(item.artifactType, item.requestId);
     await room.setContent(
       "<user-query>Current request</user-query><model-response><div class=\"answer\">Sorry, something went wrong. Please try your request again.</div><button onclick=\"window.retryClicks=(window.retryClicks||0)+1;document.querySelector('.answer').textContent='Sorry, something went wrong. Please try your request again. '+window.retryClicks;this.insertAdjacentHTML('afterend','<div class=busy>Generating</div>');setTimeout(()=>document.querySelector('.busy').remove(),10)\">Thử lại</button></model-response>",
     );

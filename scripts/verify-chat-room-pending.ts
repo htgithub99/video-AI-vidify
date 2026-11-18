@@ -123,7 +123,7 @@ try {
   assert.equal(service.geminiRooms.get(key), page);
   assert.equal(page.isClosed(), false);
   assert.equal(reloads, 0);
-  const html = V.HTML_RESPONSE(request.artifactType, request.requestId);
+  const html = V.SCENE_RESPONSE(request.artifactType, request.requestId);
   report = "ĐÃ KIỂM TRA: Retry 1 lần; reload 0; room mới 0; gửi lại 0.\nĐã hết hạn đọc nhưng AI vẫn đang chạy: giữ nguyên room và yêu cầu.\nĐã giả lập watchdog hết hạn: room vẫn được giữ.\nBấm Hoàn tất phản hồi để kiểm tra đọc tiếp đúng yêu cầu cũ.";
   stage = "pending";
   if (interactive) {
@@ -146,7 +146,7 @@ try {
   request.submission = { attempted: false, completed: false };
   service.providerGenerators[P.GeminiChat] = async (item: any) => {
     assert.equal(await service.createRoom(context, url, service.geminiRooms, key), page);
-    return V.HTML_RESPONSE(item.artifactType, item.requestId);
+    return V.SCENE_RESPONSE(item.artifactType, item.requestId);
   };
   await service.generatePlanningWithChatUi(request);
   assert.equal(service.geminiRooms.get(key), page);
@@ -161,7 +161,7 @@ try {
   service.providerGenerators[P.GeminiChat] = async (item: any) => {
     const room = await service.createRoom(context, url, service.geminiRooms, key);
     physicalRooms.push(room);
-    if (++attempts > 3) return V.HTML_RESPONSE(item.artifactType, item.requestId);
+    if (++attempts > 3) return V.SCENE_RESPONSE(item.artifactType, item.requestId);
     await room.setContent(
       "<model-response><div class=\"answer\">Sorry, something went wrong. Please try your request again.</div><button data-test-id=\"regenerate-button\" onclick=\"window.retryClicks=(window.retryClicks||0)+1;document.querySelector('.answer').textContent='Sorry, something went wrong. Please try your request again. '+window.retryClicks;this.insertAdjacentHTML('afterend','<div class=busy>Generating</div>');setTimeout(()=>document.querySelector('.busy').remove(),20)\">Thử lại</button></model-response>",
     );

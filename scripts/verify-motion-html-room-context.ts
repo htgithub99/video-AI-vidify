@@ -22,7 +22,7 @@ try {
       {
         name: "room-context-runtime",
         setup(builder) {
-          builder.onLoad({ filter: /html[\\/]sceneRuntime\.ts$/ }, () => ({ loader: "ts", contents: "export const openMotionHtmlRuntime = async () => ({render: async () => Buffer.from('preview'),close: async () => undefined});" }));
+          builder.onLoad({ filter: /html[\\/]sceneRuntime\.ts$/ }, () => ({ loader: "ts", contents: "const runtime = () => ({render: async () => Buffer.from('preview'), still: async () => Buffer.from('preview'), close: async () => undefined}); export const openMotionHtmlRuntime = async () => runtime(); export const withMotionThumbnailBrowser = async (_ms, use) => use(undefined);" }));
           builder.onLoad({ filter: /html[\\/]scenePipeline\.ts$/ }, async (args) => ({ loader: "ts", contents: (await readFile(args.path, "utf8")) + "export { canResumeHtmlSubmission };" }));
         },
       },
@@ -47,7 +47,7 @@ try {
     { id: "b1", chapterId: "c1", narration: "A letter arrives.", visual: "scene", sceneTemplateDraft: "A messenger lifts a letter." },
     { id: "b2", chapterId: "c2", narration: "A letter leaves.", visual: "scene", sceneTemplateDraft: "A messenger carries a letter away." },
   ];
-  const html = '<!DOCTYPE html><html><head></head><body><canvas id="motion-canvas"></canvas><script>window.motionScene={ready:Promise.resolve(),renderAt:p=>{}};</script></body></html>';
+  const html = JSON.stringify({ horizon: 300, time: "day", ground: "dirt", items: [{ id: "messenger", fn: "person", x: 640, y: 600, h: 220, focal: true, hold: "letter" }] });
   const owners: (string | undefined)[] = [];
   let firstStarted!: () => void, releaseFirst!: () => void;
   const started = new Promise<void>((resolve) => {

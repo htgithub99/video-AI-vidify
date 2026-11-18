@@ -324,7 +324,6 @@ const repairLooseJson = (text: string): string => {
   return out;
 };
 const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
-  if (artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE) return /<\/html>\s*(?:```)?\s*$/i.test(text.trim()) ? chatResponseIdentity(text) : undefined;
   if (artifactType === CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT) {
     const receipt = parseChatContextReceipt(text);
     if (receipt !== undefined) return receipt;
@@ -947,7 +946,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
           }
           appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_COMPLETE(latestText.length));
           await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_UI_CONFIRMED, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseChars: latestText.length, stablePolls, elapsedMs: Date.now() - startedAt, identityMatch: belongsToCurrentRequest });
-          return artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE ? latestText : jsonUtils.safeStringify(parsedLatest);
+          return jsonUtils.safeStringify(parsedLatest);
         }
         if (!isCompleteJson && CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(latestText) && latestText.length < CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_MAX_CHARS) {
           await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_RESPONSE_ERROR, { stage: artifactType, errorMessage: latestText });
@@ -1288,7 +1287,7 @@ const submitPrompt = async (
   const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
   const isDeepSeek = inputSelector === D.INPUT;
   const singleMessage = motionPromptSingleMessage(artifactType);
-  const responseDirective = artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE ? RT_MAINTENANCE.RETURN_THE_COMPLETE_HTML_DOCUMENT_IN_ONE_HTML_CODE_BLOCK : singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
+  const responseDirective = singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(String(normalizedPrompt)), SOURCE_TEMPLATE_SYMBOL_86(String(responseDirective)));
   const { limit, parts, final } = planningPromptTransport(prompt, submittedPrompt.length, promptMessageLimit, singleMessage, inputSelector === M.INPUT && artifactType !== CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT);
