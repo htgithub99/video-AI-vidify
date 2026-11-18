@@ -13,10 +13,10 @@ const leastRecent = <T extends string>(options: readonly T[], used: (T | undefin
   return pool[seed % pool.length];
 };
 /**
- * Commentary style of a new run: for each part (narrator, opening, ending, music) the choice used least recently on
- * this channel's previous runs (newest first), within what the video type allows.
+ * Commentary style of a new run: for each part (narrator, opening, ending) the choice used least recently on this
+ * channel's previous runs (newest first), within what the video type allows.
  */
-export const pickReupStyle = (rules: Pick<ReupPresetRules, "voices" | "hooks" | "endings" | "musicMoods" | "hook">, history: ReupStyle[], seedText: string): ReupStyle => {
+export const pickReupStyle = (rules: Pick<ReupPresetRules, "voices" | "hooks" | "endings" | "hook">, history: ReupStyle[], seedText: string): ReupStyle => {
   const seed = seedOf(seedText);
   const voices = rules.voices.length ? rules.voices : REUP_COMMENTARY_VOICES;
   const hooks = rules.hooks.length ? rules.hooks : REUP_COMMENTARY_HOOKS;
@@ -25,6 +25,7 @@ export const pickReupStyle = (rules: Pick<ReupPresetRules, "voices" | "hooks" | 
     voice: leastRecent(voices, history.map((h) => h.voice), seed),
     ...(rules.hook ? { hook: leastRecent(hooks, history.map((h) => h.hook), seed >>> 3) } : {}),
     ending: leastRecent(endings, history.map((h) => h.ending), seed >>> 5),
-    ...(rules.musicMoods.length ? { music: leastRecent(rules.musicMoods, history.map((h) => h.music), seed >>> 7) } : {}),
   };
 };
+/** Background track of a run: among the library's tracks for its type, the one this channel used longest ago. */
+export const reupPickTrack = (tracks: string[], history: ReupStyle[], seedText: string): string | undefined => (tracks.length ? leastRecent(tracks, history.map((h) => h.track), seedOf(seedText) >>> 7) : undefined);

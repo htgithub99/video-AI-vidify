@@ -33,7 +33,7 @@ const VideoExporter: FC<{ currentLang?: Lang }> = ({ currentLang = VIDEO_EXPORT_
             <VideoExportConfigCard exporter={exporter} />
           </div>
         </div>
-        <VideoExportResultList exporter={exporter} />
+        <VideoExportResultList exporter={exporter} lang={currentLang} />
       </StudioCanvas>
     </StudioPage>
   );

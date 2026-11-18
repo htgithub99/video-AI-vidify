@@ -1,5 +1,4 @@
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
-import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import type { ReupAiChoice, ReupJobSettings, ReupOutputKind, ReupPresetId, ReupPresetRules, ReupPresetStage, ReupSettings } from "../types/reup.js";
 export interface ReupPresetDef {
   id: ReupPresetId;
@@ -26,7 +25,7 @@ export const REUP_BASE_SETTINGS: ReupSettings = {
   aspect: "16:9",
   voiceChannel: "",
   voiceChannelAlt: "",
-  musicMood: MOTION_MUSIC.AUTO,
+  music: "off",
   natural: "low",
   subtitles: false,
   logo: "off",
@@ -64,33 +63,30 @@ const BASE_RULES: ReupPresetRules = {
   sheetInterval: 10,
   seoOptions: 3,
   thumbnail: true,
-  musicMoods: ["tense", "epic", "neutral"],
   voices: [],
   hooks: [],
   endings: [],
 };
 const LONG_RULES = [
-  "A hook of about 25 seconds over a run of fast cuts, opened the way the opening line below says.",
-  "8 to 10 body sections in time order, each tied to the source scenes it shows.",
-  "A teaser line roughly every 2 minutes that makes the viewer want the next part.",
+  "A hook of about 20-30 seconds over the strongest moments, opened the way the opening line below says.",
+  "8 to 12 body sections in time order, each a run of moments from neighbouring scenes.",
+  "A teaser roughly every 2 minutes: one line over a strong later moment that makes the viewer want the next part.",
   "No chapter cards.",
 ].join("\n");
 const LONG = [480, 540, 600, 720, 900];
 export const REUP_PRESETS: readonly ReupPresetDef[] = [
   { id: "A", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES, settings: {}, editing: {} },
   { id: "B", stage: "ready", kind: "short", source: "video", lengths: [22, 28, 35, 45, 60], rules: "Each short is one idea. The first sentence is the hook. One fixed 2-line title on screen.", settings: { aspect: "9:16", targetSeconds: 28 }, editing: { wordsPerSecond: [2.1, 2.6], lufs: -14, titleOverlay: "fixed", teasers: false, thumbnail: false, seoOptions: 2, hooks: ["question", "tease", "stakes", "contrast"], endings: ["question", "next"] } },
-  { id: "C", stage: "ready", kind: "long", source: "video", bilingual: true, lengths: [90, 120, 180], rules: "A 2-minute test cut: a short hook, 3-4 body sections, a closing line. Both languages say the same thing; each reads naturally in its own language (not word for word).", settings: { targetSeconds: 120 }, editing: { wordsPerSecond: [2, 2.5], teasers: false, musicMoods: ["neutral", "warm", "tense"], endings: ["question", "lesson", "reflection"] } },
-  { id: "D", stage: "ready", kind: "long", source: "folder", lengths: [120, 180, 240, 300], rules: "A dignified photo report in chapters (chapter cards, no hook tricks). Each part of the narration plays over the photo or clip it talks about. Name people and places only when the file names or the pictures show them.", settings: { targetSeconds: 180, language: "vi", natural: "off" }, editing: { wordsPerSecond: [1.5, 2], titleOverlay: "off", chapters: true, captions: true, hook: false, teasers: false, sheetInterval: 5, musicMoods: ["warm", "neutral", "sad"], voices: ["storyteller", "analyst", "expert"], endings: ["reflection", "lesson"] } },
-  { id: "E", stage: "ready", kind: "short", source: "video", speech: true, lengths: [30, 38, 45, 60], rules: "Cut the speaker's own words into a fast vertical promo: keep only the strongest phrases, in an order that makes sense. Write a POV hook (2 short lines), up to 4 callouts tied to phrases, and one call to action.", settings: { aspect: "9:16", targetSeconds: 38, shortsCount: 1, natural: "keep", subtitles: true }, editing: { vertical: "crop", lufs: -14, viewfinder: true, teasers: false, musicMoods: ["playful", "warm", "epic"] } },
-  { id: "F", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nRenovation before/after: tag scenes 'before' and 'after' only when the footage shows it.", settings: {}, editing: { beforeAfter: true, musicMoods: ["epic", "warm", "neutral"], hooks: ["contrast", "result", "question", "stakes"] } },
-  { id: "G", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nCabin / stone-house build: show progress stages clearly (ground, frame, walls, roof, interior).", settings: {}, editing: { musicMoods: ["warm", "neutral", "epic"] } },
-  { id: "H", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nGarage build of a vehicle or machine: name parts only when visible, never invent specs. Keep the builder's own short spoken lines when they explain a step.", settings: { natural: "keep" }, editing: { musicMoods: ["epic", "tense", "neutral"] } },
+  { id: "C", stage: "ready", kind: "long", source: "video", bilingual: true, lengths: [90, 120, 180], rules: "A 2-minute test cut: a short hook, 3-4 body sections, a closing line. Both languages say the same thing; each reads naturally in its own language (not word for word).", settings: { targetSeconds: 120 }, editing: { wordsPerSecond: [2, 2.5], teasers: false, endings: ["question", "lesson", "reflection"] } },
+  { id: "D", stage: "ready", kind: "long", source: "folder", lengths: [120, 180, 240, 300], rules: "A dignified photo report in chapters (chapter cards, no hook tricks). Each part of the narration plays over the photo or clip it talks about. Name people and places only when the file names or the pictures show them.", settings: { targetSeconds: 180, language: "vi", natural: "off" }, editing: { wordsPerSecond: [1.5, 2], titleOverlay: "off", chapters: true, captions: true, hook: false, teasers: false, sheetInterval: 5, voices: ["storyteller", "analyst", "expert"], endings: ["reflection", "lesson"] } },
+  { id: "E", stage: "ready", kind: "short", source: "video", speech: true, lengths: [30, 38, 45, 60], rules: "Cut the speaker's own words into a fast vertical promo: keep only the strongest phrases, in an order that makes sense. Write a POV hook (2 short lines), up to 4 callouts tied to phrases, and one call to action.", settings: { aspect: "9:16", targetSeconds: 38, shortsCount: 1, natural: "keep", subtitles: true }, editing: { vertical: "crop", lufs: -14, viewfinder: true, teasers: false } },
+  { id: "F", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nRenovation before/after: tag scenes 'before' and 'after' only when the footage shows it.", settings: {}, editing: { beforeAfter: true, hooks: ["contrast", "result", "question", "stakes"] } },
+  { id: "G", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nCabin / stone-house build: show progress stages clearly (ground, frame, walls, roof, interior).", settings: {}, editing: {} },
+  { id: "H", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nGarage build of a vehicle or machine: name parts only when visible, never invent specs. Keep the builder's own short spoken lines when they explain a step.", settings: { natural: "keep" }, editing: {} },
 ];
 export const REUP_DEFAULT_PRESET: ReupPresetId = "A";
 export const reupPreset = (id: unknown): ReupPresetDef => REUP_PRESETS.find((preset) => preset.id === id) || REUP_PRESETS[0];
 export const reupPresetDefaults = (id: ReupPresetId): ReupSettings => ({ ...REUP_BASE_SETTINGS, ...reupPreset(id).settings });
 export const reupPresetRules = (id: ReupPresetId): ReupPresetRules => ({ ...BASE_RULES, ...reupPreset(id).editing });
-/** The pipeline's settings: what the screen chose, the type's editing rules for the rest ("auto" music is resolved per run, see reupMusicMood). */
+/** The pipeline's settings: what the screen chose, the type's editing rules for the rest. */
 export const reupJobSettings = (id: ReupPresetId, settings: ReupSettings): ReupJobSettings => ({ ...reupPresetRules(id), ...settings });
-/** Music of a run: the screen's mood, or for "auto" the run's rotated mood (else the type's first). */
-export const reupMusicMood = (settings: Pick<ReupJobSettings, "musicMood" | "musicMoods">, style?: { music?: string }): string => (settings.musicMood === MOTION_MUSIC.AUTO ? style?.music || settings.musicMoods[0] || MOTION_MUSIC.OFF : settings.musicMood);

@@ -60,7 +60,6 @@ export const RUNTIME_TEXT = {
   W_3_H_3_TEXT_BLUE_400: "w-3 h-3 text-blue-400",
   W_3_H_3_TEXT_PINK_400: "w-3 h-3 text-pink-400",
   W_3_H_3_TEXT_SLATE_500: "w-3 h-3 text-slate-500",
-  P_2_ROUNDED_XL_TEXT_SLATE_400_HOVER_TEXT_ROSE: "p-2 rounded-xl text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors cursor-pointer",
   W_3_5_H_3_5_ANIMATE_SPIN_SHRINK_0: SOURCE_TEXT_W_3_5_H_3_5_ANIMATE_3,
   FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_BORDER_B_BORDER: "flex items-center justify-between gap-3 border-b border-slate-800/80 pb-4",
   FLEX_ITEMS_CENTER_GAP_3_P_3_ROUNDED_XL_BG: "flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 border border-purple-500/25",

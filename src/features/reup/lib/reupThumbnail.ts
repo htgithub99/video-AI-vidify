@@ -1,5 +1,6 @@
+import { REUP_CSS_FONTS, REUP_TEXT, reupFontScript } from "../constants/reupConfig.js";
 import type { ReupThumbLayout } from "../types/reup.js";
-const REUP_THUMB = { W: 1280, H: 720, FONT: "900 {size}px Impact, 'Arial Black', 'Segoe UI', sans-serif", WHITE: "#ffffff", YELLOW: "#ffd400", RING: "#ffd400", SHADE: "rgba(0,0,0,0.62)", QUALITY: 0.92 } as const;
+const REUP_THUMB = { W: 1280, H: 720, MAX_SIZE: 128, MIN_SIZE: 44, WHITE: "#ffffff", YELLOW: "#ffd400", STROKE: "rgba(0,0,0,0.9)", SHADOW: "rgba(0,0,0,0.55)", RING: "#ffd400", SHADE: "rgba(0,0,0,0.62)", QUALITY: 0.92 } as const;
 const load = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const img = new Image();
@@ -14,34 +15,48 @@ const cover = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, 
   const sh = h / scale;
   ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
 };
-const fitText = (ctx: CanvasRenderingContext2D, line: string, maxWidth: number, start: number): number => {
-  let size = start;
-  ctx.font = REUP_THUMB.FONT.replace("{size}", String(size));
-  while (size > 40 && ctx.measureText(line).width > maxWidth) {
-    size -= 4;
-    ctx.font = REUP_THUMB.FONT.replace("{size}", String(size));
-  }
+const fontOf = (css: string, size: number): string => css.replace("{size}", String(Math.round(size)));
+/**
+ * One font size for the whole block: every line fits the width, and the stacked lines (with room above each for
+ * Vietnamese stacked diacritics) fit the block height.
+ */
+const fitBlock = (ctx: CanvasRenderingContext2D, css: string, lines: string[], maxWidth: number, maxHeight: number): number => {
+  let size = REUP_THUMB.MAX_SIZE;
+  const fits = (): boolean => {
+    ctx.font = fontOf(css, size);
+    return lines.every((line) => ctx.measureText(line).width <= maxWidth) && size * (1 + (lines.length - 1) * REUP_TEXT.THUMB_LINE_HEIGHT) <= maxHeight;
+  };
+  while (size > REUP_THUMB.MIN_SIZE && !fits()) size -= 2;
   return size;
 };
-const drawLines = (ctx: CanvasRenderingContext2D, lines: string[], x: number, bottom: number, maxWidth: number, align: CanvasTextAlign): void => {
-  const sizes = lines.map((line) => fitText(ctx, line.toUpperCase(), maxWidth, 118));
-  let y = bottom - sizes.slice(1).reduce((a, b) => a + b * 1.08, 0);
+/** Lines bottom-up from `bottom`: white then yellow, a thin dark outline under the fill and a soft shadow (readable without filling in the diacritics). */
+const drawLines = (ctx: CanvasRenderingContext2D, css: string, lines: string[], x: number, bottom: number, maxWidth: number, align: CanvasTextAlign): void => {
+  const size = fitBlock(ctx, css, lines, maxWidth, REUP_THUMB.H * REUP_TEXT.THUMB_BLOCK);
+  const step = size * REUP_TEXT.THUMB_LINE_HEIGHT;
+  ctx.font = fontOf(css, size);
+  ctx.textAlign = align;
+  ctx.textBaseline = "alphabetic";
+  ctx.lineJoin = "round";
   lines.forEach((line, i) => {
-    ctx.font = REUP_THUMB.FONT.replace("{size}", String(sizes[i]));
-    ctx.textAlign = align;
-    ctx.textBaseline = "alphabetic";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = Math.round(sizes[i] * 0.16);
-    ctx.strokeStyle = "#000";
-    ctx.strokeText(line.toUpperCase(), x, y);
+    const y = bottom - (lines.length - 1 - i) * step;
+    ctx.save();
+    ctx.shadowColor = REUP_THUMB.SHADOW;
+    ctx.shadowBlur = size * 0.18;
+    ctx.shadowOffsetY = size * 0.05;
+    ctx.lineWidth = Math.max(3, Math.round(size * REUP_TEXT.THUMB_OUTLINE * 2));
+    ctx.strokeStyle = REUP_THUMB.STROKE;
+    ctx.strokeText(line, x, y);
+    ctx.restore();
     ctx.fillStyle = i ? REUP_THUMB.YELLOW : REUP_THUMB.WHITE;
-    ctx.fillText(line.toUpperCase(), x, y);
-    y += sizes[i + 1] ? sizes[i + 1] * 1.08 : 0;
+    ctx.fillText(line, x, y);
   });
 };
 /** A thumbnail drawn from real frames as a JPEG data URL: single frame, before/after split, or a circle reveal. */
-export const drawReupThumbnail = async (layout: ReupThumbLayout, frames: string[], lines: string[]): Promise<string> => {
+export const drawReupThumbnail = async (layout: ReupThumbLayout, frames: string[], lines: string[], lang = "en"): Promise<string> => {
   if (!frames[0]) return "";
+  const css = REUP_CSS_FONTS[reupFontScript(lang)];
+  // System fonts are usually ready at once; waiting avoids drawing with a fallback face on a cold start.
+  await document.fonts?.load(fontOf(css, 100), lines.join(" ")).catch(() => undefined);
   const [a, b] = await Promise.all([load(frames[0]), frames[1] ? load(frames[1]) : Promise.resolve(undefined)]);
   const { W, H } = REUP_THUMB;
   const canvas = document.createElement("canvas");
@@ -76,7 +91,7 @@ export const drawReupThumbnail = async (layout: ReupThumbLayout, frames: string[
   shade.addColorStop(1, REUP_THUMB.SHADE);
   ctx.fillStyle = shade;
   ctx.fillRect(0, H * 0.45, W, H * 0.55);
-  const clean = lines.filter(Boolean).slice(0, 2);
-  if (clean.length) drawLines(ctx, clean, layout === "split" ? W / 2 : 56, H - 56, layout === "split" ? W - 112 : layout === "circle" ? W - 600 : W - 112, layout === "split" ? "center" : "left");
+  const clean = lines.map((l) => l.trim().toLocaleUpperCase(lang)).filter(Boolean).slice(0, 2);
+  if (clean.length) drawLines(ctx, css, clean, layout === "split" ? W / 2 : 56, H - 56, layout === "split" ? W - 112 : layout === "circle" ? W - 600 : W - 112, layout === "split" ? "center" : "left");
   return canvas.toDataURL("image/jpeg", REUP_THUMB.QUALITY);
 };

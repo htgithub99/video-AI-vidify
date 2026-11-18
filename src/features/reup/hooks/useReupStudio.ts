@@ -42,6 +42,8 @@ export const useReupStudio = (lang: Lang) => {
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<ReupJob | null>(null);
   const [results, setResults] = useState<ReupJobSummary[]>([]);
+  /** The music library's folder and the tracks made for the selected video type. */
+  const [music, setMusic] = useState<{ dir: string; tracks: { name: string }[] }>({ dir: "", tracks: [] });
   const [voiceChannels, setVoiceChannels] = useState<MotionVoiceChannels>({ channels: [] });
   const channelsRef = useRef<MotionVoiceChannels>({ channels: [] });
   const settings = useMemo(() => presetSettings[preset] || reupPresetDefaults(preset), [presetSettings, preset]);
@@ -57,6 +59,15 @@ export const useReupStudio = (lang: Lang) => {
   const reloadResults = useCallback(async () => {
     const res = await motionRequest<{ jobs: ReupJobSummary[] }>(REUP_URL.JOBS).catch(() => null);
     if (res) setResults(res.jobs || []);
+  }, []);
+  /** Delete runs and their files; the open run closes when it is one of them. */
+  const deleteResults = useCallback(async (ids: string[]): Promise<{ freedBytes?: number; failed?: string[] }> => {
+    const res = await motionRequest<{ freedBytes?: number; failed?: string[] }>(REUP_URL.DELETE, { ids });
+    const failed = new Set(res.failed || []);
+    const gone = new Set(ids.filter((id) => !failed.has(id)));
+    setResults((list) => list.filter((run) => !gone.has(run.id)));
+    setJob((current) => (current && gone.has(current.id) ? null : current));
+    return res;
   }, []);
   const loadSource = useCallback(async (file: string) => {
     const path = file.trim();
@@ -94,6 +105,11 @@ export const useReupStudio = (lang: Lang) => {
     void reloadVoiceChannels();
     void reloadResults();
   }, [openJob, reloadResults, reloadVoiceChannels]);
+  const reloadMusic = useCallback(async () => {
+    const res = await motionRequest<{ dir: string; tracks: { name: string }[] }>(REUP_URL.MUSIC(preset)).catch(() => null);
+    if (res) setMusic({ dir: res.dir, tracks: res.tracks || [] });
+  }, [preset]);
+  useEffect(() => void reloadMusic(), [reloadMusic]);
   // Rights are confirmed per source: choosing another file asks again (a reload keeps them).
   const rightsFor = useRef<string | undefined>(undefined);
   useEffect(() => {
@@ -142,6 +158,7 @@ export const useReupStudio = (lang: Lang) => {
     if (!source) return toast.error(text.NEED_SOURCE);
     if (!rights) return toast.error(text.NEED_LICENSE);
     if (rights === "licensed" && !settings.sourceLink.trim()) return toast.error(text.NEED_LICENSE_LINK);
+    if (!def.speech && settings.angle.trim().length < REUP_LIMITS.ANGLE_MIN) return toast.error(text.NEED_ANGLE);
     if (!def.speech && !settings.voiceChannel) return toast.error(text.NEED_VOICE);
     if (def.bilingual && !settings.voiceChannelAlt) return toast.error(text.NEED_VOICE_ALT);
     void act(REUP_URL.START, { path: source.path, preset, settings, rights });
@@ -149,6 +166,8 @@ export const useReupStudio = (lang: Lang) => {
   const cancel = useCallback(() => job && act(REUP_URL.CANCEL, { jobId: job.id }), [act, job]);
   /** Re-run a step with the current choices for the run's video type (e.g. another voice channel). */
   const rerun = useCallback((step: ReupStepId) => job && act(REUP_URL.RERUN, { jobId: job.id, step, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
+  /** Build the videos again with the screen's export format and mix (scenes, script and voice stay). */
+  const exportVideo = useCallback(() => job && act(REUP_URL.EXPORT, { jobId: job.id, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
   const approveScript = useCallback((script: ReupScript) => job && act(REUP_URL.APPROVE_SCRIPT, { jobId: job.id, script }), [act, job]);
   /** Save an edited video through the "Save as" dialog, like Video Motion's download button. */
   const saveVideo = useCallback(async (jobId: string, outputId: string) => {
@@ -161,6 +180,6 @@ export const useReupStudio = (lang: Lang) => {
   }, []);
   const newJob = useCallback(() => setJob(null), []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
-  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, voiceChannels, reloadVoiceChannels, start, cancel, rerun, approveScript, saveVideo, newJob };
+  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, rerun, exportVideo, approveScript, saveVideo, newJob, music, reloadMusic };
 };
 export type ReupStudio = ReturnType<typeof useReupStudio>;

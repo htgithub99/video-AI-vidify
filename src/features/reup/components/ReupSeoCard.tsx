@@ -35,7 +35,7 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
     void Promise.all(
       pack.thumbs.map(async (idea, i) => {
         const take = variant(idea, times, turns[i] || 0);
-        const image = await drawReupThumbnail(take.layout, take.frames.map((t) => url.get(t) || "").filter(Boolean), take.lines).catch(() => "");
+        const image = await drawReupThumbnail(take.layout, take.frames.map((t) => url.get(t) || "").filter(Boolean), take.lines, job?.settings.language).catch(() => "");
         return [i, { image, prompt: "", optionIndex: i }] as const;
       }),
     ).then((list) => {
@@ -46,7 +46,7 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
     return () => {
       alive = false;
     };
-  }, [pack, turns]);
+  }, [pack, turns, job?.settings.language]);
   const packaging = job?.steps.package.status === "running";
   if (!job || (!seo && !packaging && !job.report)) return null;
   return (

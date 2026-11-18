@@ -11,6 +11,7 @@ import { getVideoExportSource, pickVideoExportFolder, resolveVideoExportMediaPat
 import { renderVideoExport, renderVideoExportMultiPreviews, VideoExportQuality } from "../services/videoExportRenderService.js";
 import { isAbortError } from "../services/videoExportFfmpegService.js";
 import { getDataDirectory, getPythonCommand, getStaticResourcePath } from "../../../../server/utils/paths.js";
+import { deleteOutputEntries } from "../../../../server/utils/outputFiles.js";
 import { getCapcutResourceCatalog } from "../services/capcutResourceService.js";
 import { cancelAiClipJob, getAiClipJobState, resolveAiClipAudioFlags, resolveAiClipPaths, sanitizeAiClipInputs, startAiClipJob } from "../services/videoExportAiClipService.js";
 import { VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS } from "../../constants/videoExportAiClip.js";
@@ -260,6 +261,14 @@ export const saveVideoExportVideo = async (req: Request, res: Response): Promise
     res.json({ success: true, savedPath: target });
   } catch (error: any) {
     logger.error(VIDEO_EXPORT_LOG_MESSAGES.SAVE_ERROR(error?.message || ""));
+    sendError(res, 500, error, VIDEO_EXPORT_SERVER_TEXTS.ERR_FILE_NOT_FOUND);
+  }
+};
+/** Delete exported videos from disk (Results list). */
+export const deleteVideoExportResults = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, ...(await deleteOutputEntries(getExportDirectory(), req.body?.fileNames)) });
+  } catch (error: any) {
     sendError(res, 500, error, VIDEO_EXPORT_SERVER_TEXTS.ERR_FILE_NOT_FOUND);
   }
 };

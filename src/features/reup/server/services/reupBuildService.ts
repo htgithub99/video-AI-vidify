@@ -2,16 +2,17 @@ import fs from "fs";
 import path from "path";
 import _ from "lodash";
 import { probeMediaDurationSeconds } from "../../../video-export/server/services/videoExportFfmpegService.js";
-import { REUP_BUILD, REUP_DIR, REUP_OVERLAY } from "../../constants/reupConfig.js";
+import { REUP_BUILD, REUP_DIR, REUP_MOMENT, REUP_MUSIC, REUP_OVERLAY, REUP_TEXT } from "../../constants/reupConfig.js";
 import { REUP_LOG } from "../../constants/reupServerText.js";
-import { reupMusicMood, reupPreset } from "../../constants/reupPresets.js";
-import { reupItemAt, reupKaraokeAss, reupShotPieces, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../../lib/reupSpeech.js";
-import { ReupFootageLedger, reupSectionSeconds } from "../../lib/reupTimeline.js";
+import { reupPreset } from "../../constants/reupPresets.js";
+import { reupMusicBed, reupTracks } from "./reupMusicService.js";
+import { reupClipSubtitles, reupItemAt, reupKaraokeAss, reupSubChars, reupShotPieces, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../../lib/reupSpeech.js";
+import { ReupFootageLedger, reupNearScenes, reupPacing, reupSectionSeconds } from "../../lib/reupTimeline.js";
+import { reupMoments } from "../../lib/reupSceneMap.js";
 import type { ReupJob, ReupJobSettings, ReupOutputResult, ReupOutputScript, ReupSegment, ReupSettings, ReupShot, ReupWord } from "../../types/reup.js";
 import { reupFfmpeg, reupFilterValue, reupFont, reupFontFor } from "./reupFfmpeg.js";
 import { reupFileUrl, reupJobDir } from "./reupJobStore.js";
 import { MOTION_MUSIC } from "../../../../constants/motionMusic.js";
-import { buildMotionMusic } from "../../../motion/server/services/motionMusicService.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 /** One input of a section: a stretch of the source video, a clip, or a photo held for `len` seconds. */
 interface Piece {
@@ -47,6 +48,8 @@ const textFile = (base: string, text: string): string => {
   fs.writeFileSync(base, text, "utf8");
   return base;
 };
+/** Thin outline plus a soft drop shadow (the thumbnail and subtitle look): readable on any footage without blocking glyph shapes and diacritics. */
+const outline = (size: number): string => `:borderw=${Math.max(2, Math.round(size * REUP_TEXT.OUTLINE))}:bordercolor=black@0.85:shadowx=0:shadowy=${Math.max(1, Math.round(size * REUP_TEXT.SHADOW))}:shadowcolor=black@0.45`;
 const draw = (font: string, file: string, size: number, x: string, y: string, color: string, extra = ""): string => `drawtext=fontfile='${reupFilterValue(font)}':textfile='${reupFilterValue(file)}':fontsize=${size}:fontcolor=${color}:x=${x}:y=${y}${extra}`;
 /**
  * Picture of input i fitted to the frame, ending at [v{i}]: same-shaped footage scales; other shapes get a blurred
@@ -84,28 +87,31 @@ interface SectionOptions {
 const renderSection = async (job: ReupJob, pieces: Piece[], file: string, opts: SectionOptions, lang: string, signal?: AbortSignal): Promise<void> => {
   const s = job.settings;
   const font = reupFont(lang);
+  const heavy = reupFont(lang, "heavy") || font;
   const [w, h] = reupFrameSize(s);
   const all: Piece[] = opts.chapter ? [{ ...opts.chapter.from, len: opts.chapter.seconds, hold: undefined, label: undefined }, ...pieces] : pieces;
   const inputs: string[] = [];
   const graph: string[] = [];
   all.forEach((p, i) => {
     inputs.push(...inputArgs(p, s.fps));
-    graph.push(pictureFilter(i, s, p, w, h, font, p.label && font ? textFile(`${file}.l${i}.txt`, p.label.text) : undefined));
+    const labelFont = p.label?.kind === "stage" ? heavy : font;
+    graph.push(pictureFilter(i, s, p, w, h, labelFont, p.label && labelFont ? textFile(`${file}.l${i}.txt`, p.label.text) : undefined));
     const len = p.len.toFixed(3);
     graph.push(p.hasAudio && !p.still ? `[${i}:a]aresample=${REUP_BUILD.AUDIO_RATE},aformat=channel_layouts=stereo,apad,atrim=duration=${len},asetpts=PTS-STARTPTS[a${i}]` : `anullsrc=r=${REUP_BUILD.AUDIO_RATE}:cl=stereo,atrim=duration=${len}[a${i}]`);
   });
-  if (opts.chapter && font) {
+  if (opts.chapter && heavy) {
     const t = textFile(`${file}.chapter.txt`, opts.chapter.text.toUpperCase());
-    graph[0] = graph[0].replace(/\[v0\]$/, `,eq=brightness=-0.22:saturation=0.7,${draw(font, t, Math.round(Math.min(w, h) * 0.085), "(w-text_w)/2", "(h-text_h)/2", "white", ":borderw=4:bordercolor=black")}[v0]`);
+    const size = Math.round(Math.min(w, h) * 0.085);
+    graph[0] = graph[0].replace(/\[v0\]$/, `,eq=brightness=-0.22:saturation=0.7,${draw(heavy, t, size, "(w-text_w)/2", "(h-text_h)/2", "white", outline(size))}[v0]`);
   }
   graph.push(`${all.map((_p, i) => `[v${i}][a${i}]`).join("")}concat=n=${all.length}:v=1:a=1[vc][ac]`);
   let video = "vc";
-  if (opts.title?.lines.length && font) {
+  if (opts.title?.lines.length && heavy) {
     const size = Math.round(Math.min(w, h) * (opts.title.kind === "fixed" ? 0.075 : 0.085));
     const top = Math.round(h * (opts.title.kind === "fixed" ? 0.1 : 0.14));
     const enable = opts.title.kind === "hook" ? `:enable='lt(t,${REUP_BUILD.TITLE_HOOK_SECONDS})'` : "";
-    const box = opts.title.kind === "fixed" ? ":box=1:boxcolor=black@0.55:boxborderw=16" : ":borderw=5:bordercolor=black";
-    const draws = opts.title.lines.map((line, i) => draw(font, textFile(`${file}.t${i}.txt`, line), size, "(w-text_w)/2", String(top + Math.round(i * size * 1.3)), i ? "0xFFD400" : "white", box + enable));
+    const box = opts.title.kind === "fixed" ? ":box=1:boxcolor=black@0.55:boxborderw=16" : outline(size);
+    const draws = opts.title.lines.map((line, i) => draw(heavy, textFile(`${file}.t${i}.txt`, line), size, "(w-text_w)/2", String(top + Math.round(i * size * REUP_TEXT.LINE_HEIGHT)), i ? "0xFFD400" : "white", box + enable));
     graph.push(`[vc]${draws.join(",")}[vt]`);
     video = "vt";
   }
@@ -160,7 +166,7 @@ const talkOverlays = (job: ReupJob, output: ReupOutputScript, planned: PlannedSe
   const [w, h] = reupFrameSize(s);
   const fontInfo = reupFontFor(output.lang || s.language);
   if (!fontInfo) return [];
-  const fontFile = fontInfo.file;
+  const fontFile = reupFont(output.lang || s.language, "heavy") || fontInfo.file;
   const filters: string[] = [];
   const words: (ReupWord & { cut?: boolean })[] = [];
   let at = 0;
@@ -172,7 +178,7 @@ const talkOverlays = (job: ReupJob, output: ReupOutputScript, planned: PlannedSe
   });
   if (s.subtitles && words.length) {
     fs.writeFileSync(path.join(dir, "karaoke.ass"), reupKaraokeAss(words, { width: w, height: h, font: fontInfo.family, color: s.brandColor, perLine: REUP_OVERLAY.KARAOKE_WORDS, gap: REUP_OVERLAY.KARAOKE_GAP }), "utf8");
-    filters.push(`subtitles=karaoke.ass:fontsdir='${reupFilterValue(path.dirname(fontFile))}'`);
+    filters.push(`subtitles=karaoke.ass:fontsdir='${reupFilterValue(path.dirname(fontInfo.file))}'`);
   }
   if (s.viewfinder) {
     const m = Math.round(Math.min(w, h) * 0.05), L = Math.round(Math.min(w, h) * 0.1), t = Math.max(4, Math.round(Math.min(w, h) * 0.008));
@@ -207,12 +213,33 @@ const narrationSubtitles = (job: ReupJob, output: ReupOutputScript, planned: Pla
     const from = at + planned[i].card;
     const until = at + planned[i].seconds;
     at = until;
-    const subs = voice.subs || reupSubtitleTimes(reupSubtitleLines(sec.text, REUP_OVERLAY.SUB_WORDS, REUP_OVERLAY.SUB_CHARS), [], voice.seconds);
+    const chars = reupSubChars(s.aspect, output.lang || s.language);
+    // Cues re-cut to this frame's width (a re-export may change the shape), each keeping its own timing.
+    const subs = voice.subs ? reupClipSubtitles(voice.subs, chars) : reupSubtitleTimes(reupSubtitleLines(sec.text, chars), [], voice.seconds);
     return subs.map((line) => ({ text: line.text, start: from + line.start, end: Math.min(until, from + line.end) }));
   });
   if (!lines.length) return "";
   fs.writeFileSync(path.join(dir, "subs.ass"), reupSubtitleAss(lines, { width: w, height: h, font: font.family, ...(s.captions ? { lift: REUP_OVERLAY.SUB_ABOVE_CAPTION } : {}) }), "utf8");
   return `subtitles=subs.ass:fontsdir='${reupFilterValue(path.dirname(font.file))}'`;
+};
+/**
+ * The beds under the lead voice [v] (split off as each bed's key): the footage's own sound `lu` below the voice,
+ * ducked a little; the library track at Video Motion's music level, ducked like Video Motion. Summed without
+ * re-normalising (so the levels stay as set), then a peak limiter → [out].
+ */
+export const reupMixBeds = (s: ReupJobSettings, naturals: { input: string; key: string; lu: number }[], music?: { input: string; key: string; total: number }): string[] => {
+  const graph: string[] = [];
+  const beds: string[] = [];
+  naturals.forEach((n, i) => {
+    graph.push(`${n.input}aresample=${REUP_BUILD.AUDIO_RATE},aformat=channel_layouts=stereo,loudnorm=I=${s.lufs + n.lu}:TP=-3:LRA=15,aresample=${REUP_BUILD.AUDIO_RATE}[n${i}]`, `[n${i}]${n.key}sidechaincompress=threshold=0.02:ratio=4:attack=40:release=900[nat${i}]`);
+    beds.push(`[nat${i}]`);
+  });
+  if (music) {
+    graph.push(MOTION_MUSIC.BED(REUP_MUSIC.VOLUME, music.input, `,atrim=duration=${music.total.toFixed(3)}[m0]`), MOTION_MUSIC.DUCK("[m0]", music.key, "[mus]"));
+    beds.push("[mus]");
+  }
+  graph.push(`[v]${beds.join("")}${beds.length ? `amix=inputs=${beds.length + 1}:duration=first:normalize=0,` : ""}alimiter=limit=${REUP_BUILD.LIMIT}:level=0[out]`);
+  return graph;
 };
 /**
  * Step 5 — build every output. Narrated sections are timed by their voice (photo-report cues by the voice's own
@@ -225,9 +252,10 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
   const preset = reupPreset(job.preset);
   const map = job.sceneMap!;
   const ledgers = new Map<string, ReupFootageLedger>();
-  const ledger = (lang: string) => ledgers.get(lang) || ledgers.set(lang, new ReupFootageLedger({ duration: job.source.duration, bad: job.bad, minShot: REUP_BUILD.MIN_SHOT, maxShot: REUP_BUILD.MAX_SHOT, hookCut: s.hookCutSeconds })).get(lang)!;
-  const mood = reupMusicMood(s, job.style);
-  log(mood === MOTION_MUSIC.OFF ? REUP_LOG.MUSIC_NONE : REUP_LOG.MUSIC((MOTION_MUSIC.UI.vi.MOODS as Record<string, string>)[mood] || mood));
+  const ledger = (lang: string) => ledgers.get(lang) || ledgers.set(lang, new ReupFootageLedger({ duration: job.source.duration, bad: job.bad, minShot: REUP_BUILD.MIN_SHOT, maxShot: REUP_BUILD.MAX_SHOT, hookCut: s.hookCutSeconds, guard: REUP_BUILD.GUARD })).get(lang)!;
+  // The run's library track (picked in the pipeline); none when music is off or the library has no track for this type.
+  const track = s.music === "library" && job.style?.track ? reupTracks(job.preset).find((t) => t.name === job.style!.track) : undefined;
+  if (!track) log(REUP_LOG.MUSIC_NONE);
   const outputs = job.script!.outputs;
   const results: ReupOutputResult[] = [];
   const [w, h] = reupFrameSize(s);
@@ -236,27 +264,56 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
     let planned: PlannedSection[];
     // Words of ours per section (narration, or the speaker's own words), silent filler added, footage repeated.
     let spoken: number[];
+    // Seconds of actual speech (voice minus the pauses between cues), for the narration share.
+    let words: number[] = [];
     let padding = 0;
     let repeated = false;
     if (output.speech) {
       planned = output.sections.map((sec, i) => ({ pieces: piecesOf(job, sec.shots[0], i), seconds: sec.shots[0].end - sec.shots[0].start, card: 0 }));
       spoken = planned.map((p) => p.seconds);
+      words = spoken;
     } else {
       const voices = await Promise.all(output.sections.map(async (sec) => await probeMediaDurationSeconds(job.voices![sec.id].file)));
-      const fill = s.fillUnused && preset.source === "video";
-      const target = preset.kind === "long" && preset.source === "video" ? s.targetSeconds + REUP_BUILD.LONG_MARGIN : 0;
-      const timing = reupSectionSeconds(voices, output.sections.map((x) => x.role), s.pauseSeconds, target, REUP_BUILD.TAIL_MAX, REUP_BUILD.SILENT_SHARE, fill);
+      const footage = preset.source === "video";
+      const fill = s.fillUnused && footage;
+      const pacing = reupPacing(s.natural, job.source.hasAudio);
+      // Narrated footage leaves room for the footage's own sound; photo reports and old scripts keep the old caps.
+      const moments = footage && output.sections.some((sec) => sec.cues?.[0]?.moment);
+      const target = preset.kind === "long" && footage ? s.targetSeconds + REUP_BUILD.LONG_MARGIN : 0;
+      const timing = reupSectionSeconds(voices, output.sections.map((x) => x.role), s.pauseSeconds, target, moments ? pacing.tailMax : REUP_BUILD.TAIL_MAX, moments ? 1 - pacing.share[0] : REUP_BUILD.SILENT_SHARE, fill);
       spoken = voices;
+      words = voices.map((v, i) => Math.max(0, v - (job.voices![output.sections[i].id].gaps || 0)));
       padding = timing.padding;
       if (target && timing.short > 1) log(REUP_LOG.SHORT_TARGET(timing.short), "warn");
+      const moment = new Map(map.segments.flatMap((g) => reupMoments(g).map((m) => [m.id, m] as const)));
+      const scene = new Map(map.segments.map((g) => [g.id, g]));
       planned = output.sections.map((sec, i) => {
         const card = s.chapters && sec.chapter ? REUP_OVERLAY.CHAPTER_SECONDS : 0;
-        if (sec.cues?.length) {
-          const starts = job.voices![sec.id].cues || sec.cues.map((_c, k) => (k * voices[i]) / sec.cues!.length);
-          const pieces = _.compact(sec.cues.map((cue, k) => cuePiece(job, cue.segment, Math.max(0.6, (k + 1 < sec.cues!.length ? starts[k + 1] : timing.seconds[i]) - (k ? starts[k] : 0)), i * 100 + k)));
+        const starts = sec.cues?.length ? job.voices![sec.id].cues || sec.cues.map((_c, k) => (k * voices[i]) / sec.cues!.length) : [];
+        // How long each cue's picture stays: until the next cue's words start; the last one through the section's end.
+        const cueSeconds = (k: number, end: number): number => Math.max(0.6, (k + 1 < starts.length ? starts[k + 1] : end) - (k ? starts[k] : 0));
+        if (sec.cues?.length && footage) {
+          // Narrated footage: each cue's picture starts at its moment and stays in its scene (then the scenes next to it).
+          const shots = sec.cues.flatMap((cue, k) => {
+            const g = scene.get(cue.segment);
+            if (!g) return [];
+            const at = Math.max(g.start, (moment.get(cue.moment || "")?.t ?? g.start) - REUP_MOMENT.LEAD);
+            const plan = ledger(output.lang || s.language).planCue(at, g, cueSeconds(k, timing.seconds[i]), reupNearScenes(map.segments, [g.id]), REUP_BUILD.CUE_SHOT, REUP_BUILD.CUE_MIN);
+            if (plan.filled > 1) log(REUP_LOG.FILLED(i + 1, plan.filled));
+            if (plan.repeated) log(REUP_LOG.REPEATED(i + 1), "warn");
+            repeated ||= plan.repeated;
+            return plan.shots;
+          });
+          const pieces = shots.flatMap((shot, k) => piecesOf(job, shot, i * 100 + k));
           return { pieces, seconds: card + _.sumBy(pieces, "len"), card, chapter: card ? sec.chapter : undefined };
         }
-        const plan = ledger(output.lang || s.language).plan(sec.shots, timing.seconds[i], sec.role === "hook", map.segments, fill);
+        if (sec.cues?.length) {
+          const pieces = _.compact(sec.cues.map((cue, k) => cuePiece(job, cue.segment, cueSeconds(k, timing.seconds[i]), i * 100 + k)));
+          return { pieces, seconds: card + _.sumBy(pieces, "len"), card, chapter: card ? sec.chapter : undefined };
+        }
+        // Scripts from before moments: the section's scenes, then only the scenes right next to them.
+        const ids = map.segments.filter((g) => sec.shots.some((shot) => shot.start < g.end && shot.end > g.start)).map((g) => g.id);
+        const plan = ledger(output.lang || s.language).plan(sec.shots, timing.seconds[i], sec.role === "hook", reupNearScenes(map.segments, ids), fill);
         if (plan.filled > 1) log(REUP_LOG.FILLED(i + 1, plan.filled));
         if (plan.repeated) log(REUP_LOG.REPEATED(i + 1), "warn");
         repeated ||= plan.repeated;
@@ -288,17 +345,16 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
     log(REUP_LOG.BUILD_MIX);
     const name = `${safeName(job.source.name)}_${job.preset}_${output.id}.mp4`;
     const final = path.join(reupJobDir(job.id, REUP_DIR.OUT), name);
-    const loud = `loudnorm=I=${s.lufs}:TP=${REUP_BUILD.TRUE_PEAK}:LRA=${REUP_BUILD.LRA}`;
-    // Video Motion's generated score in the chosen mood, as long as this output.
-    const music = mood === MOTION_MUSIC.OFF ? undefined : await buildMotionMusic(total, [{ start: 0, mood }], [], [...job.id + output.id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7));
+    const loud = `loudnorm=I=${s.lufs}:TP=${REUP_BUILD.TRUE_PEAK}:LRA=${REUP_BUILD.LRA},aresample=${REUP_BUILD.AUDIO_RATE}`;
+    // The library track looped and faded to this output's length.
+    const music = track ? await reupMusicBed(track, total, dir, signal) : undefined;
     const musicArgs = music ? ["-i", music] : [];
-    const musicIn = (index: number) => `[${index}:a]aresample=${REUP_BUILD.AUDIO_RATE},aformat=channel_layouts=stereo,volume=${REUP_BUILD.MUSIC_VOLUME},atrim=duration=${total.toFixed(3)}[mus]`;
     const graph: string[] = [];
     let videoArgs = ["-map", "0:v", "-c:v", "copy"];
     if (output.speech) {
-      // The speaker's own voice leads; music sits under it.
-      if (musicArgs.length) graph.push(musicIn(1), `[0:a]asplit=2[sk][sm]`, `[mus][sk]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=350[duck]`, `[sm][duck]amix=inputs=2:duration=first:normalize=0,${loud}[out]`);
-      else graph.push(`[0:a]${loud}[out]`);
+      // The speaker's own voice leads (at the type's loudness); the library track sits under it.
+      graph.push(`[0:a]aresample=${REUP_BUILD.AUDIO_RATE},aformat=channel_layouts=stereo,${loud}${musicArgs.length ? ",asplit=2[v][k]" : "[v]"}`);
+      graph.push(...reupMixBeds(s, [], musicArgs.length ? { input: "[1:a]", key: "[k]", total } : undefined));
       const overlays = talkOverlays(job, output, planned, dir, total);
       if (overlays.length) {
         graph.push(`[0:v]${overlays.join(",")}[vo]`);
@@ -308,21 +364,11 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
     } else {
       const voiceFile = path.join(dir, "voice.wav");
       await reupFfmpeg(["-y", ...output.sections.flatMap((sec) => ["-i", job.voices![sec.id].file]), "-filter_complex", `${output.sections.map((_x, i) => `[${i}:a]aresample=${REUP_BUILD.AUDIO_RATE},aformat=channel_layouts=stereo${planned[i].card ? `,adelay=${Math.round(planned[i].card * 1000)}:all=1` : ""},apad=whole_dur=${planned[i].seconds.toFixed(3)},atrim=duration=${planned[i].seconds.toFixed(3)}[s${i}]`).join(";")};${output.sections.map((_x, i) => `[s${i}]`).join("")}concat=n=${output.sections.length}:v=0:a=1[voice]`, "-map", "[voice]", "-c:a", "pcm_s16le", voiceFile], { signal });
-      const natural = REUP_BUILD.NATURAL_LEVEL[s.natural] ?? 0;
-      const bed: string[] = [];
-      if (natural > 0) {
-        graph.push(`[0:a]volume=${natural}[nat]`);
-        bed.push("[nat]");
-      }
-      if (musicArgs.length) {
-        graph.push(musicIn(2));
-        bed.push("[mus]");
-      }
-      if (bed.length) {
-        graph.push(bed.length > 1 ? `${bed.join("")}amix=inputs=2:duration=first:normalize=0[bed]` : `${bed[0]}anull[bed]`);
-        graph.push(`[1:a]asplit=2[vk][vm]`, `[bed][vk]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=350[duck]`);
-        graph.push(`[duck][vm]amix=inputs=2:duration=first:normalize=0,${loud}[out]`);
-      } else graph.push(`[1:a]${loud}[out]`);
+      // Narration at the type's loudness; the footage's own sound and the score below it, both ducked while it speaks.
+      const natural = job.source.hasAudio ? REUP_BUILD.NATURAL_LU[s.natural] : undefined;
+      const keys = [natural !== undefined ? "[kn]" : "", musicArgs.length ? "[km]" : ""].filter(Boolean);
+      graph.push(`[1:a]${loud}${keys.length ? `,asplit=${keys.length + 1}[v]${keys.join("")}` : "[v]"}`);
+      graph.push(...reupMixBeds(s, natural !== undefined ? [{ input: "[0:a]", key: "[kn]", lu: natural }] : [], musicArgs.length ? { input: "[2:a]", key: "[km]", total } : undefined));
       const subtitles = s.subtitles && narrationSubtitles(job, output, planned, dir);
       if (subtitles) {
         graph.push(`[0:v]${subtitles}[vo]`);
@@ -337,7 +383,7 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
       at += plan.seconds;
       return mark;
     });
-    const narrated = _.round(Math.min(duration, _.sum(spoken)), 1);
+    const narrated = _.round(Math.min(duration, _.sum(words)), 1);
     const silentMax = _.round(_.max(planned.map((plan, i) => Math.max(0, plan.seconds - (spoken[i] || 0)))) || 0, 1);
     results.push({ id: output.id, file: final, url: reupFileUrl(final), duration, width: w, height: h, narrated, silentMax, padding: _.round(padding, 1), repeated, ...(chapters.length ? { chapters } : {}) });
     log(REUP_LOG.BUILD_DONE(name, duration));

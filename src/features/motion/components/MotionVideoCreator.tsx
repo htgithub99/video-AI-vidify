@@ -1,5 +1,4 @@
 import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
-import * as COMMON_RUNTIME from "../../../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
@@ -43,6 +42,8 @@ import { MotionVisualModeField } from "./MotionVisualModeField.js";
 import { MotionNoticeHint } from "./MotionNoticeHint.js";
 import { MOTION_NOTICE_IDS } from "../constants/motionNotices.js";
 import { toast } from "sonner";
+import { StudioResults, type StudioDeleteOutcome } from "../../../components/common/StudioResults.js";
+import { STUDIO_RESULTS } from "../../../constants/studioResults.js";
 import {
   MOTION_TEMPLATE_BEATS,
   MOTION_TEMPLATE_JOIN_SPACE,
@@ -82,8 +83,6 @@ import {
   MOTION_TEXT_FPS_2,
   MOTION_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P,
   MOTION_TEXT_GROUP,
-  MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC,
-  MOTION_TEXT_MAX_W_MD,
   MOTION_TEXT_MODAL_2XL,
   MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH,
   MOTION_TEXT_OK,
@@ -203,7 +202,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
         <div className={cn(MOTION_STYLES.W_FULL, studio.busy && MOTION_STORY_CONFIG.BUSY_LOCK_CLASS)}>
           {tab === MotionWorkspaceTab.CREATE && <CreateWorkspace studio={studio} text={text} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.VOICES && <MotionVoicePanel studio={studio} currentLang={currentLang} />}
-          {tab === MotionWorkspaceTab.RESULTS && <ResultsPanel studio={studio} text={text} />}
+          {tab === MotionWorkspaceTab.RESULTS && <ResultsPanel studio={studio} text={text} lang={currentLang} />}
         </div>
       </StudioCanvas>
     </StudioPage>
@@ -1308,62 +1307,29 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
     </Modal>
   );
 };
-const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ studio, text }) => {
-  const [confirm, setConfirm] = useState<MotionResultItem[] | true | null>(null);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [deleteError, setDeleteError] = useState("");
-  const [busy, setBusy] = useState(false);
+const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts; lang: Lang }> = ({ studio, text, lang }) => {
   const [junkOpen, setJunkOpen] = useState(false);
-  const selected = studio.results.filter((result) => picked.has(result.id));
-  const allSelected = studio.results.length > 0 && selected.length === studio.results.length;
-  useEffect(() => {
-    setPicked((previous) => {
-      const next = new Set(studio.results.filter((result) => previous.has(result.id)).map((result) => result.id));
-      return next.size === previous.size ? previous : next;
-    });
-  }, [studio.results]);
-  const askDelete = (items: MotionResultItem[] | true) => {
-    setDeleteError("");
-    setConfirm(items);
-  };
   const junkButton = (
-    <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setJunkOpen(true)} disabled={busy || studio.renderBusy} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_ROUNDED_LG_TEXT_XS_FONT}>
+    <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setJunkOpen(true)} disabled={studio.renderBusy} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_ROUNDED_LG_TEXT_XS_FONT}>
       <Sparkles className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_AMBER_500} />
       <span>{text.JUNK_BUTTON}</span>
     </Button>
   );
   const junkDialog = junkOpen && <JunkDialog studio={studio} text={text} onClose={() => setJunkOpen(false)} />;
-  const runDelete = async () => {
-    if (!confirm) return;
-    setBusy(true);
-    setDeleteError("");
-    try {
-      let freed = 0;
-      let firstError = "";
-      const failed: MotionResultItem[] = [];
-      if (confirm === true) freed = await studio.deleteAllResults();
-      else
-        for (const item of confirm) {
-          try {
-            freed += await studio.deleteResult(item.id);
-          } catch (error) {
-            failed.push(item);
-            firstError ||= getMotionErrorMessage(error);
-          }
-        }
-      if (confirm === true || failed.length < confirm.length) toast.success(MOTION_TEMPLATE_JOIN_SPACE(text.RESULTS_FREED, formatBytes(freed)));
-      if (failed.length) {
-        const message = [text.RESULTS_DELETE_FAILED.replace(COMMON_RUNTIME.SOURCE_TEXT_COUNT, String(failed.length)), firstError].filter(Boolean).join(COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52);
-        setConfirm(failed);
-        setDeleteError(message);
-        toast.error(message);
-      } else setConfirm(null);
-    } catch (e: any) {
-      setDeleteError(getMotionErrorMessage(e));
-      toast.error(e?.message);
-    } finally {
-      setBusy(false);
+  const remove = async (items: MotionResultItem[], all: boolean): Promise<StudioDeleteOutcome> => {
+    if (all) return { freedBytes: await studio.deleteAllResults() };
+    let freedBytes = 0;
+    let error = "";
+    const failed: string[] = [];
+    for (const item of items) {
+      try {
+        freedBytes += await studio.deleteResult(item.id);
+      } catch (e) {
+        failed.push(item.id);
+        error ||= getMotionErrorMessage(e);
+      }
     }
+    return { freedBytes, failed, error };
   };
   if (_.isEmpty(studio.results)) {
     return (
@@ -1376,79 +1342,32 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
     );
   }
   return (
-    <div className={MOTION_STYLES.FLEX_FLEX_COL_GAP_4_W_FULL_PB_16_TEXT_LEFT}>
-      <StudioCard className={cn(cardCls, MR.MOTION_TEXT_PX_4_PY_2_MIN_H_44PX_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_FLEX)}>
-        <label className={MOTION_STYLES.RESULT_SELECT_ALL}>
-          <StudioInput
-            type={MOTION_TEXT_CHECKBOX}
-            className={MR.MOTION_TEXT_W_4_H_4}
-            checked={allSelected}
-            ref={(input) => {
-              if (input) input.indeterminate = selected.length > 0 && !allSelected;
-            }}
-            disabled={busy}
-            onChange={() => setPicked(allSelected ? new Set() : new Set(studio.results.map((result) => result.id)))}
-          />
-          <span>{text.RESULTS_SELECT_ALL}</span>
-        </label>
-        <div className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT_XS_SM_TEXT_SM_FONT_BOL}>
-          <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE}>{MOTION_TEMPLATE_JOIN_SPACE(MOTION_TEMPLATE_JOIN_SPACE(String(studio.results.length), text.RESULTS_SUMMARY), formatBytes(_.sumBy(studio.results, (r) => r.sizeBytes || 0)))}</span>
-        </div>
-        <div className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_ML_AUTO_MY_AUTO}>
-          {selected.length > 0 && (
-            <span className={MOTION_STYLES.RESULT_SELECTION_COUNT} aria-live={COMMON_RUNTIME.SOURCE_TEXT_POLITE}>
-              {text.RESULTS_SELECTED} {selected.length}
-              {COMMON_RUNTIME.SOURCE_TEXT_SYMBOL}
-              {studio.results.length}
-            </span>
-          )}
-          <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete(selected)} disabled={busy || studio.renderBusy || selected.length === 0} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO}>
-            <Trash2 className={MR.W_3_5_H_3_5_TEXT_ROSE_400_B3A93B} />
-            <span>
-              {text.RESULTS_DELETE_SELECTED}
-              {selected.length > 0 ? `${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_11}${selected.length}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_12}` : ""}
-            </span>
-          </Button>
-          {junkButton}
-          <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete(true)} disabled={busy || studio.renderBusy} title={text.RESULTS_DELETE_ALL} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO}>
-            <Trash2 className={MR.W_3_5_H_3_5_TEXT_ROSE_400_B3A93B} />
-            <span>{text.RESULTS_DELETE_ALL}</span>
-          </Button>
-        </div>
-      </StudioCard>
-      <div className={MOTION_STYLES.GRID_GRID_COLS_1_MD_GRID_COLS_2_2XL_GRID_COLS_3_GAP_5_PB_8}>
-        {_.map(studio.results, (r) => (
-          <StudioCard key={r.id} className={cn(cardCls, MR.P_4_SPACE_Y_3_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_80_3FC799, picked.has(r.id) && MOTION_STYLES.RESULT_SELECTED)}>
+    <>
+      <StudioResults
+        items={studio.results}
+        lang={lang}
+        getId={(r) => r.id}
+        getTitle={(r) => r.title}
+        remove={remove}
+        disabled={studio.renderBusy}
+        summary={` · ${formatBytes(_.sumBy(studio.results, (r) => r.sizeBytes || 0))}`}
+        actions={junkButton}
+        gridClassName={MOTION_STYLES.GRID_GRID_COLS_1_MD_GRID_COLS_2_2XL_GRID_COLS_3_GAP_5_PB_8}
+        renderItem={(r, slots) => (
+          <StudioCard className={cn(cardCls, MR.P_4_SPACE_Y_3_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_80_3FC799, slots.selected && STUDIO_RESULTS.SELECTED)}>
             <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD}>
               <StudioVideoPlayer src={r.videoUrl} aspect={motionAspect(r.width, r.height)} loadingIcon={MOTION_LOADING_GLYPH} />
-              <label className={MOTION_STYLES.RESULT_SELECT} title={`${text.RESULTS_SELECT_VIDEO}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`}>
-                <StudioInput
-                  type={MOTION_TEXT_CHECKBOX}
-                  className={MR.MOTION_TEXT_W_4_H_4}
-                  aria-label={`${text.RESULTS_SELECT_VIDEO}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`}
-                  checked={picked.has(r.id)}
-                  disabled={busy}
-                  onChange={(event) => {
-                    const checked = event.target.checked;
-                    setPicked((previous) => {
-                      const next = new Set(previous);
-                      if (checked) next.add(r.id);
-                      else next.delete(r.id);
-                      return next;
-                    });
-                  }}
-                />
-              </label>
               <div className={MR.MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_FLEX_ITEMS_CENTER_GAP_2_Z_10}>
                 <StudioDownloadButton onClick={() => void studio.saveResult(r)} />
-                <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete([r])} disabled={busy || studio.renderBusy} title={text.RESULTS_DELETE} aria-label={`${text.RESULTS_DELETE}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`} className={MR.MOTION_TEXT_P_1_5_ROUNDED_LG_BG_TRANSPARENT_HOVER_BG_TRANSPARENT_TEXT_SLATE_4}>
-                  <Trash2 className={MR.MOTION_TEXT_W_4_H_4} />
-                </Button>
+                {slots.remove}
               </div>
             </div>
             <div className={MR.MOTION_TEXT_SPACE_Y_1}>
-              <div className={MR.TEXT_XS_SM_TEXT_SM_FONT_BLACK_TEXT_SLATE_100_TRUNCATE_TR} title={r.title}>
-                {r.title}
+              <div className={STUDIO_RESULTS.TITLE_ROW}>
+                {slots.select}
+                <div className={cn(MR.TEXT_XS_SM_TEXT_SM_FONT_BLACK_TEXT_SLATE_100_TRUNCATE_TR, STUDIO_RESULTS.TITLE_TEXT)} title={r.title}>
+                  {r.title}
+                </div>
               </div>
               <div className={MR.TEXT_11PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_300_LEADING_S}>
                 {r.width}
@@ -1469,45 +1388,9 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
               </div>
             </div>
           </StudioCard>
-        ))}
-      </div>
+        )}
+      />
       {junkDialog}
-      <Modal
-        isOpen={!!confirm}
-        onClose={() => !busy && setConfirm(null)}
-        maxWidth={MOTION_TEXT_MAX_W_MD}
-        title={
-          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_UPPERCASE_TRACKING_WIDER_FONT_EXTRABOLD_TEXT_SLATE_900}>
-            <Trash2 className={MOTION_STYLES.W_4_H_4_TEXT_ROSE_500_SHRINK_0} />
-            <span className={MOTION_STYLES.UPPERCASE_FONT_EXTRABOLD_TRACKING_WIDER}>{text.RESULTS_CONFIRM_TITLE}</span>
-          </div>
-        }>
-        <div className={MOTION_STYLES.SPACE_Y_4_TEXT_LEFT}>
-          {confirm && confirm !== true && (
-            <ul className={MOTION_STYLES.RESULT_CONFIRM_LIST}>
-              {confirm.map((item) => (
-                <li key={item.id}>{item.title}</li>
-              ))}
-            </ul>
-          )}
-          <p className={MOTION_STYLES.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_300_LEADING_RELAXED_95A2B0}>{confirm === true ? text.RESULTS_CONFIRM_ALL : confirm?.length === 1 ? text.RESULTS_CONFIRM_ONE : text.RESULTS_CONFIRM_SELECTED.replace(COMMON_RUNTIME.SOURCE_TEXT_COUNT, String(confirm?.length || 0))}</p>
-          {deleteError && (
-            <p role={COMMON_RUNTIME.SOURCE_TEXT_ALERT} className={MOTION_STYLES.TEXT_11PX_TEXT_PURPLE_300}>
-              {deleteError}
-            </p>
-          )}
-          <div className={MOTION_STYLES.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_}>{MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC}</div>
-          <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_4_BORDER_T_BORDER_SLATE_200}>
-            <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setConfirm(null)} disabled={busy} className={MOTION_STYLES.PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300_2}>
-              {text.RESULTS_CANCEL}
-            </Button>
-            <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void runDelete()} disabled={busy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_5_PY_2_ROUNDED_XL_TEXT_XS}>
-              {busy ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />}
-              <span>{text.RESULTS_CONFIRM_YES}</span>
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    </div>
+    </>
   );
 };

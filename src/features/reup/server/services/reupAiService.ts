@@ -4,14 +4,17 @@ import { runInMotionAiSession, runMotionAi, type MotionAiImage } from "../../../
 import { isChatAttachmentError } from "../../../../server/services/chatSubmissionRecovery.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../../../constants/cinematicConstants.js";
 import type { MotionAiExecution } from "../../../../types/motionVideo.js";
-import { REUP_FOLDER, REUP_OVERLAY, REUP_UPLOAD } from "../../constants/reupConfig.js";
+import { REUP_FOLDER, REUP_MOMENT, REUP_OVERLAY, REUP_UPLOAD } from "../../constants/reupConfig.js";
 import { REUP_ARTIFACT, REUP_PROMPT } from "../../constants/reupPrompts.js";
 import { REUP_ERROR, REUP_LOG } from "../../constants/reupServerText.js";
 import { reupPreset } from "../../constants/reupPresets.js";
-import { cleanScenePart, mergeSceneParts, reupSheetBatches, reupSheetSpan, reupUploadLimit, type ReupScenePart } from "../../lib/reupSceneMap.js";
+import { reupStripToolNotes } from "../../lib/reupSeo.js";
+import { reupPacing } from "../../lib/reupTimeline.js";
+import { cleanScenePart, mergeSceneParts, reupMoments, reupSheetBatches, reupSheetSpan, reupUploadLimit, type ReupScenePart } from "../../lib/reupSceneMap.js";
 import type { MotionSeoOption } from "../../../../types/motionVideo.js";
-import type { ReupAiChoice, ReupFrame, ReupJob, ReupOutputScript, ReupPackage, ReupSceneMap, ReupScript, ReupSection, ReupSheet, ReupThumbIdea, ReupTranscript } from "../../types/reup.js";
+import type { ReupAiChoice, ReupCue, ReupFrame, ReupJob, ReupMoment, ReupOutputScript, ReupPackage, ReupSceneMap, ReupScript, ReupSection, ReupSectionRole, ReupSegment, ReupSheet, ReupThumbIdea, ReupTranscript } from "../../types/reup.js";
 import { learnReupUploadLimit, readReupUploadLimits } from "./reupJobStore.js";
+import { cropReupSheet } from "./reupMediaService.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 const SECTION_ROLES = ["hook", "body", "teaser", "ending"] as const;
 /** Motion's AI runner with the user's choice for this step; strict when a batch must stay on one provider. */
@@ -35,8 +38,9 @@ export const withReupAi = <T>(job: ReupJob, fn: () => Promise<T>, log: Log, sign
 /**
  * Step 2 — scene map. Sheets go out in the biggest batches the chosen AI accepts per message; batches run in
  * parallel on the room pool. A refused upload halves the batch (remembered for next time). When the AI declines to
- * look at the pictures (a content refusal, e.g. Gemini's "can't help with that image"), the batch is re-sent one sheet
- * at a time and sheets still refused are left out of the map — their footage is simply not used.
+ * look at the pictures even after the turn's Retry (a content refusal, e.g. Gemini's "can't help with that image"), the
+ * batch is re-sent one sheet at a time, then a refused sheet is cut into smaller row strips down to one row. The map must
+ * cover the whole source: a strip still refused stops the step with the time range, never a map with a gap.
  */
 export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSignal): Promise<ReupSceneMap> => {
   const choice = job.settings.visionAi;
@@ -48,7 +52,6 @@ export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSi
   log(api ? REUP_LOG.UPLOAD_API(first.length, job.sheets.length) : REUP_LOG.UPLOAD_PLAN(choice.provider, Math.min(limit, job.sheets.length), first.length, job.sheets.length));
   const badText = job.bad.map((b) => `${Math.round(b.start)}-${Math.round(b.end)}s`).join(", ");
   let done = 0;
-  let refused = 0;
   // Requests planned so far: grows when a batch is split, so "batch n/N" stays true.
   let planned = first.length;
   const split = <T>(chunks: T[][]): T[][] => {
@@ -63,13 +66,13 @@ export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSi
     }
     const span = { start: reupSheetSpan(sheets[0], job.source.duration).start, end: reupSheetSpan(_.last(sheets)!, job.source.duration).end };
     const items = job.source.items?.filter((it) => it.end > span.start && it.start < span.end);
-    const prompt = REUP_PROMPT.SCENES({ sheets: sheets.map((s) => ({ index: s.index, start: s.start, interval: s.interval, count: s.count, cols: s.cols })), duration: job.source.duration, part: parts.length + 1, parts: planned, bad: badText, items, photoSeconds: REUP_FOLDER.PHOTO_SECONDS });
+    const prompt = REUP_PROMPT.SCENES({ sheets: sheets.map((s) => ({ index: s.index, start: s.start, interval: s.interval, count: s.count, cols: s.cols })), duration: job.source.duration, part: parts.length + 1, parts: planned, bad: badText, language: job.settings.language, items, photoSeconds: REUP_FOLDER.PHOTO_SECONDS });
     try {
       const raw = await runMotionAi(prompt, REUP_ARTIFACT.SCENES, exec, signal, aiLog(log), sheets.map(image));
-      const part = cleanScenePart(raw, span, job.bad, `b${sheets[0].index}_`);
+      const part = cleanScenePart(raw, span, job.bad, `b${Math.round(sheets[0].start)}_`, sheets[0].interval);
       parts.push(part);
       done += sheets.length;
-      log(REUP_LOG.SCENE_BATCH(parts.length + refused, planned, part.segments.length));
+      log(REUP_LOG.SCENE_BATCH(parts.length, planned, part.segments.length));
     } catch (error) {
       if (signal?.aborted) throw error;
       if ((error as Error)?.message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR) {
@@ -78,9 +81,16 @@ export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSi
           for (const one of split(sheets.map((sheet) => [sheet]))) await ask(one, exec, REUP_UPLOAD.HALVINGS);
           return;
         }
-        refused++;
-        log(REUP_LOG.VISION_REFUSED_SKIP(choice.provider, span.start, span.end), "warn");
-        return;
+        const sheet = sheets[0];
+        if (sheet.rows > 1) {
+          // A few tiles can trip the image filter: smaller strips isolate them so the rest is still read.
+          const top = Math.ceil(sheet.rows / 2);
+          const strips = _.compact(await Promise.all([cropReupSheet(job.id, sheet, 0, top, signal), cropReupSheet(job.id, sheet, top, sheet.rows - top, signal)]));
+          log(REUP_LOG.VISION_REFUSED_STRIPS(choice.provider, span.start, span.end, strips.length), "warn");
+          for (const strip of split(strips.map((s) => [s]))) await ask(strip, exec, REUP_UPLOAD.HALVINGS);
+          return;
+        }
+        throw new Error(REUP_ERROR.VISION_REFUSED_PART(choice.provider, span.start, span.end));
       }
       if (!api && isChatAttachmentError(error) && sheets.length > 1 && halvings < REUP_UPLOAD.HALVINGS) {
         const next = Math.max(1, Math.floor(sheets.length / 2));
@@ -103,21 +113,53 @@ export const buildReupSceneMap = async (job: ReupJob, log: Log, signal?: AbortSi
   };
   await Promise.all(first.map((batch) => ask(batch, reupExec(choice, !api), 0)));
   const map = mergeSceneParts(parts);
-  if (!map.segments.length) throw new Error(refused ? REUP_ERROR.VISION_REFUSED(choice.provider) : REUP_ERROR.NO_SCENES);
+  if (!map.segments.length) throw new Error(REUP_ERROR.NO_SCENES);
   log(REUP_LOG.SCENES(map.segments.length));
   return map;
 };
 const line = (value: unknown, length: number): string => _.truncate(_.trim(String(value ?? "")), { length });
 const titleOf = (value: unknown): string[] => _.castArray(value || []).map((l) => line(l, 40)).filter(Boolean).slice(0, 2);
-/** Sections of a narrated output: text, and the scenes it plays over. */
-const cleanSections = (raw: any, map: ReupSceneMap, outputIndex: number, alt = false): ReupSection[] => {
-  const byId = new Map(map.segments.map((s) => [s.id, s]));
+/**
+ * Narrated sections: each cue's words tied to one moment of a scene (its picture starts there). A cue pointing at an
+ * unknown moment goes to the nearest unused moment of the scene it names (or the previous cue's scene); with no scene
+ * at all its words join the previous cue. `alt` reads the second language of the same cues.
+ */
+export const cleanMomentSections = (raw: any, map: ReupSceneMap, outputIndex: number, alt = false): ReupSection[] => {
+  const moments = new Map(map.segments.flatMap((g) => reupMoments(g).map((m) => [m.id, { m, g }] as const)));
+  const scenes = new Map(map.segments.map((g) => [g.id, g]));
+  // Moments taken so far; hook and teaser lines are "featured": the body keeps away from them (and they from the body),
+  // or the same view would play twice.
+  const used: { id: string; scene: string; t: number; featured: boolean }[] = [];
+  const free = (g: ReupSegment, m: ReupMoment, featured: boolean): boolean => !used.some((u) => u.id === m.id || (u.scene === g.id && u.featured !== featured && Math.abs(u.t - m.t) < REUP_MOMENT.APART));
+  const freeIn = (g: ReupSegment, near: number, featured: boolean): ReupMoment | undefined => _.minBy(reupMoments(g).filter((m) => free(g, m, featured)), (m) => Math.abs(m.t - near));
   return _.castArray(raw?.sections || []).flatMap((section: any, i: number) => {
-    const text = line(alt ? section?.textAlt : section?.text, 4000);
-    if (!text) return [];
-    const role = SECTION_ROLES.includes(section?.role) ? section.role : "body";
-    const shots = _.compact(_.castArray(section?.scenes || []).map((id: unknown) => byId.get(String(id)))).map((s) => ({ start: s.start, end: s.end }));
-    return [{ id: `o${outputIndex + 1}_p${i + 1}${alt ? "_alt" : ""}`, role, text, shots }];
+    const role: ReupSectionRole = SECTION_ROLES.includes(section?.role) ? section.role : "body";
+    const featured = role === "hook" || role === "teaser";
+    // An answer in the old shape (text over scenes) becomes one cue at the first scene's first moment.
+    const rawCues = _.castArray(section?.cues || []).length ? _.castArray(section.cues) : section?.text ? [{ moment: `${_.castArray(section?.scenes || [])[0] ?? ""}`, text: section.text, textAlt: section.textAlt }] : [];
+    const cues: ReupCue[] = [];
+    for (const item of rawCues) {
+      const text = line(alt ? item?.textAlt : item?.text, 600);
+      if (!text) continue;
+      const id = String(item?.moment ?? item?.scene ?? "").trim();
+      const prev = _.last(cues);
+      let hit = moments.get(id);
+      if (!hit || !free(hit.g, hit.m, featured)) {
+        const g = hit?.g || scenes.get(id.replace(/m\d+$/, "")) || (prev && scenes.get(prev.segment));
+        const near = hit?.m.t ?? (prev ? moments.get(prev.moment || "")?.m.t ?? g?.start : g?.start) ?? 0;
+        const m = g && freeIn(g, near, featured);
+        hit = m && g ? { m, g } : undefined;
+      }
+      // No free moment to show: the words stay over the previous line's picture (never a view shown already).
+      if (!hit) {
+        if (prev) prev.text = `${prev.text} ${text}`;
+        continue;
+      }
+      used.push({ id: hit.m.id, scene: hit.g.id, t: hit.m.t, featured });
+      cues.push({ segment: hit.g.id, moment: hit.m.id, text });
+    }
+    if (!cues.length) return [];
+    return [{ id: `o${outputIndex + 1}_p${i + 1}${alt ? "_alt" : ""}`, role, text: cues.map((c) => c.text).join(" "), shots: _.uniqBy(cues, "segment").map((c) => _.pick(scenes.get(c.segment)!, ["start", "end"])), cues }];
   });
 };
 /** Photo-report sections: narration split by the picture it plays over, with chapter cards. */
@@ -163,14 +205,15 @@ export const writeReupScript = async (job: ReupJob, log: Log, signal?: AbortSign
     return { outputs };
   }
   const folder = preset.source === "folder";
-  const raw = await runMotionAi(REUP_PROMPT.SCRIPT({ map, settings: s, rules: preset.rules, kind: preset.kind, count, duration: job.source.duration, style: job.style!, bilingual: preset.bilingual, folder }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
+  const share = folder ? undefined : reupPacing(s.natural, job.source.hasAudio).share;
+  const raw = await runMotionAi(REUP_PROMPT.SCRIPT({ map, settings: s, rules: preset.rules, kind: preset.kind, count, duration: job.source.duration, style: job.style!, bilingual: preset.bilingual, folder, share }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
   const alt = s.languageAlt;
   const outputs: ReupOutputScript[] = _.castArray(raw?.outputs || [])
     .slice(0, count)
     .flatMap((output: any, i: number) => {
-      const main: ReupOutputScript = { id: `o${i + 1}`, kind: preset.kind, lang: s.language, title: titleOf(output?.title), sections: folder ? cleanCueSections(output, map, i) : cleanSections(output, map, i) };
+      const main: ReupOutputScript = { id: `o${i + 1}`, kind: preset.kind, lang: s.language, title: titleOf(output?.title), sections: folder ? cleanCueSections(output, map, i) : cleanMomentSections(output, map, i) };
       if (!preset.bilingual) return [main];
-      const second: ReupOutputScript = { id: `o${i + 1}_${alt}`, kind: preset.kind, lang: alt, title: titleOf(output?.titleAlt), sections: cleanSections(output, map, i, true) };
+      const second: ReupOutputScript = { id: `o${i + 1}_${alt}`, kind: preset.kind, lang: alt, title: titleOf(output?.titleAlt), sections: cleanMomentSections(output, map, i, true) };
       return [main, second];
     })
     .filter((output: ReupOutputScript) => output.sections.length);
@@ -201,7 +244,7 @@ export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file
   const items = _.castArray(raw?.options || []).filter((o: any) => _.trim(String(o?.title || ""))).slice(0, s.seoOptions);
   const options: MotionSeoOption[] = items.map((o: any) => ({
     title: clip(o.title, 100),
-    description: clip(o.description, 4500),
+    description: reupStripToolNotes(clip(o.description, 4500)),
     hashtags: _.uniq(_.castArray(o.hashtags || []).map((t: unknown) => `#${_.trim(String(t)).replace(/^#+/, "").replace(/\s+/g, "")}`).filter((t) => t.length > 1)).slice(0, 5),
     tags: _.uniq(_.castArray(o.tags || []).map((t: unknown) => _.trim(String(t)).replace(/^#/, "")).filter(Boolean)).slice(0, 20),
     seoScore: _.clamp(Math.round(Number(o.seoScore) || 0), 0, 100),

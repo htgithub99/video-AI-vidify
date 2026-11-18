@@ -1,4 +1,4 @@
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useMemo, useState, type FC } from "react";
 import { CheckCheck, FileText } from "lucide-react";
 import { StudioCard, StudioInput, StudioTextarea } from "../../../components/ui/Studio.js";
 import { cn } from "../../../lib/utils.js";
@@ -6,6 +6,7 @@ import { ActionBtn, StepHeader } from "../../motion/components/MotionControls.js
 import { REUP_URL } from "../constants/reupConfig.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
+import { reupMoments } from "../lib/reupSceneMap.js";
 import type { ReupScript } from "../types/reup.js";
 import { reupClock } from "./ReupControls.js";
 const SHOW_SHOTS = 10;
@@ -15,6 +16,9 @@ export const ReupScriptReview: FC<{ studio: ReupStudio }> = ({ studio }) => {
   const { text, job } = studio;
   const [draft, setDraft] = useState<ReupScript | null>(job?.script || null);
   useEffect(() => setDraft(job?.script || null), [job?.id, job?.script]);
+  const scenes = useMemo(() => new Map((job?.sceneMap?.segments || []).map((g) => [g.id, { start: g.start, end: g.end }])), [job?.sceneMap]);
+  // A moment's frame: the tile time itself (start = end), so the review shows what the line talks about.
+  const moments = useMemo(() => new Map((job?.sceneMap?.segments || []).flatMap((g) => reupMoments(g).map((m) => [m.id, { start: m.t, end: m.t }] as const))), [job?.sceneMap]);
   if (!job || !draft || job.status !== "waiting-script") return null;
   const edit = (fn: (script: ReupScript) => void) =>
     setDraft((current) => {
@@ -68,12 +72,21 @@ export const ReupScriptReview: FC<{ studio: ReupStudio }> = ({ studio }) => {
                     </label>
                   </>
                 ) : section.cues?.length ? (
-                  section.cues.map((cue, k) => (
-                    <div key={cue.segment} className={S.ROW}>
-                      {section.shots[k] && frame(section.shots[k].start, section.shots[k].end)}
+                  section.cues.map((cue, k) => {
+                    // The picture each line plays over: its moment (narrated footage) or its whole item (photo reports).
+                    const at = (cue.moment && moments.get(cue.moment)) ?? scenes.get(cue.segment);
+                    return (
+                    <div key={`${cue.moment || cue.segment}-${k}`} className={S.ROW}>
+                      {at !== undefined && (
+                        <div className={S.SHOT}>
+                          {frame(at.start, at.end)}
+                          <p className={S.SHOT_TIME}>{reupClock(at.start)}</p>
+                        </div>
+                      )}
                       <StudioTextarea className={cn(S.INPUT, S.TEXTAREA)} rows={2} aria-label={text.CUE} value={cue.text} onChange={(e) => edit((d) => void (d.outputs[o].sections[i].cues![k].text = e.target.value))} />
                     </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <StudioTextarea className={cn(S.INPUT, S.TEXTAREA)} rows={Math.min(8, Math.max(2, Math.ceil(section.text.length / 110)))} value={section.text} onChange={(e) => edit((d) => void (d.outputs[o].sections[i].text = e.target.value))} />
                 )}

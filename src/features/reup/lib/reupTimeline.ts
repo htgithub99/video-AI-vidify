@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { REUP_NARRATION } from "../constants/reupConfig.js";
 import type { ReupBadRange, ReupSegment, ReupShot } from "../types/reup.js";
 const EPS = 0.05;
 const round = (n: number): number => Math.round(n * 100) / 100;
@@ -34,6 +35,8 @@ export interface ReupTimelineOptions {
   minShot: number;
   maxShot: number;
   hookCut: number;
+  /** Seconds kept clear on each side of a used shot. */
+  guard?: number;
 }
 export interface ReupPlannedSection {
   shots: ReupShot[];
@@ -59,14 +62,19 @@ export class ReupFootageLedger {
   }
   private take(span: ReupShot): ReupShot {
     const shot = { start: round(span.start), end: round(span.end) };
-    this.used = mergeSpans([...this.used, shot]);
+    const guard = this.opts.guard || 0;
+    this.used = mergeSpans([...this.used, { start: shot.start - guard, end: shot.end + guard }]);
     return shot;
   }
-  /** Cut pieces from `spans` in order until `seconds` are covered. Hook pieces are short; body pieces jump forward inside long shots. */
-  private cut(spans: ReupShot[], seconds: number, hook: boolean, out: ReupShot[]): number {
+  /**
+   * Cut pieces from `spans` in order until `seconds` are covered. Hook pieces are short; body pieces jump forward
+   * inside long shots (`jump` × the piece); a cue's picture runs on from its moment (`jump` near 1).
+   */
+  private cut(spans: ReupShot[], seconds: number, hook: boolean, out: ReupShot[], opts: { piece?: number; jump?: number; shortest?: number } = {}): number {
     let left = seconds;
-    const piece = hook ? this.opts.hookCut : this.opts.maxShot;
-    const shortest = hook ? Math.min(this.opts.minShot, this.opts.hookCut) : this.opts.minShot;
+    const piece = opts.piece ?? (hook ? this.opts.hookCut : this.opts.maxShot);
+    const jump = opts.jump ?? (hook ? 3 : 2);
+    const shortest = opts.shortest ?? (hook ? Math.min(this.opts.minShot, this.opts.hookCut) : this.opts.minShot);
     for (const wanted of spans) {
       for (const span of this.free([wanted])) {
         let cursor = span.start;
@@ -75,44 +83,78 @@ export class ReupFootageLedger {
           if (len < shortest - EPS && left > len + EPS) break;
           out.push(this.take({ start: cursor, end: cursor + len }));
           left -= len;
-          cursor += len * (hook ? 3 : 2);
+          cursor += len * jump;
         }
         if (left <= EPS) return seconds;
       }
     }
     return seconds - Math.max(0, left);
   }
+  /** Last resort when the footage asked for is used up: shots already planned here play again (flagged). */
+  private repeat(shots: ReupShot[], covered: number, seconds: number): { covered: number; repeated: boolean } {
+    if (covered >= seconds - EPS || !shots.length) return { covered, repeated: false };
+    let i = 0;
+    const base = shots.length;
+    while (covered < seconds - EPS && i < base * 4) {
+      const src = shots[i % base];
+      const len = Math.min(src.end - src.start, seconds - covered);
+      shots.push({ start: src.start, end: round(src.start + len) });
+      covered += len;
+      i++;
+    }
+    return { covered, repeated: true };
+  }
   /**
-   * Fill `seconds` for one section: the script's own shots first, then (if allowed) unused scenes
-   * ranked by value and closeness in time, and only as a last resort footage already shown.
+   * Fill `seconds` for one section: the script's own shots first, then (if allowed) footage right next to them —
+   * `near`, nearest first, so the picture stays on the same activity — and only as a last resort footage already shown.
    */
-  plan(wanted: ReupShot[], seconds: number, hook: boolean, pool: ReupSegment[], fill: boolean): ReupPlannedSection {
+  plan(wanted: ReupShot[], seconds: number, hook: boolean, near: ReupShot[], fill: boolean): ReupPlannedSection {
     const shots: ReupShot[] = [];
     let covered = this.cut(wanted, seconds, hook, shots);
     let filled = 0;
     if (covered < seconds - EPS && fill) {
-      const anchor = _.last(wanted)?.end ?? _.last(shots)?.end ?? 0;
-      const ranked = _.orderBy(pool, [(s) => -s.value, (s) => Math.abs(s.start - anchor)]);
       const before = covered;
-      covered += this.cut(ranked, seconds - covered, hook, shots);
-      if (covered < seconds - EPS) covered += this.cut([{ start: 0, end: this.opts.duration }], seconds - covered, hook, shots);
+      covered += this.cut(near, seconds - covered, hook, shots);
       filled = covered - before;
     }
-    let repeated = false;
-    if (covered < seconds - EPS && shots.length) {
-      repeated = true;
-      let i = 0;
-      while (covered < seconds - EPS && i < shots.length * 4) {
-        const src = shots[i % shots.length];
-        const len = Math.min(src.end - src.start, seconds - covered);
-        shots.push({ start: src.start, end: round(src.start + len) });
-        covered += len;
-        i++;
-      }
+    const again = this.repeat(shots, covered, seconds);
+    return { shots, seconds: round(Math.min(seconds, again.covered)), repeated: again.repeated, filled: round(filled) };
+  }
+  /**
+   * Picture for one narrated cue: the source from its moment on, inside its scene (first piece unbroken, later ones
+   * stepping forward); then the neighbouring scenes `near` (nearest first) in pieces of at least `shortest` seconds.
+   * Never footage back before the moment (it sits between views already shown and reads as a repeat), never a scene
+   * the words are not about.
+   */
+  planCue(at: number, scene: ReupShot, seconds: number, near: ReupShot[], piece: number, shortest = this.opts.minShot): ReupPlannedSection {
+    const shots: ReupShot[] = [];
+    const from = _.clamp(at, scene.start, scene.end);
+    let covered = this.cut([{ start: from, end: scene.end }], seconds, false, shots, { piece, jump: 1.25, shortest });
+    let filled = 0;
+    if (covered < seconds - EPS) {
+      const before = covered;
+      covered += this.cut(near, seconds - covered, false, shots, { piece, jump: 1.25, shortest });
+      filled = covered - before;
     }
-    return { shots, seconds: round(Math.min(seconds, covered)), repeated, filled: round(filled) };
+    const again = this.repeat(shots, covered, seconds);
+    return { shots, seconds: round(Math.min(seconds, again.covered)), repeated: again.repeated, filled: round(filled) };
   }
 }
+/**
+ * Scenes next to the given ones in time, nearest first (the next scene before the previous one), for footage that
+ * stays on the same activity when a scene runs out.
+ */
+export const reupNearScenes = (segments: ReupSegment[], ids: string[], depth = 2): ReupShot[] => {
+  const index = new Set(ids.map((id) => segments.findIndex((g) => g.id === id)).filter((i) => i >= 0));
+  const out: ReupShot[] = [];
+  for (let d = 1; d <= depth; d++)
+    for (const i of index)
+      for (const j of [i + d, i - d]) {
+        const g = segments[j];
+        if (g && !index.has(j) && !out.some((o) => o.start === g.start)) out.push({ start: g.start, end: g.end });
+      }
+  return out;
+};
 /**
  * Seconds each section lasts: its voice plus the breath after it, then — for long videos — natural-sound tails
  * spread evenly over the body sections toward the target length: at most `tailMax` each and `silentShare` of the
@@ -140,4 +182,9 @@ export const reupSectionSeconds = (voice: number[], roles: string[], pause: numb
   }
   const out = seconds.map((s, i) => round(s + tails[i]));
   return { seconds: out, short: round(Math.max(0, target - _.sum(out))), padding: round(_.sum(tails)) };
+};
+/** Pacing of a narrated video from footage: with natural sound to carry the quiet parts, fewer words and longer pauses. */
+export const reupPacing = (natural: string, hasAudio = true): { share: [number, number]; cueGap: number; tailMax: number } => {
+  const p = natural !== "off" && hasAudio ? REUP_NARRATION.sound : REUP_NARRATION.silent;
+  return { share: [...p.share] as [number, number], cueGap: p.cueGap, tailMax: p.tailMax };
 };

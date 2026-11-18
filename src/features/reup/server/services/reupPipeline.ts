@@ -12,7 +12,8 @@ import { MOTION_SEO } from "../../../../constants/motionSeo.js";
 import { MOTION_SEO_TEXTS } from "../../../../constants/motionVideoTexts.js";
 import { renderSeoOptionText } from "../../../../lib/motionSeo.js";
 import { REUP_COMMENTARY } from "../../constants/reupCommentary.js";
-import { pickReupStyle } from "../../lib/reupCommentary.js";
+import { pickReupStyle, reupPickTrack } from "../../lib/reupCommentary.js";
+import { reupMusicDir, reupTracks } from "./reupMusicService.js";
 import { reupReport } from "../../lib/reupCompliance.js";
 import { reupUnbackedClaims } from "../../lib/reupFacts.js";
 import { reupSeoChapters } from "../../lib/reupSeo.js";
@@ -106,7 +107,10 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       reupLog(job, REUP_LOG.SPEECH_ONLY);
       return "next";
     }
-    const { voices, credits } = await voiceReupJob(job, (t, l) => reupLog(job, t, l), (p) => reupStep(job, "voice", { progress: p }), signal);
+    const { voices, credits } = await voiceReupJob(job, (t, l) => reupLog(job, t, l), (p) => reupStep(job, "voice", { progress: p }), signal, (id, voice) => {
+      job.voices = { ...job.voices, [id]: voice };
+      saveReupJob(job);
+    });
     job.voices = voices;
     job.credits = (job.credits || 0) + credits;
     reupLog(job, REUP_LOG.VOICE_DONE(_.sumBy(Object.values(voices), "seconds")));
@@ -114,8 +118,17 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     return "next";
   },
   build: async (job, signal) => {
+    // The background track: one of the library's tracks for this type, the one this channel used longest ago.
+    if (job.settings.music === "library") {
+      const tracks = reupTracks(job.preset);
+      const track = tracks.some((t) => t.name === job.style?.track) ? job.style!.track : reupPickTrack(tracks.map((t) => t.name), _.compact(pastRuns(job).map((p) => p.style)).slice(0, REUP_COMMENTARY.HISTORY), job.id);
+      job.style = { ...job.style!, track };
+      reupLog(job, track ? REUP_LOG.MUSIC_TRACK(track) : REUP_LOG.MUSIC_EMPTY(job.preset, reupMusicDir()), track ? "info" : "warn");
+    }
     job.outputs = await buildReupJob(job, (t, l) => reupLog(job, t, l), (p) => reupStep(job, "build", { progress: p }), signal);
     checkPolicy(job);
+    // A re-export keeps the SEO package; its files list the new videos.
+    if (job.package) writePackage(job, job.package);
     return "next";
   },
   package: async (job, signal) => {
@@ -136,7 +149,7 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     return "next";
   },
 };
-const run = async (job: ReupJob, from: ReupStepId): Promise<void> => {
+const run = async (job: ReupJob, from: ReupStepId, until?: ReupStepId): Promise<void> => {
   const controller = new AbortController();
   setReupController(job.id, controller);
   job.status = "running";
@@ -144,7 +157,7 @@ const run = async (job: ReupJob, from: ReupStepId): Promise<void> => {
   saveReupJob(job, true);
   let current: ReupStepId = from;
   try {
-    for (const step of REUP_STEPS.slice(REUP_STEPS.indexOf(from))) {
+    for (const step of REUP_STEPS.slice(REUP_STEPS.indexOf(from), until ? REUP_STEPS.indexOf(until) + 1 : undefined)) {
       current = step;
       reupStep(job, step, { status: "running", progress: 0, message: "" });
       const next = await STEP_RUN[step](job, controller.signal);
@@ -174,8 +187,8 @@ const run = async (job: ReupJob, from: ReupStepId): Promise<void> => {
     saveReupJob(job, true);
   }
 };
-const launch = (job: ReupJob, from: ReupStepId): void => {
-  void run(job, from);
+const launch = (job: ReupJob, from: ReupStepId, until?: ReupStepId): void => {
+  void run(job, from, until);
 };
 const busy = (job: ReupJob): void => {
   if (job.status === "running" && reupController(job.id)) throw new Error(REUP_ERROR.BUSY);
@@ -189,6 +202,8 @@ export const startReup = async (input: { path: string; preset: ReupPresetId; set
   const now = Date.now();
   const settings = reupJobSettings(preset.id, cleanReupSettings(input.settings, preset.id));
   if (rights === "licensed" && !settings.sourceLink.trim()) throw new Error(REUP_ERROR.LICENSE_LINK);
+  // The channel's own knowledge or view is what makes a narrated video ours (YouTube's reused-content rule): required.
+  if (!preset.speech && settings.angle.trim().length < REUP_LIMITS.ANGLE_MIN) throw new Error(REUP_ERROR.NO_ANGLE);
   const job: ReupJob = { id: randomUUID(), createdAt: now, updatedAt: now, preset: preset.id, settings, rights, source, status: "running", steps: reupEmptySteps(), logs: [], sheets: [], bad: [], warnings: [], outputs: [] };
   saveReupJob(job, true);
   reupLog(job, REUP_LOG.START(source.name, preset.id));
@@ -207,6 +222,26 @@ export const rerunReup = (id: string, step: ReupStepId, settings?: unknown): Reu
   launch(job, step);
   return job;
 };
+/** Export fields the screen may change on a finished run: the picture format and the sound mix (not the words). */
+const EXPORT_KEYS = ["aspect", "quality", "fps", "subtitles", "music", "natural", "logo", "logoCorner"] as const;
+/**
+ * "Export video" on a run whose voice is ready: the videos are built again with the screen's export format and mix
+ * (Video Motion's export button). Scenes, script, voice and the SEO package stay.
+ */
+export const exportReup = (id: string, settings: unknown): ReupJob => {
+  const job = getReupJob(id);
+  if (!job) throw new Error(REUP_ERROR.NO_JOB);
+  busy(job);
+  if (job.steps.voice.status !== "done") throw new Error(REUP_ERROR.NEED_VOICE);
+  const screen = cleanReupSettings(settings, job.preset);
+  job.settings = { ...job.settings, ..._.pick(screen, EXPORT_KEYS) };
+  job.outputs = [];
+  job.report = undefined;
+  job.steps.build = { status: "idle", progress: 0, message: "" };
+  reupLog(job, REUP_LOG.EXPORT_AGAIN);
+  launch(job, "build", "build");
+  return job;
+};
 /** Stop 1 passed: keep the server's shots, take the edited titles, narration (or cue lines), callouts and call to action. */
 export const approveReupScript = (id: string, edited: unknown): ReupJob => {
   const job = getReupJob(id);
@@ -214,7 +249,9 @@ export const approveReupScript = (id: string, edited: unknown): ReupJob => {
   if (job.status !== "waiting-script") throw new Error(REUP_ERROR.NOT_WAITING);
   const outs = new Map<string, any>(_.castArray((edited as ReupScript)?.outputs || []).map((o: any) => [String(o?.id), o]));
   const clip = (v: unknown, n: number) => _.truncate(_.trim(String(v ?? "")), { length: n });
+  const scenes = new Map((job.sceneMap?.segments || []).map((g) => [g.id, g]));
   job.script = {
+    ...job.script,
     outputs: job.script.outputs.map((o) => {
       const e = outs.get(o.id);
       const secs = new Map<string, any>(_.castArray(e?.sections || []).map((x: any) => [String(x?.id), x]));
@@ -228,7 +265,8 @@ export const approveReupScript = (id: string, edited: unknown): ReupJob => {
             if (o.speech) return { ...sec, ...(x?.callout !== undefined ? { callout: clip(x.callout, 40) || undefined } : {}) };
             if (sec.cues) {
               const cues = sec.cues.map((c, k) => ({ ...c, text: clip(_.castArray(x?.cues || [])[k]?.text ?? c.text, 600) })).filter((c) => c.text);
-              return { ...sec, cues, text: cues.map((c) => c.text).join(" "), shots: sec.shots.filter((_s, k) => sec.cues![k] && cues.some((c) => c.segment === sec.cues![k].segment)) };
+              const shots = _.uniqBy(cues, "segment").flatMap((c) => (scenes.has(c.segment) ? [_.pick(scenes.get(c.segment)!, ["start", "end"])] : []));
+              return { ...sec, cues, text: cues.map((c) => c.text).join(" "), shots };
             }
             return { ...sec, text: clip(x?.text ?? sec.text, REUP_LIMITS.TEXT) };
           })

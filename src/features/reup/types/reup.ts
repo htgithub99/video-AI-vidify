@@ -21,15 +21,18 @@ export type ReupRights = "own" | "licensed";
 export type ReupCommentaryVoice = "expert" | "storyteller" | "analyst" | "curious" | "wry" | "coach";
 export type ReupCommentaryHook = "result" | "question" | "contrast" | "stakes" | "tease";
 export type ReupCommentaryEnding = "question" | "lesson" | "reflection" | "next";
-/** The commentary of one run: who narrates, how it opens and ends, and the music. Rotated across runs so videos do not share one template. */
+/** The commentary of one run: who narrates, how it opens and ends, and the background track. Rotated across runs so videos do not share one template. */
 export interface ReupStyle {
   voice: ReupCommentaryVoice;
   hook?: ReupCommentaryHook;
   ending: ReupCommentaryEnding;
-  music?: string;
+  /** File name of the library track under the video (none when music is off or the type has no track). */
+  track?: string;
 }
+/** Background music: none, or a track from the music library made for this video type. */
+export type ReupMusicChoice = "off" | "library";
 export type ReupReportLevel = "ok" | "review" | "risk";
-export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual";
+export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual" | "naturalOff";
 /** Upload check against YouTube's reused / inauthentic content rules: measured on the edited video and the run history. */
 export interface ReupReport {
   level: ReupReportLevel;
@@ -58,8 +61,8 @@ export interface ReupSettings {
   /** Voice channels of the Voices tab (shared with Video Motion). */
   voiceChannel: string;
   voiceChannelAlt: string;
-  /** Music mood of Video Motion's generated score: auto, a mood, or off. */
-  musicMood: string;
+  /** Background music: off, or the music library's tracks for this video type. */
+  music: ReupMusicChoice;
   natural: ReupNatural;
   /** Burned-in subtitles: the narration line by line, or the speaker's words lighting up (real-talk clips). */
   subtitles: boolean;
@@ -106,8 +109,6 @@ export interface ReupPresetRules {
   seoOptions: number;
   /** Draw a thumbnail for each option (long videos and TikTok covers; not Shorts). */
   thumbnail: boolean;
-  /** Music moods "auto" rotates through, least recently used first. */
-  musicMoods: string[];
   /** Commentary styles this type may use (all when empty). */
   voices: ReupCommentaryVoice[];
   hooks: ReupCommentaryHook[];
@@ -157,6 +158,13 @@ export interface ReupBadRange {
   end: number;
   reason: "dark" | "blur";
 }
+/** A moment inside a scene the narration can point at: a contact-sheet tile's time, what happens, how strong it is on screen. */
+export interface ReupMoment {
+  id: string;
+  t: number;
+  what: string;
+  pull: number;
+}
 export interface ReupSegment {
   id: string;
   start: number;
@@ -168,6 +176,8 @@ export interface ReupSegment {
   focusX?: number;
   /** Short factual caption (photo reports). */
   caption?: string;
+  /** Moments to talk over, in time order (maps from before moments existed get them spread evenly, see reupMoments). */
+  moments?: ReupMoment[];
 }
 export interface ReupSceneMap {
   summary: string;
@@ -183,7 +193,11 @@ export interface ReupShot {
 export interface ReupCue {
   /** Scene the cue's words are spoken over. */
   segment: string;
+  /** Moment of that scene the picture starts at (narrated videos); photo reports show the whole item. */
+  moment?: string;
   text: string;
+  /** The same words in the second language (bilingual tests). */
+  textAlt?: string;
 }
 export interface ReupSection {
   id: string;
@@ -210,6 +224,13 @@ export interface ReupOutputScript {
 }
 export interface ReupScript {
   outputs: ReupOutputScript[];
+}
+/** A track of the background music library. */
+export interface ReupTrack {
+  name: string;
+  file: string;
+  /** Video type it was made for. */
+  preset: ReupPresetId;
 }
 export interface ReupOutputResult {
   id: string;
@@ -259,8 +280,10 @@ export interface ReupVoice {
   file: string;
   seconds: number;
   voice: string;
-  /** Photo reports: where each cue starts inside this voice (seconds). */
+  /** Where each cue starts inside this voice (seconds): its picture changes there. */
   cues?: number[];
+  /** Seconds of pause between cues inside this voice (footage and its own sound play there). */
+  gaps?: number;
   /** Subtitle lines of this narration, timed inside the voice by its own spoken words. */
   subs?: ReupSubLine[];
 }

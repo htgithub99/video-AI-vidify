@@ -101,6 +101,17 @@ export const makeReupSheets = async (jobId: string, source: ReupSource, wanted: 
   const files = fs.readdirSync(dir).filter((f) => f.endsWith(".jpg")).sort();
   return files.map((file, index) => ({ index, file: path.join(dir, file), url: reupFileUrl(path.join(dir, file)), start: index * per * interval, interval, count: Math.max(1, Math.min(per, tiles - index * per)), cols: REUP_SHEET.COLS, rows: REUP_SHEET.ROWS }));
 };
+/**
+ * A strip of whole tile rows cut out of a contact sheet (grid margin = padding = 4 px, so a row step is (ih-4)/rows),
+ * covering exactly those rows' moments. Undefined when the rows hold no tile.
+ */
+export const cropReupSheet = async (jobId: string, sheet: ReupSheet, fromRow: number, rows: number, signal?: AbortSignal): Promise<ReupSheet | undefined> => {
+  const count = Math.min(rows * sheet.cols, sheet.count - fromRow * sheet.cols);
+  if (count <= 0) return undefined;
+  const file = path.join(reupJobDir(jobId, REUP_DIR.SHEETS), `${path.basename(sheet.file, ".jpg")}_r${fromRow}-${fromRow + rows - 1}.jpg`);
+  await reupFfmpeg(["-y", "-i", sheet.file, "-vf", `crop=iw:(ih-4)*${rows}/${sheet.rows}+4:0:(ih-4)*${fromRow}/${sheet.rows}`, "-q:v", String(REUP_SHEET.JPEG_Q), file], { signal });
+  return { ...sheet, file, url: reupFileUrl(file), start: sheet.start + fromRow * sheet.cols * sheet.interval, count, rows };
+};
 /** Brightness (and blur when the ffmpeg build can measure it) of every keyframe → ranges to keep off screen. */
 export const measureReupQuality = async (source: ReupSource, darkLevel: number, blurLevel: number, signal?: AbortSignal): Promise<{ bad: ReupBadRange[]; blurMeasured: boolean }> => {
   const blur = blurLevel > 0 && (await reupHasFilter("blurdetect"));

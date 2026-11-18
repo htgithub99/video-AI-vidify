@@ -1,9 +1,8 @@
 import _ from "lodash";
 import { MOTION_LANGUAGE_CODES } from "../../../constants/motionLanguages/index.js";
-import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../../constants/motionMusic.js";
 import { REUP_LIMITS } from "../constants/reupConfig.js";
 import { reupPreset, reupPresetDefaults } from "../constants/reupPresets.js";
-import type { ReupAiChoice, ReupLanguage, ReupPresetId, ReupSettings } from "../types/reup.js";
+import type { ReupAiChoice, ReupLanguage, ReupMusicChoice, ReupPresetId, ReupSettings } from "../types/reup.js";
 const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(value as T) ? (value as T) : fallback);
 const bool = (value: unknown, fallback: boolean): boolean => (typeof value === "boolean" ? value : fallback);
 const str = (value: unknown, max: number, fallback = ""): string => (typeof value === "string" ? value.slice(0, max) : fallback);
@@ -16,7 +15,10 @@ const ai = (value: any, fallback: ReupAiChoice): ReupAiChoice => ({
   multiRoom: bool(value?.multiRoom, fallback.multiRoom),
 });
 export const REUP_LANGUAGES = MOTION_LANGUAGE_CODES as readonly ReupLanguage[];
-export const REUP_MUSIC_MOODS = [MOTION_MUSIC.AUTO, ...Object.keys(MOTION_MUSIC_MOODS), MOTION_MUSIC.OFF];
+export const REUP_MUSIC_CHOICES: readonly ReupMusicChoice[] = ["off", "library"];
+/** Music choice from the client or storage; settings saved before the library ("auto" or a mood) meant music on. */
+export const reupMusicChoice = (value: unknown, legacyMood: unknown, fallback: ReupMusicChoice): ReupMusicChoice =>
+  REUP_MUSIC_CHOICES.includes(value as ReupMusicChoice) ? (value as ReupMusicChoice) : typeof legacyMood === "string" && legacyMood ? (legacyMood === "off" ? "off" : "library") : fallback;
 /** Clean the screen's choices from the client or storage; anything missing or not offered falls back to the type's default. */
 export const cleanReupSettings = (raw: unknown, preset: ReupPresetId): ReupSettings => {
   const d = reupPresetDefaults(preset);
@@ -31,7 +33,7 @@ export const cleanReupSettings = (raw: unknown, preset: ReupPresetId): ReupSetti
     aspect: pick(v.aspect, ["16:9", "9:16"], d.aspect),
     voiceChannel: str(v.voiceChannel, 120, d.voiceChannel),
     voiceChannelAlt: str(v.voiceChannelAlt, 120, d.voiceChannelAlt),
-    musicMood: pick(v.musicMood, REUP_MUSIC_MOODS, d.musicMood),
+    music: reupMusicChoice(v.music, v.musicMood, d.music),
     natural: pick(v.natural, ["keep", "low", "off"], d.natural),
     subtitles: bool(v.subtitles, d.subtitles),
     logo: pick(v.logo, ["off", "crop", "blur"], d.logo),

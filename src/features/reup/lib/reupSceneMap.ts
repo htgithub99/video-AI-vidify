@@ -1,6 +1,6 @@
 import _ from "lodash";
-import { REUP_UPLOAD } from "../constants/reupConfig.js";
-import type { ReupBadRange, ReupSceneMap, ReupSegment, ReupSheet } from "../types/reup.js";
+import { REUP_MOMENT, REUP_UPLOAD } from "../constants/reupConfig.js";
+import type { ReupBadRange, ReupMoment, ReupSceneMap, ReupSegment, ReupSheet } from "../types/reup.js";
 import { mergeSpans, subtractSpans } from "./reupTimeline.js";
 /** Images one request may carry for this AI route: the learned value wins when lower than the documented maximum. */
 export const reupUploadLimit = (provider: string, mode: string, learned: Record<string, number> = {}): number => {
@@ -59,8 +59,36 @@ export interface ReupScenePart {
   thumbnails: number[];
   summary: string;
 }
+/**
+ * A scene's moments from the AI: inside the scene (clear of its last half second), off dark or blurry footage, on a
+ * contact-sheet tile's time (`interval`), at least MIN_GAP apart, at most MAX per scene. Ids are given after merging.
+ */
+const cleanMoments = (raw: unknown, start: number, end: number, bad: ReupBadRange[], interval: number, value: number): Omit<ReupMoment, "id">[] => {
+  const out: Omit<ReupMoment, "id">[] = [];
+  for (const item of _.sortBy(_.castArray(raw || []), (m: any) => time(m?.t))) {
+    let t = time((item as any)?.t);
+    if (!Number.isFinite(t)) continue;
+    if (interval > 0) t = Math.round(t / interval) * interval;
+    t = _.round(_.clamp(t, start, Math.max(start, end - REUP_MOMENT.END_GAP)), 2);
+    if (bad.some((b) => t >= b.start && t < b.end)) continue;
+    if (out.some((m) => Math.abs(m.t - t) < REUP_MOMENT.MIN_GAP)) continue;
+    const what = _.truncate(String((item as any)?.what || "").trim(), { length: 140 });
+    if (!what) continue;
+    out.push({ t, what, pull: _.clamp(Math.round(Number((item as any)?.pull) || value), 1, 5) });
+  }
+  return out.slice(0, REUP_MOMENT.MAX);
+};
+/**
+ * Moments of a scene: the map's own, or (maps from before moments) one every EVEN_STEP seconds with the scene's line.
+ * Ids are the scene's id plus "m" and a number, so a script can only point at moments that exist.
+ */
+export const reupMoments = (segment: ReupSegment): ReupMoment[] => {
+  if (segment.moments?.length) return segment.moments;
+  const n = Math.max(1, Math.floor((segment.end - segment.start) / REUP_MOMENT.EVEN_STEP));
+  return _.range(n).map((k) => ({ id: `${segment.id}m${k + 1}`, t: _.round(segment.start + k * REUP_MOMENT.EVEN_STEP, 2), what: segment.what, pull: segment.value }));
+};
 /** Validate one AI answer: times must sit inside the batch, segments may not be mostly bad footage, unknown ids are dropped. */
-export const cleanScenePart = (raw: any, span: { start: number; end: number }, bad: ReupBadRange[], prefix: string): ReupScenePart => {
+export const cleanScenePart = (raw: any, span: { start: number; end: number }, bad: ReupBadRange[], prefix: string, interval = 0): ReupScenePart => {
   const segments: ReupSegment[] = [];
   const ids = new Map<string, string>();
   for (const item of _.castArray(raw?.segments || [])) {
@@ -75,7 +103,9 @@ export const cleanScenePart = (raw: any, span: { start: number; end: number }, b
     ids.set(String(item?.id ?? ""), id);
     const focusX = Number(item?.focusX);
     const caption = _.truncate(String(item?.caption || "").trim(), { length: 60 });
-    segments.push({ id, start: _.round(start, 2), end: _.round(end, 2), what, tags: _.uniq(_.castArray(item?.tags || []).map((t: unknown) => String(t).toLowerCase().trim()).filter((t: string) => TAG_RE.test(t))).slice(0, 6), value: _.clamp(Math.round(Number(item?.value) || 1), 1, 5), ...(Number.isFinite(focusX) ? { focusX: _.clamp(focusX, 0, 1) } : {}), ...(caption ? { caption } : {}) });
+    const value = _.clamp(Math.round(Number(item?.value) || 1), 1, 5);
+    const moments = cleanMoments(item?.moments, start, end, bad, interval, value).map((m, k) => ({ ...m, id: `${id}m${k + 1}` }));
+    segments.push({ id, start: _.round(start, 2), end: _.round(end, 2), what, ...(moments.length ? { moments } : {}), tags: _.uniq(_.castArray(item?.tags || []).map((t: unknown) => String(t).toLowerCase().trim()).filter((t: string) => TAG_RE.test(t))).slice(0, 6), value, ...(Number.isFinite(focusX) ? { focusX: _.clamp(focusX, 0, 1) } : {}), ...(caption ? { caption } : {}) });
   }
   const mapId = (value: unknown): string | undefined => ids.get(String(value ?? ""));
   return {
@@ -103,7 +133,9 @@ export const mergeSceneParts = (parts: ReupScenePart[]): ReupSceneMap => {
     }
     const id = `s${segments.length + 1}`;
     rename.set(segment.id, id);
-    segments.push({ ...segment, id, start });
+    // A segment trimmed at a batch border loses the moments before its new start; moment ids follow the new scene id.
+    const moments = (segment.moments || []).filter((m) => m.t >= start).map((m, k) => ({ ...m, id: `${id}m${k + 1}` }));
+    segments.push({ ..._.omit(segment, "moments"), id, start, ...(moments.length ? { moments } : {}) });
   }
   const hook = _.uniq(_.compact(ordered.flatMap((p) => p.hook).map((id) => rename.get(id))));
   const endings = _.compact(ordered.map((p) => rename.get(p.ending)));

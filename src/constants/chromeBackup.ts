@@ -185,7 +185,8 @@ export const CHAT_ROOM_RECOVERY = {
   ARIA_CONTROLS: "aria-controls",
   ARIA_DISABLED: "aria-disabled",
   POPUP_VALUES: ["true", "menu"],
-  GENERIC_REFUSAL: /(?:chỉ là một mô hình ngôn ngữ|(?:just|only) (?:a |an )?(?:language|text[- ]based) model)/iu,
+  /** Canned refusals that a Retry of the same turn often clears (Gemini's image filter also flips on a regenerate). */
+  GENERIC_REFUSAL: /(?:chỉ là một mô hình ngôn ngữ|(?:just|only) (?:a |an )?(?:language|text[- ]based) model|can['’]t help with (?:that|this) image)/iu,
   TURN_SELECTOR: 'model-response, [data-message-author-role="assistant"], [data-testid="assistant-message"], .ds-message, [data-is-streaming]',
   CONTAINER_SELECTOR: 'model-response, article[data-testid^="conversation-turn-"]:has([data-message-author-role="assistant"]), [data-virtual-list-item-key]:has(.ds-message)',
   PARENT: "..",

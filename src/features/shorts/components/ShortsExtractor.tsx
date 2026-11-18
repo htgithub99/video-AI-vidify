@@ -1,6 +1,8 @@
 import { formatMediaFileSize as formatFileSize } from "../../../lib/mediaFormat.js";
 import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
 import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
+import { StudioResults, type StudioResultSlots } from "../../../components/common/StudioResults.js";
+import { STUDIO_RESULTS } from "../../../constants/studioResults.js";
 import { openIndexedDatabase } from "../../../lib/indexedDatabase.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SHORTS } from "../constants/runtimeText.js";
@@ -58,6 +60,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
   const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false);
   const [progressState, setProgressState] = useState<ShortsProgressState>({ stage: ShortsProgressStage.IDLE, percent: 0, message: "" });
   const [highlightClips, setHighlightClips] = useState<HighlightClipItem[]>([]);
+  const [clipsLoaded, setClipsLoaded] = useState(false);
   const [aiProvider, setAiProvider] = useState<AiPlanningFallbackProvider>(AiPlanningFallbackProvider.GeminiChat);
   const [aiModel, setAiModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlash);
   const [aiExecutionMode, setAiExecutionMode] = useState<AiPlanningExecutionMode>(AiPlanningExecutionMode.ApiOnly);
@@ -86,23 +89,26 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
           if (getReq.result?.clips) setHighlightClips(getReq.result.clips);
           if (getReq.result?.metadata) setSourceMetadata(getReq.result.metadata);
           if (getReq.result?.sourcePath) setSourceVideoPath(getReq.result.sourcePath);
+          setClipsLoaded(true);
         };
+        getReq.onerror = () => setClipsLoaded(true);
       })
-      .catch(() => {});
+      .catch(() => setClipsLoaded(true));
   }, []);
   useEffect(() => {
     if (!settingsLoaded) return;
     jsonUtils.setItem(SHORTS_CONSTANTS.SETTINGS_STORAGE_KEY, { aspectRatio, reframeMode, clipCount, durationMode, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless });
   }, [settingsLoaded, aspectRatio, reframeMode, clipCount, durationMode, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless]);
   useEffect(() => {
-    if (_.isEmpty(highlightClips)) return;
+    // Saved once the stored list is read, so deleting the last clip is kept too.
+    if (!clipsLoaded) return;
     openShortsDatabase()
       .then((db) => {
         const tx = db.transaction(SHORTS_CONSTANTS.DB_STORE_RESULTS, SOURCE_TEXT_READWRITE);
         tx.objectStore(SHORTS_CONSTANTS.DB_STORE_RESULTS).put({ id: SHORTS_CONSTANTS.DB_KEY_RESULTS, clips: highlightClips, metadata: sourceMetadata, sourcePath: sourceVideoPath });
       })
       .catch(() => {});
-  }, [highlightClips, sourceMetadata, sourceVideoPath]);
+  }, [clipsLoaded, highlightClips, sourceMetadata, sourceVideoPath]);
   const inspectVideo = async (filePath: string) => {
     if (!filePath) return;
     try {
@@ -277,6 +283,18 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
     } finally {
       setIsExportingZip(false);
     }
+  };
+  /** Delete clips (video + cover) from disk and the list; ids whose video could not go come back as failed. */
+  const handleDeleteClips = async (clips: HighlightClipItem[]): Promise<{ freedBytes?: number; failed?: string[] }> => {
+    const name = (url?: string) => (url ? _.last(_.split(_.split(url, "?")[0], "/")) || "" : "");
+    const response = await fetch(API_ROUTES.SHORTS_DELETE_CLIPS, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: stringifyJson({ fileNames: _.compact(_.flatMap(clips, (clip) => [name(clip.videoUrl), name(clip.thumbnailUrl)])) }) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data?.success === false) throw new Error(_.toString(data?.error) || response.statusText);
+    const failedNames = new Set<string>(data.failed || []);
+    const failed = _.map(_.filter(clips, (clip) => failedNames.has(name(clip.videoUrl))), "id");
+    const gone = new Set(_.difference(_.map(clips, "id"), failed));
+    setHighlightClips((prev) => _.reject(prev, (clip) => gone.has(clip.id)));
+    return { freedBytes: data.freedBytes, failed };
   };
   const hasSource = Boolean(sourceVideoPath);
   const hasClips = !_.isEmpty(highlightClips);
@@ -648,26 +666,25 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
               </div>
             </div>
           ) : (
-            <div className={cn(RT_SHORTS.GRID_GRID_COLS_1_SM_GRID_COLS_2_MD_GRID)}>
-              {_.map(highlightClips, (clip) => (
-                <ShortsResultCardItem
-                  key={clip.id}
-                  clip={clip}
-                  viralSuffix={text.VIRAL_SCORE_SUFFIX}
-                  isDownloading={downloadingClipId === clip.id}
-                  onDownload={handleDownloadSingleVideo}
-                />
-              ))}
-            </div>
+            <StudioResults
+              items={highlightClips}
+              lang={currentLang}
+              getId={(clip) => clip.id}
+              getTitle={(clip) => `#${clip.index} ${clip.title}`}
+              remove={handleDeleteClips}
+              disabled={isExportingZip}
+              gridClassName={cn(RT_SHORTS.GRID_GRID_COLS_1_SM_GRID_COLS_2_MD_GRID)}
+              renderItem={(clip, slots) => <ShortsResultCardItem clip={clip} viralSuffix={text.VIRAL_SCORE_SUFFIX} isDownloading={downloadingClipId === clip.id} onDownload={handleDownloadSingleVideo} slots={slots} />}
+            />
           )}
         </StudioCard>
       </StudioCanvas>
     </StudioPage>
   );
 };
-const ShortsResultCardItem: FC<{ clip: HighlightClipItem; viralSuffix: string; isDownloading: boolean; onDownload: (clip: HighlightClipItem) => void }> = ({ clip, viralSuffix, isDownloading, onDownload }) => {
+const ShortsResultCardItem: FC<{ clip: HighlightClipItem; viralSuffix: string; isDownloading: boolean; onDownload: (clip: HighlightClipItem) => void; slots: StudioResultSlots }> = ({ clip, viralSuffix, isDownloading, onDownload, slots }) => {
   return (
-    <StudioCard className={cn(RT_SHORTS.GLASS_CARD_ROUNDED_2XL_P_3_SM_P_4_BORDER)}>
+    <StudioCard className={cn(RT_SHORTS.GLASS_CARD_ROUNDED_2XL_P_3_SM_P_4_BORDER, slots.selected && STUDIO_RESULTS.SELECTED)}>
       {clip.videoUrl ? (
         <StudioVideoPlayer src={clip.videoUrl} poster={clip.thumbnailUrl} aspect={SHORTS_PLAYER_ASPECT} fit="cover" loop badge={`${clip.viralScore}${viralSuffix}`} badgeIcon={Flame} />
       ) : (
@@ -677,12 +694,15 @@ const ShortsResultCardItem: FC<{ clip: HighlightClipItem; viralSuffix: string; i
       )}
       <div className={cn(RT_SHARED.MT_3_SPACE_Y_2_TEXT_LEFT_FLEX_1_FLEX)}>
         <div>
-          <h4 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_LINE_CLAMP_1)} title={clip.title}>
-            {SOURCE_TEXT_SYMBOL_9}
-            {clip.index}
-            {SOURCE_TEXT_SYMBOL_27}
-            {clip.title}
-          </h4>
+          <div className={STUDIO_RESULTS.TITLE_ROW}>
+            {slots.select}
+            <h4 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_LINE_CLAMP_1, STUDIO_RESULTS.TITLE_TEXT)} title={clip.title}>
+              {SOURCE_TEXT_SYMBOL_9}
+              {clip.index}
+              {SOURCE_TEXT_SYMBOL_27}
+              {clip.title}
+            </h4>
+          </div>
           <p className={cn(RT_SHORTS.TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_2_MT_0)} title={clip.hookReason}>
             {clip.hookReason}
           </p>
@@ -693,7 +713,10 @@ const ShortsResultCardItem: FC<{ clip: HighlightClipItem; viralSuffix: string; i
             {SOURCE_TEXT_SYMBOL_28}
             {formatDuration(clip.endTime)}
           </span>
-          <StudioDownloadButton onClick={() => onDownload(clip)} busy={isDownloading} />
+          <span className={STUDIO_RESULTS.CARD_ACTIONS}>
+            {slots.remove}
+            <StudioDownloadButton onClick={() => onDownload(clip)} busy={isDownloading} />
+          </span>
         </div>
       </div>
     </StudioCard>

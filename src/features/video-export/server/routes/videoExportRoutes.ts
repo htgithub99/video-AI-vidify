@@ -1,5 +1,5 @@
 import express from "express";
-import { cancelVideoExport, createVideoExportPreview, cancelVideoExportAiClips, createCapcutProjectController, getCapcutResourceCatalogController, getVideoExportAiClipStatus, startVideoExportAiClips, getVideoExportStatus, saveVideoExportVideo, selectVideoExportSaveDestination, selectVideoExportSource, startVideoExportRender, streamVideoExportMedia } from "../controllers/videoExportController.js";
+import { cancelVideoExport, createVideoExportPreview, deleteVideoExportResults, cancelVideoExportAiClips, createCapcutProjectController, getCapcutResourceCatalogController, getVideoExportAiClipStatus, startVideoExportAiClips, getVideoExportStatus, saveVideoExportVideo, selectVideoExportSaveDestination, selectVideoExportSource, startVideoExportRender, streamVideoExportMedia } from "../controllers/videoExportController.js";
 import { VIDEO_EXPORT_API_PATHS } from "../../../../constants/apiRoutes.js";
 const router = express.Router();
 router.post(VIDEO_EXPORT_API_PATHS.SELECT_SOURCE, selectVideoExportSource);
@@ -10,6 +10,7 @@ router.get(VIDEO_EXPORT_API_PATHS.STATUS, getVideoExportStatus);
 router.post(VIDEO_EXPORT_API_PATHS.CANCEL, cancelVideoExport);
 router.post(VIDEO_EXPORT_API_PATHS.SELECT_SAVE_DESTINATION, selectVideoExportSaveDestination);
 router.post(VIDEO_EXPORT_API_PATHS.SAVE_VIDEO, saveVideoExportVideo);
+router.post(VIDEO_EXPORT_API_PATHS.DELETE_RESULTS, deleteVideoExportResults);
 router.get(VIDEO_EXPORT_API_PATHS.CAPCUT_CATALOG, getCapcutResourceCatalogController);
 router.post(VIDEO_EXPORT_API_PATHS.CAPCUT_CATALOG, getCapcutResourceCatalogController);
 router.post(VIDEO_EXPORT_API_PATHS.CAPCUT_PROJECT, createCapcutProjectController);

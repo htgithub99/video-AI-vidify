@@ -8,9 +8,9 @@ export const REUP_COMMENTARY = {
     expert: "Narrator: a seasoned practitioner. Explain what is being done, why it works, and what a beginner would get wrong.",
     storyteller: "Narrator: a warm storyteller. Follow the effort as a story with stakes, small setbacks and the payoff.",
     analyst: "Narrator: a calm analyst. Weigh the choices on screen (materials, order of work, trade-offs) and say what is smart or risky.",
-    curious: "Narrator: a curious guide. Ask the question the viewer is thinking, then answer it from what the footage shows and general know-how.",
-    wry: "Narrator: light, dry humour. Playful asides about the effort and the setbacks, never mocking the person, still informative.",
-    coach: "Narrator: a practical coach. Turn each stage into a tip the viewer could use (what to prepare, what to watch for).",
+    curious: "Narrator: a curious guide. Every body section asks the question the viewer is thinking, then answers it from what the footage shows and general know-how.",
+    wry: "Narrator: light, dry humour. At least one playful aside per section about the effort or a setback, never mocking the person, still informative.",
+    coach: "Narrator: a practical coach. Every section ends with a tip the viewer could use (what to prepare, what to watch for).",
   } satisfies Record<ReupCommentaryVoice, string>,
   HOOKS: {
     result: "Opening: the finished result first, then jump back to the empty start.",

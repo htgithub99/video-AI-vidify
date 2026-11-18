@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { REUP_TEXT } from "../constants/reupConfig.js";
 import type { ReupMediaItem, ReupShot, ReupSubLine, ReupTranscript, ReupWord } from "../types/reup.js";
 const SENTENCE_END = /[.!?…。！？]["')\]]*$/u;
 const norm = (w: string): string => w.toLowerCase().normalize("NFC").replace(/[^\p{L}\p{N}]+/gu, "");
@@ -88,39 +89,53 @@ const assHead = (width: number, height: number, style: string): string[] => [
   "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
 ];
 const assText = (text: string): string => text.replace(/[{}\\]/g, "").replace(/\s+/g, " ").trim();
-const CLAUSE_END = /[.!?…。！？,，、;；:：]["')\]」』]*$/u;
 /**
- * Narration cut into subtitle lines: clause by clause, long clauses split evenly into lines of at most `maxWords`
- * words — or `maxChars` characters for scripts written without spaces (Japanese, Chinese).
+ * Subtitle text a cue holds: as much as fits `rows` lines across the subtitle width (Video Motion's look: 4 % of the
+ * height, 86 % of the width), counted in characters with an average glyph width per script.
  */
-export const reupSubtitleLines = (text: string, maxWords: number, maxChars: number): string[] => {
+export const reupSubChars = (aspect: string, lang = "en"): number => {
+  const [w, h] = aspect === "9:16" ? [9, 16] : [16, 9];
+  const glyph = lang === "ja" || lang === "ko" ? REUP_TEXT.SUB_GLYPH_CJK : REUP_TEXT.SUB_GLYPH;
+  return Math.max(12, Math.floor((w * REUP_TEXT.SUB_WIDTH) / (h * REUP_TEXT.SUB_SIZE * glyph))) * REUP_TEXT.SUB_ROWS;
+};
+/**
+ * Narration cut into subtitle cues of at most `maxChars` characters: whole clauses packed together, a longer clause
+ * split evenly between words (or characters for scripts written without spaces). The renderer wraps a cue across
+ * the subtitle width, so lines break by width, not by a word count.
+ */
+export const reupSubtitleLines = (text: string, maxChars: number): string[] => {
   const clean = text.replace(/\s+/g, " ").trim();
   if (!clean) return [];
   const spaced = clean.split(" ").length > Math.max(2, clean.length / 12);
-  const tokens = spaced ? clean.split(" ") : (clean.match(/[^。！？、，,.!?；;：:]+[。！？、，,.!?；;：:」』"')]*/gu) || [clean]);
-  const size = (parts: string[]): number => (spaced ? parts.length : parts.join("").length);
-  const clauses: string[][] = [[]];
-  tokens.forEach((t) => {
-    const clause = _.last(clauses)!;
-    clause.push(t);
-    // A clause ends at punctuation, unless it would leave a stub line ("Well,").
-    if (CLAUSE_END.test(t) && size(clause) >= (spaced ? 3 : 6)) clauses.push([]);
-  });
-  const limit = spaced ? maxWords : maxChars;
-  return clauses
-    .filter((c) => c.length)
-    .flatMap((clause) => {
-      if (spaced) {
-        const n = Math.ceil(clause.length / limit);
-        const per = Math.ceil(clause.length / n);
-        return _.chunk(clause, per).map((c) => c.join(" "));
-      }
-      const textOf = clause.join("");
-      const n = Math.ceil(size(clause) / limit);
-      const per = Math.ceil(textOf.length / n);
-      return _.range(n).map((k) => [...textOf].slice(k * per, (k + 1) * per).join(""));
-    })
-    .filter(Boolean);
+  const clauses = (clean.match(/[^,，、;；:：.!?…。！？]+(?:[,，、;；:：.!?…。！？]+["')\]」』]*)?/gu) || [clean]).map((c) => c.trim()).filter(Boolean);
+  const split = (clause: string): string[] => {
+    if (clause.length <= maxChars) return [clause];
+    const n = Math.ceil(clause.length / maxChars);
+    if (!spaced) {
+      const per = Math.ceil(clause.length / n);
+      return _.range(n).map((k) => [...clause].slice(k * per, (k + 1) * per).join(""));
+    }
+    const words = clause.split(" ");
+    const out: string[] = [];
+    let line = "";
+    const per = clause.length / n;
+    for (const word of words) {
+      if (line && (line.length + 1 + word.length > maxChars || line.length >= per)) {
+        out.push(line);
+        line = word;
+      } else line = line ? `${line} ${word}` : word;
+    }
+    return line ? [...out, line] : out;
+  };
+  const out: string[] = [];
+  for (const piece of clauses.flatMap(split)) {
+    const last = out[out.length - 1];
+    const joined = last && (spaced ? `${last} ${piece}` : `${last}${piece}`);
+    // Clauses share a cue while it fits; a cue never ends on a stub ("Well,").
+    if (last && joined && (joined.length <= maxChars || last.length < 8)) out[out.length - 1] = joined;
+    else out.push(piece);
+  }
+  return out;
 };
 /**
  * Narration cut into sentences, each read as its own clip (like Video Motion's per-line voice): the clips' lengths then
@@ -151,17 +166,26 @@ export const reupSentences = (text: string, max: number, min = 12): string[] => 
   return merged;
 };
 /** Subtitle lines of a narration read clip by clip: each clip's lines share its exact span (by text length inside it). */
-export const reupClipSubtitles = (clips: { text: string; start: number; end: number }[], maxWords: number, maxChars: number): ReupSubLine[] =>
-  clips.flatMap((clip) => reupSubtitleTimes(reupSubtitleLines(clip.text, maxWords, maxChars), [], clip.end - clip.start).map((line) => ({ text: line.text, start: _.round(clip.start + line.start, 2), end: _.round(clip.start + line.end, 2) })));
+export const reupClipSubtitles = (clips: { text: string; start: number; end: number }[], maxChars: number): ReupSubLine[] =>
+  clips.flatMap((clip) => reupSubtitleTimes(reupSubtitleLines(clip.text, maxChars), [], clip.end - clip.start).map((line) => ({ text: line.text, start: _.round(clip.start + line.start, 2), end: _.round(clip.start + line.end, 2) })));
 /** Subtitle lines timed inside one narration: starts matched to the spoken words, each line held until the next. */
 export const reupSubtitleTimes = (lines: string[], words: ReupWord[], total: number): ReupSubLine[] => {
   const starts = lines.length > 1 ? reupAlignCues(lines, words, total) : [0];
   return lines.map((text, i) => ({ text, start: starts[i], end: _.round(i + 1 < lines.length ? Math.max(starts[i] + 0.3, starts[i + 1] - 0.05) : total, 2) }));
 };
-/** Narration subtitles (ASS): one line at a time, white with a dark outline, low in the frame (`lift`: bottom margin as a share of the height). */
+/**
+ * Narration subtitles (ASS) in Video Motion's look: bold, 4 % of the frame height, white with a thin dark outline and a
+ * faint shadow, wrapped across 86 % of the width, 4 % above the bottom (shorts sit higher, clear of the app's
+ * buttons; `lift` raises them above captions).
+ */
 export const reupSubtitleAss = (lines: ReupSubLine[], opt: { width: number; height: number; font: string; lift?: number }): string => {
-  const size = Math.round(Math.min(opt.width, opt.height) * (opt.height > opt.width ? 0.06 : 0.052));
-  const head = assHead(opt.width, opt.height, `S,${opt.font},${size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,${Math.max(2, Math.round(size * 0.08))},${Math.round(size * 0.04)},2,${Math.round(opt.width * 0.06)},${Math.round(opt.width * 0.06)},${Math.round(opt.height * (opt.lift ?? (opt.height > opt.width ? 0.18 : 0.07)))},1`);
+  const T = REUP_TEXT;
+  const size = Math.max(T.SUB_MIN_PX, Math.round(opt.height * T.SUB_SIZE));
+  const side = Math.round((opt.width * (1 - T.SUB_WIDTH)) / 2);
+  const bottom = Math.round(opt.height * (opt.lift ?? (opt.height > opt.width ? T.SUB_BOTTOM_VERTICAL : T.SUB_BOTTOM)));
+  const outline = Math.max(1, _.round(opt.height * T.SUB_OUTLINE, 1));
+  const shadow = _.round(opt.height * T.SUB_SHADOW, 1);
+  const head = assHead(opt.width, opt.height, `S,${opt.font},${size},&H00FFFFFF,&H00FFFFFF,&H1A000000,&H8C000000,-1,0,0,0,100,100,0,0,1,${outline},${shadow},2,${side},${side},${bottom},1`);
   const events = lines.filter((l) => l.end > l.start && assText(l.text)).map((l) => `Dialogue: 0,${assTime(l.start)},${assTime(l.end)},S,,0,0,0,,${assText(l.text)}`);
   return [...head, ...events, ""].join("\n");
 };

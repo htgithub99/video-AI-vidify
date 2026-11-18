@@ -1,14 +1,16 @@
 import type { FC } from "react";
 import { FolderKanban, FolderOpen } from "lucide-react";
 import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
+import { StudioResults } from "../../../components/common/StudioResults.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
+import { STUDIO_RESULTS } from "../../../constants/studioResults.js";
 import { cn } from "../../../lib/utils.js";
 import { ActionBtn } from "../../motion/components/MotionControls.js";
 import { MotionExportedVideo, MotionMediaPlaceholder } from "../../motion/components/MotionMediaFrame.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
-/** Past runs, newest first, laid out like Video Motion's results: the first video of each run (saved through the "Save as" dialog) and a way back into it. */
-export const ReupResultsPanel: FC<{ studio: ReupStudio; onOpen: () => void }> = ({ studio, onOpen }) => {
+/** Past runs, newest first, laid out like Video Motion's results: the first video of each run, a way back into it, and paged delete one / many / all. */
+export const ReupResultsPanel: FC<{ studio: ReupStudio; ui: "vi" | "en"; onOpen: () => void }> = ({ studio, ui, onOpen }) => {
   const { text, results } = studio;
   if (!results.length)
     return (
@@ -18,23 +20,30 @@ export const ReupResultsPanel: FC<{ studio: ReupStudio; onOpen: () => void }> = 
       </StudioCard>
     );
   return (
-    <div className={S.RESULTS}>
-      {results.map((run) => {
+    <StudioResults
+      items={results}
+      lang={ui}
+      getId={(run) => run.id}
+      getTitle={(run) => run.name}
+      remove={(runs) => studio.deleteResults(runs.map((run) => run.id))}
+      locked={(run) => run.status === "running"}
+      gridClassName={S.RESULTS}
+      renderItem={(run, slots) => {
         const video = run.outputs[0];
         return (
-          <StudioCard key={run.id} className={cn(S.CARD, S.RESULT)}>
-            {video ? (
-              <div className={S.RESULT_MEDIA}>
-                <MotionExportedVideo url={video.url} width={video.width} height={video.height} />
-                <div className={S.RESULT_ACTIONS}>
-                  <StudioDownloadButton onClick={() => void studio.saveVideo(run.id, video.id)} />
-                </div>
+          <StudioCard className={cn(S.CARD, S.RESULT, slots.selected && STUDIO_RESULTS.SELECTED)}>
+            <div className={S.RESULT_MEDIA}>
+              {video ? <MotionExportedVideo url={video.url} width={video.width} height={video.height} /> : <MotionMediaPlaceholder />}
+              <div className={S.RESULT_ACTIONS}>
+                {video && <StudioDownloadButton onClick={() => void studio.saveVideo(run.id, video.id)} />}
+                {slots.remove}
               </div>
-            ) : (
-              <MotionMediaPlaceholder />
-            )}
-            <div className={S.RESULT_TITLE} title={run.name}>
-              {run.name}
+            </div>
+            <div className={STUDIO_RESULTS.TITLE_ROW}>
+              {slots.select}
+              <div className={cn(S.RESULT_TITLE, STUDIO_RESULTS.TITLE_TEXT)} title={run.name}>
+                {run.name}
+              </div>
             </div>
             <div className={S.RESULT_FOOT}>
               <div className={S.RESULT_META}>
@@ -55,7 +64,7 @@ export const ReupResultsPanel: FC<{ studio: ReupStudio; onOpen: () => void }> = 
             </div>
           </StudioCard>
         );
-      })}
-    </div>
+      }}
+    />
   );
 };

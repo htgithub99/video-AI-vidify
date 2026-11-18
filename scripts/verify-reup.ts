@@ -5,18 +5,20 @@ import os from "os";
 import path from "path";
 import { spawnSync } from "child_process";
 import { REUP_UPLOAD } from "../src/features/reup/constants/reupConfig.js";
-import { reupJobSettings, reupMusicMood, reupPresetDefaults, reupPresetRules } from "../src/features/reup/constants/reupPresets.js";
+import { reupJobSettings, reupPresetDefaults, reupPresetRules } from "../src/features/reup/constants/reupPresets.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.js";
+import { isRecoverableChatRefusal } from "../src/server/services/chatRoomRecovery.js";
 import { REUP_COMMENTARY } from "../src/features/reup/constants/reupCommentary.js";
 import { REUP_PROMPT } from "../src/features/reup/constants/reupPrompts.js";
-import { pickReupStyle } from "../src/features/reup/lib/reupCommentary.js";
+import { pickReupStyle, reupPickTrack } from "../src/features/reup/lib/reupCommentary.js";
+import { cleanMomentSections } from "../src/features/reup/server/services/reupAiService.js";
 import { reupReport, reupTextSimilarity } from "../src/features/reup/lib/reupCompliance.js";
-import { reupSeoPack } from "../src/features/reup/lib/reupSeo.js";
+import { reupSeoPack, reupStripToolNotes } from "../src/features/reup/lib/reupSeo.js";
 import { reupUnbackedClaims } from "../src/features/reup/lib/reupFacts.js";
-import { cleanScenePart, mergeSceneParts, reupBadRanges, reupSheetBatches, reupUploadLimit } from "../src/features/reup/lib/reupSceneMap.js";
+import { cleanScenePart, mergeSceneParts, reupBadRanges, reupMoments, reupSheetBatches, reupUploadLimit } from "../src/features/reup/lib/reupSceneMap.js";
 import { cleanReupSettings } from "../src/features/reup/lib/reupSettings.js";
-import { ReupFootageLedger, mergeSpans, reupSectionSeconds, spanLength } from "../src/features/reup/lib/reupTimeline.js";
-import { reupAlignCues, reupClipSubtitles, reupKaraokeAss, reupPhrases, reupSentences, reupShotPieces, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../src/features/reup/lib/reupSpeech.js";
+import { ReupFootageLedger, mergeSpans, reupNearScenes, reupPacing, reupSectionSeconds, spanLength } from "../src/features/reup/lib/reupTimeline.js";
+import { reupAlignCues, reupClipSubtitles, reupKaraokeAss, reupPhrases, reupSentences, reupShotPieces, reupSubChars, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../src/features/reup/lib/reupSpeech.js";
 import type { ReupJob, ReupShot } from "../src/features/reup/types/reup.js";
 let passed = 0;
 const check = (name: string, fn: () => void) => {
@@ -92,14 +94,13 @@ check("section seconds: silent tails stay under 8 s each and 15% of the video; t
   assert.ok(reupSectionSeconds(voice, roles, 0.2, 600, 8, 0.15).seconds.slice(1).every((s, i) => s - voice[i + 1] - 0.2 <= 8.01), "no tail longer than 8 s");
   assert.equal(reupSectionSeconds([10, 10], ["hook", "body"], 0, 100, 8, 0.15, false).short, 80, "fill off reports the gap");
 });
-check("commentary: each run takes the least recently used narrator, opening, ending and music, within the type", () => {
+check("commentary: each run takes the least recently used narrator, opening and ending, within the type", () => {
   const rules = { ...reupPresetRules("A") };
   const first = pickReupStyle(rules, [], "run-1");
   const second = pickReupStyle(rules, [first], "run-2");
   assert.notEqual(second.voice, first.voice);
   assert.notEqual(second.hook, first.hook);
   assert.notEqual(second.ending, first.ending);
-  assert.notEqual(second.music, first.music);
   const history = [first, second];
   for (let i = 0; i < 4; i++) history.unshift(pickReupStyle(rules, history, `run-${i + 3}`));
   assert.equal(new Set(history.map((h) => h.voice)).size, 6, "six runs use all six narrators before any repeats");
@@ -107,7 +108,9 @@ check("commentary: each run takes the least recently used narrator, opening, end
   assert.ok(["storyteller", "analyst", "expert"].includes(d.voice) && !d.hook && ["reflection", "lesson"].includes(d.ending), "photo report keeps its dignified styles, no hook");
   const prompt = REUP_PROMPT.SCRIPT({ map: { summary: "s", segments: [], hook: [], ending: "", thumbnails: [] }, settings: reupJobSettings("A", { ...reupPresetDefaults("A"), angle: "I built three cabins myself." }), rules: "", kind: "long", count: 1, duration: 600, style: first });
   assert.ok(prompt.includes(REUP_COMMENTARY.VOICES[first.voice]) && prompt.includes("I built three cabins myself.") && /Add value beyond what is seen/.test(prompt), "style, channel angle and the value rule reach the script AI");
-  assert.match(prompt, /Target 1026-1242 words/, "540 s at 1.9-2.3 words per second");
+  assert.match(prompt, /Target 1026-1242 words in total/, "540 s at 1.9-2.3 words per second");
+  const vi = REUP_PROMPT.SCRIPT({ map: { summary: "s", segments: [], hook: [], ending: "", thumbnails: [] }, settings: reupJobSettings("A", { ...reupPresetDefaults("A"), language: "vi" }), rules: "", kind: "long", count: 1, duration: 600, style: first });
+  assert.match(vi, /Target 1693-2049 words \(Vietnamese syllables\)/, "Vietnamese counts syllables (a 9-minute run wrote 2290 and ran 10:54)");
 });
 check("policy report: narration share, silence, reused source, echoed script and title, rights notes", () => {
   const base = { id: "now", createdAt: 2, updatedAt: 2, preset: "A", settings: reupJobSettings("A", reupPresetDefaults("A")), rights: "own", fingerprint: "fp", source: {} as any, status: "done", steps: {}, logs: [], sheets: [], bad: [], warnings: [] } as unknown as ReupJob;
@@ -117,7 +120,7 @@ check("policy report: narration share, silence, reused source, echoed script and
   assert.equal(clean.narrated, 0.9);
   assert.deepEqual(clean.notes.map((n) => n.code), ["narration", "noAngle"]);
   const past = { ...job, id: "old", createdAt: 1, outputs: [] };
-  const echoed = reupReport({ ...job, settings: { ...job.settings, angle: "x" }, rights: "licensed", outputs: [{ ...job.outputs[0], narrated: 50, silentMax: 20 }] }, [past]);
+  const echoed = reupReport({ ...job, settings: { ...job.settings, angle: "x" }, rights: "licensed", outputs: [{ ...job.outputs[0], narrated: 30, silentMax: 20 }] }, [past]);
   assert.equal(echoed.level, "risk");
   assert.deepEqual(echoed.notes.map((n) => `${n.code}:${n.level}`), ["narration:risk", "silence:review", "sourceReused:risk", "similar:risk", "titleReused:review", "licensed:ok"]);
   assert.ok(reupTextSimilarity(words, "a completely different story about a boat on a quiet lake at dawn") < 0.05);
@@ -127,7 +130,7 @@ check("claims: numbers not in the scene map are flagged, backed ones pass", () =
   assert.deepEqual(reupUnbackedClaims("It took 3 days. He caught two fish.", map), []);
   assert.deepEqual(reupUnbackedClaims("After 40 days he caught 12 fish.", map).sort(), ["12", "40 days"].sort());
 });
-check("settings: screen choices cleaned per type, the rest follows the type (B vertical, -14 LUFS, auto music)", () => {
+check("settings: screen choices cleaned per type, the rest follows the type (B vertical, -14 LUFS, music off by default)", () => {
   const b = cleanReupSettings({ targetSeconds: 999, crf: 2, aspect: "4:3", lufs: -30, vertical: "crop" }, "B");
   assert.equal(b.aspect, "9:16");
   assert.equal(b.targetSeconds, 28, "a length the type does not offer falls back to its default");
@@ -135,32 +138,42 @@ check("settings: screen choices cleaned per type, the rest follows the type (B v
   const job = reupJobSettings("B", b);
   assert.equal(job.lufs, -14);
   assert.equal(job.vertical, "blur");
-  assert.equal(reupMusicMood(job), "tense", "auto music is the type's first mood until a run rotates it");
-  assert.equal(reupMusicMood(job, { music: "epic" }), "epic");
   assert.equal(reupJobSettings("E", cleanReupSettings({}, "E")).vertical, "crop");
-  assert.equal(reupMusicMood(reupJobSettings("A", { ...b, musicMood: "sad" }), { music: "epic" }), "sad", "a mood picked on screen wins");
+  assert.equal(job.music, "off", "background music is off by default");
+  assert.equal(cleanReupSettings({ music: "library" }, "A").music, "library");
+  assert.equal(cleanReupSettings({ musicMood: "auto" }, "A").music, "library", "a saved \"auto\" or mood of the old score means the library");
+  assert.equal(cleanReupSettings({ musicMood: "off" }, "A").music, "off");
   const a = cleanReupSettings({ targetSeconds: 100 }, "A");
   assert.equal(a.targetSeconds, 540, "long presets only take their offered lengths (8–15 min)");
 });
-check("subtitles: narration cut into short lines by clause (words, or characters for Japanese), timed and written as ASS", () => {
-  const en = reupSubtitleLines("Well, he started at dawn. The river was cold and fast, so he built a small dam of stones and branches before lunch, then rested.", 8, 18);
-  assert.ok(en.every((l) => l.split(" ").length <= 8) && en[0] === "Well, he started at dawn.", en.join(" / "));
-  const ja = reupSubtitleLines("彼は夜明けに作業を始めた。川は冷たく流れが速かったので、昼までに石と枝で小さなダムを作った。", 8, 18);
-  assert.ok(ja.length === 3 && ja.every((l) => l.length <= 18), ja.join(" / "));
+check("subtitles: Video Motion's look (4 % height, 86 % width, thin outline), cues packed by clause up to two lines' width", () => {
+  assert.equal(reupSubChars("16:9", "vi"), 138, "landscape: about 69 characters a line, two lines a cue");
+  assert.equal(reupSubChars("9:16", "en"), 42);
+  assert.ok(reupSubChars("16:9", "ja") < reupSubChars("16:9", "en"), "CJK glyphs are wider");
+  const en = reupSubtitleLines("Well, he started at dawn. The river was cold and fast, so he built a small dam of stones and branches before lunch, then rested.", 60);
+  assert.ok(en.every((l) => l.length <= 60) && en[0].startsWith("Well, he started at dawn."), en.join(" / "));
+  const ja = reupSubtitleLines("彼は夜明けに作業を始めた。川は冷たく流れが速かったので、昼までに石と枝で小さなダムを作った。", 18);
+  assert.ok(ja.every((l) => l.length <= 18), ja.join(" / "));
+  const vi = reupSubtitleLines("Ầu, ông Ữ đứng ở đó. Ở đây nước Ỗn định.", 80);
+  assert.deepEqual(vi, ["Ầu, ông Ữ đứng ở đó. Ở đây nước Ỗn định."], "short text stays one cue, diacritics untouched");
   const times = reupSubtitleTimes(["one two", "three four"], [{ w: "one", s: 0.1, e: 0.4 }, { w: "two", s: 0.5, e: 0.8 }, { w: "three", s: 2.0, e: 2.3 }, { w: "four", s: 2.4, e: 2.8 }], 3);
   assert.deepEqual(times.map((t) => [t.start, t.end]), [[0, 1.95], [2, 3]]);
-  assert.ok(reupSubtitleAss(times, { width: 1920, height: 1080, font: "Arial" }).includes("Dialogue: 0,0:00:02.00,0:00:03.00,S,,0,0,0,,three four"));
+  const ass = reupSubtitleAss(times, { width: 1280, height: 720, font: "Segoe UI" });
+  assert.ok(ass.includes("Dialogue: 0,0:00:02.00,0:00:03.00,S,,0,0,0,,three four"));
+  assert.ok(ass.includes("Style: S,Segoe UI,29,") && ass.includes(",2,90,90,29,1"), ass.split("\n").find((l) => l.startsWith("Style")));
 });
 check("refusal: Gemini's \"Sorry I can't help with that image\" is a refusal (no pointless retry), JSON is not", () => {
   assert.ok(CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_PATTERN.test("Sorry I can't help with that image. Try uploading another image or describing the image you tried to upload and I can help you that way."));
   assert.ok(!CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_PATTERN.test("Sorry for the wait — here is the JSON"));
+  const refusal = Object.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR), { diagnostics: { lastCandidate: "Sorry I can't help with that image. Try uploading another image" } });
+  assert.ok(isRecoverableChatRefusal(refusal), "the image refusal gets the turn's Retry button (often clears), like Video Motion");
 });
 check("voice: read sentence by sentence (long ones cut at a comma), subtitles timed by each clip like Video Motion", () => {
   const sentences = reupSentences("Ừ. Anh ấy dựng lều bên suối, rồi nhóm lửa thật nhanh. Tại sao lại chọn chỗ này? Vì gió thổi ngược dòng nước, giữ khói không bay vào lều, và mặt đất ở đây khô ráo hơn hẳn so với bãi đá phía dưới.", 80);
   assert.deepEqual(sentences.map((x) => x.length <= 80), [true, true, true, true]);
   assert.equal(sentences[0], "Ừ. Anh ấy dựng lều bên suối, rồi nhóm lửa thật nhanh.", "a stub sentence joins the next");
-  const subs = reupClipSubtitles([{ text: "Short one.", start: 0, end: 1.2 }, { text: "Anh ấy dựng lều bên suối, rồi nhóm lửa thật nhanh giữa trời mưa lạnh.", start: 1.2, end: 6 }], 8, 18);
-  assert.deepEqual(subs.map((l) => [l.start, l.end]), [[0, 1.2], [1.2, 2.9], [2.95, 4.55], [4.6, 6]], "each line stays inside its own clip");
+  const subs = reupClipSubtitles([{ text: "Short one.", start: 0, end: 1.2 }, { text: "Anh ấy dựng lều bên suối, rồi nhóm lửa thật nhanh giữa trời mưa lạnh.", start: 1.2, end: 6 }], 40);
+  assert.ok(subs.length >= 3 && subs[0].end === 1.2 && subs.slice(1).every((l) => l.start >= 1.2 && l.end <= 6), "each line stays inside its own clip");
 });
 check("speech: phrases cut at pauses and sentence ends; cues timed by spoken words", () => {
   const words = [["Welcome", 0, 0.4], ["to", 0.45, 0.6], ["Tixi.", 0.62, 1.1], ["We", 2.0, 2.2], ["sell", 2.25, 2.5], ["old", 2.55, 2.8], ["cameras", 2.85, 3.4]].map(([w, s, e]) => ({ w: w as string, s: s as number, e: e as number }));
@@ -170,6 +183,46 @@ check("speech: phrases cut at pauses and sentence ends; cues timed by spoken wor
   const starts = reupAlignCues(["Welcome to Tixi.", "We sell old cameras"], words, 3.4);
   assert.deepEqual(starts, [0, 2]);
   assert.deepEqual(reupAlignCues(["aaaa", "bbbbbbbbbbbb"], [], 8), [0, 2], "no words: by text length");
+});
+check("moments: on a tile's time, inside the scene, off bad footage, ids follow the merged scene; old maps get even moments", () => {
+  const part = cleanScenePart({ segments: [{ id: "1", start: 100, end: 130, what: "fishing", value: 4, moments: [{ t: 112, what: "casts", pull: 3 }, { t: 113, what: "same tile", pull: 2 }, { t: 121, what: "dark", pull: 5 }, { t: 200, what: "outside", pull: 5 }, { t: "1:41", what: "starts", pull: 9 }] }] }, { start: 100, end: 200 }, [{ start: 118, end: 123, reason: "dark" }], "b100_", 10);
+  const moments = part.segments[0].moments!;
+  assert.deepEqual(moments.map((m) => [m.t, m.what, m.pull]), [[100, "starts", 5], [110, "casts", 3], [129.5, "outside", 5]], "snapped to 10 s tiles, deduped, dark one dropped, outside clamped into the scene");
+  const map = mergeSceneParts([part]);
+  assert.deepEqual(map.segments[0].moments!.map((m) => m.id), ["s1m1", "s1m2", "s1m3"]);
+  assert.deepEqual(reupMoments({ id: "s4", start: 0, end: 35, what: "x", tags: [], value: 2 }).map((m) => [m.id, m.t]), [["s4m1", 0], ["s4m2", 10], ["s4m3", 20]]);
+});
+check("script: every cue tied to a moment; unknown moments go to the same scene, never elsewhere; storytelling rules; library track rotation", () => {
+  const map = { summary: "", hook: [], ending: "", thumbnails: [], segments: [{ id: "s1", start: 0, end: 30, what: "camp", tags: [], value: 3, moments: [{ id: "s1m1", t: 0, what: "arrives", pull: 3 }, { id: "s1m2", t: 15, what: "tent", pull: 4 }] }, { id: "s2", start: 30, end: 60, what: "fire", tags: [], value: 4 }] };
+  const sections = cleanMomentSections({ sections: [{ role: "body", cues: [{ moment: "s1m1", text: "He arrives." }, { moment: "s1m9", text: "The tent goes up." }, { moment: "zz", text: "And it holds." }, { moment: "s2m2", text: "Fire next." }, { moment: "s1m1", text: "Again?" }] }] }, map, 0);
+  assert.deepEqual(sections[0].cues!.map((c) => [c.moment, c.text]), [["s1m1", "He arrives."], ["s1m2", "The tent goes up. And it holds."], ["s2m2", "Fire next. Again?"]], "a moment already used is never shown again: with no free moment in its scene the words stay on the previous picture");
+  const hooked = cleanMomentSections({ sections: [{ role: "hook", cues: [{ moment: "s1m2", text: "Tent!" }] }, { role: "body", cues: [{ moment: "s1m2", text: "Pitching." }, { moment: "s2m1", text: "Fire." }] }] }, map, 0);
+  assert.deepEqual(hooked[1].cues!.map((c) => c.moment), ["s1m1", "s2m1"], "the body keeps 15 s away from a hook moment of the same scene");
+  assert.deepEqual(sections[0].shots, [{ start: 0, end: 30 }, { start: 30, end: 60 }]);
+  const prompt = REUP_PROMPT.SCRIPT({ map, settings: reupJobSettings("A", { ...reupPresetDefaults("A"), language: "vi" }), rules: "", kind: "long", count: 1, duration: 60, style: pickReupStyle(reupPresetRules("A"), [], "x"), share: [0.55, 0.7] });
+  assert.match(prompt, /s1m2 0:15 p4 ~15s ≤\d+: tent/, "moments listed with their picture length and word limit");
+  assert.match(prompt, /Target 931-1435 words \(Vietnamese syllables\)/, "words for 55-70% of 540 s");
+  assert.ok(/Never contradict the pictures/.test(prompt) && /problem → why it matters/.test(prompt) && !/"music"/.test(prompt), "storytelling limits and the documentary craft reach the script AI; no music field any more");
+  assert.equal(reupPickTrack(["A1.mp3", "A2.mp3"], [{ voice: "expert", ending: "lesson", track: "A1.mp3" }], "r"), "A2.mp3", "the type's track used longest ago");
+  assert.equal(reupPickTrack([], [], "r"), undefined);
+});
+check("cue picture: starts at its moment, stays in its scene, then the scenes next to it — never a far scene", () => {
+  const ledger = new ReupFootageLedger({ duration: 300, bad: [], minShot: 1.6, maxShot: 7, hookCut: 1.2, guard: 2 });
+  const segments = [{ id: "s1", start: 0, end: 100, what: "", tags: [], value: 5 }, { id: "s2", start: 100, end: 120, what: "", tags: [], value: 1 }, { id: "s3", start: 120, end: 140, what: "", tags: [], value: 1 }, { id: "s4", start: 140, end: 300, what: "", tags: [], value: 5 }];
+  assert.deepEqual(reupNearScenes(segments, ["s2"]), [{ start: 120, end: 140 }, { start: 0, end: 100 }, { start: 140, end: 300 }]);
+  const first = ledger.planCue(105, segments[1], 6, reupNearScenes(segments, ["s2"]), 8);
+  assert.deepEqual(first.shots, [{ start: 105, end: 111 }], "one unbroken piece from the moment");
+  const second = ledger.planCue(104, segments[1], 30, reupNearScenes(segments, ["s2"]), 8, 3);
+  assert.deepEqual(second.shots.map((s) => `${s.start}-${s.end}`), ["113-120", "122-130", "132-140", "0-7"], "own scene after the used part (2 s clear), then the next scene, then the previous; never back before the moment, never s4");
+  assert.ok(second.shots[0].start >= 100 && second.shots[0].end <= 120, "its own scene first");
+  assert.ok(Math.abs(spanLength(second.shots) - 30) < 0.1 && second.filled > 0 && !second.repeated);
+  assert.deepEqual(reupPacing("low"), { share: [0.55, 0.7], cueGap: 1.2, tailMax: 10 });
+  assert.equal(reupPacing("keep", false).tailMax, 6, "no source sound: shorter pauses, more words");
+});
+check("SEO: sentences about AI or tools are dropped from descriptions, the rest kept", () => {
+  assert.equal(reupStripToolNotes("Cắm trại bên suối.\nAnh ấy câu cá. Video sử dụng giọng đọc AI để phân tích chi tiết.\n#camping"), "Cắm trại bên suối.\nAnh ấy câu cá.\n#camping");
+  assert.equal(reupStripToolNotes("Narrated with text-to-speech.\nA calm day by the river."), "A calm day by the river.");
+  assert.equal(reupStripToolNotes("Bản đồ khu cắm trại AINO"), "Bản đồ khu cắm trại AINO", "a word containing AI is not a mention");
 });
 check("folder timeline: a shot crossing items splits at the border", () => {
   const items = [0, 5, 10].map((start, i) => ({ id: `m${i + 1}`, path: `${i}.jpg`, name: "", type: "photo" as const, start, end: start + 5, width: 4, height: 3, hasAudio: false }));
@@ -186,7 +239,7 @@ check("karaoke: words light up in turn, lines break at pauses", () => {
 const ffmpegOk = spawnSync("ffmpeg", ["-version"]).status === 0;
 const media = async () => {
   if (!ffmpegOk) return console.log("skip media: no ffmpeg");
-  const { inspectReupSource, makeReupSheets, measureReupQuality, reupSheetInterval } = await import("../src/features/reup/server/services/reupMediaService.js");
+  const { cropReupSheet, inspectReupSource, makeReupSheets, measureReupQuality, reupSheetInterval } = await import("../src/features/reup/server/services/reupMediaService.js");
   const { buildReupJob } = await import("../src/features/reup/server/services/reupBuildService.js");
   const { reupEmptySteps } = await import("../src/features/reup/server/services/reupJobStore.js");
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "reup-"));
@@ -197,6 +250,12 @@ const media = async () => {
   assert.ok(source.duration > 419 && source.hasAudio && source.width === 640);
   const id = "testjob-" + Date.now();
   const sheets = await makeReupSheets(id, source, 10);
+  const size = (file: string) => spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", file]).stdout.toString().trim().split(",").map(Number);
+  const [sw, sh] = size(sheets[0].file);
+  const strip = (await cropReupSheet(id, sheets[0], 3, 2))!;
+  const [cw, ch] = size(strip.file);
+  assert.ok(cw === sw && Math.abs(ch - ((sh - 4) * 2) / sheets[0].rows - 4) <= 1, `a refused sheet's lower 2 rows: ${sw}x${sh} -> ${cw}x${ch}`);
+  assert.deepEqual([strip.start, strip.count, strip.rows], [sheets[0].start + 3 * sheets[0].cols * sheets[0].interval, Math.min(12, sheets[0].count - 18), 2], "the strip covers exactly its rows' moments");
   assert.equal(sheets.length, 2, "42 tiles → 2 sheets");
   assert.equal(sheets[1].count, 12);
   assert.equal(reupSheetInterval(120, 10), 4);
@@ -222,6 +281,30 @@ const media = async () => {
   const probe = spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=codec_type,width,height", "-of", "csv=p=0", outputs[0].file]).stdout.toString();
   assert.match(probe, /1920,1080/);
   assert.match(probe, /audio/);
+  // Music library: tracks found by "Reup BGM X" or an A…H folder, looped with crossfades and faded to the video's length.
+  const { reupMusicDir, reupTrackPreset, reupTracks, reupMusicBed } = await import("../src/features/reup/server/services/reupMusicService.js");
+  assert.equal(reupTrackPreset("Reup BGM G - Cabin Americana (1).mp3"), "G");
+  assert.equal(reupTrackPreset(path.join("h", "riff.mp3")), "H");
+  assert.equal(reupTrackPreset("random song.mp3"), undefined);
+  const library = reupMusicDir();
+  const songFile = path.join(library, "Reup BGM A - verify test.mp3");
+  run(["-f", "lavfi", "-i", "sine=frequency=220:duration=20", "-ac", "2", songFile]);
+  try {
+    const [song] = reupTracks("A").filter((t) => t.file === songFile);
+    assert.ok(song && !reupTracks("B").some((t) => t.file === songFile));
+    const bed = await reupMusicBed(song, 50, tmp);
+    const bedSeconds = Number(spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", bed]).stdout.toString());
+    assert.ok(Math.abs(bedSeconds - 50) < 0.2, `a 20 s track looped to 50 s: ${bedSeconds}`);
+  } finally {
+    fs.rmSync(songFile, { force: true });
+  }
+  // Narrated footage cue by cue: each line's picture starts at its moment and stays in its scene.
+  const cued: ReupJob = { ...job, id: id + "-m", outputs: [], settings: { ...settings, subtitles: false }, sceneMap: { ...job.sceneMap!, segments: segments.map((g) => ({ ...g, moments: [{ id: `${g.id}m1`, t: g.start + 20, what: g.what, pull: 4 }, { id: `${g.id}m2`, t: g.start + 60, what: g.what, pull: 3 }] })) }, script: { outputs: [{ id: "o1", kind: "long", title: [], sections: [{ id: "c", role: "body", text: "one two", shots: [], cues: [{ segment: "s2", moment: "s2m2", text: "one" }, { segment: "s1", moment: "s1m1", text: "two" }] }] }] }, voices: { c: { ...voice("c.wav", 9), cues: [0, 5], gaps: 1.2 } } };
+  const cuedLogs: string[] = [];
+  const cuedOut = await buildReupJob(cued, (t) => cuedLogs.push(t), () => {});
+  const cuedDir = path.join(path.dirname(path.dirname(cuedOut[0].file)), "sections", "o1");
+  assert.ok(cuedOut[0].narrated === 7.8 && cuedOut[0].duration > 9, `speech share leaves out the pause between cues: ${JSON.stringify(cuedOut[0])}`);
+  assert.ok(fs.readdirSync(cuedDir).some((f) => f.startsWith("part_")) && !cuedLogs.some((l) => /lặp/.test(l)), cuedLogs.join(" | "));
   const short: ReupJob = { ...job, id: id + "-b", preset: "B", settings: reupJobSettings("B", reupPresetDefaults("B")), outputs: [], script: { outputs: [{ id: "o1", kind: "short", title: ["CROCODILE", "UNDER THE FALLS"], sections: [{ id: "h", role: "hook", text: "x", shots: [{ start: 300, end: 330 }] }] }] } };
   const vertical = await buildReupJob(short, (t) => logs.push(t), () => {});
   const vprobe = spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", vertical[0].file]).stdout.toString();
@@ -233,7 +316,7 @@ const media = async () => {
   console.log("ok media: sheets, dark range, long 16:9 build to target, vertical blur short at -14 LUFS");
   fs.rmSync(tmp, { recursive: true, force: true });
   const { reupRoot } = await import("../src/features/reup/server/services/reupJobStore.js");
-  for (const dir of [id, short.id]) fs.rmSync(path.join(reupRoot(), dir), { recursive: true, force: true });
+  for (const dir of [id, short.id, cued.id]) fs.rmSync(path.join(reupRoot(), dir), { recursive: true, force: true });
 };
 const media2 = async () => {
   if (!ffmpegOk) return;

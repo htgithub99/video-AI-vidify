@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import fs from "fs";
 import _ from "lodash";
 import { getFfmpegPath } from "../../../../server/services/shortsPreprocessService.js";
-import { REUP_FONTS } from "../../constants/reupConfig.js";
+import { REUP_FONTS, reupFontScript, type ReupFontFace, type ReupFontWeight } from "../../constants/reupConfig.js";
 import { REUP_ERROR } from "../../constants/reupServerText.js";
 export const REUP_ABORTED = "REUP_ABORTED";
 export const isReupAbort = (error: unknown): boolean => (error as Error)?.message === REUP_ABORTED;
@@ -64,12 +64,9 @@ export const reupProbe = (file: string): Promise<{ duration: number; width: numb
   });
 /** Escape a value for use inside a single-quoted filter option. */
 export const reupFilterValue = (value: string): string => value.replace(/\\/g, "/").replace(/'/g, "'\\''").replace(/:/g, "\\:");
-/** Bold font for on-screen text in this language (CJK scripts need their own), with its family name for subtitles. */
-export const reupFontFor = (lang = "en"): { file: string; family: string } | undefined => {
-  const script = lang === "ja" || lang === "ko" ? lang : "latin";
-  return REUP_FONTS[script].find((f) => fs.existsSync(f.file)) || REUP_FONTS.latin.find((f) => fs.existsSync(f.file));
-};
-export const reupFont = (lang?: string): string | undefined => reupFontFor(lang)?.file;
+/** Font for on-screen text in this language (CJK scripts need their own): heavy for titles, bold for running text. */
+export const reupFontFor = (lang = "en", weight: ReupFontWeight = "bold"): ReupFontFace | undefined => REUP_FONTS[reupFontScript(lang)][weight].find((f) => fs.existsSync(f.file)) || REUP_FONTS.latin[weight].find((f) => fs.existsSync(f.file));
+export const reupFont = (lang?: string, weight: ReupFontWeight = "bold"): string | undefined => reupFontFor(lang, weight)?.file;
 export const reupAssertVideo = (ok: boolean): void => {
   if (!ok) throw new Error(REUP_ERROR.NO_VIDEO);
 };

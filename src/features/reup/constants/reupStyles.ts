@@ -3,6 +3,11 @@ import { MOTION_LOG_SECTIONS } from "../../motion/constants/motionLogSections.js
 import { MOTION_REMOTION_STYLES as R, MOTION_STYLES as M } from "../../motion/constants/motionStyles.js";
 /** The Reup screen wears Video Motion's look: its classes are reused here, only Reup's own pieces are added. */
 export const REUP_STYLES = {
+  EXPORT_ACTIONS: "grid grid-cols-1 gap-2 pt-2",
+  MUSIC_LIST: "col-span-full grid grid-cols-1 gap-2",
+  MUSIC_TRACK: "flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-950/40 p-2",
+  MUSIC_NAME: "truncate text-xs font-semibold text-slate-300",
+  MUSIC_PLAYER: "h-8 w-full",
   PAGE: MR.MOTION_TEXT_SPACE_Y_6_W_FULL,
   CARD: MR.MOTION_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P,
   INPUT: MR.MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL,

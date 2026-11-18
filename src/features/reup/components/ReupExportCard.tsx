@@ -3,7 +3,7 @@ import { Clapperboard, Smartphone, Tv } from "lucide-react";
 import { StudioCard } from "../../../components/ui/Studio.js";
 import { MOTION_TEXT_FPS } from "../../../constants/motionRuntime.js";
 import type { MotionVideoTexts } from "../../../constants/motionVideoTexts.js";
-import { ChipButton, StepHeader } from "../../motion/components/MotionControls.js";
+import { ActionBtn, ChipButton, StepHeader, StopBtn } from "../../motion/components/MotionControls.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import type { ReupAspect, ReupQuality } from "../types/reup.js";
@@ -17,6 +17,9 @@ const FPS = [24, 25, 30, 60];
 export const ReupExportCard: FC<{ studio: ReupStudio; motionText: MotionVideoTexts }> = ({ studio, motionText: m }) => {
   const { text, settings, patch } = studio;
   const locked = studio.running || studio.busy;
+  // Built automatically by "Start"; once the voice is ready the videos can be exported again in another format or mix.
+  const ready = studio.job?.steps.voice.status === "done";
+  const exporting = studio.running && studio.job?.steps.build.status === "running";
   const qualities: [ReupQuality, string][] = [
     ["draft", m.QUALITY_DRAFT],
     ["standard", m.QUALITY_STANDARD],
@@ -51,6 +54,16 @@ export const ReupExportCard: FC<{ studio: ReupStudio; motionText: MotionVideoTex
         <div className={S.EXPORT_ROW}>
           <ReupSelect<number> label={m.FPS} value={settings.fps} options={FPS.map((f) => ({ value: f, label: `${f}${MOTION_TEXT_FPS}` }))} onChange={(fps) => patch({ fps })} disabled={locked} />
           <ReupSelect<string> label={m.ENCODER} value="cpu" options={[{ value: "cpu", label: m.ENCODER_CPU }]} onChange={() => undefined} disabled />
+        </div>
+        <div className={S.EXPORT_ACTIONS}>
+          {exporting ? (
+            <StopBtn onClick={() => void studio.cancel()} label={m.STOP_RENDER} stopping={studio.busy} />
+          ) : (
+            <ActionBtn icon={Clapperboard} onClick={() => void studio.exportVideo()} disabled={!ready || locked}>
+              {m.RENDER_BTN}
+            </ActionBtn>
+          )}
+          <p className={S.HINT}>{ready ? text.EXPORT_HINT : text.EXPORT_NEED_VOICE}</p>
         </div>
       </div>
     </StudioCard>

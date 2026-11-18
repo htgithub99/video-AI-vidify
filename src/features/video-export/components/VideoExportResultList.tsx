@@ -2,11 +2,13 @@ import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js"
 import { RUNTIME_TEXT as RT_VIDEO_EXPORT } from "../constants/runtimeText.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
 import { VideoExportSectionHeading } from "./VideoExportSectionHeading";
-import { VIDEO_EXPORT_TEXT_BUTTON, VIDEO_EXPORT_TEXT_SYMBOL, VIDEO_EXPORT_TEXT_SYMBOL_2, VIDEO_EXPORT_TEXT_UNSTYLED } from "../../../constants/videoExportText";
+import { VIDEO_EXPORT_TEXT_SYMBOL, VIDEO_EXPORT_TEXT_SYMBOL_2 } from "../../../constants/videoExportText";
 import { FC } from "react";
 import _ from "lodash";
-import { CalendarClock, Clock, Film, Flame, HardDrive, ImageIcon, Music, Sparkles, Trash2 } from "lucide-react";
-import { Button } from "../../../components/ui/Button.js";
+import { CalendarClock, Clock, Film, Flame, HardDrive, ImageIcon, Music, Sparkles } from "lucide-react";
+import { StudioResults, type StudioResultSlots } from "../../../components/common/StudioResults.js";
+import { STUDIO_RESULTS } from "../../../constants/studioResults.js";
+import type { Lang } from "../../../lib/lang.js";
 import { cn } from "../../../lib/utils.js";
 import { formatCleanTime } from "../../../lib/timeUtils.js";
 import { VideoExporterState } from "../hooks/useVideoExporter.js";
@@ -15,20 +17,23 @@ import { formatFileSize, VideoExportTexts } from "./videoExportUtils.js";
 import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
 import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { VIDEO_EXPORT_FRAME_CLASSNAMES } from "../constants/videoExport";
-type VideoExportResultListProps = { exporter: Pick<VideoExporterState, "text" | "results" | "isExporting" | "job" | "downloadingId" | "downloadResult" | "removeResult"> };
-type VideoExportResultCardProps = { result: VideoExportResultItem; text: VideoExportTexts; isDownloading: boolean; onDownload: (result: VideoExportResultItem) => void; onRemove: (id: string) => void };
+type VideoExportResultListProps = { lang: Lang; exporter: Pick<VideoExporterState, "text" | "results" | "isExporting" | "job" | "downloadingId" | "downloadResult" | "deleteResults"> };
+type VideoExportResultCardProps = { result: VideoExportResultItem; text: VideoExportTexts; isDownloading: boolean; onDownload: (result: VideoExportResultItem) => void; slots: StudioResultSlots };
 const formatCreatedAt = (value: string): string => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? VIDEO_EXPORT_TEXT_SYMBOL : date.toLocaleString();
 };
-const VideoExportResultCard: FC<VideoExportResultCardProps> = ({ result, text, isDownloading, onDownload, onRemove }) => (
-  <StudioCard className={cn(RT_SHARED.GLASS_CARD_ROUNDED_2XL_P_3_SM_P_4_BORDER)}>
+const VideoExportResultCard: FC<VideoExportResultCardProps> = ({ result, text, isDownloading, onDownload, slots }) => (
+  <StudioCard className={cn(RT_SHARED.GLASS_CARD_ROUNDED_2XL_P_3_SM_P_4_BORDER, slots.selected && STUDIO_RESULTS.SELECTED)}>
     <StudioVideoPlayer src={result.videoUrl} className={VIDEO_EXPORT_FRAME_CLASSNAMES[result.aspectRatio]} badge={result.aspectRatio} badgeIcon={Film} />
     <div className={cn(RT_SHARED.MT_3_SPACE_Y_2_TEXT_LEFT_FLEX_1_FLEX)}>
       <div className={cn(RT_SHARED.SPACE_Y_1_5)}>
-        <h4 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_LINE_CLAMP_1)} title={result.title}>
-          {result.title}
-        </h4>
+        <div className={STUDIO_RESULTS.TITLE_ROW}>
+          {slots.select}
+          <h4 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_LINE_CLAMP_1, STUDIO_RESULTS.TITLE_TEXT)} title={result.title}>
+            {result.title}
+          </h4>
+        </div>
         <div className={cn(RT_VIDEO_EXPORT.FLEX_FLEX_WRAP_GAP_X_3_GAP_Y_1_TEXT)}>
           <span className={cn(RT_VIDEO_EXPORT.INLINE_FLEX_ITEMS_CENTER_GAP_1)}>
             <Clock className={cn(RT_VIDEO_EXPORT.W_3_H_3_TEXT_BLUE_400)} />
@@ -53,15 +58,13 @@ const VideoExportResultCard: FC<VideoExportResultCardProps> = ({ result, text, i
         </div>
       </div>
       <div className={cn(RT_SHARED.PT_2_BORDER_T_BORDER_SLATE_800_60_FLEX_ITEMS)}>
-        <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={() => onRemove(result.id)} title={text.REMOVE_RESULT} className={cn(RT_VIDEO_EXPORT.P_2_ROUNDED_XL_TEXT_SLATE_400_HOVER_TEXT_ROSE)}>
-          <Trash2 className={cn(RT_SHARED.W_3_5_H_3_5)} />
-        </Button>
+        {slots.remove}
         <StudioDownloadButton onClick={() => onDownload(result)} busy={isDownloading} />
       </div>
     </div>
   </StudioCard>
 );
-export const VideoExportResultList: FC<VideoExportResultListProps> = ({ exporter }) => {
+export const VideoExportResultList: FC<VideoExportResultListProps> = ({ exporter, lang }) => {
   const { text, results, isExporting, job, downloadingId } = exporter;
   const hasResults = !_.isEmpty(results);
   return (
@@ -96,11 +99,16 @@ export const VideoExportResultList: FC<VideoExportResultListProps> = ({ exporter
           </div>
         </div>
       ) : (
-        <div className={cn(RT_VIDEO_EXPORT.GRID_GRID_COLS_1_SM_GRID_COLS_2_XL_GRID)}>
-          {_.map(results, (result) => (
-            <VideoExportResultCard key={result.id} result={result} text={text} isDownloading={downloadingId === result.id} onDownload={exporter.downloadResult} onRemove={exporter.removeResult} />
-          ))}
-        </div>
+        <StudioResults
+          items={results}
+          lang={lang}
+          getId={(result) => result.id}
+          getTitle={(result) => result.title}
+          remove={exporter.deleteResults}
+          summary={` · ${formatFileSize(_.sumBy(results, (result) => result.sizeBytes || 0))}`}
+          gridClassName={cn(RT_VIDEO_EXPORT.GRID_GRID_COLS_1_SM_GRID_COLS_2_XL_GRID)}
+          renderItem={(result, slots) => <VideoExportResultCard result={result} text={text} isDownloading={downloadingId === result.id} onDownload={exporter.downloadResult} slots={slots} />}
+        />
       )}
     </StudioCard>
   );

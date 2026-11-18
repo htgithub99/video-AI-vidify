@@ -14,8 +14,8 @@ import { REUP_PRESETS, reupPreset } from "../constants/reupPresets.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { REUP_LANGUAGES } from "../lib/reupSettings.js";
-import { REUP_LIMITS } from "../constants/reupConfig.js";
-import type { ReupCorner, ReupLanguage, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
+import { REUP_LIMITS, REUP_URL } from "../constants/reupConfig.js";
+import type { ReupCorner, ReupLanguage, ReupMusicChoice, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
 import { ReupSelect, ReupTextArea, ReupTextField, ReupToggle, reupClock, type ReupOption } from "./ReupControls.js";
 const CORNERS: ReupCorner[] = ["tl", "tr", "bl", "br"];
 const SHORTS = [1, 2, 3, 4, 5];
@@ -94,12 +94,30 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
           <MotionSettingsGroup title={groups.AUDIO}>
             {!def.speech && <ReupSelect<string> label={voiceText.PICK_CHANNEL} title={voiceText.CHANNELS_HINT} value={settings.voiceChannel} options={channels} onChange={(voiceChannel) => patch({ voiceChannel })} />}
             {def.bilingual && <ReupSelect<string> label={text.VOICE_ALT} value={settings.voiceChannelAlt} options={channels} onChange={(voiceChannelAlt) => patch({ voiceChannelAlt })} />}
-            <ReupSelect<string>
+            <ReupSelect<ReupMusicChoice>
               label={musicText.LABEL}
-              value={settings.musicMood}
-              options={[...Object.entries(musicText.MOODS).map(([value, label]) => ({ value, label: value === MOTION_MUSIC.AUTO ? text.MUSIC_AUTO : label })), { value: MOTION_MUSIC.OFF, label: musicText.OFF }]}
-              onChange={(musicMood) => patch({ musicMood })}
+              title={text.MUSIC_HINT}
+              value={settings.music}
+              options={[
+                { value: "off", label: musicText.OFF },
+                { value: "library", label: text.MUSIC_LIBRARY },
+              ]}
+              onChange={(music) => patch({ music })}
             />
+            {settings.music === "library" && (
+              <div className={S.MUSIC_LIST}>
+                {studio.music.tracks.length ? (
+                  studio.music.tracks.map((track) => (
+                    <div key={track.name} className={S.MUSIC_TRACK}>
+                      <span className={S.MUSIC_NAME}>{track.name.replace(/\.[^.]+$/, "")}</span>
+                      <audio className={S.MUSIC_PLAYER} controls preload="none" src={REUP_URL.MUSIC_FILE(track.name)} />
+                    </div>
+                  ))
+                ) : (
+                  <p className={S.HINT_WARN}>{text.MUSIC_EMPTY(studio.music.dir)}</p>
+                )}
+              </div>
+            )}
             {!def.speech && source?.hasAudio !== false && (
               <ReupSelect<ReupNatural>
                 label={text.NATURAL}

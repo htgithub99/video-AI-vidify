@@ -134,7 +134,7 @@ const ReupVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" as La
           </div>
         )}
         {tab === "voices" && <MotionVoicePanel studio={studio} currentLang={currentLang} />}
-        {tab === "results" && <ReupResultsPanel studio={studio} onOpen={() => setTab("create")} />}
+        {tab === "results" && <ReupResultsPanel studio={studio} ui={ui} onOpen={() => setTab("create")} />}
       </StudioCanvas>
     </StudioPage>
   );

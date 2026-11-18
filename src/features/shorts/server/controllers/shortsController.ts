@@ -16,6 +16,7 @@ import { SHORTS_CONSTANTS, SHORTS_LOG_MESSAGES, SHORTS_MIME_TYPES, SHORTS_REGEX,
 import { SUNO_AUTOMATION_CONFIG } from "../../../../constants/sunoAutomation.js";
 import { logger } from "../../../../lib/logger.js";
 import { getDataDirectory, getPythonCommand, getStaticResourcePath } from "../../../../server/utils/paths.js";
+import { deleteOutputEntries } from "../../../../server/utils/outputFiles.js";
 const shortsSaveDestinations = new Map<string, string>();
 let currentShortsAbortController: AbortController | null = null;
 export const cancelShortsPipeline = async (_req: Request, res: Response): Promise<void> => {
@@ -229,6 +230,15 @@ export const saveSingleShortVideo = async (req: Request, res: Response): Promise
     await fs.promises.mkdir(path.dirname(target), { recursive: true });
     await fs.promises.copyFile(sourceVideoPath, target);
     res.json({ success: true, savedPath: target });
+  } catch (error: any) {
+    logger.error(SHORTS_LOG_MESSAGES.ERROR_PIPELINE, error);
+    res.status(500).json({ success: false, error: error?.message || SHORTS_TEXTS.ERR_PROCESS_FAILED });
+  }
+};
+/** Delete rendered Shorts clips (video + thumbnail) from disk (Results list). */
+export const deleteShortsClips = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, ...(await deleteOutputEntries(path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER, SHORTS_CONSTANTS.SHORTS_FOLDER), req.body?.fileNames)) });
   } catch (error: any) {
     logger.error(SHORTS_LOG_MESSAGES.ERROR_PIPELINE, error);
     res.status(500).json({ success: false, error: error?.message || SHORTS_TEXTS.ERR_PROCESS_FAILED });

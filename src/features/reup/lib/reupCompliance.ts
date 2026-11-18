@@ -1,7 +1,7 @@
 import _ from "lodash";
 import type { ReupJob, ReupReport, ReupReportLevel } from "../types/reup.js";
 /** Thresholds of the upload check (shares are of the video's length). */
-export const REUP_CHECK = { NARRATED_RISK: 0.6, NARRATED_REVIEW: 0.8, SILENT_REVIEW: 12, PADDING_REVIEW: 0.15, SIMILAR_REVIEW: 0.2, SIMILAR_RISK: 0.4, NGRAM: 3 } as const;
+export const REUP_CHECK = { NARRATED_RISK: 0.35, NARRATED_REVIEW: 0.5, SILENT_REVIEW: 12, PADDING_REVIEW: 0.45, SIMILAR_REVIEW: 0.2, SIMILAR_RISK: 0.4, NGRAM: 3 } as const;
 const RANK: Record<ReupReportLevel, number> = { ok: 0, review: 1, risk: 2 };
 const grams = (text: string): Set<string> => {
   const words = text.toLowerCase().normalize("NFC").replace(/[^\p{L}\p{N}\s]+/gu, " ").split(/\s+/).filter(Boolean);
@@ -37,6 +37,8 @@ export const reupReport = (job: ReupJob, past: ReupJob[]): ReupReport => {
   if (silentMax > REUP_CHECK.SILENT_REVIEW) add("silence", "review", Math.round(silentMax));
   if (padding > REUP_CHECK.PADDING_REVIEW) add("padding", "review", Math.round(padding * 100));
   if (job.outputs.some((o) => o.repeated)) add("repeated", "review");
+  // Narrated footage with its own sound turned off: the quiet parts have only music; the sound makes them feel real.
+  if (!speech && job.settings.natural === "off" && job.source?.hasAudio && job.source.kind === "video") add("naturalOff", "ok");
   const others = past.filter((p) => p.id !== job.id);
   const sameSource = others.filter((p) => job.fingerprint && p.fingerprint === job.fingerprint);
   if (sameSource.length) add("sourceReused", job.rights === "own" ? "review" : "risk", sameSource.length);

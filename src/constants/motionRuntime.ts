@@ -442,8 +442,6 @@ export const MOTION_TEXT_SCENE_2 = "🎬 scene" as const;
 export const MOTION_TEXT_TITLE_2 = "🏷️ title" as const;
 export const MOTION_TEXT_STATS_2 = "📊 stats" as const;
 export const MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH = "Nhập nội dung lời dẫn cho phân cảnh..." as const;
-export const MOTION_TEXT_MAX_W_MD = "max-w-md" as const;
-export const MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC = "Hành động này không thể hoàn tác." as const;
 export const MOTION_TEXT_SYMBOL_47 = '"' as const;
 export const MOTION_RENDER_CANVAS_ID = "c" as const;
 export const MOTION_TEXT_ARTIFACTTYPE = '{"artifactType"' as const;
@@ -909,14 +907,6 @@ export const MOTION_TEMPLATE_BO_GHI_TEN_CAU_TRICH_KHONG_CO_TRONG_NGUON = (value0
 export const MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_ROUNDED_LG_TEXT_XS_FONT =
   "h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all cursor-pointer shadow-2xs leading-none" as const;
 export const MOTION_TEXT_W_3_5_H_3_5_TEXT_AMBER_500 = "w-3.5 h-3.5 text-amber-500" as const;
-export const MOTION_TEXT_PX_4_PY_2_MIN_H_44PX_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_FLEX = "px-4 py-2 min-h-[44px] flex items-center justify-between gap-3 flex-wrap" as const;
-export const MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT_XS_SM_TEXT_SM_FONT_BOL = "inline-flex items-center leading-none text-xs sm:text-sm font-bold text-slate-200 my-auto" as const;
-export const MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE = "inline-flex items-center leading-none" as const;
-export const MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_ML_AUTO_MY_AUTO = "inline-flex items-center gap-2 flex-wrap ml-auto my-auto" as const;
-export const MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO = "h-8 inline-flex items-center gap-1.5 px-2.5 rounded-lg text-xs font-bold text-rose-400 hover:text-rose-300 bg-transparent hover:bg-transparent border-none shadow-none cursor-pointer transition-colors leading-none" as const;
-export const W_3_5_H_3_5_TEXT_ROSE_400_B3A93B = "w-3.5 h-3.5 text-rose-400" as const;
-export const MOTION_TEXT_P_1_5_ROUNDED_LG_BG_TRANSPARENT_HOVER_BG_TRANSPARENT_TEXT_SLATE_4 = "p-1.5 rounded-lg bg-transparent hover:bg-transparent text-slate-400 hover:text-rose-400 transition-colors border-none shadow-none cursor-pointer inline-flex items-center justify-center" as const;
-export const MOTION_TEXT_W_4_H_4 = "w-4 h-4" as const;
 export const TEXT_XS_SM_TEXT_SM_FONT_BLACK_TEXT_SLATE_100_TRUNCATE_TR = "text-xs sm:text-sm font-black !text-slate-100 truncate tracking-tight" as const;
 export const TEXT_11PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_300_LEADING_S = "text-[11px] font-mono font-medium !text-slate-300 leading-snug" as const;
 export const MOTION_TEMPLATE_SEO_FULL = (value0: unknown): string => `seo_full_${value0}`;

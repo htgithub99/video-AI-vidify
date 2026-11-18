@@ -480,8 +480,14 @@ export function useVideoExporter(lang: Lang) {
     },
     [text],
   );
-  const removeResult = useCallback((id: string) => {
-    setResults((prev) => _.reject(prev, (item) => item.id === id));
+  /** Delete exported videos from disk and the list; ids whose file could not go come back as failed. */
+  const deleteResults = useCallback(async (items: VideoExportResultItem[]): Promise<{ freedBytes?: number; failed?: string[] }> => {
+    const res = await requestJson<{ freedBytes?: number; failed?: string[] }>(API_ROUTES.VIDEO_EXPORT_DELETE_RESULTS, { fileNames: _.map(items, "fileName") });
+    const failedNames = new Set(res.failed || []);
+    const failed = _.map(_.filter(items, (item) => failedNames.has(item.fileName)), "id");
+    const gone = new Set(_.difference(_.map(items, "id"), failed));
+    setResults((prev) => _.reject(prev, (item) => gone.has(item.id)));
+    return { freedBytes: res.freedBytes, failed };
   }, []);
   return {
     text,
@@ -537,7 +543,7 @@ export function useVideoExporter(lang: Lang) {
     startExport,
     stopExport,
     downloadResult,
-    removeResult,
+    deleteResults,
     aiClips,
   };
 }

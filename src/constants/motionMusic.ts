@@ -84,10 +84,14 @@ export const MOTION_MUSIC = {
   MIX_PREFIX: "music-mix-",
   WAV: ".wav",
   LOUDNESS: MOTION_MUSIC_LOUDNESS,
-  MIX_GRAPH: (volume: number): string => {
+  /** The score as a bed under speech: softened highs, mastered to a loudness set by `volume` (0.35 ≈ -36 LUFS). */
+  BED: (volume: number, input: string, output: string): string => {
     const target = Math.max(MOTION_MUSIC_LOUDNESS.MIN, Math.min(MOTION_MUSIC_LOUDNESS.MAX, MOTION_MUSIC_LOUDNESS.LUFS + 20 * Math.log10(Math.max(0.01, volume) / MOTION_MUSIC_DEFAULT_VOLUME)));
-    return `[1:a]aresample=48000,aformat=channel_layouts=stereo,highshelf=f=4000:g=-6,lowpass=f=8000,loudnorm=I=${target.toFixed(1)}:TP=${MOTION_MUSIC_LOUDNESS.TRUE_PEAK}:LRA=${MOTION_MUSIC_LOUDNESS.RANGE},aresample=48000[m];[0:a]aresample=48000,aformat=channel_layouts=stereo,asplit=2[v][k];[m][k]sidechaincompress=threshold=0.012:ratio=10:attack=25:release=900[d];[v][d]amix=inputs=2:duration=first:normalize=0[out]`;
+    return `${input}aresample=48000,aformat=channel_layouts=stereo,highshelf=f=4000:g=-6,lowpass=f=8000,loudnorm=I=${target.toFixed(1)}:TP=${MOTION_MUSIC_LOUDNESS.TRUE_PEAK}:LRA=${MOTION_MUSIC_LOUDNESS.RANGE},aresample=48000${output}`;
   },
+  /** The bed ducked under the voice on `key` (ducks fast, comes back slowly). */
+  DUCK: (bed: string, key: string, output: string): string => `${bed}${key}sidechaincompress=threshold=0.012:ratio=10:attack=25:release=900${output}`,
+  MIX_GRAPH: (volume: number): string => `${MOTION_MUSIC.BED(volume, "[1:a]", "[m]")};[0:a]aresample=48000,aformat=channel_layouts=stereo,asplit=2[v][k];${MOTION_MUSIC.DUCK("[m]", "[k]", "[d]")};[v][d]amix=inputs=2:duration=first:normalize=0[out]`,
   MIX_OUT: "[out]",
   GENRE_MOOD: { pov: "tense", witness: "tense", chronicle: "tense", verdict: "tense" } as Record<string, string>,
   STAGE_MOOD: { losses: "sad", signs: "tense", rules: "eerie", remedy: "warm", broken_rule: "tense", climax: "eerie", price: "sad", coda: "warm", ordinary: "warm", summons: "tense", preparation: "epic", waiting: "tense", ordeal: "tense", grind: "sad", loss: "sad", end: "warm", opening: "epic", era: "tense", finale: "epic", candidate: "tense", verdict: "epic" } as Record<string, string>,
