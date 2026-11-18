@@ -65,6 +65,10 @@ export interface MotionHtmlFrameInput {
   width: number;
   height: number;
   mode: "preview" | "export";
+  // Export only: how the frame is encoded (JPEG for draft/standard exports, PNG otherwise) and the subtitle laid over it.
+  format?: "jpeg" | "png";
+  quality?: number;
+  subtitle?: { text: string; font: string };
   motionEnabled: boolean;
   sceneEffectsEnabled: boolean;
   cameraEnabled?: boolean;

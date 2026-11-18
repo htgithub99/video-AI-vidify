@@ -35,6 +35,8 @@ export const motionFigureView = (render: MotionFigureRender | undefined, focus?:
     style,
     layout: motionLayoutOf({ layout: render?.layout }),
     scene: { shot: render?.scene?.shot, kind: render?.scene?.kind },
+    // The drawing style by name (the master frame leans by it: a horror scene keeps its figure small).
+    profile: render?.profile,
     focus: focus ? [focus] : [],
     ...(pairs.length ? { pairs } : {}),
     movement,

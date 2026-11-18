@@ -1,0 +1,279 @@
+/** Reup screen: pure rules (upload batches, scene map, timeline, claims, settings) and a real ffmpeg run on a synthetic source. */
+import assert from "node:assert/strict";
+import fs from "fs";
+import os from "os";
+import path from "path";
+import { spawnSync } from "child_process";
+import { REUP_UPLOAD } from "../src/features/reup/constants/reupConfig.js";
+import { reupJobSettings, reupPresetDefaults } from "../src/features/reup/constants/reupPresets.js";
+import { reupSeoPack } from "../src/features/reup/lib/reupSeo.js";
+import { reupUnbackedClaims } from "../src/features/reup/lib/reupFacts.js";
+import { cleanScenePart, mergeSceneParts, reupBadRanges, reupSheetBatches, reupUploadLimit } from "../src/features/reup/lib/reupSceneMap.js";
+import { cleanReupSettings } from "../src/features/reup/lib/reupSettings.js";
+import { ReupFootageLedger, mergeSpans, reupSectionSeconds, spanLength } from "../src/features/reup/lib/reupTimeline.js";
+import { reupAlignCues, reupKaraokeAss, reupPhrases, reupShotPieces, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../src/features/reup/lib/reupSpeech.js";
+import type { ReupJob, ReupShot } from "../src/features/reup/types/reup.js";
+let passed = 0;
+const check = (name: string, fn: () => void) => {
+  fn();
+  passed++;
+  console.log("ok", name);
+};
+check("upload limit: documented max per chat AI, learned lower wins, API is by bytes", () => {
+  assert.equal(reupUploadLimit("gemini-chat", "room-only"), 10);
+  assert.equal(reupUploadLimit("claude-chat", "room-only"), 20);
+  assert.equal(reupUploadLimit("chatgpt-ui", "hybrid"), 10);
+  assert.equal(reupUploadLimit("claude-chat", "room-only", { "claude-chat": 8 }), 8);
+  assert.equal(reupUploadLimit("claude-chat", "room-only", { "claude-chat": 50 }), 20);
+  assert.equal(reupUploadLimit("gemini-chat", REUP_UPLOAD.API_MODE), Number.MAX_SAFE_INTEGER);
+});
+check("batches: full batches, last one partial; bytes split for the API route", () => {
+  const sheets = Array.from({ length: 23 }, (_v, index) => ({ index }));
+  assert.deepEqual(reupSheetBatches(sheets, 10).map((b) => b.length), [10, 10, 3]);
+  assert.deepEqual(reupSheetBatches(sheets, 20).map((b) => b.length), [20, 3]);
+  assert.deepEqual(reupSheetBatches(sheets.slice(0, 9), 10).map((b) => b.length), [9], "45-min source = 9 sheets = one request");
+  assert.deepEqual(reupSheetBatches(sheets.slice(0, 5), 99, [4, 4, 4, 4, 4], 9).map((b) => b.length), [2, 2, 1]);
+});
+check("bad ranges: dark samples merge, short blips ignored", () => {
+  const samples = Array.from({ length: 60 }, (_v, t) => ({ t, y: t >= 10 && t < 20 ? 5 : t === 40 ? 3 : 120, blur: t >= 30 && t < 36 ? 20 : 2 }));
+  const bad = reupBadRanges(samples, 22, 8, 3, 2);
+  assert.deepEqual(bad.map((b) => [b.reason, b.start, b.end]), [["dark", 10, 20], ["blur", 30, 36]]);
+});
+check("scene part: times clamped to the batch, bad footage and unknown ids dropped; merge renumbers", () => {
+  const span = { start: 0, end: 300 };
+  const a = cleanScenePart({ segments: [{ id: "x", start: "0:10", end: "1:30", what: "digs a pit", tags: ["build", "BAD TAG!"], value: 4 }, { id: "y", start: 100, end: 130, what: "dark", value: 5 }, { id: "z", start: 250, end: 400, what: "roof done", tags: ["result"], value: 5 }], hook: ["z", "nope"], ending: "z", thumbnails: [260, 999], summary: "Builds a shelter." }, span, [{ start: 95, end: 135, reason: "dark" }], "b0_");
+  assert.equal(a.segments.length, 2);
+  assert.deepEqual(a.segments[0].tags, ["build"]);
+  assert.equal(a.segments[1].end, 300);
+  assert.deepEqual(a.thumbnails, [260]);
+  const b = cleanScenePart({ segments: [{ id: "1", start: 290, end: 420, what: "fire", value: 3 }], ending: "1" }, { start: 300, end: 600 }, [], "b1_");
+  const map = mergeSceneParts([b, a]);
+  assert.deepEqual(map.segments.map((s) => s.id), ["s1", "s2", "s3"]);
+  assert.equal(map.segments[2].start, 300);
+  assert.deepEqual(map.hook, ["s2"]);
+  assert.equal(map.ending, "s3");
+});
+check("timeline: no source second shown twice, bad ranges avoided, script shots first", () => {
+  const bad = [{ start: 50, end: 60, reason: "dark" as const }];
+  const ledger = new ReupFootageLedger({ duration: 300, bad, minShot: 1.6, maxShot: 7, hookCut: 1.2 });
+  const pool = [{ id: "s1", start: 0, end: 100, what: "", tags: [], value: 3 }, { id: "s2", start: 100, end: 300, what: "", tags: [], value: 5 }];
+  const hook = ledger.plan([{ start: 200, end: 260 }, { start: 10, end: 40 }], 12, true, pool, true);
+  const body = ledger.plan([{ start: 40, end: 70 }], 40, false, pool, true);
+  const all: ReupShot[] = [...hook.shots, ...body.shots];
+  assert.ok(Math.abs(spanLength(hook.shots) - 12) < 0.1 && Math.abs(spanLength(body.shots) - 40) < 0.1);
+  assert.ok(hook.shots.every((s) => s.end - s.start <= 1.21), "hook uses fast cuts");
+  assert.equal(hook.shots[0].start, 200, "hook keeps the script order");
+  assert.ok(Math.abs(spanLength(mergeSpans(all)) - spanLength(all)) < 0.05, "no overlap");
+  assert.ok(all.every((s) => s.end <= 50 || s.start >= 60), "dark range skipped");
+  assert.equal(body.repeated, false);
+  assert.ok(body.filled > 0);
+});
+check("timeline: footage exhausted → repeat flagged", () => {
+  const ledger = new ReupFootageLedger({ duration: 20, bad: [], minShot: 1.6, maxShot: 7, hookCut: 1.2 });
+  const plan = ledger.plan([{ start: 0, end: 20 }], 30, false, [], true);
+  assert.equal(plan.repeated, true);
+  assert.ok(Math.abs(plan.seconds - 30) < 0.1);
+});
+check("section seconds: voice + pause, tails spread over body sections to reach 8 min", () => {
+  const voice = [25, 50, 50, 50, 50, 50, 50, 50, 40];
+  const roles = ["hook", "body", "body", "teaser", "body", "body", "body", "body", "ending"];
+  const out = reupSectionSeconds(voice, roles, 0.2, 486, 12);
+  assert.ok(Math.abs(out.seconds.reduce((a, b) => a + b, 0) - 486) < 0.1);
+  assert.equal(out.seconds[0], 25.2, "hook gets no tail");
+  assert.equal(out.short, 0);
+  const few = reupSectionSeconds([10, 10], ["hook", "body"], 0, 100, 12);
+  assert.deepEqual(few.seconds, [10, 90], "past the soft cap tails keep growing so the target is still met");
+  assert.equal(reupSectionSeconds([10, 10], ["hook", "body"], 0, 100, 12, false).short, 80, "fill off reports the gap");
+});
+check("claims: numbers not in the scene map are flagged, backed ones pass", () => {
+  const map = { summary: "He builds a shelter over 3 days.", segments: [{ id: "s1", start: 0, end: 10, what: "catches two fish", tags: [], value: 3 }] };
+  assert.deepEqual(reupUnbackedClaims("It took 3 days. He caught two fish.", map), []);
+  assert.deepEqual(reupUnbackedClaims("After 40 days he caught 12 fish.", map).sort(), ["12", "40 days"].sort());
+});
+check("settings: screen choices cleaned per type, the rest follows the type (B vertical, -14 LUFS, auto music)", () => {
+  const b = cleanReupSettings({ targetSeconds: 999, crf: 2, aspect: "4:3", lufs: -30, vertical: "crop" }, "B");
+  assert.equal(b.aspect, "9:16");
+  assert.equal(b.targetSeconds, 28, "a length the type does not offer falls back to its default");
+  assert.ok(!("crf" in b) && !("lufs" in b) && !("vertical" in b), "rules are not screen choices");
+  const job = reupJobSettings("B", b);
+  assert.equal(job.lufs, -14);
+  assert.equal(job.vertical, "blur");
+  assert.equal(job.musicMood, "tense", "auto music is the type's mood");
+  assert.equal(reupJobSettings("E", cleanReupSettings({}, "E")).vertical, "crop");
+  assert.equal(reupJobSettings("A", { ...b, musicMood: "sad" }).musicMood, "sad");
+  const a = cleanReupSettings({ targetSeconds: 100 }, "A");
+  assert.equal(a.targetSeconds, 540, "long presets only take their offered lengths (8–15 min)");
+});
+check("subtitles: narration cut into short lines by clause (words, or characters for Japanese), timed and written as ASS", () => {
+  const en = reupSubtitleLines("Well, he started at dawn. The river was cold and fast, so he built a small dam of stones and branches before lunch, then rested.", 8, 18);
+  assert.ok(en.every((l) => l.split(" ").length <= 8) && en[0] === "Well, he started at dawn.", en.join(" / "));
+  const ja = reupSubtitleLines("彼は夜明けに作業を始めた。川は冷たく流れが速かったので、昼までに石と枝で小さなダムを作った。", 8, 18);
+  assert.ok(ja.length === 3 && ja.every((l) => l.length <= 18), ja.join(" / "));
+  const times = reupSubtitleTimes(["one two", "three four"], [{ w: "one", s: 0.1, e: 0.4 }, { w: "two", s: 0.5, e: 0.8 }, { w: "three", s: 2.0, e: 2.3 }, { w: "four", s: 2.4, e: 2.8 }], 3);
+  assert.deepEqual(times.map((t) => [t.start, t.end]), [[0, 1.95], [2, 3]]);
+  assert.ok(reupSubtitleAss(times, { width: 1920, height: 1080, font: "Arial" }).includes("Dialogue: 0,0:00:02.00,0:00:03.00,S,,0,0,0,,three four"));
+});
+check("speech: phrases cut at pauses and sentence ends; cues timed by spoken words", () => {
+  const words = [["Welcome", 0, 0.4], ["to", 0.45, 0.6], ["Tixi.", 0.62, 1.1], ["We", 2.0, 2.2], ["sell", 2.25, 2.5], ["old", 2.55, 2.8], ["cameras", 2.85, 3.4]].map(([w, s, e]) => ({ w: w as string, s: s as number, e: e as number }));
+  const phrases = reupPhrases(words, 0.45, 7);
+  assert.deepEqual(phrases.map((p) => p.text), ["Welcome to Tixi.", "We sell old cameras"]);
+  assert.deepEqual([phrases[1].start, phrases[1].end], [2, 3.4]);
+  const starts = reupAlignCues(["Welcome to Tixi.", "We sell old cameras"], words, 3.4);
+  assert.deepEqual(starts, [0, 2]);
+  assert.deepEqual(reupAlignCues(["aaaa", "bbbbbbbbbbbb"], [], 8), [0, 2], "no words: by text length");
+});
+check("folder timeline: a shot crossing items splits at the border", () => {
+  const items = [0, 5, 10].map((start, i) => ({ id: `m${i + 1}`, path: `${i}.jpg`, name: "", type: "photo" as const, start, end: start + 5, width: 4, height: 3, hasAudio: false }));
+  assert.deepEqual(reupShotPieces(items, { start: 3, end: 11 }).map((p) => [p.item.id, p.from, p.to]), [["m1", 3, 5], ["m2", 0, 5], ["m3", 0, 1]]);
+});
+check("karaoke: words light up in turn, lines break at pauses", () => {
+  const ass = reupKaraokeAss([{ w: "hello", s: 0, e: 0.4 }, { w: "world", s: 0.5, e: 1 }, { w: "again", s: 2.5, e: 3 }], { width: 1080, height: 1920, font: "Arial", color: "#ff3b30", perLine: 4, gap: 0.6 });
+  assert.match(ass, /PlayResX: 1080/);
+  assert.match(ass, /Style: K,Arial,\d+,&H00303BFF/);
+  const lines = ass.split("\n").filter((l) => l.startsWith("Dialogue"));
+  assert.equal(lines.length, 2);
+  assert.match(lines[0], /\{\\k50\}HELLO \{\\k50\}WORLD/);
+});
+const ffmpegOk = spawnSync("ffmpeg", ["-version"]).status === 0;
+const media = async () => {
+  if (!ffmpegOk) return console.log("skip media: no ffmpeg");
+  const { inspectReupSource, makeReupSheets, measureReupQuality, reupSheetInterval } = await import("../src/features/reup/server/services/reupMediaService.js");
+  const { buildReupJob } = await import("../src/features/reup/server/services/reupBuildService.js");
+  const { reupEmptySteps } = await import("../src/features/reup/server/services/reupJobStore.js");
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "reup-"));
+  const src = path.join(tmp, "source.mp4");
+  const run = (args: string[]) => assert.equal(spawnSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", ...args]).status, 0, args.join(" "));
+  run(["-f", "lavfi", "-i", "testsrc2=size=640x360:rate=25:duration=420", "-f", "lavfi", "-i", "sine=frequency=330:duration=420", "-vf", "drawbox=enable='between(t,100,130)':color=black:t=fill", "-g", "50", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-shortest", src]);
+  const source = await inspectReupSource(src);
+  assert.ok(source.duration > 419 && source.hasAudio && source.width === 640);
+  const id = "testjob-" + Date.now();
+  const sheets = await makeReupSheets(id, source, 10);
+  assert.equal(sheets.length, 2, "42 tiles → 2 sheets");
+  assert.equal(sheets[1].count, 12);
+  assert.equal(reupSheetInterval(120, 10), 4);
+  const quality = await measureReupQuality(source, 22, 8);
+  assert.ok(quality.bad.some((b) => b.reason === "dark" && b.start >= 96 && b.end <= 134), JSON.stringify(quality.bad));
+  const voice = (name: string, seconds: number) => {
+    const file = path.join(tmp, name);
+    run(["-f", "lavfi", "-i", `sine=frequency=600:duration=${seconds}`, "-ar", "24000", "-ac", "1", file]);
+    return { file, seconds, voice: "test" };
+  };
+  const settings = reupJobSettings("A", { ...reupPresetDefaults("A"), targetSeconds: 40, subtitles: true });
+  const segments = [{ id: "s1", start: 0, end: 90, what: "a", tags: [], value: 3 }, { id: "s2", start: 140, end: 300, what: "b", tags: [], value: 5 }, { id: "s3", start: 300, end: 420, what: "c", tags: ["result"], value: 5 }];
+  const job: ReupJob = { id, createdAt: 0, updatedAt: 0, preset: "A", settings, source, status: "running", steps: reupEmptySteps(), logs: [], sheets, bad: quality.bad, warnings: [], outputs: [], sceneMap: { summary: "", segments, hook: ["s3"], ending: "s3", thumbnails: [] }, script: { outputs: [{ id: "o1", kind: "long", title: ["BUILT A SHELTER", "IN THE RAIN"], sections: [{ id: "h", role: "hook", text: "x", shots: [{ start: 300, end: 420 }, { start: 0, end: 90 }] }, { id: "b", role: "body", text: "y", shots: [{ start: 140, end: 300 }] }] }] }, voices: { h: voice("h.wav", 6), b: voice("b.wav", 10) } };
+  const logs: string[] = [];
+  const outputs = await buildReupJob(job, (t) => logs.push(t), () => {});
+  assert.equal(outputs.length, 1);
+  assert.ok(outputs[0].duration >= 45 && outputs[0].duration < 48, `long video reaches target + margin: ${outputs[0].duration}`);
+  const ass = fs.readFileSync(path.join(path.dirname(path.dirname(outputs[0].file)), "sections", "o1", "subs.ass"), "utf8");
+  const shown = ass.split("\n").filter((l) => l.startsWith("Dialogue:"));
+  assert.ok(shown.length >= 2 && /,S,,0,0,0,,x$/.test(shown[0]) && shown[1].startsWith("Dialogue: 0,0:00:"), `narration subtitles burned in, second section shifted: ${shown.join(" | ")}`);
+  const probe = spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=codec_type,width,height", "-of", "csv=p=0", outputs[0].file]).stdout.toString();
+  assert.match(probe, /1920,1080/);
+  assert.match(probe, /audio/);
+  const short: ReupJob = { ...job, id: id + "-b", preset: "B", settings: reupJobSettings("B", reupPresetDefaults("B")), outputs: [], script: { outputs: [{ id: "o1", kind: "short", title: ["CROCODILE", "UNDER THE FALLS"], sections: [{ id: "h", role: "hook", text: "x", shots: [{ start: 300, end: 330 }] }] }] } };
+  const vertical = await buildReupJob(short, (t) => logs.push(t), () => {});
+  const vprobe = spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", vertical[0].file]).stdout.toString();
+  assert.match(vprobe, /1080,1920/);
+  const loud = spawnSync("ffmpeg", ["-hide_banner", "-i", vertical[0].file, "-af", "ebur128", "-f", "null", "-"]).stderr.toString();
+  const integrated = Number(/I:\s+(-?[\d.]+) LUFS\s*\n\s*Threshold/.exec(loud.slice(loud.lastIndexOf("Summary")))?.[1]);
+  assert.ok(Math.abs(integrated - -14) < 2.5, `shorts loudness ${integrated}`);
+  passed++;
+  console.log("ok media: sheets, dark range, long 16:9 build to target, vertical blur short at -14 LUFS");
+  fs.rmSync(tmp, { recursive: true, force: true });
+  const { reupRoot } = await import("../src/features/reup/server/services/reupJobStore.js");
+  for (const dir of [id, short.id]) fs.rmSync(path.join(reupRoot(), dir), { recursive: true, force: true });
+};
+const media2 = async () => {
+  if (!ffmpegOk) return;
+  const { inspectReupSource, makeReupProxy, makeReupSheets, reupFrame } = await import("../src/features/reup/server/services/reupMediaService.js");
+  const { buildReupJob } = await import("../src/features/reup/server/services/reupBuildService.js");
+  const { reupEmptySteps, reupRoot } = await import("../src/features/reup/server/services/reupJobStore.js");
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "reup2-"));
+  const run = (args: string[]) => assert.equal(spawnSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", ...args]).status, 0, args.join(" "));
+  const probe = (file: string) => spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=codec_type,width,height:format=duration", "-of", "csv=p=0", file]).stdout.toString();
+  const voice = (name: string, seconds: number) => {
+    const file = path.join(tmp, name);
+    run(["-f", "lavfi", "-i", `sine=frequency=500:duration=${seconds}`, "-ar", "24000", "-ac", "1", file]);
+    return { file, seconds, voice: "test" };
+  };
+  const base = (id: string, preset: ReupJob["preset"], source: ReupJob["source"], extra: Partial<ReupJob["settings"]> = {}): ReupJob => ({ id, createdAt: 0, updatedAt: 0, preset, settings: { ...reupJobSettings(preset, reupPresetDefaults(preset)), ...extra }, source, status: "running", steps: reupEmptySteps(), logs: [], sheets: [], bad: [], warnings: [], outputs: [] });
+  const ids: string[] = [];
+  // D — a folder of photos (landscape and portrait) and a clip: proxy, sheets, chapters, captions, Ken Burns, cue timing.
+  const folder = path.join(tmp, "album");
+  fs.mkdirSync(folder);
+  run(["-f", "lavfi", "-i", "testsrc2=size=1600x1200:duration=1", "-frames:v", "1", path.join(folder, "01_meeting.jpg")]);
+  run(["-f", "lavfi", "-i", "smptebars=size=900x1600:duration=1", "-frames:v", "1", path.join(folder, "02_portrait.jpg")]);
+  run(["-f", "lavfi", "-i", "testsrc=size=1280x720:rate=25:duration=6", "-f", "lavfi", "-i", "sine=frequency=220:duration=6", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-shortest", path.join(folder, "03_clip.mp4")]);
+  const src = await inspectReupSource(folder);
+  assert.equal(src.kind, "folder");
+  assert.deepEqual(src.items!.map((it) => [it.type, it.start, it.end]), [["photo", 0, 5], ["photo", 5, 10], ["clip", 10, 16]]);
+  const d = base("testd-" + Date.now(), "D", src, { captions: true });
+  ids.push(d.id);
+  src.proxy = await makeReupProxy(d.id, src);
+  assert.match(probe(src.proxy), /640,360/);
+  d.sheets = await makeReupSheets(d.id, src, 5);
+  assert.equal(d.sheets.length, 1);
+  const portraitFrame = await reupFrame(d.id, src, 7, 1280);
+  assert.match(spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", portraitFrame]).stdout.toString(), /1280,2276/, "review frame comes from the original photo");
+  d.sceneMap = { summary: "", hook: [], ending: "s3", thumbnails: [], segments: [{ id: "s1", start: 0, end: 5, what: "meeting", tags: [], value: 3, caption: "Họp chi hội" }, { id: "s2", start: 5, end: 10, what: "bars", tags: [], value: 3, caption: "Ảnh dọc" }, { id: "s3", start: 10, end: 16, what: "clip", tags: [], value: 4 }] };
+  d.script = { outputs: [{ id: "o1", kind: "long", lang: "vi", title: [], sections: [{ id: "a", role: "body", chapter: "Chương 1", text: "x y", shots: [], cues: [{ segment: "s1", text: "x" }, { segment: "s2", text: "y" }] }, { id: "b", role: "ending", text: "z", shots: [], cues: [{ segment: "s3", text: "z" }] }] }] };
+  d.voices = { a: { ...voice("a.wav", 8), cues: [0, 3] }, b: voice("b.wav", 9) };
+  const dOut = await buildReupJob(d, () => {}, () => {});
+  const dDur = Number(/\n([\d.]+)\s*$/.exec(probe(dOut[0].file))?.[1]);
+  assert.ok(Math.abs(dDur - (2.5 + 8.2 + 9.2)) < 0.6, `photo report = chapter card + voices: ${dDur}`);
+  d.outputs = dOut;
+  d.package = { options: [{ title: "Hội cựu chiến binh", description: "Phóng sự ảnh.", hashtags: ["#cuuchienbinh"], tags: ["phóng sự"], seoScore: 70 }], thumbs: [], frames: [], pinned: "", aiDisclosure: false };
+  assert.deepEqual(reupSeoPack(d)?.chapters.map((c) => c.t), [0], "chapter marks from the edited video feed the SEO card");
+  run(["-ss", "1", "-i", dOut[0].file, "-frames:v", "1", "-vf", "scale=640:-2", "/tmp/reup_d_card.jpg"]);
+  run(["-ss", "7", "-i", dOut[0].file, "-frames:v", "1", "-vf", "scale=640:-2", "/tmp/reup_d_portrait.jpg"]);
+  run(["-ss", "15", "-i", dOut[0].file, "-frames:v", "1", "-vf", "scale=640:-2", "/tmp/reup_d_clip_hold.jpg"]);
+  // E — real talk cut by phrases, vertical crop around the subject, karaoke, callout, call to action, camera frame.
+  const talk = path.join(tmp, "talk.mp4");
+  run(["-f", "lavfi", "-i", "testsrc2=size=1280x720:rate=25:duration=20", "-f", "lavfi", "-i", "sine=frequency=300:duration=20", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", "-shortest", talk]);
+  const tSrc = await inspectReupSource(talk);
+  const e = base("teste-" + Date.now(), "E", tSrc, { hotline: "0909 000 111", brandName: "Tixi Camera", cta: "Ghé shop ngay" });
+  ids.push(e.id);
+  const words = Array.from({ length: 30 }, (_v, k) => ({ w: `từ${k}`, s: k * 0.6, e: k * 0.6 + 0.45 }));
+  e.transcript = { text: "", words, phrases: reupPhrases(words, 0.45, 3) };
+  e.sceneMap = { summary: "", hook: [], ending: "", thumbnails: [], segments: [{ id: "s1", start: 0, end: 20, what: "talk", tags: [], value: 3, focusX: 0.3 }] };
+  const ph = e.transcript.phrases;
+  e.script = { outputs: [{ id: "o1", kind: "short", speech: true, lang: "vi", title: ["POV: BẠN MỞ SHOP", "MÁY ẢNH CŨ"], cta: "Ghé shop ngay", sections: [ph[3], ph[0], ph[4]].map((p, k) => ({ id: p.id, role: k ? "body" : "hook", text: p.text, shots: [{ start: p.start, end: p.end + 0.08 }], ...(k === 1 ? { callout: "Máy chuẩn Nhật" } : {}) })) }] };
+  e.voices = {};
+  const eOut = await buildReupJob(e, () => {}, () => {});
+  assert.match(probe(eOut[0].file), /1080,1920/);
+  for (const t of [0.5, 3.2, 7.5]) run(["-ss", String(t), "-i", eOut[0].file, "-frames:v", "1", "-vf", "scale=360:-2", `/tmp/reup_e_${t}.jpg`]);
+  // C — two languages over the same pictures: each language has its own no-repeat ledger.
+  const cSrc = await inspectReupSource(talk);
+  const c = base("testc-" + Date.now(), "C", cSrc, { targetSeconds: 0 as never });
+  ids.push(c.id);
+  c.sceneMap = e.sceneMap;
+  const sec = (id: string) => ({ id, role: "body" as const, text: "t", shots: [{ start: 0, end: 8 }] });
+  c.script = { outputs: [{ id: "o1", kind: "long", lang: "en", title: [], sections: [sec("x")] }, { id: "o1_vi", kind: "long", lang: "vi", title: [], sections: [sec("x_alt")] }] };
+  c.voices = { x: voice("x.wav", 6), x_alt: voice("y.wav", 6) };
+  c.settings.targetSeconds = 6;
+  const cOut = await buildReupJob(c, () => {}, () => {});
+  assert.equal(cOut.length, 2);
+  const cLogs: string[] = [];
+  assert.ok(!cLogs.some((l) => /lặp/.test(l)));
+  // F — before/after stage labels from the scene tags.
+  const f = base("testf-" + Date.now(), "F", cSrc, { targetSeconds: 6 as never, titleOverlay: "off" });
+  ids.push(f.id);
+  f.sceneMap = { summary: "", hook: [], ending: "", thumbnails: [], segments: [{ id: "s1", start: 0, end: 10, what: "old", tags: ["before"], value: 3 }, { id: "s2", start: 10, end: 20, what: "new", tags: ["after"], value: 3 }] };
+  f.script = { outputs: [{ id: "o1", kind: "long", lang: "en", title: [], sections: [{ id: "f1", role: "body", text: "t", shots: [{ start: 1, end: 4 }, { start: 12, end: 15 }] }] }] };
+  f.voices = { f1: voice("f.wav", 5.5) };
+  const fOut = await buildReupJob(f, () => {}, () => {});
+  run(["-ss", "1", "-i", fOut[0].file, "-frames:v", "1", "-vf", "scale=640:-2", "/tmp/reup_f_before.jpg"]);
+  run(["-ss", "4.5", "-i", fOut[0].file, "-frames:v", "1", "-vf", "scale=640:-2", "/tmp/reup_f_after.jpg"]);
+  passed++;
+  console.log("ok media 2: folder report (proxy, chapter, captions, cue timing), real talk (karaoke, crop, CTA), bilingual pair, before/after labels");
+  fs.rmSync(tmp, { recursive: true, force: true });
+  for (const id of ids) fs.rmSync(path.join(reupRoot(), id), { recursive: true, force: true });
+};
+media()
+  .then(media2)
+  .then(() => console.log(`\n${passed} checks passed`))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

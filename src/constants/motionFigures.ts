@@ -15,7 +15,7 @@ export const MOTION_FIGURES = {
     horror: { ink: "#1c1a18", inkWidth: 1.2, tone: { col: [60, 70, 80], k: 0.3, sat: 0.45, light: -0.06 }, finish: "vignette", darkCard: true },
   } as Record<string, { ink: string; inkWidth: number; tone: { col: number[]; k: number; sat: number; light: number; split?: { shadow: number[]; highlight: number[]; k: number } }; finish?: string; darkCard?: boolean }>,
   // Bumped whenever the way a page's figures are drawn changes, so pictures captured the old way are drawn again.
-  RENDER_REVISION: 7,
+  RENDER_REVISION: 9,
   // Each frame starts the kit's clock; the kit's own whole-frame finishing (night tint, grain, header) does not run, the
   // scene engine lights and finishes the frame itself.
   KIT_HOOK:
@@ -160,11 +160,21 @@ export const MOTION_FIGURES = {
   var PAIRS = Array.isArray(cfg.pairs) ? cfg.pairs : [];
   var SAFE = 0.93, SMOOTH = 3;
   var PLAN = { SAMPLES: 24, MIN_SHOT: 1.8, LONG_SHOT: 7, PUSH: 0.08, PUSH_SECONDS: 1.2, DRIFT: 0.03, MIN_STEP: 1.18, TRAVEL: 0.15 };
-  var ZMAX = { full: 3, cowboy: 4, medium: 5, mcu: 6 };
+  // The closest a shot may push in (the drawing is vector; lines thin back as the camera comes close, see the kit's LW):
+  // the master frame keeps the lead at about a quarter of the frame, so a chest shot needs about 8-9x.
+  var ZMAX = { full: 10, cowboy: 10, medium: 10, mcu: 10 };
+  // A focal subject that is a thing (a ship, a plane, a building, an object) or a whole group: how much of the frame it
+  // fills at each size (whole with room around it, then an insert, then its detail). A group is always seen whole.
+  var THING_FILL = { full: 0.8, cowboy: 0.86, medium: 0.92, mcu: 1.1 };
+  var frameThing = function (b, size, group) {
+    var fill = group ? THING_FILL.full : THING_FILL[size] || THING_FILL.full;
+    var z = clamp(fill / Math.max(1e-6, b.w, b.h), 1, ZMAX[size] || 1), half = 0.5 / z;
+    return { z: z, x: clamp(b.x + b.w / 2, half, 1 - half), y: clamp(b.y + b.h / 2, half, 1 - half) };
+  };
   // Where each size cuts the lead, as a share of their height from the crown (cartoon figures have big heads, so the cut
   // points are read on the drawn figure, not on a real body): full shows all of them, cowboy to mid-thigh, medium to
   // just below the waist, mcu to mid-chest. HEADROOM is the air above the crown.
-  var CUT = { full: 1, cowboy: 0.76, medium: 0.6, mcu: 0.44 }, HEADROOM = { full: 0.07, cowboy: 0.06, medium: 0.06, mcu: 0.05 }, FOOTROOM = 0.04;
+  var CUT = { full: 1, cowboy: 0.76, medium: 0.6, mcu: 0.44 }, HEADROOM = { full: 0.1, cowboy: 0.06, medium: 0.06, mcu: 0.05 }, FOOTROOM = 0.06;
   var SEQUENCE = { wide: ['wide'], stage: ['full'], medium: ['full', 'cowboy'], cinematic: ['wide', 'medium', 'mcu', 'medium', 'mcu'], close: ['medium', 'mcu'] };
   var min = function (list, key) { return Math.min.apply(null, list.map(function (p) { return p[key]; })); };
   var max = function (list, key) { return Math.max.apply(null, list.map(function (p) { return p[key]; })); };
@@ -180,7 +190,7 @@ export const MOTION_FIGURES = {
     return { z: z, x: clamp(cx, half, 1 - half), y: clamp(viewTop + half, half, 1 - half) };
   };
   var measurePlan = async function (render, self, input) {
-    var marks = window.__motionMarks, kept = Array.isArray(marks) ? marks.length : 0, frames = [];
+    var marks = window.__motionMarks, kept = Array.isArray(marks) ? marks.length : 0, frames = [], thingFrames = [];
     var duration = Number(input.duration) > 0 ? Number(input.duration) : 3, fps = Number(input.fps) > 0 ? Number(input.fps) : 30;
     recording = true;
     // The samples are only read for where people stand: painted through a one-pixel clip, so the pixels cost nothing.
@@ -190,8 +200,15 @@ export const MOTION_FIGURES = {
         seen = [];
         var k = i / PLAN.SAMPLES;
         if (pctx) { proto.save.call(pctx); native.setTransform.call(pctx, 1, 0, 0, 1, 0, 0); proto.beginPath.call(pctx); proto.rect.call(pctx, 0, 0, 1, 1); proto.clip.call(pctx); }
+        var markStart = Array.isArray(window.__motionMarks) ? window.__motionMarks.length : 0;
         try { await render.call(self, Object.assign({}, input, { progress: k, time: k * duration, frame: Math.round(k * duration * fps) })); } finally { if (pctx) proto.restore.call(pctx); }
         frames.push(seen.filter(function (p) { return p.id !== null; }));
+        // The focal thing's box this frame (marks are frame shares), for a scene whose subject is not a person.
+        var mk = Array.isArray(window.__motionMarks) ? window.__motionMarks.slice(markStart) : [];
+        // (the app's bridge records frame shares; a page that records pixels is read in shares too)
+        var cw = pc ? pc.width : 1280, ch = pc ? pc.height : 720;
+        mk = mk.map(function (q) { return q.x > 1.5 || q.y > 1.5 || q.w > 1.5 || q.h > 1.5 ? { id: q.id, x: q.x / cw, y: q.y / ch, w: q.w / cw, h: q.h / ch } : q; });
+        thingFrames.push(mk.filter(function (q) { return FOCUS.indexOf(String(q.id)) >= 0; }).reduce(function (b, q) { return b ? { x: Math.min(b.x, q.x), y: Math.min(b.y, q.y), w: Math.max(b.x + b.w, q.x + q.w) - Math.min(b.x, q.x), h: Math.max(b.y + b.h, q.y + q.h) - Math.min(b.y, q.y) } : { x: q.x, y: q.y, w: q.w, h: q.h }; }, null));
       }
     } finally { recording = false; seen = []; hooks.header = null; if (Array.isArray(marks)) marks.length = kept; }
     // Subjects: one person per mark (a mark shared by several people is a group, never framed closer than its wide shot),
@@ -211,16 +228,29 @@ export const MOTION_FIGURES = {
     var pairedWith = function (a, b) { return PAIRS.some(function (p) { return (norm(p[0]) === norm(a) && norm(p[1]) === norm(b)) || (norm(p[1]) === norm(a) && norm(p[0]) === norm(b)); }); };
     var partner = lead ? ids.slice(1).filter(function (id) { return pairedWith(lead, id); })[0] || ids.slice(1).filter(function (id) { var r = median(height[id]) / median(height[lead]); return r > 0.8 && r < 1.25 && Math.abs(median(ground[id]) - median(ground[lead])) < 0.06; })[0] : null;
     var at = function (n, id) { return frames[n].filter(function (p) { return p.id === id; })[0] || null; };
+    // A subject that is not a person: the plan's focal thing (a ship, a plane, a building, an object), else the largest
+    // group when no one stands alone (a crowd, an army): framed whole by its box.
+    var focusThing = FOCUS.length > 0 && !(FOCUS[0] in size) && thingFrames.some(Boolean);
+    if (focusThing) { lead = null; partner = null; }
+    var groupId = !lead && !focusThing ? Object.keys(group).sort(function (a, b) { return size[b] - size[a]; })[0] || null : null;
+    var boxAt = function (n) {
+      if (focusThing) return thingFrames[n];
+      if (!groupId) return null;
+      var ms = frames[n].filter(function (p) { return p.id === groupId; });
+      if (!ms.length) return null;
+      var x0 = min(ms.map(function (p) { return { v: p.x - p.half }; }), 'v'), x1 = max(ms.map(function (p) { return { v: p.x + p.half }; }), 'v'), y0 = min(ms, 'top'), y1 = max(ms, 'foot');
+      return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    };
     // "Tự động": a map, an establishing or wide scene is seen whole; a close scene close; a lead who travels in medium
     // shots; any other scene is cut like a film.
     var layout = LAYOUT;
     if (layout === 'auto') {
-      var first = lead && frames.map(function (f, n) { return at(n, lead); }).filter(Boolean);
-      var travels = first && first.length > 1 && Math.abs(first[first.length - 1].x - first[0].x) > PLAN.TRAVEL;
+      var first = lead ? frames.map(function (f, n) { return at(n, lead); }).filter(Boolean) : frames.map(function (f, n) { var b = boxAt(n); return b && { x: b.x + b.w / 2 }; }).filter(Boolean);
+      var travels = first.length > 1 && Math.abs(first[first.length - 1].x - first[0].x) > PLAN.TRAVEL;
       var shot = String(INTENT.shot || '').toLowerCase(), kind = String(INTENT.kind || '').toLowerCase();
       layout = kind === 'map' || /establish|wide|overhead|aerial|extreme/.test(shot) ? 'wide' : /close/.test(shot) ? 'close' : travels ? 'medium' : 'cinematic';
     }
-    if (String(INTENT.kind || '').toLowerCase() === 'map' || !lead) layout = 'wide';
+    if (String(INTENT.kind || '').toLowerCase() === 'map' || (!lead && !focusThing && !groupId)) layout = 'wide';
     var cues = (Array.isArray(input.cues) ? input.cues : []).map(Number).filter(function (v) { return isFinite(v) && v > 0.02 && v < 0.98; }).sort(function (a, b) { return a - b; });
     var cuts = [0];
     cues.forEach(function (v) { if ((v - cuts[cuts.length - 1]) * duration >= PLAN.MIN_SHOT && (1 - v) * duration >= PLAN.MIN_SHOT) cuts.push(v); });
@@ -236,6 +266,7 @@ export const MOTION_FIGURES = {
       var shotInfo = { a: a, b: b, size: sz, z: 1, pts: [] };
       if (sz !== 'wide') {
         for (var n = lo; n <= hi; n++) {
+          if (!lead) { var tb = boxAt(n); if (tb) { var ft = frameThing(tb, sz, !!groupId); shotInfo.pts.push({ n: n, x: ft.x, y: ft.y, z: ft.z }); } continue; }
           var ps = [at(n, lead)], q = partner && at(n, partner);
           if (q) ps.push(q);
           ps = ps.filter(Boolean);
@@ -264,8 +295,8 @@ export const MOTION_FIGURES = {
       sh.path = pts.map(function (p, i) { var w = 0, sx = 0, sy = 0; for (var q = -SMOOTH; q <= SMOOTH; q++) { var r = pts[clamp(i + q, 0, pts.length - 1)], g = SMOOTH + 1 - Math.abs(q); w += g; sx += r.x * g; sy += r.y * g; } return { x: sx / w, y: sy / w }; });
     });
     var leadPts = lead ? frames.map(function (f, n) { return at(n, lead); }) : [];
-    var anchor = leadPts.filter(Boolean)[0];
-    return { layout: layout, shots: shots, duration: duration, subjects: [lead, partner].filter(Boolean), lead: anchor ? { x: anchor.x, y: (anchor.top + anchor.foot) / 2 } : null };
+    var anchor = leadPts.filter(Boolean)[0], box0 = !lead ? thingFrames.map(function (b, n) { return boxAt(n); }).filter(Boolean)[0] : null;
+    return { layout: layout, shots: shots, duration: duration, subjects: [lead, partner, focusThing ? FOCUS[0] : groupId].filter(Boolean), lead: anchor ? { x: anchor.x, y: (anchor.top + anchor.foot) / 2 } : box0 ? { x: box0.x + box0.w / 2, y: box0.y + box0.h / 2 } : null };
   };
   var ease = function (s) { s = clamp(s, 0, 1); return s * s * (3 - 2 * s); };
   var shotAt = function (plan, progress) {
@@ -332,7 +363,8 @@ export const MOTION_FIGURES = {
       // Who is speaking now (the narration's speaker spans): the kit opens and closes their mouth.
       hooks.speak = { t: Number(opt.time) || 0, list: Array.isArray(opt.speaking) ? opt.speaking : [] };
       active = true;
-      try { await render.apply(self, args); } finally { active = false; M = null; zoom = 1; }
+      window.__motionKitZoom = zoom;
+      try { await render.apply(self, args); } finally { active = false; M = null; zoom = 1; window.__motionKitZoom = 1; }
       if (!ctx) return;
       native.setTransform.call(ctx, 1, 0, 0, 1, 0, 0);
       finish(ctx, canvas.width, canvas.height);
@@ -507,10 +539,12 @@ export const MOTION_FIGURES = {
   var measure = function (K, fn, o, key) {
     // Measured with the seed it is drawn with: the kit picks variants by seed (a wagon with or without its cover).
     var seed = o.seed != null ? o.seed : 1;
-    var id = [K.style ? K.style() : '', K.proportion ? K.proportion() : '', fn, o.kind || '', o.view || '', o.build || '', o.count || '', o.rider ? 'rider' : '', o.cover === false ? 'bare' : '', o.load || '', fn === 'person' ? [o.cape ? 'cape' : '', o.robe ? 'robe' : '', o.armor || '', o.outfit || '', o.region || ''].join(',') : '', seed].join('|');
+    var id = [K.style ? K.style() : '', K.proportion ? K.proportion() : '', fn, o.kind || '', o.view || '', o.build || '', fn === 'vehicle' ? o.pose || '' : '', o.count || '', o.rider ? 'rider' : '', o.cover === false ? 'bare' : '', o.load || '', fn === 'person' ? [o.cape ? 'cape' : '', o.robe ? 'robe' : '', o.armor || '', o.outfit || '', o.region || ''].join(',') : '', seed].join('|');
     if (sizes[id] !== undefined) return sizes[id];
     var probe = { kind: o.kind, view: o.view, build: o.build, count: o.count, cover: o.cover, load: o.load, x: PAD / 2, y: PAD - 100, seed: seed };
     if (fn === 'person' || fn === 'animal') probe.pose = 'stand';
+    // An aircraft parked or a rocket on its pad has another shape than in flight: measured in its pose.
+    if (fn === 'vehicle' && o.pose) probe.pose = o.pose;
     // A person's width counts what it wears out to the side (a cape, a robe, an outfit's), so the kit fills the scene's box with it.
     if (fn === 'person') ['cape', 'robe', 'armor', 'outfit', 'region'].forEach(function (k) { if (o[k] != null) probe[k] = o[k]; });
     // A big thing (a galleon, an airship) drawn at the probe size can run off the probe canvas: it is measured again

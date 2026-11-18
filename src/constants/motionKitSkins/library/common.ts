@@ -3,6 +3,7 @@
 // prelude below (units of R, ground y = 0, front toward +x) and the active skin's ink, fill and tone.
 import type { MotionCatalogFn } from "../../../types/motionObjectCatalog.js";
 
+const LONG_HULL: Record<string, number> = { ironclad: 2, carrier: 2.2 };
 export type MotionLibraryItem = { id: string; from?: number; to?: number; names?: string[]; fit?: "stretch" | "elastic" | "rigid" | "ground" };
 export type MotionLibraryPart = { part: string; fn: MotionCatalogFn; items: MotionLibraryItem[]; js: string };
 
@@ -38,7 +39,8 @@ export const motionLibraryPart = (items: MotionLibraryItem[], body: string, shad
   ${PRELUDE}
   c.save();
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
-  c.scale(f, 1);
+  // Long hulls whose drawing is far shorter than the real thing are drawn longer (their real length against their height).
+  c.scale(f * (${JSON.stringify(LONG_HULL)}[kind] || 1), 1);
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
   ${shadow ? `K.shadow(c, E(0, 0.03, ${shadow}, 0.1), 0.18, 0.1 * R);` : ""}
   ${helpers}

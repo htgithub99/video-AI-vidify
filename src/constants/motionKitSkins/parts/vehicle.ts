@@ -1,7 +1,12 @@
+import { MOTION_OBJECT_SIZE } from "../../motionObjectSize.js";
 // Vehicles for every skin, side view, drawn flat with skin ink: carts, siege engines, guns,
 // WW1/WW2/modern armour, jeeps, trucks, cars, boats, ferries, sailing ships and propeller planes (29 kinds).
 // Footprints follow the core kit in units of R (ground y = 0, front toward +x). Other kinds and front/back views return null (the scene's own drawing shows them).
 // Supports crew (person or list, seated with pose ride), moving (wheel/track spin), firing (muzzle flash + smoke) and damaged (smoke).
+// Where each kind is, from the library's size table (one source with the scene checks): flying things draw no ground
+// shadow and bob in the air unless parked; water things float.
+const AIR = Object.entries(MOTION_OBJECT_SIZE).filter(([, z]) => z.place === "air").map(([id]) => id);
+const WATER = Object.entries(MOTION_OBJECT_SIZE).filter(([, z]) => z.place === "water").map(([id]) => id);
 export const SKIN_PART_VEHICLE = `(c, o0, K) => {
   const o = Object.assign({}, o0 || {});
   const kind = o.kind;
@@ -9,7 +14,8 @@ export const SKIN_PART_VEHICLE = `(c, o0, K) => {
   if (LIST.indexOf(kind) < 0 || (o.view && o.view !== "side")) return null;
   const st = K.S(), R = K.num(o.r, 30), t = K.num(o.t, K.num(window.__motionKitTime, 0)), w = K.LW(R) * 0.9, ol = st.ol, ink = !!st.hatch;
   const f = K.num(o.facing, 1) < 0 ? -1 : 1, moving = o.moving !== false && o.pose !== "stand";
-  const air = /plane|fighter|bomber/.test(kind), sea = /boat|ship|galleon|warship|longship|trireme|canoe|raft|ferry/.test(kind);
+  // An aircraft parked on the ground stands on its wheels with a shadow; in the air it has neither.
+  const parked = o.pose === "parked", air = ${JSON.stringify(AIR)}.indexOf(kind) >= 0 && !parked, sea = ${JSON.stringify(WATER)}.indexOf(kind) >= 0;
   const night = K.NIGHT(), rnd = (i) => K.rnd(K.num(o.seed, 3), i);
   const spin = (moving ? (o.distance != null ? +o.distance / R : t * 6) : 0);
   const P = (pts) => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x * R, y * R) : p.moveTo(x * R, y * R))); p.closePath(); return p; };
@@ -31,6 +37,7 @@ export const SKIN_PART_VEHICLE = `(c, o0, K) => {
   c.scale(f, 1);
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
   if (!air && !sea) { K.shadow(c, K.ell(0, 0, 2.4 * R, 0.2 * R), 0.24, 0.2 * R); }
+  if (parked && /plane|fighter|bomber/.test(kind)) { [-0.7, 0.9].forEach((x) => { ln([[x, -0.25], [x, -0.12]], 0.7); K.paint(c, K.ell(x * R, -0.1 * R, 0.1 * R, 0.1 * R), "#2e2e32", w * 0.6); }); c.translate(0, -0.08 * R); }
   if (sea) c.translate(0, Math.sin(t * 1.6 + K.num(o.seed, 0)) * 0.05 * R);
   if (air) { c.translate(0, Math.sin(t * 1.3 + K.num(o.seed, 0)) * 0.08 * R); c.rotate(-K.num(o.tilt, 0) * Math.PI / 180); }
   const bob = moving && !air && !sea ? Math.abs(Math.sin(t * 9)) * 0.02 * R : 0;

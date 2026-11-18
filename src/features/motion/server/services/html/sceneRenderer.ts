@@ -17,6 +17,7 @@ import { findNativeChrome } from "../../../../../server/services/nativeProxyBrow
 import { MOTION_GPU_CHROME } from "../../../../../constants/motionGpuChrome.js";
 import { generateMotionHtmlScene } from "./scenePipeline.js";
 import { MOTION_HTML_QUALITY } from "../../../../../constants/motionHtmlQuality.js";
+import { MOTION_REMOTION_RENDER as R } from "../../../../../constants/motionRemotionRender.js";
 import type { MotionRemotionSpec, MotionRemotionTimedScene } from "../../../../../types/motionVisual.js";
 export const refreshMotionHtmlArtifacts = (spec: MotionRemotionSpec): void => {
   const root = path.resolve(getMotionRootDirectory(), RT_MAINTENANCE.HTML_SCENES) + path.sep;
@@ -65,6 +66,8 @@ const chromeGpuRenderer = async (browser: Browser): Promise<string> => {
 };
 export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segments: { start: number; end: number; output: string }[], opts: HtmlRenderOptions): Promise<void> => {
   let completed = 0;
+  // Draft and standard exports take JPEG frames from the page (one fast encode, invisible after x264); finer ones PNG.
+  const format: "jpeg" | "png" = opts.crf >= R.JPEG_MIN_CRF ? "jpeg" : "png";
   const total = segments.reduce((sum, item) => sum + item.end - item.start + 1, 0);
   let shared: Browser | undefined;
   const laneBrowser = async () => {
@@ -105,7 +108,7 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
           RT_MAINTENANCE.F,
           RT_MAINTENANCE.IMAGE2PIPE,
           RT_MAINTENANCE.VCODEC,
-          RT_MAINTENANCE.PNG_2,
+          format === "jpeg" ? R.MJPEG : RT_MAINTENANCE.PNG_2,
           RT_MAINTENANCE.FRAMERATE,
           String(spec.fps),
           RT_MAINTENANCE.I_2,
@@ -155,11 +158,11 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
             current = active.html.hash;
           }
           const subtitle = spec.subtitles.find((item) => frame / spec.fps >= item.start && frame / spec.fps < item.end);
-          const input = motionHtmlFrame(spec, active, frame, opts.width, opts.height, RT_MAINTENANCE.EXPORT);
+          const input = { ...motionHtmlFrame(spec, active, frame, opts.width, opts.height, RT_MAINTENANCE.EXPORT), format, quality: R.JPEG_QUALITY };
           let image = await runtime!.render(input, subtitle?.text, spec.fontFamily);
           // A frame that comes back as one flat colour (a tiny PNG) means the page lost its canvas, not that the scene is
           // empty: reopen the page and draw the frame again instead of writing blank or black video.
-          const blankBytes = (opts.width || spec.width) * (opts.height || spec.height) * MOTION_HTML_QUALITY.BLANK.BYTES_PER_PIXEL;
+          const blankBytes = (opts.width || spec.width) * (opts.height || spec.height) * R.BLANK_BYTES_PER_PIXEL[format];
           for (let retry = 0; retry < MOTION_HTML_QUALITY.BLANK.RETRIES && image.length < blankBytes && !blankScenes.has(active.id); retry++) {
             opts.log?.(MOTION_HTML_QUALITY.BLANK.LOG(active.id, frame, retry + 1));
             await runtime?.close();

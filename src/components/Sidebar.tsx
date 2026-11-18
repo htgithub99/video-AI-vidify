@@ -29,7 +29,7 @@ import {
   SOURCE_TEXT_UNSTYLED,
 } from "../constants/sourceText.js";
 import _ from "lodash";
-import { ChevronLeft, ChevronRight, Clapperboard, Film, FolderKanban, Globe, LayoutDashboard, LucideIcon, Music2, Scissors, Settings, Shuffle, Sparkles, Video, X, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clapperboard, Film, FolderKanban, Globe, LayoutDashboard, LucideIcon, Music2, Repeat, Scissors, Settings, Shuffle, Sparkles, Video, X, Zap } from "lucide-react";
 import { FC, useState } from "react";
 import { AppTab } from "../constants/enums";
 import { PlanType } from "../constants/security";
@@ -92,7 +92,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
   const texts = _.get(SIDEBAR_TEXTS, currentLang, SIDEBAR_TEXTS.vi);
   const hasSelectedProject = Boolean(selectedProjectId);
   const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS, AppTab.PROXY], activeTab as AppTab);
-  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR, AppTab.VIDEO_EXPORT, AppTab.MOTION_VIDEO], activeTab as AppTab);
+  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR, AppTab.VIDEO_EXPORT, AppTab.MOTION_VIDEO, AppTab.REUP_VIDEO], activeTab as AppTab);
   const menuItems: MenuItemConfig[] = [
     { id: AppTab.DASHBOARD, label: texts.DASHBOARD, icon: LayoutDashboard, requiresProject: false },
     { id: AppTab.PROJECTS, label: texts.CONTENT, icon: FolderKanban, requiresProject: false },
@@ -105,6 +105,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
     { id: AppTab.SHORTS_EXTRACTOR, label: texts.SHORTS_EXTRACTOR, icon: Scissors, requiresProject: false },
     { id: AppTab.VIDEO_EXPORT, label: texts.VIDEO_EXPORT, icon: Film, requiresProject: false },
     { id: AppTab.MOTION_VIDEO, label: texts.MOTION_VIDEO, icon: Sparkles, requiresProject: false },
+    { id: AppTab.REUP_VIDEO, label: texts.REUP_VIDEO, icon: Repeat, requiresProject: false },
     { id: AppTab.SETTINGS, label: texts.SETTINGS, icon: Settings, requiresProject: false, hide: _.isEqual(licenseInfo?.plan_type, PlanType.FREE) },
   ];
   const handleItemSelect = (id: AppTab) => {

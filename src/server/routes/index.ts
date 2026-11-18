@@ -10,6 +10,7 @@ import settingsRoutes from "../../features/settings/server/routes/settingsRoutes
 import proxyRoutes from "../../features/proxy/server/routes/proxyRoutes.js";
 import shortsRoutes from "../../features/shorts/server/routes/shortsRoutes.js";
 import videoExportRoutes from "../../features/video-export/server/routes/videoExportRoutes.js";
+import reupRoutes from "../../features/reup/server/routes/reupRoutes.js";
 const router = express.Router();
 router.get(SERVER_ROUTES.PROJECTS, getAllProjects);
 router.get(SERVER_ROUTES.PROJECTS_ID, getProjectById);
@@ -26,4 +27,5 @@ router.use(SOURCE_TEXT_PROXIES, proxyRoutes);
 router.use(SERVER_ROUTES.SHORTS, shortsRoutes);
 router.use(SERVER_ROUTES.VIDEO_EXPORT, videoExportRoutes);
 router.use(SERVER_ROUTES.MOTION_VIDEO, motionVideoRoutes);
+router.use(SERVER_ROUTES.REUP, reupRoutes);
 export default router;

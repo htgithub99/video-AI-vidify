@@ -24,7 +24,7 @@ import { VoiceSelectionDialog, type Voice } from "../../../components/VoiceSelec
 type Draft = { id?: string; name: string; narratorVoiceId: string; roleVoices: Partial<Record<MotionVoiceGroup, string>> };
 type VoiceFilter = (typeof F)[keyof typeof F];
 const emptyDraft = (voiceId: string = MR.MOTION_TEXT_EMPTY): Draft => ({ name: MR.MOTION_TEXT_EMPTY, narratorVoiceId: voiceId, roleVoices: {} });
-export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> = ({ studio, currentLang }) => {
+export const MotionVoicePanel: FC<{ studio: Pick<MotionStudio, "voiceChannels" | "reloadVoiceChannels">; currentLang: Lang }> = ({ studio, currentLang }) => {
   const t = MOTION_VOICE_CHANNEL_TEXT[motionWorkspaceLanguage(currentLang)];
   const [voices, setVoices] = useState<MotionVoicePreset[]>([]);
   const sp = SP.TEXT[motionWorkspaceLanguage(currentLang)];

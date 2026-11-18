@@ -21,7 +21,6 @@ export const MOTION_HTML_QUALITY = {
     "Consecutive scenes never repeat the same shot size with the same subject placement: change the shot size, the camera angle or the side the focal subject stands on. A loose prop (rope, tool, basket, stone) stays at most about half a standing person's height unless the narration makes it the subject. A map labels every place the narration names and draws an arrow for each movement; every arrow starts at a named place and ends at a named place, and the site of a battle or siege carries a battle mark, so a viewer who only sees the map knows who goes from where to where and where the fight is. In a scene with a river, lake or sea, say for every subject whether it is on the near bank, the far bank, a bridge, a boat or in the water.",
   ].join("\n"),
   BLANK: {
-    BYTES_PER_PIXEL: 0.008,
     RETRIES: 2,
     LOG: (id: string, frame: number, attempt: number) => `Xuất video: khung ${frame} của cảnh ${id} ra một màu trơn (trang mất canvas) – mở lại trang và vẽ lại khung này (lần ${attempt}).`,
     KEPT_LOG: (id: string) => `Xuất video: cảnh ${id} vẫn ra khung một màu sau khi mở lại trang – giữ nguyên và ghi cảnh báo.`,

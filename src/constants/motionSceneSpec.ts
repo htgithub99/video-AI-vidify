@@ -3,7 +3,7 @@
 export const MOTION_SCENE_SPEC = {
   VERSION: 1,
   // Bumped whenever the engine draws differently: pictures captured with an older engine are captured again (no AI).
-  ENGINE: 2,
+  ENGINE: 3,
   WIDTH: 1280,
   HEIGHT: 720,
   FNS: ["person", "animal", "vehicle", "building", "prop", "tree", "wall", "bridge", "sticker"] as const,
@@ -17,18 +17,16 @@ export const MOTION_SCENE_SPEC = {
   GROUNDS: ["dirt", "grass", "sand", "snow", "mud", "stone"] as const,
   // Width of one drawing for its height (the engine uses the same numbers to keep things apart).
   ASPECT: { person: 0.42, animal: 1.35, vehicle: 1.7, building: 1.1, prop: 1, tree: 0.7, wall: 1, bridge: 4, sticker: 1, rider: 1.35 } as Record<string, number>,
-  // Real height of a thing against an adult standing next to it (1 = person). A size the AI gives that is off by more
-  // than SIZE_TOLERANCE either way is set to this.
-  SIZE: {
-    person: 1, rider: 1.35, animal: 0.95, horse: 0.95, warHorse: 1, packHorse: 0.9, mule: 0.85, donkey: 0.75, ox: 0.85, cow: 0.8, oxTeam: 0.85, camel: 1.2, elephant: 1.8, dog: 0.4, sheep: 0.45, goat: 0.45, pig: 0.4, chicken: 0.18, wolf: 0.45, bear: 0.75,
-    wagon: 0.85, cart: 0.7, chariot: 0.75, catapult: 1.2, trebuchet: 2.6, rowboat: 0.45, boat: 0.7, canoe: 0.35, raft: 0.3, ferry: 0.75,
-    tent: 1.5, campTent: 1.1, yurt: 1.5, hut: 1.6, house: 2.2, cottage: 2, longhouse: 2.2, barn: 2.6, church: 4, temple: 4, castle: 5, tower: 4.5, windmill: 4,
-    barrel: 0.45, crate: 0.4, sack: 0.35, basket: 0.3, stump: 0.3, log: 0.25, rock: 0.3, boulder: 0.6, campfire: 0.35, bonfirePit: 0.4, well: 0.9, haystack: 0.9, woodpile: 0.5, banner: 1.8, torch: 0.9, table: 0.45, chair: 0.55, bench: 0.3, chest: 0.4, weaponRack: 0.9, spearStand: 1, anvil: 0.45, cauldron: 0.5, cookpot: 0.35, warDrum: 0.5, scarecrow: 1.2, signpost: 1.3,
-    fence: 0.55, palisade: 1.4, wall: 2, gate: 2.2, sandbags: 0.5, barbedWire: 0.5, wagonFort: 0.85, stakeRow: 0.65, earthwork: 0.6, villageCluster: 2.6,
-    oak: 3, pine: 3.2, birch: 2.8, willow: 2.8, palm: 3, bamboo: 2.6, bush: 0.7, dead: 2.4, cypress: 3, fruit: 2.4, cherry: 2.4, banana: 2.2, banyan: 3.4,
-  } as Record<string, number>,
-  SIZE_TOLERANCE: 2.5,
-  SIZE_TOLERANCE_LOOSE: 4,
+  // A rider on a horse against a standing person (hooves to the rider's head).
+  RIDER: 1.35,
+  // A map name's kind: a town is a dot with a boxed name; a river or sea is written along the water.
+  PLACE_TYPES: ["city", "river", "sea", "region", "mountain"] as readonly string[],
+  // How far a thing in the air is (its size follows, see MOTION_AIR_DISTANCE).
+  DISTANCES: ["near", "mid", "far"] as readonly string[],
+  // How far a thing's size may be off the real size table (against a person at its depth) before it is set to it.
+  SIZE_TOLERANCE: 1.6,
+  SIZE_TOLERANCE_SMALL: 1.4,
+  SIZE_TOLERANCE_LOOSE: 2.5,
   LOOSE: ["rock", "boulder", "log", "stump", "bush", "oak", "pine", "birch", "willow", "palm", "bamboo", "dead", "cypress", "fruit", "cherry", "banana", "banyan", "haystack", "woodpile", "campfire", "bonfirePit"] as readonly string[],
   // A thing's size is checked against people within this share of their distance below the horizon.
   DEPTH_BAND: 0.25,
@@ -89,14 +87,15 @@ WHAT MATTERS MOST, in this order:
 4. The plan's details — but only those that read clearly on screen. Leave out what the library cannot show well or what would be too small to see (a cut on a knuckle, a cord in a fist, a frayed string): show the moment with what reads instead (pose, expression, the main object).
 
 OUTPUT: one JSON object only (no prose, no comments).`,
-  FRAME: `THE FRAME
-- 1280 x 720 pixels, x to the right, y downward. No camera moves (the app frames the shot itself).
-- "horizon": the y of the horizon line (usually 230-380). Ground below it, sky above.
+  FRAME: (f: { w: number; h: number; lead: string; establish: boolean; groundLo: number; groundHi: number; sizes: string }): string => `THE FRAME
+- ${f.w} x ${f.h} pixels, x to the right, y downward. No camera moves (the app frames the shot itself).
+- "horizon": the y of the horizon line (usually ${Math.round(f.h * 0.32)}-${Math.round(f.h * 0.53)}). Ground below it, sky above.
 - Every item stands on the ground at its ground point (x, y) = the middle of its feet/base, and "h" is its full height in pixels (a person: feet to top of head; a rider: hooves to the rider's head).
 - Perspective: things further back stand higher (smaller y) and are smaller. Keep h proportional to (y − horizon): an item at y has h ≈ h_ref × (y − horizon) / (y_ref − horizon) compared with any other item.
-- Real sizes against a standing person (1): rider on horse 1.35, horse 0.95, wagon 0.85, tent 1.5, camp tent 1.1, house 2.2, tree 3, barrel 0.45, crate 0.4, sack 0.35, stump 0.3, campfire 0.35, boulder 0.6, palisade 1.4, wall 2.
+- Real sizes against a standing person (height × person, then length × person): ${f.sizes}. Small things held in a hand are small (a whetstone 0.05, a cup 0.07, a dagger 0.18 of a person).
+- Things in the air (birds, aircraft, a thrown stone, arrows) are not on the ground: give "dist": "near"|"mid"|"far" (their size is their real size × the focal person × 0.6 | 0.2 | 0.07) and keys for their way; an aircraft on the ground has "pose": "parked", a rocket on its pad "pose": "launch".
 - Real widths for spacing (from h): standing person ≈ 0.6h (arms and held things), running person ≈ 0.9h, rider on horse ≈ 1.25h, horse ≈ 1.25h, wagon ≈ 1.7h, tent ≈ 2.4h, house ≈ 1.1h, tree ≈ 0.7h. A group needs width ≥ members per row × member width × 0.8 for people, × 0.95 for riders, animals, carts and tents; use more rows (each row ≈ 0.3 × h further back) before squeezing.
-- THE MASTER SHOT: compose every scene as the whole stage seen from far enough back, whatever the plan's shot says (the app's camera cuts the medium and close shots out of it). The focal person stands 220-320 px tall (30-45 % of the frame), whole from head to feet, ground point y 560-680; the setting shows on both sides. Keep named people and the focal subject at least 8 % of the width from the side edges. The plan's shot (wide, medium, close) only tells the camera what to favour.`,
+- THE MASTER SHOT (film shot scale): compose every scene as the whole stage seen from far enough back${f.establish ? ", here an extreme wide shot (establishing)" : ", a wide shot"}, whatever the plan's shot says (the app's camera cuts the closer shots out of it). The focal person stands ${f.lead} tall, whole from head to feet, ground point y ${f.groundLo}-${f.groundHi}; the setting shows all around. A scene inside a room (interior) is a little closer. A focal subject that is a thing (a ship, a plane, an animal, a building) is about a third of the frame along its longest side. Keep named people and the focal subject at least 8 % of the width from the side edges. The plan's shot (wide, medium, close) only tells the camera what to favour.`,
   SCHEMA: `SCHEMA
 {
  "horizon": 300,
@@ -148,16 +147,17 @@ OUTPUT: one JSON object only (no prose, no comments).`,
    "land": [ [[x,y],[x,y],...], ... ],        // coastlines / land outlines as closed point lists (8-30 points each), frame pixels
    "water": [ [[x,y],...], ... ],             // seas or lakes as closed point lists
    "rivers": [ [[x,y],...], ... ],            // rivers as open point lists, source to mouth
-   "places": [ { "name": "<in the video language>", "x": px, "y": px, "big": true|false } ],
+   "places": [ { "name": "<in the video language>", "type": "city"|"river"|"sea"|"region"|"mountain", "x": px, "y": px, "big": true|false } ],
    "forces": [ { "id": "<REQUIRED id>", "side": "<who>", "color": "#rrggbb", "x": px, "y": px, "size": 14-30, "keys": [ { "at": 0-1, "x": px, "y": px } ] } ],
    "arrows": [ { "from": [x,y], "to": [x,y], "color": "#rrggbb", "at": [p0, p1], "curve": -0.4..0.4 } ]
  },
- "items": [],
+ "items": [ map symbols only: { "id", "fn": "building", "kind": "mountain"|"town"|"castle"|"camp", "x", "y", "h": 20-60 } | { "id", "fn": "wall", "kind": "wagonFort"|"wall", "x", "y", "from", "to" } (a fort or wagon ring) | { "id", "fn": "vehicle", "kind": "ship", "x", "y", "h" } | { "id", "fn": "person", "kind": "troops", "x", "y", "h", "color" }; each may have "at": [p0, p1] (appears at p0) and "keys" ],
  "devices": [ ... only "count" or "time" if the plan lists them ... ]
 }
-- Draw the real geography of the region at a readable scale (north up): the coast, the main rivers and the places the plan names, placed where they really are relative to each other. Forces are tokens that move along their keys; arrows grow over their "at" window to show routes.
+- Draw the real geography of the region at a readable scale (north up): the coast, the main rivers and the places the plan names, placed where they really are relative to each other. Forces are tokens that move along their keys; arrows grow over their "at" window to show routes. A force that marches along an arrow has the arrow's colour and starts at its tail: it rides the arrow's head as it grows.
+- A river's or a sea's name is a place of type "river"/"sea" put on the water (it is written along it, no dot); towns and battles are "city" (a dot).
 - Names are the only text: short place names in the video language, nothing else.`,
-  LIBRARY: (lists: { pose: string; expression: string; outfit: string; head: string; hold: string; other: string; animals: string; animalPose: string; vehicles: string; buildings: string; props: string; trees: string; walls: string; scatter: string; effects: string }): string => `LIBRARY (use these words exactly; they are the things of this story's period)
+  LIBRARY: (lists: { pose: string; expression: string; outfit: string; head: string; hold: string; other: string; animals: string; animalPose: string; vehicles: string; buildings: string; props: string; flying: string; trees: string; walls: string; scatter: string; effects: string }): string => `LIBRARY (use these words exactly; they are the things of this story's period)
 person look: pose, expression, outfit, top, pants, boots, cape, robe, armor, hair, hairColor, beard, head, headColor, hold, itemColor, shield, shieldColor, quiver, backpack, bandage, wet, barefoot, build, region, view
   pose: ${lists.pose}
   expression: ${lists.expression}
@@ -171,6 +171,7 @@ animal kinds: ${lists.animals}
 vehicle kinds: ${lists.vehicles}
 building kinds: ${lists.buildings}
 prop kinds: ${lists.props}
+  in flight (anything shot or thrown: give keys from where it leaves to where it goes; it points along its way): ${lists.flying}
 wall kinds (with from/to): ${lists.walls}
 tree kinds: ${lists.trees}
 scatter words: ${lists.scatter}

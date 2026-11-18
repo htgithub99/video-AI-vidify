@@ -33,6 +33,8 @@ export interface MotionSpecItem {
   to?: number;
   // Open stretches of a wall, a palisade or a wagon fort ([x0, x1] pairs).
   gaps?: [number, number][];
+  // A thing in the air: how far it is (near, mid, far), its size follows.
+  dist?: "near" | "mid" | "far";
   z?: number;
   focal?: boolean;
   fade?: [number, number];
@@ -73,7 +75,7 @@ export interface MotionSpecMap {
   land?: [number, number][][];
   water?: [number, number][][];
   rivers?: [number, number][][];
-  places?: { name: string; x: number; y: number; big?: boolean }[];
+  places?: { name: string; type?: "city" | "river" | "sea" | "region" | "mountain"; x: number; y: number; big?: boolean }[];
   forces?: { id: string; side: string; color?: string; x: number; y: number; keys?: { at: number; x: number; y: number }[]; size?: number }[];
   arrows?: { from: [number, number]; to: [number, number]; color?: string; at?: [number, number]; curve?: number }[];
 }
@@ -81,6 +83,8 @@ export interface MotionSceneSpec {
   version: 1;
   // Frame size in pixels when it is not 1280×720 (a portrait thumbnail).
   frame?: [number, number];
+  // The master frame's target height of the focal person, as a share of the measured frame side (motionMasterTarget).
+  master?: number;
   horizon: number;
   time: "day" | "dawn" | "dusk" | "night";
   ground: "dirt" | "grass" | "sand" | "snow" | "mud" | "stone";

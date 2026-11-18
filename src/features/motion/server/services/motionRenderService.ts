@@ -19,7 +19,7 @@ import { isRemotionSpec } from "../../../../lib/motionVisual.js";
 import type { MotionRenderSpec } from "../../../../types/motionVisual.js";
 import { MOTION_VISUAL as VISUAL } from "../../../../constants/motionVisual.js";
 import { motionCachedSegments, motionRemotionSegments, motionSegmentFile, pruneMotionSegments, renderMotionSegmentsToCache } from "./motionRemotionSegmentCache.js";
-import { waitMotionSegmentPrerender } from "./motionSegmentPrerender.js";
+import { takeOverMotionSegmentPrerender } from "./motionSegmentPrerender.js";
 import { validateRemotionSpec } from "../../../../lib/motionRemotion.js";
 import { motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
 import { motionHtmlRenderLanes, motionRemotionRenderConcurrency, motionRemotionRenderLanes } from "../../../../lib/motionRemotionPerformance.js";
@@ -469,7 +469,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       job.status = MotionJobStatus.RENDERING;
       job.stage = VISUAL.LOG_RENDER;
       pushLog(job, VISUAL.LOG_RENDER);
-      pushLog(job, MOTION_REMOTION_RENDER.START(job.workers, totalFrames));
+      pushLog(job, MOTION_REMOTION_RENDER.START(totalFrames));
       if (options.requireAudio) {
         const speech = options.audioId && path.join(getMotionAudioDirectory(), path.basename(options.audioId));
         if (!speech || !fs.existsSync(speech)) throw new Error(PRODUCTION.AUDIO_REQUIRED);
@@ -480,7 +480,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       const encoding = { width, height, crf: preset.crf };
       const segments = motionRemotionSegments(spec, encoding);
       pruneMotionSegments();
-      await waitMotionSegmentPrerender(options.editorialSessionId, signal);
+      if (await takeOverMotionSegmentPrerender(options.editorialSessionId)) pushLog(job, MOTION_REMOTION_RENDER.TOOK_OVER);
       const cached = await motionCachedSegments(spec, segments, encoding, signal);
       const fileOf = motionSegmentFile;
       const frames = (segment: (typeof segments)[number]) => segment.end - segment.start + 1;
@@ -508,6 +508,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
         signal,
         lanes: plan,
         log: (line) => pushLog(job, line),
+        onSegment: (segment) => pushLog(job, MOTION_REMOTION_RENDER.SEGMENT_DONE(segment.index + 1, segment.end - segment.start + 1, (Date.now() - renderStarted) / 1000)),
         onFrames: (value) => {
           rendered = value;
           report();

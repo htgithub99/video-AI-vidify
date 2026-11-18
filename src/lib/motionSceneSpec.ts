@@ -2,6 +2,9 @@
 // covering the subject, words the library does not have), and turn it into the scene page the engine draws. Nothing here
 // adds anything the AI did not ask for; what cannot be shown right is left out, with a warning.
 import { MOTION_SCENE_SPEC as S, MOTION_SCENE_SPEC_PROMPT as P } from "../constants/motionSceneSpec.js";
+import { MOTION_AIR_DISTANCE, MOTION_OBJECT_SIZE as Z, motionObjectPlace } from "../constants/motionObjectSize.js";
+import { MOTION_MASTER as M } from "../constants/motionMasterScale.js";
+import { motionMasterBase, motionMasterTarget } from "./motionMasterScale.js";
 import { MOTION_FIGURE_VOCAB as V } from "../constants/motionFigureVocabulary.js";
 import { MOTION_SCENE_BLUEPRINT as B } from "../constants/motionSceneBlueprint.js";
 import { motionCatalogEntryOf, motionCatalogGap, motionCatalogKinds, motionCatalogWord, type MotionCatalogGap } from "./motionObjectCatalog.js";
@@ -9,7 +12,7 @@ import { motionSceneBlueprint, motionSceneInteractPairs, type MotionCastLooks } 
 import { motionHtmlMarkId, motionHtmlRequired } from "./motionHtmlQuality.js";
 import type { MotionSceneSpec, MotionSpecDevice, MotionSpecItem, MotionSpecKey } from "../types/motionSceneSpec.js";
 
-type Ctx = { year?: number; template?: string; map?: boolean; castLooks?: MotionCastLooks; header?: string; gaps?: MotionCatalogGap[] };
+type Ctx = { year?: number; template?: string; map?: boolean; castLooks?: MotionCastLooks; header?: string; gaps?: MotionCatalogGap[]; master?: number };
 const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(+v) ? +v : undefined);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const oneOf = <T extends string>(list: readonly T[], v: unknown, fallback: T): T => (list as readonly string[]).includes(String(v)) ? (v as T) : fallback;
@@ -30,18 +33,26 @@ const libraryLists = (year?: number) => {
     head: VOCAB.head.join(" "),
     hold: VOCAB.hold.join(" "),
     other,
-    animals: list(kinds.animal),
+    animals: sized(list(kinds.animal)),
     animalPose: (V.ANIMAL.values as Record<string, readonly string[]>).pose.join(" "),
-    vehicles: list(kinds.vehicle),
-    buildings: list(kinds.building),
+    vehicles: sized(list(kinds.vehicle)),
+    buildings: sized(list(kinds.building)),
     props: list(kinds.prop),
+    flying: list(kinds.prop).split(" ").filter((id) => Z[id]?.place === "air").join(" "),
     trees: list(kinds.tree),
-    walls: [...new Set([...list(kinds.wall).split(" "), "wagonFort"])].filter(Boolean).join(" "),
+    walls: sized([...new Set([...list(kinds.wall).split(" "), "wagonFort"])].filter(Boolean).join(" ")),
     scatter: S.SCATTER.join(" "),
     effects: S.EFFECTS.join(" "),
   };
 };
-export const motionSceneSpecPrompt = (scene: { sceneTemplate?: string; shot?: string; kind?: string; devices?: string[]; drawingNote?: string }, ctx: { year?: number; map?: boolean; cast?: string; task?: string; frame?: [number, number]; language?: string }): string =>
+// A library list with each thing's real size against a standing person (height×length), for the big things.
+const sized = (ids: string) => ids.split(" ").filter(Boolean).map((id) => (Z[id] ? `${id}(${n2(Z[id].h)}×${n2(Z[id].l)})` : id)).join(" ");
+const n2 = (v: number) => (v >= 10 ? String(Math.round(v)) : String(+v.toFixed(2)));
+const frameLine = (scene: { shot?: string; kind?: string }, ctx: { frame?: [number, number]; genre?: string; profile?: string; year?: number }): string => {
+  const [w, h] = ctx.frame || [S.WIDTH, S.HEIGHT], m = motionMasterTarget({ frame: [w, h], shot: scene.shot, kind: scene.kind, genre: ctx.genre, profile: ctx.profile });
+  return P.FRAME({ w, h, lead: `${m.px.lo}-${m.px.hi} px (target ${m.px.target} px)`, establish: m.shot === "ews", groundLo: Math.round(h * 0.74), groundHi: Math.round(h * 0.9), sizes: "person 1×0.6, rider on a horse 1.35×1.4; the size of each animal, vehicle, building and wall is next to its name in the LIBRARY" });
+};
+export const motionSceneSpecPrompt = (scene: { sceneTemplate?: string; shot?: string; kind?: string; devices?: string[]; drawingNote?: string }, ctx: { year?: number; map?: boolean; cast?: string; task?: string; frame?: [number, number]; language?: string; genre?: string; profile?: string }): string =>
   [
     ctx.task || P.ROLE,
     P.YEAR(ctx.year),
@@ -50,7 +61,7 @@ export const motionSceneSpecPrompt = (scene: { sceneTemplate?: string; shot?: st
     ctx.cast,
     scene.sceneTemplate ? P.PLAN + scene.sceneTemplate : undefined,
     scene.drawingNote ? P.NOTE + scene.drawingNote : undefined,
-    ctx.frame ? P.FRAME.replace("1280 x 720 pixels", `${ctx.frame[0]} x ${ctx.frame[1]} pixels`) : P.FRAME,
+    frameLine(scene, ctx),
     ctx.map ? P.MAP : P.SCHEMA,
     ctx.map ? undefined : P.DEVICES,
     ctx.map ? undefined : P.LIBRARY(libraryLists(ctx.year)),
@@ -75,6 +86,9 @@ const itemOf = (raw: unknown, index: number): MotionSpecItem | undefined => {
   for (const k of ["x", "y", "h", "w", "facing", "from", "to", "z"] as const) { const v = num(raw[k]); if (v != null) item[k] = v; }
   if (Array.isArray(raw.gaps)) { const gaps = raw.gaps.map((g) => (Array.isArray(g) ? [num(g[0]), num(g[1])] : [])).filter((g): g is [number, number] => g.length === 2 && g[0] != null && g[1] != null && g[1] > g[0]); if (gaps.length) item.gaps = gaps.slice(0, 6); }
   if (isObj(raw.look)) item.look = { ...raw.look };
+  // A thing in the air: how far it is (its size follows); an aircraft parked or a rocket on its pad (a pose).
+  if (S.DISTANCES.includes(String(raw.dist))) item.dist = String(raw.dist) as MotionSpecItem["dist"];
+  if (typeof raw.pose === "string" && fn !== "person" && !item.look?.pose) item.look = { ...(item.look || {}), pose: raw.pose };
   if (Array.isArray(raw.keys)) item.keys = raw.keys.map(keyOf).filter((k): k is MotionSpecKey => !!k).sort((a, b) => a.at - b.at);
   if (isObj(raw.group) && num(raw.group.count)! > 1) item.group = { count: Math.round(clamp(num(raw.group.count)!, 2, 40)), width: num(raw.group.width), rows: num(raw.group.rows), depth: num(raw.group.depth) };
   if (raw.mount != null) item.mount = String(raw.mount);
@@ -137,7 +151,7 @@ export const motionSceneSpecRead = (raw: unknown, frame?: [number, number]): Mot
       land: points(mapRaw.land),
       water: points(mapRaw.water),
       rivers: points(mapRaw.rivers),
-      places: (Array.isArray(mapRaw.places) ? mapRaw.places : []).filter(isObj).filter((p) => num(p.x) != null && num(p.y) != null && p.name).map((p) => ({ name: String(p.name).slice(0, 40), x: num(p.x)!, y: num(p.y)!, big: p.big === true })),
+      places: (Array.isArray(mapRaw.places) ? mapRaw.places : []).filter(isObj).filter((p) => num(p.x) != null && num(p.y) != null && p.name).map((p) => ({ name: String(p.name).slice(0, 40), ...(S.PLACE_TYPES.includes(String(p.type)) ? { type: String(p.type) as never } : {}), x: num(p.x)!, y: num(p.y)!, big: p.big === true })),
       forces: (Array.isArray(mapRaw.forces) ? mapRaw.forces : []).filter(isObj).filter((f) => num(f.x) != null && num(f.y) != null).map((f, i) => ({ id: idOf(f.id) || `force_${i + 1}`, side: String(f.side || ""), color: typeof f.color === "string" ? f.color : undefined, x: num(f.x)!, y: num(f.y)!, size: num(f.size), keys: Array.isArray(f.keys) ? f.keys.filter(isObj).filter((k) => num(k.at) != null && num(k.x) != null && num(k.y) != null).map((k) => ({ at: clamp(num(k.at)!, 0, 1), x: num(k.x)!, y: num(k.y)! })) : undefined })),
       arrows: (Array.isArray(mapRaw.arrows) ? mapRaw.arrows : []).filter(isObj).filter((a) => points([[a.from, a.to]])[0]?.length === 2).map((a) => ({ from: points([[a.from, a.to]])[0][0], to: points([[a.from, a.to]])[0][1], color: typeof a.color === "string" ? a.color : undefined, at: range(a.at), curve: num(a.curve) })),
     };
@@ -147,7 +161,6 @@ export const motionSceneSpecRead = (raw: unknown, frame?: [number, number]): Mot
 
 // ---------- fixing ----------
 const aspectOf = (it: MotionSpecItem): number => (it.mount ? S.ASPECT.rider : S.ASPECT[it.fn] ?? 1);
-const sizeKey = (it: MotionSpecItem): string | undefined => (it.fn === "person" ? (it.mount ? "rider" : "person") : it.kind && S.SIZE[it.kind] != null ? it.kind : it.fn === "animal" ? "animal" : undefined);
 const IDENTITY = ["outfit", "top", "trim", "pants", "boots", "hair", "hairColor", "beard", "skin", "build", "region", "cape", "robe", "armor", "coat", "tunic", "sleeve", "belt", "wrap"];
 // The state of an item at progress p (numbers glide between keys as the engine does; enough for checks).
 const at = (it: MotionSpecItem, p: number): { x: number; y: number; h: number } => {
@@ -241,28 +254,52 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
     if (it.y == null && it.keys?.[0]?.y == null) it.y = H0 + (H - H0) * 0.6;
     if (it.h == null || !(it.h > 0)) it.h = (H - H0) * 0.4;
     const low = H0 + 2;
-    if ((it.y ?? low) < low && !spec.interior) { it.y = low + 4; warn.push(S.WARN.GROUNDED(it.id)); }
-    it.keys?.forEach((k) => { if (k.y != null && k.y < low && !spec.interior) k.y = low + 4; });
+    // What flies stays in the air: a thing on its way through the sky (an arrow, a thrown stone: keys that move it) or a
+    // thing that flies by nature (a bird, an airship).
+    const flies = (it.keys || []).filter((k) => k.y != null || k.x != null).length >= 2 || motionObjectPlace(it.kind, it.look?.pose as string | undefined) === "air";
+    if (!flies && (it.y ?? low) < low && !spec.interior) { it.y = low + 4; warn.push(S.WARN.GROUNDED(it.id)); }
+    if (!flies) it.keys?.forEach((k) => { if (k.y != null && k.y < low && !spec.interior) k.y = low + 4; });
     if (it.on && (!ids.has(it.on) || it.on === it.id)) { delete it.on; warn.push(S.WARN.SEAT(it.id)); }
   }
-  // Sizes: against the people standing at about the same depth (the AI's own perspective), with the real size table.
-  // Only what is clearly out of proportion is changed; things that vary in nature (rocks, logs, trees) get more room.
-  const people = spec.items.filter((it) => it.fn === "person" && (it.h ?? 0) > 0 && (it.y ?? 0) > H0 + 4).map((it) => ({ y: it.y!, h: it.h! / (it.mount ? S.SIZE.rider : 1) }));
+  // Sizes: against a person at the same depth (the AI's own perspective: the people nearest in depth, else the master
+  // frame's person on the ground band) and the real size table of the library. Only what is clearly out of proportion
+  // is changed; things that vary in nature get more room, small things held in a hand less. A thing in the air is sized
+  // by its distance against the focal person, never by its height on the screen.
+  const people = spec.items.filter((it) => it.fn === "person" && (it.h ?? 0) > 0 && (it.y ?? 0) > H0 + 4).map((it) => ({ y: it.y!, h: it.h! / (it.mount ? S.RIDER : 1) }));
+  const masterH = (ctx.master ?? M.GENRE.default) * motionMasterBase([W, H]), groundY = H0 + (H - H0) * 0.82;
+  const focalThing = spec.items.find((it) => it.focal && it.fn !== "person" && it.kind && Z[it.kind] && (it.h ?? 0) > 0 && (it.y ?? 0) > H0 + 4);
+  const thingRef = focalThing ? { y: focalThing.y!, person: focalThing.h! / Z[focalThing.kind!].h } : undefined;
   const personAt = (y: number): number | undefined => {
     const near = people.filter((q) => Math.abs(q.y - y) <= Math.max(24, (q.y - H0) * S.DEPTH_BAND)).sort((a, b) => Math.abs(a.y - y) - Math.abs(b.y - y))[0];
-    return near ? (near.h * (y - H0)) / (near.y - H0) : undefined;
+    if (near) return (near.h * (y - H0)) / (near.y - H0);
+    if (people.length || y <= H0 + 4) return undefined;
+    // No one in the scene: the focal thing (a ship, a plane) sets the scale (a person at its depth, from its real size),
+    // else the master frame's person on the ground band.
+    if (thingRef) return (thingRef.person * (y - H0)) / (thingRef.y - H0);
+    return (masterH * (y - H0)) / (groundY - H0);
   };
+  const leadH = Math.max(0, ...people.map((q) => q.h)) || masterH;
   for (const it of spec.items) {
-    if (it.fn === "sticker" || it.heldBy || it.fn === "person" || spec.interior) continue;
-    const key = sizeKey(it);
-    const y = it.y ?? it.keys?.[0]?.y;
-    if (!key || y == null || y <= H0 + 4) continue;
-    const person = personAt(y);
-    if (!person) continue;
-    const want = person * S.SIZE[key], tol = S.LOOSE.includes(key) ? S.SIZE_TOLERANCE_LOOSE : S.SIZE_TOLERANCE;
+    if (it.fn === "sticker" || it.heldBy || it.fn === "person" || spec.interior || !it.kind || !Z[it.kind] || it === focalThing) continue;
+    const real = Z[it.kind], place = motionObjectPlace(it.kind, it.look?.pose as string | undefined);
+    let want: number | undefined;
+    if (place === "air") want = it.dist ? leadH * real.h * MOTION_AIR_DISTANCE[it.dist] : undefined;
+    else if (place === "held") {
+      // A small thing of the hand stands where a hand is (not on the ground): sized against the person closest to it.
+      const x = it.x ?? it.keys?.[0]?.x ?? 0, y = it.y ?? it.keys?.[0]?.y ?? 0;
+      const by = spec.items.filter((o) => o.fn === "person" && (o.h ?? 0) > 0 && o.x != null).sort((a, b) => Math.hypot(a.x! - x, (a.y ?? 0) - y) - Math.hypot(b.x! - x, (b.y ?? 0) - y))[0];
+      want = by ? (by.h! / (by.mount ? S.RIDER : 1)) * real.h : undefined;
+    } else {
+      const y = it.y ?? it.keys?.[0]?.y;
+      const person = y != null && y > H0 + 4 ? personAt(y) : undefined;
+      want = person ? person * real.h : undefined;
+    }
+    if (!want) continue;
+    const tol = S.LOOSE.includes(it.kind) || it.fn === "tree" ? S.SIZE_TOLERANCE_LOOSE : real.place === "held" ? S.SIZE_TOLERANCE_SMALL : S.SIZE_TOLERANCE;
     const k = (it.h ?? 0) / want;
     if (k > tol || k < 1 / tol) { warn.push(S.WARN.RESIZED(it.id, it.h ?? 0, want)); it.h = want; it.keys?.forEach((kk) => { if (kk.h != null) kk.h = want; }); }
   }
+  if (ctx.master) spec.master = ctx.master;
   // One focal subject.
   const required = ctx.template ? motionHtmlRequired(ctx.template) : [];
   let focal = spec.items.filter((it) => it.focal);

@@ -78,13 +78,26 @@ const body = `
 
 export const MOTION_LIBRARY_WAR: MotionLibraryPart = { part: "lib_war", fn: "prop", items, js: motionLibraryPart(items, body, 1, helpers) };
 
-// Things in flight (no ground shadow): an arrow with burning tow at its head; a volley is many arrows in flight, drawn
-// slanting along the box.
+// Things in flight (no ground shadow), drawn lying nose toward +x: the scene turns them along their path. An arrow, a
+// crossbow bolt, a thrown spear, a cannon shot or a sling/catapult stone; an arrow with burning tow at its head; a volley
+// is many arrows in flight, drawn slanting along the box. ("arrows" are arrows stuck in the ground, not in flight.)
 const flying = [
+  { id: "arrow", to: 1900, names: ["flyingArrow", "shotArrow", "arrowShot", "arrowInFlight"] },
+  { id: "bolt", from: -400, to: 1650, names: ["crossbowBolt", "quarrel", "flyingBolt", "bolts"] },
+  { id: "thrownSpear", to: 1700, names: ["thrownJavelin", "flyingJavelin", "flyingSpear", "spearThrown", "javelinThrown"] },
+  { id: "cannonShot", from: 1350, to: 1900, names: ["flyingCannonball", "cannonballInFlight", "cannonShell"] },
+  { id: "slingStone", to: 1700, names: ["thrownStone", "flyingStone", "catapultStone", "flyingRock"] },
   { id: "fireArrow", to: 1900, names: ["flamingArrow", "burningArrow", "fireArrows"] },
   { id: "arrowVolley", to: 1900, names: ["volley", "arrowRain", "arrowsInFlight", "arrowStorm", "arrowShower"] },
 ];
 const flyingBody = `
-    case "fireArrow": { c.save(); c.rotate(-0.12); beam([[-1.6, -0.5], [1.2, -0.5]], 0.05, wood); fl(P([[1.2, -0.62], [1.6, -0.5], [1.2, -0.38]]), iron); [[-1.6, -0.62], [-1.6, -0.38]].forEach(([x, y]) => fl(P([[x, y], [x + 0.45, -0.5], [x + 0.15, y]]), red, { hatch: false })); glow(1.25, -0.5, 1.0); flame(1.15, -0.35, 0.45); c.restore(); break; }
+    case "arrow": beam([[-1.6, -0.5], [1.2, -0.5]], 0.05, wood); fl(P([[1.2, -0.62], [1.6, -0.5], [1.2, -0.38]]), iron); [[-1.6, -0.62], [-1.6, -0.38]].forEach(([x, y]) => fl(P([[x, y], [x + 0.45, -0.5], [x + 0.15, y]]), cloth, { hatch: false })); if (moving) streak(-1.7, -0.5, 1.1, 2); break;
+    case "bolt": beam([[-0.95, -0.5], [0.7, -0.5]], 0.08, wood); fl(P([[0.7, -0.66], [1.15, -0.5], [0.7, -0.34]]), iron); [[-0.95, -0.62], [-0.95, -0.38]].forEach(([x, y]) => fl(P([[x, y], [x + 0.3, -0.5], [x + 0.08, y]]), dark, { hatch: false })); if (moving) streak(-1.05, -0.5, 1.0, 2); break;
+    case "thrownSpear": beam([[-2.4, -0.5], [1.7, -0.5]], 0.08, wood); fl(P([[1.6, -0.62], [1.95, -0.64], [2.45, -0.5], [1.95, -0.36], [1.6, -0.38]]), steel); if (moving) streak(-2.5, -0.5, 1.2, 2); break;
+    case "cannonShot": fl(E(0.6, -0.5, 0.42, 0.42), iron); if (moving) streak(0.1, -0.5, 2.2, 3); break;
+    case "slingStone": fl(S([[0.2, -0.85], [0.75, -0.8], [0.95, -0.45], [0.7, -0.15], [0.2, -0.18], [0.0, -0.5]]), stone); if (moving) streak(-0.05, -0.5, 1.8, 3); break;
+    case "fireArrow": { c.save(); beam([[-1.6, -0.5], [1.2, -0.5]], 0.05, wood); fl(P([[1.2, -0.62], [1.6, -0.5], [1.2, -0.38]]), iron); [[-1.6, -0.62], [-1.6, -0.38]].forEach(([x, y]) => fl(P([[x, y], [x + 0.45, -0.5], [x + 0.15, y]]), red, { hatch: false })); glow(1.25, -0.5, 1.0); flame(1.15, -0.35, 0.45); c.restore(); break; }
     case "arrowVolley": for (let i = 0; i < 14; i++) { const x = -2.2 + (i % 7) * 0.7 + rnd(i) * 0.25, y = -0.6 - Math.floor(i / 7) * 0.9 - rnd(i + 9) * 0.5; c.save(); c.translate(x * R, y * R); c.rotate(0.45); beam([[-0.7, 0], [0.5, 0]], 0.03, wood); fl(P([[0.5, -0.07], [0.72, 0], [0.5, 0.07]]), iron); fl(P([[-0.7, -0.08], [-0.45, 0], [-0.7, 0.08]]), cloth, { hatch: false }); c.restore(); } break;`;
-export const MOTION_LIBRARY_WAR_FLYING: MotionLibraryPart = { part: "lib_warFlying", fn: "prop", items: flying, js: motionLibraryPart(flying, flyingBody, 0) };
+// Speed lines behind a thing in flight: from x back by len, n lines around y.
+const flyingHelpers = `const streak = (x, y, len, n) => { for (let i = 0; i < n; i++) { const dy = (i - (n - 1) / 2) * 0.22; c.save(); c.globalAlpha *= 0.55; ln([[x, y + dy], [x - len * (1 - Math.abs(dy)), y + dy]], 0.35); c.restore(); } };`;
+export const MOTION_LIBRARY_WAR_FLYING: MotionLibraryPart = { part: "lib_warFlying", fn: "prop", items: flying, js: motionLibraryPart(flying, flyingBody, 0, flyingHelpers) };

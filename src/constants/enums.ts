@@ -121,6 +121,7 @@ export enum AppTab {
   SHORTS_EXTRACTOR = "shorts-extractor",
   VIDEO_EXPORT = "video-export",
   MOTION_VIDEO = "motion-video",
+  REUP_VIDEO = "reup-video",
   SETTINGS = "settings",
   DASHBOARD = "dashboard",
 }

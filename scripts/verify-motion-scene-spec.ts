@@ -2,6 +2,7 @@
 // sizes, seats, covering things, insets, haze, one focal thing) and drawn by the scene engine with the kit. The engine is
 // checked on real pages: every item is drawn and marked inside the frame, crowds, riders, walls, devices, maps and a
 // thumbnail headline paint, and nothing throws.
+import { MOTION_OBJECT_SIZE as Z } from "../src/constants/motionObjectSize.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -49,7 +50,7 @@ const person = (id: string, x: number, extra: Record<string, unknown> = {}) => (
 {
   const { spec, warnings } = fix({ items: [person("you", 300, { focal: true }), { id: "barrel", fn: "prop", kind: "barrel", x: 700, y: 620, h: 500 }, { id: "horse", fn: "animal", kind: "horse", x: 1000, y: 620, h: 230 }] });
   const barrel = spec.items.find((item) => item.id === "barrel")!;
-  assert.ok(Math.abs(barrel.h! - 220 * S.SIZE.barrel) < 1, "a barrel taller than the man beside it is cut to a barrel's size: " + barrel.h);
+  assert.ok(Math.abs(barrel.h! - 220 * Z.barrel.h) < 1, "a barrel taller than the man beside it is cut to a barrel's size: " + barrel.h);
   assert.equal(spec.items.find((item) => item.id === "horse")!.h, 230, "a reasonable size is kept");
   assert.ok(warnings.some((line) => line.includes("barrel")));
 }
@@ -79,6 +80,31 @@ const person = (id: string, x: number, extra: Record<string, unknown> = {}) => (
   const split = motionSceneSpecSplit(['"miklos" che "whetstone" – đã dời sang bên', 'Bỏ "gadget": kho không có "x" (cũng không có đồ gần đúng cùng thời đại)', "Cảnh thiếu: banner", 'Bỏ "far": che "gap" mà không dời được', 'Bỏ ô phóng to vào "cart": thứ được phóng không rõ']);
   assert.equal(split.issues.length, 3, "dropped things and missing ones are what a scene lacks");
   assert.equal(split.notes.length, 2, "a repair is a note");
+}
+// Sizes from the library's size table, for every kind of scene: a whetstone the size of a tray is cut to a hand's
+// size; a fighter hanging still in the sky stays there and is sized by its distance; a scene with no person is sized
+// against the master frame's person.
+{
+  const spec = { version: 1, horizon: 300, time: "day", ground: "dirt", items: [person("you", 400, { focal: true }), { id: "whetstone", fn: "prop", kind: "whetstone", x: 700, y: 620, h: 42 }, { id: "jet", fn: "vehicle", kind: "fighter", x: 900, y: 120, h: 300, dist: "far" }, { id: "heli", fn: "vehicle", kind: "helicopter", x: 300, y: 150, h: 80 }] } as unknown as MotionSceneSpec;
+  motionSceneSpecFix(spec, { year: 1950, gaps: [] });
+  const at = (id: string) => spec.items.find((item) => item.id === id)!;
+  assert.ok(at("whetstone").h! < 20, "a whetstone is a hand's size: " + at("whetstone").h);
+  assert.equal(at("jet").y, 120, "an aircraft in the sky is never put down");
+  assert.ok(Math.abs(at("jet").h! - 220 * Z.fighter.h * 0.07) < 1, "a far fighter is sized by its distance: " + at("jet").h);
+  assert.equal(at("heli").y, 150, "a helicopter hovering still stays in the air");
+  const empty = fix({ items: [{ id: "ship", fn: "vehicle", kind: "rowboat", x: 640, y: 600, h: 400 }] } as never).spec;
+  assert.ok(empty.items[0].h! < 200, "with no person, the master frame's person sets the scale: " + empty.items[0].h);
+}
+{
+  const { motionMasterTarget } = await import("../src/lib/motionMasterScale.js");
+  const wide = motionMasterTarget({ frame: [1280, 720], shot: "wide" }), est = motionMasterTarget({ frame: [1280, 720], shot: "establishing" });
+  assert.deepEqual([wide.shot, wide.target], ["ws", 0.25], "a wide master: the person a quarter of the frame");
+  assert.ok(est.target <= 0.14 && est.shot === "ews", "an establishing master: an eighth");
+  assert.equal(motionMasterTarget({ frame: [1280, 720], genre: "Kinh dị dân gian" }).target, 0.22, "horror leaves room around the figure");
+  assert.equal(motionMasterTarget({ frame: [1280, 720], genre: "kids story" }).target, 0.27);
+  assert.equal(motionMasterTarget({ frame: [720, 1280] }).px.target, Math.round(0.25 * 720 * 1.6), "a portrait frame measures against its width");
+  const text = motionSceneSpecPrompt({ sceneTemplate: "5. REQUIRED: you (focal): a soldier", shot: "wide" }, { year: 1241, frame: [1280, 720] });
+  assert.ok(text.includes("158-202 px (target 180 px)") && /wagon\(0\.85×2\.4\)/.test(text) && text.includes('"dist"'), "the prompt gives the master size, the real sizes and the air distances");
 }
 // A big thing in front of the focal subject goes behind it, aside or is left out; thick haze is thinned.
 {
@@ -118,7 +144,7 @@ const show = async (spec: MotionSceneSpec, name: string, progress = 0.5, profile
     const d = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
     const colours = new Set<number>();
     for (let i = 0; i < d.length; i += 4 * 211) colours.add((d[i] >> 4) * 256 + (d[i + 1] >> 4) * 16 + (d[i + 2] >> 4));
-    return { marks: w.__motionMarks as { id: string; x: number; y: number; w: number; h: number }[], colours: colours.size, width: canvas.width, height: canvas.height };
+    return { marks: w.__motionMarks as { id: string; x: number; y: number; w: number; h: number }[], colours: colours.size, width: canvas.width, height: canvas.height, corner: Array.from(canvas.getContext("2d")!.getImageData(4, 4, 1, 1).data.slice(0, 3)) };
   }, [progress, [spec.frame?.[0] || 1280, spec.frame?.[1] || 720]] as [number, [number, number]]);
   await tab.screenshot({ path: path.join(out, name + ".png") });
   await tab.close();
@@ -196,7 +222,7 @@ try {
   await tab.close();
   assert.ok(!staged.ids.includes("gap") && !staged.ids.includes("fg_wheel"), "an idea marker and junk at the frame's edge are left out");
   assert.ok(staged.items.fg_rock.h <= 720 * 0.18 + 0.5, "a framing rock is at most 18 % of the frame");
-  assert.ok(staged.master > 0.5 && staged.master < 0.65 && Math.abs(staged.items.you.h - 288) < 2, "the scene is seen from further back: the lead 40 % of the frame (" + staged.master + ")");
+  assert.ok(Math.abs(staged.master - 0.45) < 1e-6 && Math.abs(staged.items.you.h - 520 * 0.45) < 2, "the scene is seen from further back towards the wide shot (a quarter of the frame), never shrunk below LEAST_SCALE (" + staged.master + ")");
   const g = staged.items.riders.group, cols = Math.ceil(g.count / g.rows);
   assert.ok(g.width >= cols * staged.items.riders.h * 1.0 * 0.95 - 1 || g.count < 6, "the riders get the width they need, or fewer riders");
   const named = ["you", "miklos", "andras"].map((id) => staged.items[id]).sort((a: any, b: any) => a.x - b.x);
@@ -209,6 +235,20 @@ try {
   const map = { version: 1, horizon: 300, time: "day", ground: "dirt", items: [], map: { paper: "#e8dcc0", land: [[[80, 80], [1200, 60], [1240, 660], [60, 680]]], rivers: [[[200, 100], [500, 400], [700, 700]]], places: [{ name: "Pest", x: 600, y: 360, big: true }, { name: "Mohi", x: 900, y: 220 }], forces: [{ id: "army", side: "Mongols", color: "#a33", x: 1000, y: 200, size: 22, keys: [{ at: 0, x: 1000, y: 200 }, { at: 1, x: 700, y: 330 }] }], arrows: [{ from: [1000, 200], to: [700, 330], color: "#a33", at: [0, 0.8] }] } } as unknown as MotionSceneSpec;
   motionSceneSpecFix(map, { year: 1241, map: true, gaps: [] });
   inFrame((await show(map, "map", 0.8)).marks, "army");
+  // A map whose land fills the frame keeps its corners (no oval), and a force on its route rides the growing arrow's head.
+  {
+    const arrow = { from: [200, 500] as [number, number], to: [1000, 250] as [number, number], color: "#8b2e24", at: [0, 1] as [number, number], curve: -0.15 };
+    const full = { version: 1, horizon: 300, time: "day", ground: "dirt", items: [{ id: "fort", fn: "wall", kind: "wagonFort", x: 1000, y: 250, h: 26, from: 980, to: 1020, at: [0.6, 1] }, { id: "peak", fn: "building", kind: "mountain", x: 600, y: 120, h: 50 }], map: { paper: "#e8dcc0", land: [[[-20, -20], [1300, -20], [1300, 740], [-20, 740]]], rivers: [[[400, 0], [420, 360], [380, 720]]], places: [{ name: "Danube", x: 380, y: 520 }, { name: "Pest", x: 200, y: 500, big: true }], forces: [{ id: "army", color: "#8b2e24", x: 200, y: 500, size: 20, keys: [{ at: 0, x: 200, y: 500 }, { at: 1, x: 1000, y: 250 }] }], arrows: [arrow] } } as unknown as MotionSceneSpec;
+    const page = await show(full, "map-full", 0.5);
+    const army = page.marks.find((m: any) => m.id === "army");
+    const k = 0.5 * 0.5 * (3 - 2 * 0.5) - 0.04, bend = arrow.curve, [a, b] = [arrow.from, arrow.to];
+    const mx = (a[0] + b[0]) / 2 - (b[1] - a[1]) * bend, my = (a[1] + b[1]) / 2 + (b[0] - a[0]) * bend;
+    const want = [(1 - k) ** 2 * a[0] + 2 * (1 - k) * k * mx + k * k * b[0], (1 - k) ** 2 * a[1] + 2 * (1 - k) * k * my + k * k * b[1]];
+    const got = [army.x + army.w / 2, army.y + army.h / 2];
+    assert.ok(Math.hypot(got[0] - want[0], got[1] - want[1]) < 6, "the force rides the arrow's curve: " + got + " vs " + want);
+    const corner = (page as any).corner as number[], paper = [0xe8, 0xdc, 0xc0];
+    assert.ok(Math.abs(corner[0] - paper[0]) + Math.abs(corner[1] - paper[1]) + Math.abs(corner[2] - paper[2]) > 20, "a land filling the frame covers its corners: " + corner);
+  }
   // A portrait thumbnail with its headline.
   const thumb = fix({ frame: [720, 1280], horizon: 700, items: [{ ...person("sister", 470, { focal: true }), y: 1180, h: 700 }], headline: { lines: ["TIẾNG GỌI", "BÊN GIẾNG"], x: 50, y: 260, size: 120, accent: "GIẾNG" } }).spec;
   const thumbShot = await show(thumb, "thumbnail", 0.5, "horror");

@@ -40,6 +40,7 @@ import { motionSceneCastPrompt, motionSceneCastSeed, type MotionCastLooks } from
 import type { MotionCatalogGap } from "../../../../../lib/motionObjectCatalog.js";
 import { MOTION_SCENE_BLUEPRINT } from "../../../../../constants/motionSceneBlueprint.js";
 import { MOTION_SCENE_SPEC, MOTION_SCENE_SPEC_PROMPT } from "../../../../../constants/motionSceneSpec.js";
+import { motionMasterTarget } from "../../../../../lib/motionMasterScale.js";
 import { motionSceneSpecCastLearn, motionSceneSpecFallback, motionSceneSpecFix, motionSceneSpecSplit, motionSceneSpecPage, motionSceneSpecPrompt, motionSceneSpecRead } from "../../../../../lib/motionSceneSpec.js";
 import { getMotionWorkDirectory } from "../motionLibraryService.js";
 import type { RemotionSceneOptions } from "../remotion/scenePipeline.js";
@@ -295,7 +296,7 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
   const route = routes[Math.min(Math.floor(missed / MOTION_HTML.SWITCH_AFTER), routes.length - 1)];
   return route.provider === exec.provider ? exec : { ...exec, provider: route.provider, model: route.model, mode: route.mode };
 };
-export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; movement?: string; scope?: string; language?: string; cast?: string; continuity?: string; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string; year?: number }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
+export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; movement?: string; scope?: string; language?: string; cast?: string; continuity?: string; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string; year?: number; genre?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
   // One request per scene: the AI returns the scene as a spec (what is where, how it changes); code puts right what is not
   // reasonable and the engine draws every scene with the kit in the chosen style, so the drawing style and the layout's
   // camera are applied when the scene is shown and never need a new request.
@@ -305,7 +306,9 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   const looks = isMap ? undefined : motionSceneCastPrompt(settings.castLooks, required.map((item) => item.id));
   const context = [settings.cast, looks, settings.continuity, settings.variety].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR) || undefined;
   const frame: [number, number] = [settings.width, settings.height];
-  let prompt = motionSceneSpecPrompt(scene, { year: settings.year, map: isMap, cast: context, frame, language: settings.language });
+  // The master frame by the film shot scale for this scene (its shot, the frame, the genre and drawing style).
+  const master = motionMasterTarget({ frame, shot: settings.shot ?? scene.shot, kind: settings.kind ?? scene.kind, genre: settings.genre, profile: settings.profile });
+  let prompt = motionSceneSpecPrompt({ ...scene, shot: settings.shot ?? scene.shot, kind: settings.kind ?? scene.kind }, { year: settings.year, map: isMap, cast: context, frame, language: settings.language, genre: settings.genre, profile: settings.profile });
   const key = motionInputKey([MOTION_SCENE_SPEC.VERSION, prompt, settings.width, settings.height, settings.language]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
@@ -319,7 +322,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     save();
   };
   const gaps: MotionCatalogGap[] = [];
-  const ctx = { year: settings.year, template: scene.sceneTemplate, map: isMap, castLooks: settings.castLooks, header: scene.timeLabel || undefined, gaps };
+  const ctx = { year: settings.year, template: scene.sceneTemplate, map: isMap, castLooks: settings.castLooks, header: scene.timeLabel || undefined, gaps, master: master.target };
   // The still of the key moment, captured with the kit in the base style.
   const capture = (html: string) =>
     withMotionThumbnailBrowser(isLowSpecMode() ? AI_LOAD.THUMBNAIL_IDLE_MS : MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
@@ -839,7 +842,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
     const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
     const cast = scene.kind === MOTION_HTML_WRITING.MAP_KIND ? undefined : motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
     motionSceneCastSeed((state.castLooks ||= {}), analysis.cast);
-    await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), movement: motionMovementOf(settings), scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), kind: scene.kind, shot: scene.shot, year: state.eraYear, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority }, save);
+    await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), movement: motionMovementOf(settings), scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), kind: scene.kind, shot: scene.shot, year: state.eraYear, genre: [analysis.videoGenre, analysis.genre, analysis.genre2, analysis.storytelling].filter(Boolean).join(" ") || undefined, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority }, save);
     delete state.failures[scene.id];
     done++;
     opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);

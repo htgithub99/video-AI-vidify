@@ -26,7 +26,7 @@ const drain = async (id: string, run: Prerender, quality?: string): Promise<void
     const cached = await motionCachedSegments(spec, segments, encoding, run.controller.signal);
     const todo = segments.filter((segment) => !cached.has(segment.key));
     if (!todo.length) continue;
-    await renderMotionSegmentsToCache(spec, todo, encoding, { signal: run.controller.signal, lanes: { lanes: 1, perLane: R.PRERENDER_THREADS }, log: run.log, onSegment: () => run.log?.(R.PRERENDERED(id)) });
+    await renderMotionSegmentsToCache(spec, todo, encoding, { signal: run.controller.signal, lanes: { lanes: R.PRERENDER_LANES, perLane: R.PRERENDER_THREADS }, log: run.log, onSegment: () => run.log?.(R.PRERENDERED(id)) });
   }
 };
 export const scheduleMotionSegmentPrerender = (id: string, spec: MotionRemotionSpec, readySceneIds: Iterable<string>, quality?: string, log?: (line: string) => void): void => {
@@ -44,18 +44,19 @@ export const scheduleMotionSegmentPrerender = (id: string, spec: MotionRemotionS
       if (run.pending && !run.controller.signal.aborted) scheduleMotionSegmentPrerender(id, run.pending.spec, run.pending.ready, quality, log);
     });
 };
-export const waitMotionSegmentPrerender = async (id: string | undefined, signal?: AbortSignal): Promise<void> => {
+// The export takes over from the background render: it stops at once (a part-drawn segment is thrown away, finished
+// ones stay in the cache for the export to reuse) and the export renders the rest on every lane the machine has.
+// Returns whether a background render was running.
+export const takeOverMotionSegmentPrerender = async (id: string | undefined): Promise<boolean> => {
   const run = id ? runs.get(id) : undefined;
-  if (!run) return;
+  if (!run) return false;
   run.pending = undefined;
-  if (!run.running) return;
-  const stop = () => run.controller.abort();
-  signal?.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
-  try {
-    await run.running;
-  } finally {
-    signal?.removeEventListener(RT_MAINTENANCE.ABORT, stop);
-  }
+  const running = run.running;
+  run.controller.abort();
+  runs.delete(id!);
+  if (!running) return false;
+  await running.catch(() => undefined);
+  return true;
 };
 export const stopMotionSegmentPrerender = (id: string): void => {
   runs.get(id)?.controller.abort();

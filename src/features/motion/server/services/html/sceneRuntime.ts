@@ -63,60 +63,12 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
         signal?.throwIfAborted();
         let watchdog: ReturnType<typeof setTimeout> | undefined;
         try {
+          // The page draws the frame, lays the subtitle over a copy of it and encodes it once (input.format: JPEG or PNG).
+          const frameInput = subtitle ? { ...input, subtitle: { text: subtitle, font: fontFamily } } : input;
           const operation = page.evaluate(
-            async ({ payload: { value, text, font, allowBlank }, maintenanceTexts: RT_MAINTENANCE }) => {
-              const result = (await Promise.race([(window as any).renderMotionFrame(value, allowBlank), new Promise((_, reject) => setTimeout(() => reject(new Error(RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT)), 30000))])) as string;
-              if (!text) return result;
-              const image = new Image();
-              image.src = result;
-              await image.decode();
-              const canvas = document.createElement(RT_MAINTENANCE.CANVAS);
-              canvas.width = value.width;
-              canvas.height = value.height;
-              const ctx = canvas.getContext(RT_MAINTENANCE.VALUE_2D)!;
-              ctx.drawImage(image, 0, 0);
-              const size = Math.max(20, value.height * 0.04);
-              ctx.font = `${RT_MAINTENANCE.BOLD}${size}${RT_MAINTENANCE.PX}${font}`;
-              ctx.textAlign = RT_MAINTENANCE.CENTER;
-              ctx.textBaseline = RT_MAINTENANCE.BOTTOM;
-              const lines: string[] = [];
-              let line = "";
-              for (const word of text.split(/\s+/)) {
-                const next = line ? `${line}${RT_MAINTENANCE.SPACE}${word}` : word;
-                if (line && ctx.measureText(next).width > value.width * 0.86) {
-                  lines.push(line);
-                  line = word;
-                } else line = next;
-              }
-              if (line) lines.push(line);
-              ctx.fillStyle = RT_MAINTENANCE.WHITE;
-              ctx.strokeStyle = RT_MAINTENANCE.BLACK;
-              ctx.lineWidth = 3;
-              ctx.lineJoin = RT_MAINTENANCE.ROUND;
-              lines.forEach((entry, index) => {
-                const y = value.height * 0.96 - (lines.length - index - 1) * size * 1.25;
-                ctx.strokeText(entry, value.width / 2, y);
-                ctx.fillText(entry, value.width / 2, y);
-              });
-              return canvas.toDataURL(RT_MAINTENANCE.IMAGE_PNG);
-            },
-            {
-              payload: { value: input, text: subtitle, font: fontFamily, allowBlank },
-              maintenanceTexts: {
-                CANVAS_RENDERAT_TIMED_OUT: RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT,
-                CANVAS: RT_MAINTENANCE.CANVAS,
-                VALUE_2D: RT_MAINTENANCE.VALUE_2D,
-                BOLD: RT_MAINTENANCE.BOLD,
-                PX: RT_MAINTENANCE.PX,
-                CENTER: RT_MAINTENANCE.CENTER,
-                BOTTOM: RT_MAINTENANCE.BOTTOM,
-                SPACE: RT_MAINTENANCE.SPACE,
-                WHITE: RT_MAINTENANCE.WHITE,
-                BLACK: RT_MAINTENANCE.BLACK,
-                ROUND: RT_MAINTENANCE.ROUND,
-                IMAGE_PNG: RT_MAINTENANCE.IMAGE_PNG,
-              },
-            },
+            async ({ value, allowBlank, timeout }) =>
+              (await Promise.race([(window as any).renderMotionFrame(value, allowBlank), new Promise((_, reject) => setTimeout(() => reject(new Error(timeout)), 30000))])) as string,
+            { value: frameInput, allowBlank, timeout: RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT },
           );
           const image = (await Promise.race([
             operation,
