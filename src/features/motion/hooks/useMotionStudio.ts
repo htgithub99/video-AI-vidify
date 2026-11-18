@@ -163,7 +163,7 @@ interface PersistedState extends MotionSceneAiChoice, MotionAiChoice, MotionPlan
 const DEFAULTS: PersistedState = {
   // Defaults the user set for new projects (15/11): cartoon style with the standard kit, sparse picture pacing, POV in
   // English at ~10 minutes, one narrator, no music, SFX, subtitles, voice check or AI image review, automatic export.
-  visualSettings: normalizeMotionVisualSettings({ version: 1, mode: RT_SHARED.REMOTION, profileId: "sketch", figureKit: true, pacing: "few" }),
+  visualSettings: normalizeMotionVisualSettings({ version: 1, mode: RT_SHARED.REMOTION, profileId: "sketch", pacing: "few" }),
   renderBehavior: normalizeMotionRenderBehavior(),
   remotionProfile: "sketch",
   styleReferences: [],

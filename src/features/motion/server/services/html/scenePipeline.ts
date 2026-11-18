@@ -1,4 +1,3 @@
-import { motionCatalogGaps, motionCatalogKinds } from "../../../../../lib/motionObjectCatalog.js";
 import { motionSceneScorecard } from "../../../../../lib/motionSceneScorecard.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,7 +7,6 @@ import { motionPlanVarietyIssues } from "../../../../../lib/motionPlanVariety.js
 import { MOTION_PLAN_VARIETY } from "../../../../../constants/motionPlanVariety.js";
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionAiFallbackPolicy, motionSceneWorkerIds } from "../../../../../lib/motionAiExecution.js";
-import { PROMPT_REFERENCE_DOC } from "../../../../../constants/promptSourceData.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import type { ChatPendingSubmission, ChatPlanningSubmission } from "../../../../../server/services/chatSubmissionRecovery.js";
 import { randomUUID } from "node:crypto";
@@ -16,9 +14,9 @@ import { AsyncResource } from "node:async_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML } from "../../../../../constants/motionHtmlTemplate.js";
 import { MOTION_HTML_QUALITY } from "../../../../../constants/motionHtmlQuality.js";
-import { motionHtmlCutLarge, motionHtmlErrorSignature, motionHtmlFigureFaults, motionHtmlFocalMoved, motionHtmlMissing, motionHtmlRequired, motionHtmlRuntimeFeedback, motionHtmlScriptIssue } from "../../../../../lib/motionHtmlQuality.js";
+import { motionHtmlRequired } from "../../../../../lib/motionHtmlQuality.js";
 import { motionHtmlVisualDirection, motionHtmlPacingDirection, motionHtmlLanguageDirection } from "../../../../../lib/motionHtmlAuthoring.js";
-import { motionHtmlSource, motionHtmlPlanContext, motionHtmlPlanSource, motionHtmlPlanCurrent, motionHtmlPlanSourceMatches, motionSceneOnScreen, motionCompactScene } from "../../../../../lib/motionHtmlScene.js";
+import { motionHtmlPlanContext, motionHtmlPlanSource, motionHtmlPlanCurrent, motionHtmlPlanSourceMatches, motionSceneOnScreen, motionCompactScene } from "../../../../../lib/motionHtmlScene.js";
 import { motionPlanSettings, motionSceneCurrent, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../../../lib/motionRenderBehavior.js";
 import { motionVisualBeatGroups } from "../../../../../lib/motionScenePacing.js";
@@ -29,11 +27,7 @@ import { MOTION_AI_ROLE } from "../../../../../constants/motionAiFallback.js";
 import { MOTION_AI_RECOVERY } from "../../../../../constants/motionAiRecovery.js";
 import { motionRenameText } from "../../../../../lib/motionRename.js";
 import { motionHtmlCastCards, motionHtmlContinuity } from "../../../../../lib/motionHtmlCast.js";
-import { motionHtmlFigureDoc } from "../../../../../lib/motionHtmlFigure.js";
-import { MOTION_FIGURES } from "../../../../../constants/motionFigures.js";
-import { motionFigureOwnExtras, motionFigureRenderKey, motionHtmlFiguresIssue, motionHtmlUsesFigures } from "../../../../../lib/motionFigures.js";
-import { motionHtmlMechanics } from "../../../../../lib/motionHtmlMechanics.js";
-import { motionHtmlRepairDraw, motionHtmlRuleLines } from "../../../../../lib/motionHtmlPrompt.js";
+import { motionFigureRenderKey } from "../../../../../lib/motionFigures.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson, motionAiRoutes } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
@@ -42,8 +36,11 @@ import { openMotionHtmlRuntime, withMotionThumbnailBrowser } from "./sceneRuntim
 import { isLowSpecMode } from "../../../../../server/services/chromeBackupService.js";
 import { AI_LOAD } from "../../../../../constants/aiLoad.js";
 import { motionHtmlStore } from "./sceneStore.js";
-import { motionSceneCastLearn, motionSceneCastPrompt, motionSceneCastSeed, type MotionCastLooks, motionSceneBlueprint, motionSceneRelationIssues, motionSafeSceneSource } from "../../../../../lib/motionSceneBlueprint.js";
+import { motionSceneCastPrompt, motionSceneCastSeed, type MotionCastLooks } from "../../../../../lib/motionSceneBlueprint.js";
+import type { MotionCatalogGap } from "../../../../../lib/motionObjectCatalog.js";
 import { MOTION_SCENE_BLUEPRINT } from "../../../../../constants/motionSceneBlueprint.js";
+import { MOTION_SCENE_SPEC, MOTION_SCENE_SPEC_PROMPT } from "../../../../../constants/motionSceneSpec.js";
+import { motionSceneSpecCastLearn, motionSceneSpecFallback, motionSceneSpecFix, motionSceneSpecPage, motionSceneSpecPrompt, motionSceneSpecRead } from "../../../../../lib/motionSceneSpec.js";
 import { getMotionWorkDirectory } from "../motionLibraryService.js";
 import type { RemotionSceneOptions } from "../remotion/scenePipeline.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionAiExecution } from "../../../../../types/motionVideo.js";
@@ -298,17 +295,18 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
   const route = routes[Math.min(Math.floor(missed / MOTION_HTML.SWITCH_AFTER), routes.length - 1)];
   return route.provider === exec.provider ? exec : { ...exec, provider: route.provider, model: route.model, mode: route.mode };
 };
-export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; movement?: string; figureKit?: boolean; scope?: string; language?: string; cast?: string; continuity?: string; motion?: boolean; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string; year?: number }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
-  // One scene for both renderers: the AI draws the whole scene and registers its own figure functions in the figure table;
-  // "Bộ vẽ chuẩn" only swaps those functions for the kit when the scene is shown, so the drawing never depends on it.
-  // Every scene is drawn once in the base style at the AI's own framing: the drawing style ("Bộ vẽ chuẩn") and the layout's
-  // camera are applied when the scene is shown, so neither is part of the drawing request. Checks see the whole frame.
-  const graphics = MOTION_HTML.GRAPHICS;
-  const output = MOTION_HTML.OUTPUT;
-  const figureDoc = [motionHtmlFigureDoc({ profileId: settings.profile, proportion: settings.proportion }), MOTION_FIGURES.DOC(motionCatalogKinds(settings.year, [scene.text, scene.message, scene.keyVisual, scene.setting, scene.sceneTemplate, scene.drawingNote].filter(Boolean).join(" ")), scene.devices || []), motionMovementOf({ profileId: settings.profile, movement: settings.movement }) === "cutout" ? MOTION_FIGURES.CUTOUT_RULES : ""].filter(Boolean).join(RT_MAINTENANCE.NEWLINE);
-  const render = { kit: settings.figureKit === true, profile: settings.profile, proportion: motionProportionOf({ profileId: settings.profile, proportion: settings.proportion }), layout: MOTION_LAYOUT_WIDE, scene: { shot: settings.shot, kind: settings.kind, sceneTemplate: scene.sceneTemplate } };
-  const picture = MOTION_HTML.PICTURE(scene);
-  const key = motionInputKey([MOTION_HTML.VERSION, output, graphics, figureDoc, picture, scene.sceneTemplate, settings.width, settings.height, scene.drawingNote, settings.language, settings.cast, settings.continuity]);
+export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; movement?: string; scope?: string; language?: string; cast?: string; continuity?: string; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string; year?: number }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
+  // One request per scene: the AI returns the scene as a spec (what is where, how it changes); code puts right what is not
+  // reasonable and the engine draws every scene with the kit in the chosen style, so the drawing style and the layout's
+  // camera are applied when the scene is shown and never need a new request.
+  const isMap = settings.kind === MOTION_HTML_WRITING.MAP_KIND;
+  const render = { profile: settings.profile, proportion: motionProportionOf({ profileId: settings.profile, proportion: settings.proportion }), layout: MOTION_LAYOUT_WIDE, year: settings.year, scene: { shot: settings.shot, kind: settings.kind, sceneTemplate: scene.sceneTemplate } };
+  const required = motionHtmlRequired(scene.sceneTemplate);
+  const looks = isMap ? undefined : motionSceneCastPrompt(settings.castLooks, required.map((item) => item.id));
+  const context = [settings.cast, looks, settings.continuity, settings.variety].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR) || undefined;
+  const frame: [number, number] = [settings.width, settings.height];
+  let prompt = motionSceneSpecPrompt(scene, { year: settings.year, map: isMap, cast: context, frame, language: settings.language });
+  const key = motionInputKey([MOTION_SCENE_SPEC.VERSION, prompt, settings.width, settings.height, settings.language]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
   if (!scene.htmlRequest && saved) {
@@ -316,36 +314,24 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     save();
   }
   if (scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED) return;
-  const isMap = settings.kind === MOTION_HTML_WRITING.MAP_KIND;
-  const outputRules = motionHtmlRuleLines(output, isMap);
-  // What the picture must say comes first (the plan's message, key picture and devices, then the scene itself), then how
-  // to draw it: output, mechanics, style and the figure table.
-  let prompt = [
-    picture,
-    MOTION_HTML.SCENE_LABEL + scene.sceneTemplate,
-    settings.cast,
-    settings.continuity,
-    MOTION_HTML.ON_SCREEN_TEXT(scene.timeLabel, settings.kind === MOTION_HTML_WRITING.MAP_KIND),
-    scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
-    outputRules,
-    motionHtmlMechanics([scene.sceneTemplate, settings.continuity].join("\n")),
-    graphics,
-    PROMPT_REFERENCE_DOC.WRAP(PROMPT_REFERENCE_DOC.FIGURE_NAME, figureDoc),
-    motionHtmlLanguageDirection(settings.language, { codeOnly: true }),
-    `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: Number(settings.seconds.toFixed(1)) })}`,
-  ]
-    .filter(Boolean)
-    .join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
   const persist = () => {
     store.save(scene);
     save();
   };
-  const focalMin = MOTION_HTML_QUALITY.WIDE_SHOTS.includes(String(settings.shot || settings.kind || "").toLowerCase()) ? MOTION_HTML_QUALITY.FOCAL_MIN_WIDE : MOTION_HTML_QUALITY.FOCAL_MIN;
-  const blueprint = motionSceneBlueprint(scene.sceneTemplate, { shot: settings.shot, kind: settings.kind, focalMin });
-  // Sizes and places are the AI's own: no layout plan is imposed; named people keep the look earlier scenes fixed.
-  const extra = [isMap ? MOTION_HTML_QUALITY.MAP_RULES : motionSceneCastPrompt(settings.castLooks, (blueprint?.items || []).map((item) => item.id)), MOTION_HTML_QUALITY.OUTPUT, settings.variety, MOTION_HTML_QUALITY.CHECKLIST].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
-  // Last rung of the scene ladder: a scene drawn by code from the blueprint through the figure table, so one stubborn scene never blocks the video.
-  let candidate: { html: string; image: string; issues: string[]; attempt: number } | undefined;
+  const gaps: MotionCatalogGap[] = [];
+  const ctx = { year: settings.year, template: scene.sceneTemplate, map: isMap, castLooks: settings.castLooks, header: scene.timeLabel || undefined, gaps };
+  // The still of the key moment, captured with the kit in the base style.
+  const capture = (html: string) =>
+    withMotionThumbnailBrowser(isLowSpecMode() ? AI_LOAD.THUMBNAIL_IDLE_MS : MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
+      const runtime = await openMotionHtmlRuntime(html, opts.signal, true, browser, render);
+      try {
+        const progress = MOTION_HTML_QUALITY.KEY_PROGRESS;
+        const frame = await runtime.render({ time: progress * settings.seconds, progress, frame: Math.round(progress * settings.seconds * 30), fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, cameraEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] });
+        return await runtime.still(frame, MOTION_HTML.THUMBNAIL_STILL);
+      } finally {
+        await runtime.close();
+      }
+    });
   const finalize = (html: string, image: string, warnings: string[], tries: number, fallback: boolean) => {
     scene.html = {
       version: 1,
@@ -359,13 +345,15 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       seed: key,
       duration: settings.seconds,
       attempts: tries,
-      figures: true,
+      spec: MOTION_SCENE_SPEC.VERSION,
+      engine: MOTION_SCENE_SPEC.ENGINE,
       cast: settings.cast,
       continuity: settings.continuity,
       status: RT_MAINTENANCE.READY,
       thumbnail: image,
       render: motionFigureRenderKey(render),
-      warnings,
+      ...(warnings.length ? { warnings } : {}),
+      ...(gaps.length ? { gaps: [...gaps] } : {}),
       ...(fallback ? { fallback: true } : {}),
     };
     scene.build = { status: RT_MAINTENANCE.ACCEPTED, inputKey: key, review: false, attempts: tries };
@@ -373,29 +361,15 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     motionCompactScene(scene);
     persist();
   };
-  // Scene ladder after repeated broken drawings: keep the best drawing that did render (with its warnings); if none rendered,
-  // use a scene drawn by code from the blueprint through the figure table. Either way one stubborn scene never blocks the video.
+  // A scene the AI gave no usable spec for: laid out by code from the plan, so one stubborn scene never blocks the video.
   const acceptFallback = async (tries: number): Promise<boolean> => {
-    if (candidate) {
-      finalize(candidate.html, candidate.image, candidate.issues, candidate.attempt, false);
-      opts.log(MOTION_HTML_QUALITY.WARN_LOG(scene.id, candidate.issues));
-      return true;
-    }
-    if (!blueprint) return false;
+    const spec = motionSceneSpecFallback(scene.sceneTemplate, { shot: settings.shot, kind: settings.kind, frame });
+    if (!spec) return false;
     try {
-      const html = motionSafeSceneSource(blueprint);
-      const image = await withMotionThumbnailBrowser(isLowSpecMode() ? AI_LOAD.THUMBNAIL_IDLE_MS : MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
-        const runtime = await openMotionHtmlRuntime(html, opts.signal, true, browser, render);
-        try {
-          const progress = MOTION_HTML_QUALITY.KEY_PROGRESS;
-          const frame = await runtime.render({ time: progress * settings.seconds, progress, frame: Math.round(progress * settings.seconds * 30), fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, cameraEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] });
-          return await runtime.still(frame, MOTION_HTML.THUMBNAIL_STILL);
-        } finally {
-          await runtime.close();
-        }
-      });
-      finalize(html, image, [MOTION_SCENE_BLUEPRINT.FALLBACK_WARNING], tries, true);
-      opts.log(MOTION_SCENE_BLUEPRINT.FALLBACK_LOG(scene.id, tries));
+      const warnings = [MOTION_SCENE_SPEC.WARN.FALLBACK, ...motionSceneSpecFix(spec, ctx)];
+      const html = motionSceneSpecPage(spec);
+      finalize(html, await capture(html), warnings, tries, true);
+      opts.log(MOTION_SCENE_SPEC.FALLBACK_LOG(scene.id, tries));
       return true;
     } catch (error) {
       opts.signal?.throwIfAborted();
@@ -403,27 +377,25 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       return false;
     }
   };
-  const required = motionHtmlRequired(scene.sceneTemplate);
   let failures = 0,
     execFails = 0,
     transportFails = 0,
+    localFails = 0,
     missed = 0,
-    shift = 0,
     qualityTries = 0,
-    lastSignature = "",
     feedback = "",
-    lastSource = "",
+    kept: MotionRemotionScene["html"],
     routed = opts.exec?.provider;
   for (;;) {
     opts.signal?.throwIfAborted();
-    const target = htmlSceneRoute(opts.exec, missed + shift * MOTION_HTML.SWITCH_AFTER);
+    const target = htmlSceneRoute(opts.exec, missed);
     if (target?.provider !== routed) {
       opts.log(MOTION_HTML.SWITCH_LOG(scene.id, String(routed), String(target?.provider)));
       routed = target?.provider;
     }
     const priorPrompt = scene.htmlRequest?.submission?.pending?.prompt;
-    const prior = scene.htmlRequest && ((scene.htmlRequest.submission?.attempted && !scene.htmlRequest.submission.completed && !scene.htmlRequest.submission.abandoned) || !priorPrompt || (priorPrompt.includes(outputRules) && priorPrompt.includes(graphics))) ? scene.htmlRequest : undefined;
-    const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (scene.htmlRequest?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING, submission: { attempted: false, completed: false } };
+    const prior = scene.htmlRequest && ((scene.htmlRequest.submission?.attempted && !scene.htmlRequest.submission.completed && !scene.htmlRequest.submission.abandoned) || !priorPrompt || priorPrompt.includes(prompt)) ? scene.htmlRequest : undefined;
+    const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (scene.htmlRequest?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING };
     scene.htmlRequest = attempt;
     attempt.status = RT_MAINTENANCE.RUNNING;
     const resuming = canResumeHtmlSubmission(attempt, target);
@@ -459,7 +431,6 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         urgent: attempt.attempt > 1,
         submission,
         submissionChanged: journalState,
-        outputFormat: RT_MAINTENANCE.HTML,
         singleResponse: true,
         ...motionAiFallbackPolicy(target),
         responseReceived: received,
@@ -471,167 +442,49 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
           opts.log(`${RT_MAINTENANCE.CHO_LUU_CHECKPOINT_CANH}${scene.id}${RT_MAINTENANCE.COLON_SPACE}${String((error as Error).message)}`);
         }
       }, 2000);
-      const ask = [prompt, extra, feedback].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+      const ask = [prompt, feedback].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
       const request = () => (opts.ai ? opts.ai(ask, MOTION_HTML.ARTIFACT, exec, opts.signal, opts.log) : runMotionAi(ask, MOTION_HTML.ARTIFACT, exec, opts.signal, opts.log));
-      const raw = attempt.raw ?? (opts.pool ? await opts.pool.run((opts.priority ?? 1) - (attempt.attempt > 1 ? 0.5 : 0), request, opts.signal) : await request());
-      if (!attempt.raw) received(typeof raw === "string" ? raw : String(raw));
+      const answer = attempt.raw !== undefined ? attempt.raw : opts.pool ? await opts.pool.run((opts.priority ?? 1) - (attempt.attempt > 1 ? 0.5 : 0), request, opts.signal) : await request();
+      if (attempt.raw === undefined) received(typeof answer === "string" ? answer : stringifyJson(answer));
+      else store.raw(attempt.attempt, attempt.raw);
       clearInterval(journal);
-      store.raw(attempt.attempt, attempt.raw!);
-      const source = motionHtmlSource(attempt.raw);
-      lastSource = source;
-      const scriptIssue = motionHtmlScriptIssue(source);
-      if (scriptIssue) throw Object.assign(new Error(scriptIssue.reason), { motionHtmlExecution: true, motionHtmlFlattened: scriptIssue.flattened });
-      // A call to the kit cannot be repaired (the kit is not on the page in "Dựng cảnh AI"): one new drawing. Erasing
-      // composite modes are repaired here (painted normally), never a new request.
-      const kitIssue = motionHtmlFiguresIssue(source);
-      if (kitIssue) {
-        if (!prompt.includes(MOTION_FIGURES.KIT_CALL_RETRY)) prompt = [prompt, MOTION_FIGURES.KIT_CALL_RETRY].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
-        throw Object.assign(new Error(kitIssue), { motionHtmlExecution: true, motionHtmlDraw: true });
+      let parsed: unknown;
+      try {
+        parsed = typeof answer === "string" ? extractJson(answer) : answer;
+      } catch {
+        parsed = undefined;
       }
-      const repairs: string[] = [];
-      const html = motionHtmlRepairDraw(source, repairs);
-      const figures = motionHtmlUsesFigures(html);
-      scene.html = {
-        version: 1,
-        html,
-        hash: motionInputKey(html),
-        prompt,
-        file: store.html(attempt.attempt, html),
-        manifest: store.manifest,
-        scope: settings.scope,
-        language: settings.language,
-        seed: key,
-        duration: settings.seconds,
-        attempts: attempt.attempt,
-        figures: true,
-        cast: settings.cast,
-        continuity: settings.continuity,
-        gaps: motionCatalogGaps(html, settings.year),
-        status: RT_MAINTENANCE.RECEIVED,
-        execution: { ...target, renderRecovery: undefined, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(target) },
-      };
-      persist();
-      const inspect = (page: string) => withMotionThumbnailBrowser(isLowSpecMode() ? AI_LOAD.THUMBNAIL_IDLE_MS : MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
-        const runtime = await openMotionHtmlRuntime(page, opts.signal, true, browser, render);
-        try {
-          const frameAt = (progress: number, effects = true, camera = true) => runtime.render({ time: progress * settings.seconds, progress, frame: Math.round(progress * settings.seconds * 30), fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, cameraEnabled: camera, sceneEffectsEnabled: effects, seed: key, speaking: [] });
-          const keyFrame = await frameAt(MOTION_HTML_QUALITY.KEY_PROGRESS);
-          // One request, one scene: what the checks find (a focal subject absent, no motion, a frozen tail...) is recorded
-          // on the scene as warnings for the user, never a new drawing.
-          const issues: string[] = [],
-            minor: string[] = [];
-          // Fault marks (a person option the kit cannot honour) are taken out of every frame's marks and judged on their own.
-          const dropped = new Set<string>();
-          const marksNow = async () => {
-            const read = motionHtmlFigureFaults(await runtime.marks());
-            read.dropped.forEach((key) => dropped.add(key));
-            return read.marks;
-          };
-          const keyMarks = await marksNow();
-          const cut = motionHtmlCutLarge(keyMarks, MOTION_HTML_QUALITY.MAX_TOP_CUT);
-          if (cut.length) minor.push(MOTION_HTML_QUALITY.CUT_ISSUE(cut));
-          // A scene plays several actions in turn, so a subject may enter late or leave early: presence and relations are
-          // judged over the start, key and end frames, and only what fails in every sampled frame is a fault.
-          const sampled = [keyMarks];
-          if (settings.motion) {
-            const start = await frameAt(MOTION_HTML_QUALITY.START_PROGRESS, false);
-            const startMarks = await marksNow();
-            const end = await frameAt(MOTION_HTML_QUALITY.END_PROGRESS, false);
-            const endMarks = await marksNow();
-            sampled.push(startMarks, endMarks);
-            const change = await runtime.change(start, end, MOTION_HTML_QUALITY.CHANGE_SIZE, MOTION_HTML_QUALITY.CHANGE_THRESHOLD, MOTION_HTML.THUMBNAIL_STILL.canvas, MOTION_HTML.THUMBNAIL_STILL.context);
-            if (!motionHtmlFocalMoved(required, startMarks, endMarks) && change.changed < MOTION_HTML_QUALITY.MIN_CHANGED) {
-              issues.push(MOTION_HTML_QUALITY.STATIC_ISSUE(change.changed));
-            }
-            // The last stretch of the scene must still be alive with the camera held, or the viewer sees a frozen picture.
-            const tailFrom = await frameAt(MOTION_HTML_QUALITY.TAIL_FROM, false, false);
-            const tailTo = await frameAt(MOTION_HTML_QUALITY.TAIL_TO, false, false);
-            const tail = await runtime.change(tailFrom, tailTo, MOTION_HTML_QUALITY.CHANGE_SIZE, MOTION_HTML_QUALITY.CHANGE_THRESHOLD, MOTION_HTML.THUMBNAIL_STILL.canvas, MOTION_HTML.THUMBNAIL_STILL.context);
-            if (tail.changed < MOTION_HTML_QUALITY.TAIL_MIN_CHANGED) minor.push(MOTION_HTML_QUALITY.TAIL_ISSUE);
-            // Every phase the plan lists must look different from the one before it, or the picture is not following the narration.
-            const phases = Math.min(MOTION_HTML_QUALITY.PHASE_MAX, (scene.sceneTemplate.match(MOTION_HTML_QUALITY.MOTION_LINE)?.[1] || "").split(MOTION_HTML_QUALITY.PHASE_SPLIT).length);
-            if (phases > 2) {
-              const same: number[] = [];
-              let before = await frameAt(0.5 / phases, false, false);
-              for (let index = 1; index < phases; index++) {
-                const now = await frameAt((index + 0.5) / phases, false, false);
-                const step = await runtime.change(before, now, MOTION_HTML_QUALITY.CHANGE_SIZE, MOTION_HTML_QUALITY.CHANGE_THRESHOLD, MOTION_HTML.THUMBNAIL_STILL.canvas, MOTION_HTML.THUMBNAIL_STILL.context);
-                if (step.changed < MOTION_HTML_QUALITY.PHASE_MIN_CHANGED) same.push(index + 1);
-                before = now;
-              }
-              if (same.length) minor.push(MOTION_HTML_QUALITY.PHASE_ISSUE(same));
-            }
-          }
-          const everywhere = <T>(rows: T[][]): T[] => rows[0].filter((row) => rows.every((other) => other.some((entry) => JSON.stringify(entry) === JSON.stringify(row))));
-          const missingId = (text: string) => text.split(" (")[0];
-          // A group reads as a mass, so it needs less height than a single focal person; a map token only has to be readable.
-          const need = isMap ? Math.min(focalMin, MOTION_SCENE_BLUEPRINT.MAP_FOCAL_MIN) : focalMin;
-          const groups = new Set((blueprint?.items || []).filter((item) => item.fn === "crowd").map((item) => item.id));
-          const missingSets = sampled.map((marks) => [...motionHtmlMissing(required.filter((item) => !groups.has(item.id)), marks, need), ...motionHtmlMissing(required.filter((item) => groups.has(item.id)), marks, need * MOTION_SCENE_BLUEPRINT.GROUP_FOCAL)]);
-          const missing = missingSets[0].filter((text) => missingSets.every((set) => set.some((other) => missingId(other) === missingId(text))));
-          // Only a missing focal subject is worth a new drawing; a missing support element is recorded as a warning.
-          const focalIds = new Set(required.filter((item) => item.focal).map((item) => item.id));
-          // A focal subject that is outside the frame, or not drawn (or drawn without its mark, which the viewer cannot tell
-          // from absent and the checks cannot see), is a new drawing; one that is only small is a warning.
-          const absent = (text: string) => MOTION_SCENE_BLUEPRINT.OUTSIDE.test(text) || (!isMap && MOTION_SCENE_BLUEPRINT.UNMARKED.test(text));
-          const hard = missing.filter((text) => focalIds.has(missingId(text)) && absent(text));
-          // On a map the forces and places are labelled icons and arrows drawn by the scene itself, so an id without a mark is not a fault there.
-          const named = isMap && MOTION_HTML_QUALITY.MAP_LABEL.test(page);
-          const soft = missing.filter((text) => (!focalIds.has(missingId(text)) || !absent(text)) && !(named && MOTION_SCENE_BLUEPRINT.UNMARKED.test(text)));
-          if (hard.length) {
-            issues.push(MOTION_HTML_QUALITY.MISSING_ISSUE(hard));
-          }
-          if (soft.length) minor.push(MOTION_HTML_QUALITY.MISSING_ISSUE(soft));
-          if (isMap && !MOTION_HTML_QUALITY.MAP_ARROW.test(page)) minor.push(MOTION_HTML_QUALITY.MAP_NO_ARROW);
-          if (isMap && !MOTION_HTML_QUALITY.MAP_LABEL.test(page)) minor.push(MOTION_HTML_QUALITY.MAP_NO_LABEL);
-          const relationSets = sampled.map((marks) => motionSceneRelationIssues(blueprint, marks));
-          const relations = { apart: everywhere(relationSets.map((set) => set.apart)), blocked: everywhere(relationSets.map((set) => set.blocked)), stacked: everywhere(relationSets.map((set) => set.stacked)) };
-          if (relations.apart.length) minor.push(MOTION_SCENE_BLUEPRINT.APART_ISSUE(relations.apart));
-          if (relations.blocked.length) minor.push(MOTION_SCENE_BLUEPRINT.BLOCKED_ISSUE(relations.blocked));
-          if (relations.stacked.length) minor.push(MOTION_SCENE_BLUEPRINT.STACKED_ISSUE(relations.stacked));
-          if (dropped.size) minor.push(MOTION_HTML_QUALITY.DROP_ISSUE([...dropped]));
-          const extras = motionFigureOwnExtras(page);
-          if (extras.length) minor.push(MOTION_HTML_QUALITY.OWN_EXTRA_ISSUE(extras));
-          if (settings.castLooks) motionSceneCastLearn(settings.castLooks, keyMarks);
-          if (!figures && !isMap) minor.push(MOTION_FIGURES.MISSING_WARNING);
-          return { image: await runtime.still(keyFrame, MOTION_HTML.THUMBNAIL_STILL), issues, minor };
-        } finally {
-          await runtime.close();
-        }
-      });
-      // Nothing is repaired by code: the scene is shown exactly as the AI wrote it; faults become warnings or one new drawing.
-      const checked = await inspect(html);
-      const drawn = html;
-      // One request per scene: what the checks find is kept on the scene as warnings, never a new drawing.
-      if (!checked.issues.length && opts.review && qualityTries < MOTION_HTML_QUALITY.QUALITY_RETRIES) {
-        // The scene already passed every code check: show it now, then let the AI review it. A review finding asks for one
-        // corrected drawing; if that one fails, this drawing is kept.
-        scene.html.thumbnail = checked.image;
-        scene.html.render = motionFigureRenderKey(render);
-        scene.html.status = RT_MAINTENANCE.READY;
-        persist();
-        const problems = await reviewMotionHtmlScene(scene, checked.image, target, path.dirname(store.manifest), attempt.attempt, opts);
+      let spec;
+      try {
+        spec = motionSceneSpecRead(parsed, frame);
+      } catch (error) {
+        // Not a spec (code could not repair it): one new answer, then the plan's own layout.
+        feedback = MOTION_SCENE_SPEC_PROMPT.REDO(String((error as Error).message));
+        throw Object.assign(new Error(String((error as Error).message)), { motionHtmlExecution: true });
+      }
+      gaps.length = 0;
+      const warnings = motionSceneSpecFix(spec, ctx);
+      const html = motionSceneSpecPage(spec);
+      const image = await capture(html);
+      if (opts.review && qualityTries < MOTION_HTML_QUALITY.QUALITY_RETRIES) {
+        // The AI looks at the picture; a finding asks for one corrected spec, and if that one fails this scene is kept.
+        finalize(html, image, warnings, attempt.attempt, false);
+        const problems = await reviewMotionHtmlScene(scene, image, target, path.dirname(store.manifest), attempt.attempt, opts);
         if (problems.length) {
-          // Counted on the project's scorecard (scenes whose first picture missed the message).
           scene.offMessage = problems;
-          candidate = { html: drawn, image: checked.image, issues: problems, attempt: attempt.attempt };
           qualityTries++;
           opts.log(MOTION_HTML_QUALITY.REVIEW_LOG(scene.id, problems));
-          throw Object.assign(new Error(problems.join("; ")), { motionHtmlExecution: true, motionHtmlQuality: MOTION_HTML_QUALITY.REVIEW_FEEDBACK(problems) });
+          feedback = MOTION_SCENE_SPEC_PROMPT.REVIEW(problems);
+          kept = scene.html;
+          if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec);
+          scene.htmlRequest = { id: randomUUID(), attempt: attempt.attempt + 1, status: RT_MAINTENANCE.RUNNING };
+          continue;
         }
+        if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec);
+        return;
       }
-      const image = checked.image;
-      if (checked.issues.length || checked.minor.length || repairs.length) {
-        scene.html.warnings = [...checked.issues, ...checked.minor, ...repairs];
-        if (checked.issues.length) opts.log(MOTION_HTML_QUALITY.WARN_LOG(scene.id, checked.issues));
-      } else delete scene.html.warnings;
-      scene.html.thumbnail = image;
-      scene.html.render = motionFigureRenderKey(render);
-      scene.html.status = RT_MAINTENANCE.READY;
-      delete scene.html.error;
-      scene.build = { status: RT_MAINTENANCE.ACCEPTED, inputKey: key, review: false, attempts: attempt.attempt };
-      motionCompactScene(scene);
-      persist();
+      finalize(html, image, warnings, attempt.attempt, false);
+      if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec);
       return;
     } catch (error) {
       clearInterval(journal);
@@ -640,26 +493,21 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       if (!attempt.raw) missed++;
       const reason = String((error as Error).message);
       attempt.error = reason;
-      const failed = error as { motionHtmlExecution?: boolean; motionHtmlDraw?: boolean; motionHtmlFlattened?: boolean; motionHtmlQuality?: string };
+      const failed = error as { motionHtmlExecution?: boolean };
+      // An answer that came but could not be stored or shown (disk, browser) is kept and used again: no new AI request.
+      const keepAnswer = !!attempt.raw && !failed?.motionHtmlExecution;
+      if (keepAnswer ? ++localFails >= MOTION_SCENE_BLUEPRINT.TRANSPORT_LIMIT : !attempt.raw && ++transportFails >= MOTION_SCENE_BLUEPRINT.TRANSPORT_LIMIT) throw new Error(MOTION_SCENE_BLUEPRINT.TRANSPORT_ERROR(scene.id, keepAnswer ? localFails : transportFails, reason.slice(0, 160)));
       if (attempt.raw) transportFails = 0;
-      else if (++transportFails >= MOTION_SCENE_BLUEPRINT.TRANSPORT_LIMIT) throw new Error(MOTION_SCENE_BLUEPRINT.TRANSPORT_ERROR(scene.id, transportFails, reason.slice(0, 160)));
+      // The corrected spec after a review did not come: the reviewed scene stays.
+      if (kept && failed?.motionHtmlExecution) {
+        scene.html = kept;
+        delete scene.htmlRequest;
+        persist();
+        return;
+      }
       if (failed?.motionHtmlExecution && ++execFails >= MOTION_SCENE_BLUEPRINT.EXEC_LIMIT) {
         if (await acceptFallback(attempt.attempt)) return;
         throw new Error(MOTION_SCENE_BLUEPRINT.EXEC_ERROR(scene.id, execFails, reason.slice(0, 160)));
-      }
-      if (failed?.motionHtmlQuality) feedback = failed.motionHtmlQuality;
-      else if (failed?.motionHtmlExecution && !failed.motionHtmlDraw) {
-        const signature = motionHtmlErrorSignature(reason);
-        feedback = failed.motionHtmlFlattened ? "" : motionHtmlRuntimeFeedback(reason, lastSource);
-        if (failed.motionHtmlFlattened || signature === lastSignature) {
-          shift++;
-          lastSignature = "";
-          const next = htmlSceneRoute(opts.exec, missed + shift * MOTION_HTML.SWITCH_AFTER);
-          if (next?.provider !== routed) {
-            opts.log(MOTION_HTML_QUALITY.REPEAT_LOG(scene.id, String(routed), String(next?.provider)));
-            routed = next?.provider;
-          }
-        } else lastSignature = signature;
       }
       const abandoned = !attempt.raw && !!(error as Record<string, unknown> | null)?.[MOTION_AI_RECOVERY.UNCERTAIN_FLAG];
       if (abandoned) {
@@ -674,19 +522,15 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       }
       const unknown = !!attempt.submission?.attempted && !attempt.submission.completed && !attempt.submission.abandoned;
       const external = unknown || /quota|captcha|đăng nhập|login|rate.limit|account.*unavailable/i.test(reason);
-      attempt.status = external ? RT_MAINTENANCE.WAITING_EXTERNAL : RT_MAINTENANCE.RETRY_WAIT;
+      attempt.status = keepAnswer ? RT_MAINTENANCE.RECEIVED : external ? RT_MAINTENANCE.WAITING_EXTERNAL : RT_MAINTENANCE.RETRY_WAIT;
       if (scene.html) {
-        scene.html.status = attempt.raw && !(error as any).motionHtmlExecution ? RT_MAINTENANCE.RECEIVED : RT_MAINTENANCE.RETRY_WAIT;
+        scene.html.status = RT_MAINTENANCE.RETRY_WAIT;
         scene.html.error = reason;
       }
-      if (attempt.raw && !(error as any).motionHtmlExecution) attempt.status = RT_MAINTENANCE.RECEIVED;
-      else if (!external) {
-        delete attempt.raw;
-        if (scene.html) scene.html.status = RT_MAINTENANCE.RETRY_WAIT;
-      }
+      if (!keepAnswer && (!external || failed?.motionHtmlExecution)) delete attempt.raw;
       await retainCheckpoint(persist, opts);
-      if (!failed?.motionHtmlQuality) opts.log(`${RT_MAINTENANCE.CANH_HTML}${scene.id}${RT_MAINTENANCE.COLON_SPACE}${external ? RT_MAINTENANCE.CHO_PHUC_HOI_YEU_CAU_PROVIDER : attempt.status === RT_MAINTENANCE.RECEIVED ? RT_MAINTENANCE.CHAY_LAI_PHAN_HOI_DA_LUU : RT_MAINTENANCE.LOI_THUC_THI_SE_TAO_LAI_TOAN_BO}${RT_MAINTENANCE.OPEN_PAREN_SPACE}${reason}${RT_MAINTENANCE.SENTENCE_END}`);
-      await delay(MOTION_HTML.RETRY_MS[Math.min(failures++, MOTION_HTML.RETRY_MS.length - 1)], undefined, { signal: opts.signal });
+      opts.log(`${RT_MAINTENANCE.CANH_HTML}${scene.id}${RT_MAINTENANCE.COLON_SPACE}${external ? RT_MAINTENANCE.CHO_PHUC_HOI_YEU_CAU_PROVIDER : RT_MAINTENANCE.LOI_THUC_THI_SE_TAO_LAI_TOAN_BO}${RT_MAINTENANCE.OPEN_PAREN_SPACE}${reason}${RT_MAINTENANCE.SENTENCE_END}`);
+      await delay(keepAnswer ? MOTION_HTML.LOCAL_RETRY_MS * localFails : MOTION_HTML.RETRY_MS[Math.min(failures++, MOTION_HTML.RETRY_MS.length - 1)], undefined, { signal: opts.signal });
     }
   }
 };
@@ -993,7 +837,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
     const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
     const cast = scene.kind === MOTION_HTML_WRITING.MAP_KIND ? undefined : motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
     motionSceneCastSeed((state.castLooks ||= {}), analysis.cast);
-    await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), movement: motionMovementOf(settings), figureKit: settings.figureKit === true, scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE, kind: scene.kind, shot: scene.shot, year: state.eraYear, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority }, save);
+    await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), movement: motionMovementOf(settings), scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), kind: scene.kind, shot: scene.shot, year: state.eraYear, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority }, save);
     delete state.failures[scene.id];
     done++;
     opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);

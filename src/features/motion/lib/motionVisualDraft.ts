@@ -61,7 +61,7 @@ export const mergeMotionVisualDrafts = <T extends { visualSettings?: MotionVisua
   };
   if (Object.keys(drafts).every((key) => rekey(key) === key)) return saved;
   const settings = normalizeMotionVisualSettings(saved.visualSettings);
-  const shownKey = stringifyJson({ ...settings, figureKit: undefined, proportion: undefined, movement: undefined });
+  const shownKey = stringifyJson({ ...settings, proportion: undefined, movement: undefined });
   const activeKey = motionVisualDraftKey(settings);
   const built = (draft?: MotionVisualDraft) => Object.values(draft?.gen?.remotion?.scenes || {}).some((list) => !!list?.length);
   const time = (draft?: MotionVisualDraft) => draft?.gen?.remotion?.updatedAt || 0;

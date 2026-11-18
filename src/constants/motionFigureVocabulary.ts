@@ -16,7 +16,7 @@ const EXPRESSIONS = ["calm", "happy", "worried", "scared", "angry", "stern", "gr
 const HOLDS = ["spear", "pike", "staff", "flag", "pitchfork", "sword", "sabre", "katana", "axe", "club", "torch", "hammer", "pickaxe", "shovel", "oar", "bowl", "bucket", "sickle", "hoe", "net", "cup", "bow", "crossbow", "musket", "rifle", "smg", "pistol", "shield", "lantern", "scroll", "letter", "book", "basket", "sack", "bundle", "box", "baby", "bread"];
 // A generic helmet or hat is the one the story's period wore (the kit picks it by year).
 const HEADS = ["kettle", "nasal", "coif", "hood", "veil", "cap", "steppe", "crown", "crownHelmet", "turban", "leafhat", "conical", "highland", "peaked", "beret", "tophat", "bicorne", "tricorne", "shako", "pickelhaube", "adrian", "brodie", "stahlhelm", "m1", "modern", "pith", "roman", "greek", "samurai", "headband", "helmet", "hat", "none"];
-const OUTFITS = ["peasant", "soldier", "officer", "king", "noble", "monk", "scholar", "merchant", "worker", "sailor"];
+const OUTFITS = ["peasant", "levy", "soldier", "officer", "king", "noble", "monk", "scholar", "merchant", "worker", "sailor"];
 const REGIONS = ["europe", "eastAsia", "japan", "vietnam", "middleEast", "southAsia", "africa", "steppe", "americas"];
 const ANIMAL_POSES = ["stand", "walk", "run", "graze", "lie", "rear", "sit", "eat", "drink"];
 
@@ -31,8 +31,8 @@ const HOLD_PREFIX = ["holding", "holds", "carrying", "carries", "carry", "with",
 export type MotionFigureVocabFn = { keys: string[]; values: Record<string, string[]>; keyAs: Record<string, string>; valueAs: Record<string, Record<string, string>> };
 
 const PERSON: MotionFigureVocabFn = {
-  keys: [...COMMON, "view", "pose", "distance", "lean", "look", "pointAt", "reachAt", "expression", "top", "trim", "pants", "boots", "belt", "cape", "robe", "coat", "tunic", "sleeve", "armor", "skin", "hair", "hairColor", "beard", "head", "headColor", "crest", "emblem", "hold", "itemColor", "shield", "shieldColor", "quiver", "backpack", "sword", "sheath", "barefoot", "wounded", "bandage", "tied", "wet", "dirty", "gloves", "build", "outfit", "region", "seat", "hop", "rock", "still", "sitUp", "crouchAmt", "kneelAmt", "crouch", "arms"],
-  values: { pose: POSES, expression: EXPRESSIONS, hold: HOLDS, head: HEADS, outfit: OUTFITS, region: REGIONS, view: ["side", "front", "back"], armor: ["mail", "plate"], beard: ["moustache", "full", "goatee"], shield: ["round", "kite", "scutum"], bandage: ["head", "arm", "hand"], build: ["slim", "stocky"] },
+  keys: [...COMMON, "view", "pose", "distance", "lean", "look", "pointAt", "reachAt", "expression", "top", "trim", "pants", "boots", "belt", "cape", "robe", "coat", "tunic", "sleeve", "wrap", "armor", "skin", "hair", "hairColor", "beard", "head", "headColor", "crest", "emblem", "hold", "itemColor", "shield", "shieldColor", "quiver", "backpack", "sword", "sheath", "barefoot", "wounded", "bandage", "tied", "wet", "dirty", "gloves", "build", "outfit", "region", "seat", "hop", "rock", "still", "sitUp", "crouchAmt", "kneelAmt", "crouch", "arms"],
+  values: { pose: POSES, expression: EXPRESSIONS, hold: HOLDS, head: HEADS, outfit: OUTFITS, region: REGIONS, view: ["side", "front", "back"], armor: ["mail", "plate", "lamellar"], beard: ["moustache", "full", "goatee"], shield: ["round", "kite", "scutum"], bandage: ["head", "arm", "hand"], build: ["slim", "stocky"] },
   keyAs: {
     cloak: "cape", mantle: "cape", poncho: "cape",
     dress: "robe", gown: "robe", frock: "robe", habit: "robe", kimono: "robe", toga: "robe",
@@ -53,7 +53,7 @@ const PERSON: MotionFigureVocabFn = {
     soaked: "wet", drenched: "wet", bound: "tied", shackled: "tied",
     role: "outfit", costume: "outfit", dressedas: "outfit",
     lookat: "look", gaze: "look",
-    armour: "armor", mail: "armor",
+    armour: "armor", mail: "armor", deel: "wrap", wrapcoat: "wrap", sash: "wrap",
     walked: "distance", dist: "distance",
     broad: "build", slim: "build", stocky: "build", thin: "build", burly: "build", heavy: "build",
     seated: "pose", sitting: "pose", kneeling: "pose", lying: "pose", crouching: "pose", crouched: "pose", standing: "pose", walking: "pose", running: "pose", asleep: "pose", sleeping: "pose",
@@ -69,16 +69,16 @@ const PERSON: MotionFigureVocabFn = {
     head: { helm: "helmet", headcloth: "veil", kerchief: "veil", headscarf: "veil", scarf: "veil", wimple: "veil", shawl: "veil", hooded: "hood", tiara: "crown", diadem: "crown", beanie: "cap", bonnet: "cap", skullcap: "cap", coolie: "conical", nonla: "conical", strawhat: "leafhat", kettlehat: "kettle", nasalhelmet: "nasal", bandana: "headband", straw: "leafhat", toppedhat: "tophat", bare: "none", bareheaded: "none", no: "none" },
     outfit: { villager: "peasant", farmer: "peasant", commoner: "peasant", serf: "peasant", knight: "soldier", warrior: "soldier", infantry: "soldier", guard: "soldier", militia: "soldier", levy: "soldier", archer: "soldier", crossbowman: "soldier", captain: "officer", commander: "officer", general: "officer", priest: "monk", friar: "monk", nun: "monk", trader: "merchant", laborer: "worker", labourer: "worker", sailor: "sailor", lord: "noble", lady: "noble", emperor: "king", queen: "king" },
     view: { profile: "side", frontal: "front", rear: "back", behind: "back" },
-    armor: { chainmail: "mail", hauberk: "mail", chain: "mail", platearmor: "plate", cuirass: "plate", breastplate: "plate" },
+    armor: { chainmail: "mail", hauberk: "mail", chain: "mail", platearmor: "plate", cuirass: "plate", breastplate: "plate", lamellararmor: "lamellar", scale: "lamellar", scalearmor: "lamellar" },
     beard: { mustache: "moustache", long: "full", beard: "full", bearded: "full" },
     build: { thin: "slim", lean: "slim", skinny: "slim", heavy: "stocky", broad: "stocky", burly: "stocky", fat: "stocky", sturdy: "stocky" },
     shield: { heater: "kite", tower: "scutum", pavise: "scutum", buckler: "round", target: "round", shield: "round" },
   },
 };
 const ANIMAL: MotionFigureVocabFn = {
-  keys: [...COMMON, "kind", "view", "pose", "distance", "color", "mane", "saddle", "blanket", "bridle", "tack", "rider", "moving", "lying", "cart", "cartColor", "cover", "doe", "build"],
+  keys: [...COMMON, "kind", "view", "pose", "distance", "color", "mane", "saddle", "blanket", "barding", "bridle", "tack", "rider", "moving", "lying", "cart", "cartColor", "cover", "doe", "build"],
   values: { pose: ANIMAL_POSES, view: ["side", "front", "back"] },
-  keyAs: { colour: "color", coat: "color", body: "color", bodycolor: "color", fur: "color", hide: "color", manecolor: "mane", saddlecolor: "saddle", blanketcolor: "blanket", horseman: "rider", mount: "rider", walked: "distance" },
+  keyAs: { colour: "color", coat: "color", body: "color", bodycolor: "color", fur: "color", hide: "color", manecolor: "mane", saddlecolor: "saddle", blanketcolor: "blanket", horseman: "rider", mount: "rider", walked: "distance", armor: "barding", armour: "barding", caparison: "barding", bardingcolor: "barding" },
   valueAs: { pose: { standing: "stand", walking: "walk", trot: "walk", trotting: "walk", running: "run", gallop: "run", galloping: "run", charge: "run", grazing: "graze", lying: "lie", rearing: "rear", idle: "stand" }, view: { profile: "side" } },
 };
 

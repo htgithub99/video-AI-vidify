@@ -19,6 +19,9 @@ const items = [
   { id: "foxhole", from: 1914, names: ["rifleTrench"], fit: "ground" as const },
   { id: "tunnelEntrance", names: ["tunnel", "tunnelHatch"], fit: "ground" as const },
   { id: "earthwork", names: ["rampartMound", "earthenWall"], fit: "ground" as const },
+  // A row of sharpened stakes driven in at a slant against cavalry (and the planted stakes of a camp's edge).
+  { id: "stakeRow", to: 1918, names: ["stakes", "sharpenedStakes", "stakeLine", "archerStakes", "chevalDeFrise", "spikedStakes"], fit: "ground" as const },
+
   { id: "minefieldSign", from: 1915, names: ["mineSign"] },
   { id: "hitchingPost", names: ["horsePost"] },
   { id: "supplyCrates", names: ["supplies", "crateStack"] },
@@ -55,6 +58,7 @@ const body = `
     case "tankTrap": [[-0.9, 0, 0.9, -1.4], [0.9, 0, -0.9, -1.4], [0, -1.45, 0, 0.05]].forEach(([a, b, c0, d]) => beam([[a, b], [c0, d]], 0.18, iron)); break;
     case "foxhole": fl(E(0, 0, 1.3, 0.3), T("#4a3a2a")); for (let i = 0; i < 6; i++) fl(E(-1.3 + i * 0.52, -0.12, 0.3, 0.17), T("#b8a47a")); break;
     case "tunnelEntrance": fl(S([[-1.0, 0], [-0.9, -0.5], [0.9, -0.5], [1.0, 0]]), T("#6a5a42")); fl(E(0, -0.12, 0.55, 0.28), black, { hatch: false }); [-0.6, 0.6].forEach((x) => beam([[x, 0], [x, -0.45]], 0.08)); beam([[-0.7, -0.45], [0.7, -0.45]], 0.08); break;
+    case "stakeRow": beam([[-2.3, -0.35], [2.3, -0.35]], 0.06, dark); for (let i = 0; i < 7; i++) { const x = -2.1 + i * 0.7, h = 1.25 + rnd(i) * 0.2; fl(P([[x - 0.09, 0], [x + 0.09, 0], [x + 0.55, -h + 0.18], [x + 0.62, -h]]), wood); ln([[x + 0.43, -h + 0.32], [x + 0.6, -h + 0.04]], 0.5, T("#e0caa0")); } fl(E(0, 0.02, 2.4, 0.12), T(night ? "#4a3e30" : "#7a6448")); break;
     case "earthwork": fl(S([[-2.4, 0], [-1.6, -1.0], [1.6, -1.05], [2.4, 0]]), T(night ? "#5a4a36" : "#8a7452")); for (let i = 0; i < 12; i++) ln([[-1.8 + i * 0.32, -0.95 + rnd(i) * 0.1], [-1.75 + i * 0.32, -1.08]], 0.6, green); break;
     case "minefieldSign": beam([[0, 0], [0, -1.6]], 0.08); fl(P([[-0.55, -1.95], [0.55, -1.95], [0, -1.3]]), T("#e8c43a")); ln([[-0.15, -1.7], [0.15, -1.7]], 1.2); break;
     case "hitchingPost": [-1.0, 1.0].forEach((x) => beam([[x, 0], [x, -1.4]], 0.12)); beam([[-1.15, -1.3], [1.15, -1.3]], 0.1); for (let i = 0; i < 3; i++) ring(-0.6 + i * 0.6, -1.25, 0.06, iron); break;
@@ -73,3 +77,14 @@ const body = `
     case "bodyCovered": fl(S([[-1.4, 0], [-1.35, -0.35], [-0.8, -0.5], [0.6, -0.42], [1.2, -0.5], [1.45, -0.2], [1.4, 0]]), cloth); for (let i = 0; i < 4; i++) ln([[-0.9 + i * 0.5, -0.45], [-0.8 + i * 0.5, -0.05]], 0.35); break;`;
 
 export const MOTION_LIBRARY_WAR: MotionLibraryPart = { part: "lib_war", fn: "prop", items, js: motionLibraryPart(items, body, 1, helpers) };
+
+// Things in flight (no ground shadow): an arrow with burning tow at its head; a volley is many arrows in flight, drawn
+// slanting along the box.
+const flying = [
+  { id: "fireArrow", to: 1900, names: ["flamingArrow", "burningArrow", "fireArrows"] },
+  { id: "arrowVolley", to: 1900, names: ["volley", "arrowRain", "arrowsInFlight", "arrowStorm", "arrowShower"] },
+];
+const flyingBody = `
+    case "fireArrow": { c.save(); c.rotate(-0.12); beam([[-1.6, -0.5], [1.2, -0.5]], 0.05, wood); fl(P([[1.2, -0.62], [1.6, -0.5], [1.2, -0.38]]), iron); [[-1.6, -0.62], [-1.6, -0.38]].forEach(([x, y]) => fl(P([[x, y], [x + 0.45, -0.5], [x + 0.15, y]]), red, { hatch: false })); glow(1.25, -0.5, 1.0); flame(1.15, -0.35, 0.45); c.restore(); break; }
+    case "arrowVolley": for (let i = 0; i < 14; i++) { const x = -2.2 + (i % 7) * 0.7 + rnd(i) * 0.25, y = -0.6 - Math.floor(i / 7) * 0.9 - rnd(i + 9) * 0.5; c.save(); c.translate(x * R, y * R); c.rotate(0.45); beam([[-0.7, 0], [0.5, 0]], 0.03, wood); fl(P([[0.5, -0.07], [0.72, 0], [0.5, 0.07]]), iron); fl(P([[-0.7, -0.08], [-0.45, 0], [-0.7, 0.08]]), cloth, { hatch: false }); c.restore(); } break;`;
+export const MOTION_LIBRARY_WAR_FLYING: MotionLibraryPart = { part: "lib_warFlying", fn: "prop", items: flying, js: motionLibraryPart(flying, flyingBody, 0) };

@@ -1,4 +1,3 @@
-import { motionCatalogKinds } from "../src/lib/motionObjectCatalog.js";
 import path from "node:path";
 import os from "node:os";
 process.env.VIDIFY_STORAGE_DIR = path.join(os.tmpdir(), "motion-speed-fixes-" + process.pid);
@@ -69,9 +68,7 @@ assert.equal(calls[1].worker, undefined, "retry is not pinned to the stalled tab
 assert.equal(calls[1].attempted, false, "retry is a fresh request");
 assert.notEqual(calls[1].requestId, calls[0].requestId);
 assert.ok(logs.some((l) => l.includes("bỏ lượt cũ")), logs.join("\n"));
-const { MOTION_HTML } = await import("../src/constants/motionHtmlTemplate.js");
-const { motionHtmlRuleLines } = await import("../src/lib/motionHtmlPrompt.js");
-const { MOTION_FIGURES } = await import("../src/constants/motionFigures.js");
+const { MOTION_SCENE_SPEC_PROMPT: P } = await import("../src/constants/motionSceneSpec.js");
 const { motionHtmlPlanSourceMatches } = await import("../src/lib/motionHtmlScene.js");
 const current = JSON.stringify({ productionLanguage: "en", beats: [{ id: "b1" }], settings: { pacing: "few" } });
 const legacy = JSON.stringify({ productionLanguage: "en", graphics: "old style text", beats: [{ id: "b1" }], settings: { pacing: "few" } });
@@ -99,13 +96,11 @@ assert.deepEqual(routed.slice(0, 2).map((row) => row.provider), ["gemini-chat", 
 assert.notEqual(routed[2].provider, "gemini-chat", "a scene leaves an AI that failed twice in a row");
 assert.ok(routeLogs.some((line) => line.includes(routed[2].provider)));
 const scenePrompt = routed[0].prompt;
-assert.ok(scenePrompt.startsWith(MOTION_HTML.SCENE_LABEL), "what the picture shows comes first");
-assert.ok(scenePrompt.includes(motionHtmlRuleLines(MOTION_HTML.OUTPUT)));
-assert.ok(scenePrompt.includes("FIGURE TABLE (mandatory)"), "every scene is written against the figure table");
-assert.ok(!scenePrompt.includes(MOTION_FIGURES.DOC(motionCatalogKinds())), "the figure table lists the kinds this scene needs, not every kind");
-assert.equal(scenePrompt.split(MOTION_HTML.GRAPHICS).length, 2, "style rules appear once");
-assert.doesNotMatch(scenePrompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE|kopje|cowhide|chainmail|screaming|Unconscious/i);
-assert.ok(scenePrompt.length < 21000, "scene prompt stays bounded (lean rules, devices only when listed) (the figure table lists the period's core kinds and the ones the scene names): " + scenePrompt.length);
+assert.ok(scenePrompt.startsWith(P.ROLE), "the director's role comes first");
+assert.ok(scenePrompt.includes("PLAN:\n0. A farmer plants rice."), "the plan follows");
+assert.ok(scenePrompt.includes(P.SCHEMA) && scenePrompt.includes(P.COMPOSITION), "one JSON spec with its schema and composition rules");
+assert.doesNotMatch(scenePrompt, /Return the complete HTML|MotionKit\.|FIGURE TABLE/i, "no canvas code is asked for");
+assert.ok(scenePrompt.length < 21000, "scene prompt stays bounded: " + scenePrompt.length);
 const horrorCtrl = new AbortController();
 let horrorPrompt = "";
 await assert.rejects(
@@ -120,7 +115,7 @@ await assert.rejects(
     log: () => undefined,
   }),
 );
-assert.ok(horrorPrompt.includes(MOTION_HTML.GRAPHICS) && !/Khuat Mat/.test(horrorPrompt), "every drawing style shares one base drawing (the style is applied when shown)");
+assert.ok(horrorPrompt.startsWith(P.ROLE) && !/Khuat Mat/.test(horrorPrompt), "every drawing style shares one spec (the style is applied when shown)");
 const { motionHtmlWritingDirection, motionHtmlAuthoringSnapshot } = await import("../src/lib/motionHtmlAuthoring.js");
 const { motionRenameAutofix } = await import("../src/lib/motionRename.js");
 const renamedAnalysis: any = { title: "T", chapters: [{ id: "c1", targetSeconds: 30 }], cast: [], places: [], renameEntities: true, renameMap: [{ source: "Henry Pulleine", renamed: "Arthur Hale", kind: "person" }], authoringSettings: motionHtmlAuthoringSnapshot({ length: "2min", target: 120, language: "en", profile: "history" }) };
@@ -170,31 +165,11 @@ await assert.rejects(
     log: () => undefined,
   }),
 );
-assert.ok(castPrompt.includes(cardsA) && castPrompt.indexOf(cardsA) > castPrompt.indexOf("SCENE (source data)") && castPrompt.indexOf(cardsA) < castPrompt.indexOf(MOTION_HTML.GRAPHICS), "cast cards follow the scene, before the drawing rules");
-assert.match(castPrompt, /faces its direction[\s\S]*seated rider is drawn with the horse \(as the rider option of its FIG\.animal call\)/, "motion direction and the rider rule are in a riding scene");
-assert.doesNotMatch(scenePrompt, /COUPLED MECHANICS/, "a scene without riders, vehicles or props gets no coupled mechanics");
-const { motionHtmlMechanics } = await import("../src/lib/motionHtmlMechanics.js");
-assert.match(motionHtmlMechanics("Gunners haul the field guns forward."), /rigX/);
-assert.doesNotMatch(motionHtmlMechanics("Gunners haul the field guns forward."), /horseX|propX/);
+assert.ok(castPrompt.includes(cardsA) && castPrompt.indexOf(cardsA) < castPrompt.indexOf("PLAN:") && castPrompt.indexOf(cardsA) < castPrompt.indexOf(P.SCHEMA), "cast cards come before the plan and the schema");
+assert.match(castPrompt, /STARTS FROM[\s\S]*Durnford is mounted/, "the continuity line is in the prompt");
 const onlyNamed = motionHtmlCastCards(castAnalysis, [{ cast: ["pulleine", "durnford"] }], "The Zulu impi gathers on the ridge.");
 assert.ok(!onlyNamed.includes("Pulleine") && !onlyNamed.includes("Durnford") && onlyNamed.includes("Zulu impi"), "only people the scene names get a card");
 assert.equal(motionHtmlCastCards(castAnalysis, [], "A colonel waits."), "", "a title alone does not pull in a named officer");
-const { motionHtmlFigureDoc } = await import("../src/lib/motionHtmlFigure.js");
-assert.ok(scenePrompt.includes(motionHtmlFigureDoc({ profileId: "history" })) && horrorPrompt.includes(motionHtmlFigureDoc({ profileId: "horror" })), "scene prompts carry the measured figure design");
-assert.match(motionHtmlFigureDoc({}), /ground point \(o.x, o.y\)/, "figures stand on their ground point");
-assert.match(scenePrompt, /Flat cartoon[\s\S]*one closed Path2D/, "outline belongs to its shape");
-assert.match(scenePrompt, /advances only when the SCENE says so/, "a gathering group does not charge");
-assert.match(scenePrompt, /every clip\(\) sits in its own save\(\)\/restore\(\)/, "a ground clip cannot hide the figures");
-assert.match(motionHtmlFigureDoc({ proportion: "chibi" }), /legs from the hem at 0.9r/, "legs show below the torso");
-assert.match(motionHtmlFigureDoc({}), /six and a half heads/, "the round-head style is drawn near real proportions by default");
-assert.doesNotMatch(motionHtmlFigureDoc({ profileId: "history", proportion: "balanced" }), /Big-head proportions/, "one set of body numbers per proportion");
-assert.match(scenePrompt, /a cloud one lumpy outline/, "clouds are one outline");
-assert.match(scenePrompt, /never write names next to anything/, "labels stay off the subjects");
-assert.match(scenePrompt, /never move, pan or zoom a camera[\s\S]*legs step from o.distance/, "the layout owns the camera and steps follow distance");
-assert.doesNotMatch(motionHtmlFigureDoc({}), /torsoY=-28|headR\+4/, "no fixed pixel offsets");
-assert.doesNotMatch(scenePrompt, /overlapping (?:outlined )?(?:puffs|circles)|lumpy blobs|capsule|corner radius/, "no geometric shape recipes");
-assert.doesNotMatch(scenePrompt, /legs down both flanks/, "one rider rule only");
-assert.doesNotMatch(scenePrompt, /MotionKit\./, "the AI never calls the kit");
 const bare = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body><script>window.motionScene={}</script></body></html>";
 const { motionHtmlHostDocument } = await import("../src/lib/motionHtmlHost.js");
 const { MOTION_REMOTION_RENDER } = await import("../src/constants/motionRemotionRender.js");

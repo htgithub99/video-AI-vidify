@@ -20,14 +20,7 @@ export const MOTION_SCENE_BLUEPRINT = {
   FOCAL_MARGIN: 1.15,
   MAX_R: 118,
   PROTAGONISTS: ["protagonist", "you", "hero", "narrator"] as readonly string[],
-  // A map shows forces as small tokens: they only need to be readable, not a share of the frame like a standing person.
-  MAP_FOCAL_MIN: 0.05,
-  // An acting pair is only compared when both are drawn at a similar size (same depth); a subject reacting to something
-  // far away (lights, a distant column) is not a pair that must stand together.
-  PAIR_SIZE_RATIO: 0.5,
-  GROUP_FOCAL: 0.6,
-  CAST_PROMPT: (rows: string[]) => `CAST LOOK (already fixed by earlier scenes: pass exactly these person options and the same mark ids in every FIG.person call for these people and do not redesign them): ${rows.join("; ")}`,
-  UNMARKED: /not drawn/,
+  CAST_PROMPT: (rows: string[]) => `CAST LOOK (already fixed by earlier scenes: use these ids and these look options for these people, and change only what this scene states, such as a bandage, a lost helmet or what they hold): ${rows.join("; ")}`,
   // Cast looks read from the analysis, so a named person wears the same colours from the first scene on.
   CAST_SEED: {
     FLAG: "_seed",
@@ -41,16 +34,7 @@ export const MOTION_SCENE_BLUEPRINT = {
     ] as readonly (readonly [string, string])[],
     NAME_MIN: 4,
   },
-  // A focal subject that stays outside the frame in every sampled moment is the one layout fault worth a new drawing.
-  OUTSIDE: /outside the frame/,
   LEAD: "lead",
-  // Relation checks on a finished drawing, in fractions of the frame: an acting pair further apart than APART, another
-  // required person more than BETWEEN inside the pair's span on the same ground line, or two large objects sharing more
-  // than STACKED of the smaller one's width at the same depth.
-  CHECK: { APART: 0.22, BETWEEN: 0.03, SAME_GROUND: 0.08, STACKED: 0.75 },
-  APART_ISSUE: (pairs: [string, string][]) => `đứng xa nhau dù đang tương tác: ${pairs.map(([a, b]) => `${a} và ${b}`).join(", ")}`,
-  BLOCKED_ISSUE: (rows: [string, string, string][]) => `có người chen giữa cặp đang tương tác: ${rows.map(([a, b, c]) => `${c} đứng giữa ${a} và ${b}`).join(", ")}`,
-  STACKED_ISSUE: (pairs: [string, string][]) => `vật lớn đè lên nhau: ${pairs.map(([a, b]) => `${a} và ${b}`).join(", ")}`,
   // Width of one item in units of the near-rank figure size r, used to space items so nothing overlaps.
   WIDTH: { person: 2.5, crowd: 7, animal: 3.8, vehicle: 6.2, building: 6, prop: 1.6 } as Record<MotionBlueprintFn, number>,
   // Standing height and width at rest of one item, in units of its own size (r for people, p otherwise), as the
@@ -145,8 +129,6 @@ export const MOTION_SCENE_BLUEPRINT = {
   ] as readonly (readonly [string, RegExp])[],
   DEFAULT_GROUND: "grass",
   MIST_RE: /\b(mist|fog|haze)\b/i,
-  FALLBACK_WARNING: "Cảnh dự phòng do code dựng từ bố cục chuẩn (AI vẽ lỗi nhiều lần); nên bấm vẽ lại cảnh này.",
-  FALLBACK_LOG: (id: string, tries: number) => `Cảnh HTML ${id}: AI vẽ lỗi ${tries} lần liền – dùng cảnh dự phòng do code dựng từ bố cục chuẩn và đi tiếp; cảnh được đánh dấu để vẽ lại sau.`,
   TRANSPORT_ERROR: (id: string, tries: number, reason: string) => `Dựng cảnh tạm dừng: AI dựng cảnh không trả được bài cho cảnh ${id} sau ${tries} lần gửi liên tiếp (${reason}). Kiểm tra tab AI đã chọn (đăng nhập, giới hạn lượt, mạng) rồi bấm chạy tiếp; các cảnh đã dựng được giữ nguyên.`,
   EXEC_ERROR: (id: string, tries: number, reason: string) => `Dựng cảnh tạm dừng: cảnh ${id} lỗi ${tries} lần liền và không dựng được cảnh dự phòng (${reason}). Bấm vẽ lại riêng cảnh này hoặc chạy tiếp; các cảnh đã dựng được giữ nguyên.`,
   PLAN_ERROR: (tries: number, reason: string) => `Chia phân cảnh tạm dừng: AI plan cảnh lỗi ${tries} lần liên tiếp (${reason}). Kiểm tra tab AI đã chọn (đăng nhập, giới hạn lượt, mạng) rồi bấm chạy tiếp; phần đã làm được giữ nguyên.`,

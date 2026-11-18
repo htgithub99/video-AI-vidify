@@ -87,6 +87,17 @@ export const SKIN_PART_HORSE_REAL = `(c, o, K) => {
   c.fillStyle = ol;
   c.fill(K.ell(eye[0], eye[1], 6, 7));
   det(nh([[240, 162], [252, 160], [262, 165]]), 0.5);
+  // Barding (a war horse's cloth caparison): from chest to rump down over the upper legs, banded, with a face plate.
+  if (o.barding && !lying) {
+    const cap = P([[386, 300], [392, 226], [440, 208], [520, 204], [600, 206], [650, 222], [690, 250], [712, 292], [718, 350], [716, 430], [690, 446], [662, 432], [634, 448], [606, 432], [578, 448], [550, 432], [522, 448], [494, 432], [466, 448], [438, 432], [410, 448], [384, 434], [378, 380]]);
+    const col = K.toneOf(typeof o.barding === "string" && o.barding[0] === "#" ? o.barding : "#8a2f2a");
+    K.paint(c, cap, col, w);
+    c.save(); c.clip(cap);
+    for (let x = 400; x < 720; x += 64) K.paint(c, P(rr(x, 196, x + 26, 452, 2)), K.shade(col, 1.35), 0);
+    c.restore();
+    c.lineWidth = w; c.strokeStyle = ol; c.stroke(cap);
+    K.paint(c, P(nh([[300, 140], [262, 148], [232, 176], [212, 206], [222, 214], [250, 190], [282, 168], [306, 156]])), "#b8bcc4", w * 0.8);
+  }
   const tack = o.saddle || o.rider || o.tack === true;
   if (tack || o.bridle) {
     const lea = "#4a2c1e", brass = "#c9a24a";

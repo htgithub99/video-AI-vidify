@@ -131,7 +131,6 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     renderBehavior: behavior,
     resolvedSettings: { layoutRevision: L.REVISION, effectRevision: L.EFFECT_REVISION, sceneRevision: L.SCENE_REVISION, behavior },
     profileId: settings.profileId,
-    figureKit: settings.figureKit === true,
     eraYear: motionAnalysisEraYear(analysis) ?? state.eraYear,
     proportion: motionProportionOf(settings),
     movement: motionMovementOf(settings),

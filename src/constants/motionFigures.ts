@@ -1,29 +1,6 @@
-// One scene, two renderers. Every scene the AI writes registers its own drawing functions for the things the standard figure
-// kit can draw (people, animals, vehicles, buildings, trees, props, bridges, walls, charts, meters, timelines, map icons,
-// arrows, labels) through window.MotionFigures.use(own), and draws each of them as FIG.<fn>(ctx, o) with a box: the ground
-// point (x, y), the standing height h and the width w, in the scene's own coordinates. "Dựng cảnh AI" runs the scene's own
-// functions; "Bộ vẽ chuẩn" draws the same o with the kit, fitted into exactly that box (feet on y, height h, width w) in the
-// colours o gives. Anything the kit has no drawing for stays the scene's own drawing. Positions, sizes, timing and colours
-// always come from the scene; nothing is moved, resized or added.
-// The DEVICES paragraph of the figure table: only the devices the scene's plan lists (all of them when it is not known).
-const DEVICE_DOC: Record<string, string> = {
-  thought: "FIG.device(ctx, { kind: 'thought', x, y (bubble centre), r, from: [x, y] (the head it rises from), appear 0..1 }, (ctx, box) => { the small picture inside box, drawn with FIG calls }) shows what is said, heard or feared",
-  inset: "kind 'inset' is the same with a round frame and from = the point it magnifies (a small object held in a hand)",
-  emote: "'emote' x, y (just above the head), r, sign alarm|question|sweat|sleep|shiver|anger",
-  count: "'count' x, y (top-left), w, h, groups [{n, color}] (blocks of small figures sized by n, for numbers and odds)",
-  time: "'time' x, y (centre of the sky arc), r, body sun|moon, progress 0..1",
-  sound: "'sound' x, y (the horn, drum, bell or mouth), r, facing, t (input.time)",
-  speed: "'speed' x, y (the back of a fast mover), r, facing (the way it goes), t (input.time): streaks trailing behind it",
-  impact: "'impact' x, y (where a blow, shot or crash lands), r, appear, t: a burst",
-  spotlight: "'spotlight' x, y, r as the last call before the header (light on the subject, the rest dimmed)",
-};
-const MOTION_FIGURE_DEVICES = (devices?: string[]): string => {
-  const kinds = devices ? Object.keys(DEVICE_DOC).filter((kind) => devices.some((line) => new RegExp(`^\\s*${kind}\\b`, "i").test(line))) : Object.keys(DEVICE_DOC);
-  if (!kinds.length) return "DEVICES: none in this scene (no bubble, inset, sign, count, sun or moon arc, sound rings, speed streaks, burst or spotlight).";
-  // An inset is described as a thought with a round frame: the thought's call shape comes with it.
-  const parts = kinds.includes("inset") && !kinds.includes("thought") ? ["thought", ...kinds] : kinds;
-  return `DEVICES (a device(ctx, o, draw) in your table draws them your way; use only the devices the SCENE's DEVICES line lists, never words in them): ${parts.map((kind) => DEVICE_DOC[kind]).join("; ")}. Draw a device after the people it belongs to.`;
-};
+// The figure table every scene is drawn through: window.MotionFigures.use() gives FIG.<fn>(ctx, o), which puts the options
+// in the figure vocabulary's words and draws each thing with the kit in the chosen style, fitted into the box the scene
+// gives (ground point x, y, height h, width w). A thing the kit cannot draw is left out, never drawn as something else.
 export const MOTION_FIGURES = {
   ATTR: "data-motion-figures",
   // The style layer of each kit look ("Bộ vẽ chuẩn" only): outline ink and width factor, the tone every scene colour is
@@ -37,35 +14,12 @@ export const MOTION_FIGURES = {
     cutout: { ink: "#2b2622", inkWidth: 0.8, tone: { col: [74, 74, 64], k: 0.08, sat: 0.92, light: 0 } },
     horror: { ink: "#1c1a18", inkWidth: 1.2, tone: { col: [60, 70, 80], k: 0.3, sat: 0.45, light: -0.06 }, finish: "vignette", darkCard: true },
   } as Record<string, { ink: string; inkWidth: number; tone: { col: number[]; k: number; sat: number; light: number; split?: { shadow: number[]; highlight: number[]; k: number } }; finish?: string; darkCard?: boolean }>,
-  // Extra rules for the "Cắt dán kể chuyện" style: the scene is acted like a cut-out storybook (the view adds the held poses,
-  // the hops and the camera; these rules give it a timeline that suits them).
-  CUTOUT_RULES:
-    "CUT-OUT ACTING (this video's style): act like a cut-out storybook. Only the people and animals the narration of this scene names act; everyone else holds one pose, still. Each actor holds each pose for at least 1.5 s and switches pose in one step at the moment the narration says the action (phase.at), never by easing between poses, at most three poses per actor. Whoever moves across the frame does it as walk or run with distance (the kit carries one held walking or running drawing along in hops, the legs do not step; animals walking or running and vehicles given moving or distance move the same way), at an even speed, and stops in a held pose. People who arrive enter one after another about 0.15 s apart with the person option enter {at, from}: from 'below' when something you draw after them hides their feet (an earthwork, a wall, a bush, a ridge), else from 'left' or 'right' (the frame edge they come from). Repeated actions (chop, dig, hammer, row, wave, talk) switch between two held drawings on the beat by themselves; a frightened person trembles by itself; a person the narration has speaking (mark = the speaker's cast key) moves their mouth by itself. A spoken quote: the speaker turns toward the camera (view front) with the matching expression (shout, scared, angry...).",
-  // A scene written against the figure contract (only those can switch renderer without a new drawing).
-  // Any use of the figure table, written directly (window.MotionFigures.use(...)) or through a variable (const MF =
-  // window.MotionFigures || ...; MF.use(...)): the table and the kit are always added to such a page.
-  USES: /\bMotionFigures\b/,
   // Bumped whenever the way a page's figures are drawn changes, so pictures captured the old way are drawn again.
-  RENDER_REVISION: 4,
-  // The kit is not on the page in "Dựng cảnh AI", so a scene that calls it directly cannot render there.
-  KIT_CALL: /\bMotionKit\s*\./,
-  KIT_CALL_ISSUE: "Cảnh gọi thẳng MotionKit – trang Dựng cảnh AI không có bộ vẽ chuẩn nên cảnh không chạy được, yêu cầu AI vẽ lại.",
-  KIT_CALL_RETRY: "PREVIOUS ANSWER REJECTED: it called MotionKit, which is not on the page. Draw people, animals, vehicles, buildings, trees, props, bridges, walls, charts and map markers only through the FIG table from window.MotionFigures.use, everything else with your own canvas code, and answer again with the complete HTML.",
-  // "Bộ vẽ chuẩn" only lends the scene its figures: each frame starts the kit's clock, and none of the kit's whole-frame
-  // finishing (night tint, grain, header) runs, so the scene's own light, colours and header stay as the AI drew them.
+  RENDER_REVISION: 6,
+  // Each frame starts the kit's clock; the kit's own whole-frame finishing (night tint, grain, header) does not run, the
+  // scene engine lights and finishes the frame itself.
   KIT_HOOK:
     "(function(){var v=window.motionScene;var wrap=function(x){if(x&&typeof x.renderAt==='function'&&!x.__motionKit){var f=x.renderAt;x.renderAt=function(i){var K=window.MotionKit,self=this,args=arguments;var go=function(){K.time(i&&typeof i.time==='number'?i.time:0);return f.apply(self,args)};return K.fontsLoaded()?go():K.fontsReady.then(go)};x.__motionKit=true}return x};Object.defineProperty(window,'motionScene',{configurable:true,get:function(){return v},set:function(x){v=wrap(x)}});wrap(v)})();",
-  MISSING_WARNING: "Cảnh chưa vẽ nhân vật/đồ vật qua khung sườn chung – khi chọn Bộ vẽ chuẩn, cảnh này vẫn hiện nét AI vẽ.",
-  // The figure contract every scene is written against (part of the drawing prompt).
-  DOC: (kinds: Record<"vehicle" | "building" | "animal" | "tree" | "prop" | "wall", string>, devices?: string[]): string =>
-    [
-      "FIGURE TABLE (mandatory): people, animals, vehicles, buildings and tents, trees, props, bridges, walls and fences, charts, meters, timelines, map icons, arrows and labels are drawn only through one table. Once, before window.motionScene, write one simple drawing function for each kind the scene uses and register them: const FIG = window.MotionFigures.use({ person(ctx, o) {...}, animal(ctx, o) {...}, vehicle, building, tree, prop, bridge, wall, chart, meter, timeline, icon, arrow, label }); then draw each item of the SCENE's FIGURES line only as FIG.person(ctx, o), FIG.animal(ctx, o) and so on, in depth order, with the options that line gives. ONE CONTENT, TWO RENDERERS: the same o is drawn either by your function or by the standard kit fitted into its box in the chosen drawing style, and both must show the same thing, so: your function draws only what o says, nothing more (no item, mark, wound or extra part that is not an option); any option outside OPTIONS is removed before your function sees it; a figure inside another (a wagon's team, a passenger, a held thing the hold words lack) is its own FIG call, never drawn inside another function. window.MotionKit is never on the page. Each drawing is simple and reads at a glance, a few clear shapes in the thing's real outline, built as at the scene's time and place (pass that choice in o: kind, build).",
-      "THE BOX: x, y = the ground point under feet, hooves, wheels, trunk or base (top-left corner for chart, meter, timeline); h = full standing height in px (a person soles to head top or headgear; an animal hooves to ear tips without rider; a building to the roof top; a tree to the crown top), the same in every pose; w = full width at rest (shoulders with arms down, nose to tail, end to end, crown width). Return { box: {x, y, w, h} } (top-left and size of what you drew); a person also returns head, hand (near hand) and backHand as [x, y], eye (the y of its eye line) and hip (the y of its waist), an animal back (saddle point). A held thing the hold words lack is drawn with FIG.prop after FIG.person at the returned hand. Every colour of a figure is in o. A hand goes somewhere only through reachAt or pointAt [x, y] and the pose; a figure sits, lies, kneels or crouches only through pose (switch pose at the moment it changes).",
-      `OPTIONS (read by your function and by the kit; the kinds listed are the ones of this period this scene needs; any other thing goes to the right function under its plain English name in camelCase (kind: 'spinningWheel'), drawn by your function; the kit draws any name it knows): person: facing 1|-1, view side|front|back, pose stand|walk|run|point|raise|wave|cheer|hold|carry|aim|fight|thrust|talk|pray|face|hips|sit|kneel|lie|fall|salute|drink|shrug|block|cower|crouch|push|read|bow|beckon|clap|chop|hammer|dig|row|pull|throw|climb|write|reload|ride|cross (arms folded)|eat|shoulder (a load or pole on the shoulder)|plow|tied (hands bound behind)|huddle|sleep (nearest for any action), silhouette true (a dark shape against the light; animals and vehicles too), distance (px walked, walk/run), enter {at (s), from below|left|right}, lean (degrees), look (-1..1), pointAt and reachAt [x, y], expression calm|happy|worried|scared|angry|stern|grave|sad|sleep|shout|surprised|dead, top (jacket colour), trim, pants, boots, belt, cape, robe, armor mail|plate, skin, hair, hairColor, beard moustache|full|goatee, head (headgear as worn in the period: kettle, nasal, coif, hood, cap, steppe, crown, turban, leafhat, tophat, shako, stahlhelm, modern...), headColor, hold (what the period used: spear, sword, sabre, bow, crossbow, musket, rifle, torch, flag, shield, axe, staff, lantern, scroll, letter, basket, sack, cup, bowl, bucket, sickle, hoe, net...), itemColor, shield round|kite|scutum, shieldColor, barefoot, wounded, bandage head|arm|hand, tied, wet, dirty, build slim|stocky, outfit peasant|soldier|officer|king|noble|monk|scholar|merchant|worker|sailor with region europe|eastAsia|japan|vietnam|middleEast|southAsia|africa|steppe|americas (that role's dress at the story's year and place; parts or colours also given win; prefer it to picking each colour). animal: kind (${kinds.animal}), facing, view, pose stand|walk|run|graze, distance, color, mane, saddle, blanket, rider {person options} (the rider belongs to the animal). vehicle: kind (${kinds.vehicle}; every thing call names its kind), build (what it is made of), facing, color, cover, load, moving, firing, sail, crew {person options}, overturned. building: kind (${kinds.building}), build thatch|timber|stone|brick|modern, color, roof, trim, lit, burnt. tree: kind (${kinds.tree}), color, trunk. prop: kind (${kinds.prop}, or the plain word for any other object, which your function draws), color, facing, lying, angle (radians, clockwise around its foot x, y; a long thing such as a spear, pole or oar stands upright at angle 0 with h its length). bridge: side view x (centre), y (deck), w (span), h (deck to water), or into the picture from [x, y] (near bank) to [x, y] (far bank) with w (near deck width); build wood|stone|rope|iron|concrete (as built at that time and place); color. wall: kind (${kinds.wall}), build, x (centre), y (base), w (length), h, color. A thing's state that matters to the beat (overturned, broken, sinking, burning, open) is an option of that name on its call, and the people in or on a thing are their own FIG.person calls. chart: kind bar|line|pie, values, labels, colors, grow 0..1. meter: kind bar|gauge|thermometer, value 0..1, color, label. timeline: items [{year, label}], progress 0..1. icon: kind (pin, flag, swords, crown, shield, skull, star, house, person...; a force on a map: infantry, cavalry, armor, fleet, fortress, drawn in the story's period), x, y (centre), r (radius of the whole symbol), color, appear 0..1 (grows in, default 1), pulse 0..1 (a ring around it, 0 = none). arrow (maps only): from, to, curve (px the middle bends sideways, positive = to the right of travel), width, color, dashed, grow 0..1. label: x, y, text, size, color. Any call may add mark: 'id' and seed.`,
-    MOTION_FIGURE_DEVICES(devices),
-      "STAGE AND BACKDROP (both renderers, optional but preferred): var st = FIG.stage({ shot: the SCENE's shot establishing|wide|medium|close, horizon: y px }); st.at('left near' | 'center mid' | 'right far'..., i, n) gives { x, y, h } for the i-th of n people in that zone (ground point and standing height at that depth, spaced apart, inside the frame); st.heightAt(y) gives the standing height on any ground line. FIG.backdrop(ctx, { sky: day|overcast|dawn|dusk|night, ground: grass|dirt|sand|snow|mud|field|battlefield|stone or #hex, horizon, hills: far|both|false, water: { y, h } for a river or sea band across the view }) paints sky, far hills and ground over the whole camera range as the frame's first call; draw the place's own landmarks over it.",
-      "Everything else (landmarks, terrain the backdrop does not cover, smoke, fire, light) is your own drawing; the time header is only FIG.header(ctx, { text }) as the last call of the frame (see LABELS). Read keyframes with MotionFigures.track(keys, input.progress) and phases with MotionFigures.phase(input.progress, N, input.cues) (see MOTION).",
-    ].join("\n"),
   // How a scene is shown, over the scene the AI drew once (window.__motionView, set by the app before this script):
   // - style: "Bộ vẽ chuẩn" only. Every colour the scene paints goes through the style's tone (what the scene reads back is
   //   what it set), thin dark outlines take the style's ink and width, and a finish (vignette and mist, paper grain) goes
@@ -444,45 +398,6 @@ export const MOTION_FIGURES = {
     }
     return null;
   };
-  // The scene's own drawing function, run on a hidden canvas with the same transform, before the kit draws in its place:
-  // the hand points a person function returns (hand = near, backHand = back), where it seats a sitter, and every figure
-  // call it makes inside (a wagon's team, a held thing drawn with FIG.prop): those are drawn after the kit's figure, each
-  // by the table, so both renderers show the same things.
-  var ghosting = 0, ghostCanvas = null, capture = null;
-  var NESTED = /\\.\\s*(person|animal|vehicle|building|tree|prop|bridge|wall|chart|meter|timeline|icon|arrow|label)\\s*\\(/;
-  var nests = new WeakMap();
-  var nestsIn = function (f) { if (!nests.has(f)) { var src = ''; try { src = String(f); } catch (e) {} nests.set(f, NESTED.test(src)); } return nests.get(f); };
-  var ghostRun = function (c, fn, o, mine) {
-    var calls = [], res = null;
-    try {
-      if (!ghostCanvas) { ghostCanvas = document.createElement('canvas'); ghostCanvas.width = 8; ghostCanvas.height = 8; }
-      var g = ghostCanvas.getContext('2d'), m = c.getTransform();
-      g.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
-      var outer = capture;
-      // Nothing drawn unseen is marked: a mark the scene's function makes inside is not on the picture.
-      var marker = window.motionMark;
-      capture = calls; ghosting++; window.motionMark = function () {};
-      try { res = mine[fn](g, o); } finally { ghosting--; capture = outer; window.motionMark = marker; }
-      calls.forEach(function (call) { call.rel = m.inverse().multiply(call.m); });
-    } catch (e) { calls = []; }
-    return { res: res && typeof res === 'object' ? res : null, calls: calls };
-  };
-  var replay = function (c, table, calls) {
-    calls.forEach(function (call) {
-      var r = call.rel;
-      c.save();
-      try { c.transform(r.a, r.b, r.c, r.d, r.e, r.f); table[call.fn](c, call.o); } catch (e) {} finally { c.restore(); }
-    });
-  };
-  var ghostPose = function (res, o) {
-    var out = {};
-    var aimed = Array.isArray(o.reachAt) || Array.isArray(o.pointAt);
-    var ok = function (p) { return Array.isArray(p) && isFinite(+p[0]) && isFinite(+p[1]) ? [+p[0], +p[1]] : null; };
-    if (!aimed && res && (ok(res.hand) || ok(res.backHand))) out.handsAt = [ok(res.hand), ok(res.backHand)];
-    // Sitting: on what the scene drew under it, at the height of the scene's hip.
-    if (res && o.pose === 'sit' && o.seat == null && isFinite(+res.hip) && +o.y - +res.hip > 0) out.seat = +o.y - +res.hip;
-    return Object.keys(out).length ? out : null;
-  };
   // The figure vocabulary (motionFigureVocabulary, window.__motionVocab): every call's options are put in its words
   // before either renderer draws, so the scene's own function and the kit get the same options and show the same things.
   // What is left out is reported to the scene check as !fault:drop:fn.key.
@@ -514,8 +429,6 @@ export const MOTION_FIGURES = {
   };
   var HEX = /^#[0-9a-f]{3,8}$/i;
   var heldOf = new WeakMap();
-  // What the scene's own function gets: its options as it wrote them (its own words, which it reads), less what was left out.
-  var ownOf = new WeakMap();
   var dropped = function (fn, key) {
     var list = window.__motionMarks;
     if (!Array.isArray(list)) return;
@@ -527,17 +440,16 @@ export const MOTION_FIGURES = {
     if (!VOCAB || !o || typeof o !== 'object') return o;
     var spec = VOCAB[fn];
     if (!spec) return o;
-    var out = {}, keep = {};
+    var out = {};
     Object.keys(o).forEach(function (key) {
       var v = o[key];
       if (v === undefined) return;
-      var given = v;
       var to = spec.keys.indexOf(key) >= 0 ? key : spec.keyAs[plain(key)];
       // holdingSpear: true holds a spear; sootFace or tornCloak is dirty, bloodySleeve wounded.
       if (!to && spec.holdPrefix) spec.holdPrefix.some(function (pre) { var k = plain(key); if (k.length > pre.length && k.slice(0, pre.length) === pre) { to = 'hold'; if (v === true) v = k.slice(pre.length); return true; } return false; });
       if (!to && spec.wordKeys && v) { var kw = wordsOf(key); Object.keys(spec.wordKeys).some(function (k) { if (kw.some(function (w) { return spec.wordKeys[k].indexOf(w) >= 0; })) { to = k; v = true; return true; } return false; }); }
       // A hand's look stays the scene's own word for its function (the kit draws it as the hands' colour).
-      if (!to) { if (fn === 'person' && handLookKey(key)) keep[key] = v; else dropped(fn, key); return; }
+      if (!to) { if (!(fn === 'person' && handLookKey(key))) dropped(fn, key); return; }
       if (spec.values[to]) {
         // A switch named by its word (helmet: true, mail: true) is that word; a colour given for headgear is its colour.
         var word = wordIn(spec, to, v === true ? key : v);
@@ -551,15 +463,9 @@ export const MOTION_FIGURES = {
       if (to === 'robe' && v === true) v = o.top || '#6e4735';
       if (to === 'rider' && v && typeof v === 'object') v = normalized('person', v);
       if (out[to] === undefined || key === to) out[to] = v;
-      keep[key] = given;
     });
-    ownOf.set(out, keep);
     return out;
   };
-  var depth = 0;
-  // Inside a thought bubble or inset (the picture a device shows), the scene's own drawing functions draw: that small
-  // picture stays exactly as the AI drew it, never redrawn by the kit.
-  var inDevice = 0;
   // Large things (a third of the frame height or more) are also recorded unmarked as ~fn:kind, so the scene check can
   // see when the frame cuts them or two of them stand on top of each other.
   var LARGE_FNS = ['building', 'vehicle', 'tree', 'bridge', 'wall'], LARGE = 0.3;
@@ -590,8 +496,12 @@ export const MOTION_FIGURES = {
     // check read the icon or arrow as outside the frame.)
     if (fn === 'icon') { var r = num(+o.r, 20); return { x: x - r, y: y - r, w: 2 * r, h: 2 * r }; }
     if (fn === 'arrow' && Array.isArray(o.from) && Array.isArray(o.to)) return { x: Math.min(o.from[0], o.to[0]), y: Math.min(o.from[1], o.to[1]), w: Math.abs(o.to[0] - o.from[0]), h: Math.abs(o.to[1] - o.from[1]) };
+    // A thing given only its height (the scene engine's items) gets the usual width of its kind of thing, so the camera,
+    // the marks and the fire over a burning thing have a real box.
+    if (!w && h) w = h * (BOX_ASPECT[fn] || 1);
     return { x: x - w / 2, y: y - h, w: w, h: h };
   };
+  var BOX_ASPECT = { person: 0.42, animal: 1.35, vehicle: 1.7, building: 1.1, prop: 1, tree: 0.7, wall: 1 };
   // Measures a kit drawing once from its own pixels: drawn standing at a reference size on a hidden canvas, its painted
   // extent (soft ground shadows left out) gives the height, width and how far it sits off its ground point. A pose never
   // changes the size, and every kind the kit draws, the added items included, fills the box it is given.
@@ -656,7 +566,7 @@ export const MOTION_FIGURES = {
   // point makes the width w (within the limits), and the points the kit returns are mapped through the same stretch.
   // How far an elastic thing's length may follow its box (shorter, longer) before it keeps its shape.
   var ELASTIC = [0.85, 1.3];
-  var SHAPE_FIT = [0.45, 3];
+  var SHAPE_FIT = [0.6, 3];
   var fitted = function (c, K, fn, o, key, extra, fit) {
     if (o.seed == null) o = Object.assign({}, o, { seed: seedOf(o) });
     var unit = measure(K, fn, o, key);
@@ -755,9 +665,14 @@ export const MOTION_FIGURES = {
   var STATES = ['broken', 'smashed', 'wrecked', 'collapsed', 'sinking', 'sunk', 'destroyed', 'damaged', 'burning', 'onFire', 'ablaze', 'open', 'opened', 'splintered', 'shattered', 'cracked'];
   var PEOPLE = ['passengers', 'occupants', 'people', 'riders', 'sailors', 'rowers', 'soldiers', 'refugees', 'figures'];
   var THINGS = ['animal', 'vehicle', 'building', 'tree', 'prop', 'wall'];
+  // Options that carry the kit's own lists (a chain's points, a wagon fort's wagons, a chart's values...).
+  var KIT_LISTS = ['points', 'wagons', 'from', 'to', 'values', 'labels', 'colors', 'items', 'groups', 'crew', 'load'];
   var kitCan = function (fn, o, nested) {
     if (THINGS.indexOf(fn) < 0) return true;
     if (STATES.some(function (k) { return truthy(o[k]); })) return false;
+    // A call that hands its function a list of its own (a volley of arrows, each with its own place and flight) is many
+    // things or an effect drawn by the scene's function, not one thing the kit could fit into the box.
+    if (Object.keys(o).some(function (k) { var v = o[k]; return KIT_LISTS.indexOf(k) < 0 && Array.isArray(v) && v.length > 1 && v.some(function (e) { return e && typeof e === 'object'; }); })) return false;
     // People in the thing: the kit draws the thing only when the scene's function draws them with figure calls, which are
     // then drawn on it by the table; people painted straight into the thing keep the scene's whole drawing.
     return nested || !PEOPLE.some(function (k) { return truthy(o[k]); });
@@ -901,7 +816,7 @@ export const MOTION_FIGURES = {
         // The centre and radius too (cx, cy, r): pictures drawn around the bubble's centre land inside it.
         box.cx = x; box.cy = y; box.r = r;
         c.fillStyle = DEVICE_PAPER; c.fill(p);
-        if (typeof inner === 'function') { c.save(); c.clip(p); depth++; inDevice++; try { inner(c, box); } catch (e) {} finally { depth--; inDevice--; } c.restore(); }
+        if (typeof inner === 'function') { c.save(); c.clip(p); try { inner(c, box); } catch (e) {} c.restore(); }
         c.lineWidth = Math.max(2, r * 0.06); c.stroke(p);
         return { box: { x: x - r * (kind === 'inset' ? 1 : 1.6), y: y - r * (kind === 'inset' ? 1 : 1.05), w: r * (kind === 'inset' ? 2 : 3.2), h: r * (kind === 'inset' ? 2 : 2.1) } };
       }
@@ -975,7 +890,17 @@ export const MOTION_FIGURES = {
     prop: function (c, K, o) { return thing(c, K, 'prop', o); },
     wall: function (c, K, o) {
       var k = pick('wall', o);
-      if (!k) return null;
+      // A wall built of one library thing along its length (a row of stakes, an earthen bank): as many whole pieces as
+      // fill the length, each as tall as the wall.
+      if (!k) {
+        var q = pick('prop', o);
+        if (!q || q[0] !== 'prop') return null;
+        var tw = num(+o.w, 0), th = num(+o.h, 0), piece = measure(K, 'prop', Object.assign({}, o, { kind: q[1] }), 'p');
+        if (!piece || !(tw > 0) || !(th > 0)) return null;
+        var pw = piece.w * th / piece.h, n = Math.max(1, Math.round(tw / pw)), each = tw / n, x0 = num(+o.x, 0) - tw / 2;
+        for (var i = 0; i < n; i++) fitted(c, K, 'prop', Object.assign({}, o, { kind: q[1], x: x0 + each * (i + 0.5), w: each, h: th, seed: num(+o.seed, 3) + i }), 'p', null, 'stretch');
+        return { box: { x: x0, y: num(+o.y, 0) - th, w: tw, h: th } };
+      }
       o = Object.assign({}, o, { kind: k[1] });
       var x = num(+o.x, 0), y = num(+o.y, 0), w = num(+o.w, 0), h = num(+o.h, 0);
       if (SPAN_WALLS.indexOf(o.kind) >= 0) { var opt = Object.assign({}, o, { width: w, height: h }); delete opt.w; delete opt.h; K.prop(c, opt); return { box: { x: x - w / 2, y: y - h, w: w, h: h } }; }
@@ -1099,23 +1024,6 @@ export const MOTION_FIGURES = {
     out.index = i;
     return out;
   };
-  // Phases timed to the narration: cues is input.cues (the progress at which each spoken line starts).
-  var phase = function (progress, count, cues) {
-    var N = Math.max(1, Math.round(num(+count, 1))), p = clamp(num(+progress, 0), 0, 1), at = [], list = Array.isArray(cues) ? cues.map(Number).filter(function (v) { return isFinite(v) && v >= 0 && v < 1; }) : [];
-    for (var i = 0; i < N; i++) {
-      if (list.length >= 2) { var f = (i * list.length) / N, lo = Math.floor(f), a = list[lo], b = lo + 1 < list.length ? list[lo + 1] : 1; at.push(a + (b - a) * (f - lo)); }
-      else at.push(i / N);
-    }
-    at[0] = 0;
-    var index = 0;
-    for (i = 0; i < N; i++) if (p >= at[i]) index = i;
-    var end = index + 1 < N ? at[index + 1] : 1, k = end > at[index] ? Math.min(1, (p - at[index]) / (end - at[index])) : 1;
-    // local is the earlier name of k: scenes written against it must keep moving instead of drawing with NaN.
-    return {
-      index: index, count: N, at: at, k: k, local: k,
-      of: function (k) { var a = at[k], b = k + 1 < N ? at[k + 1] : 1; return !(k >= 0 && k < N) ? 0 : p <= a ? 0 : p >= b ? 1 : (p - a) / (b - a); },
-    };
-  };
   // The header card, in screen pixels inside the 90 % title-safe area (SMPTE ST 2046-1), sized to the frame height.
   // The cut-out style's place and time title: centred at the top in serif capitals, the place large and the date
   // under it, in spaced capitals, light with a dark edge, fading in at the scene's start and out after a few seconds, like a storybook caption.
@@ -1157,157 +1065,45 @@ export const MOTION_FIGURES = {
     c.fillStyle = dark ? '#ebe2d0' : '#1c1a18'; c.fillText(label, x + pad, y + h / 2 + k);
     c.restore();
   };
-  // The stage (FIG.stage) and the backdrop (FIG.backdrop): the parts of a scene the AI draws blind and gets wrong most
-  // (where a person stands, how big at that depth, a sky and ground that cover every camera move) worked out in code.
-  // Scene coordinates are 1280 x 720; a backdrop covers x -450..1730, y -260..980 like every scene backdrop.
-  var STAGE = { W: 1280, H: 720, FRONT: 655, HORIZON: 300, X: { left: 0.24, center: 0.5, right: 0.76 }, SHOT: { establishing: 0.08, wide: 0.15, medium: 0.27, close: 0.45 }, DEPTH: { near: 1, mid: 0.5, far: 0.18 }, GAP: 0.55 };
-  var stageOf = function (o) {
-    var horizon = clamp(num(+o.horizon, STAGE.HORIZON), 60, STAGE.FRONT - 60), shot = STAGE.SHOT[o.shot] || STAGE.SHOT.wide;
-    // Ground y between the horizon and the front; people shrink with distance from 1x at the front to 0.5x at the horizon.
-    var groundOf = function (depth) { return horizon + (STAGE.FRONT - horizon) * depth; };
-    var heightAt = function (y) { return STAGE.H * shot * (0.5 + 0.5 * clamp((y - horizon) / (STAGE.FRONT - horizon), 0, 1)); };
-    return {
-      horizon: horizon,
-      heightAt: heightAt,
-      // A spot in a zone ('left near', 'center far', 'right mid'...): its ground point and a standing person's height
-      // there; i of n people in that zone stand side by side, 2.5 head radii apart, never past the frame's side margins.
-      at: function (zone, i, n) {
-        var words = String(zone || '').toLowerCase();
-        var side = /left/.test(words) ? 'left' : /right/.test(words) ? 'right' : 'center';
-        var depth = /near|front/.test(words) ? 'near' : /far|back/.test(words) ? 'far' : 'mid';
-        var y = groundOf(STAGE.DEPTH[depth]), h = heightAt(y), count = Math.max(1, Math.round(num(+n, 1)));
-        var x = STAGE.W * STAGE.X[side] + (num(+i, 0) - (count - 1) / 2) * h * STAGE.GAP;
-        return { x: clamp(x, h * 0.3, STAGE.W - h * 0.3), y: y, h: h };
-      },
-    };
-  };
-  var SKIES = { day: ['#9cc3df', '#e4eef1'], overcast: ['#a6aeb5', '#d8dadb'], dawn: ['#8e90b8', '#f0caa0'], dusk: ['#4e4a72', '#e2a27a'], night: ['#0d1430', '#283658'] };
-  var GROUNDS = { grass: '#7f9c5c', dirt: '#b49b6c', sand: '#d9c28e', snow: '#e8ecef', mud: '#6f5f48', field: '#b9a96a', battlefield: '#8a7b5f', stone: '#9b978d', water: '#6f9fc0' };
-  var mix = function (a, b, k) {
-    var p = function (h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; };
-    var x = p(a), y = p(b);
-    return '#' + [0, 1, 2].map(function (j) { return ('0' + Math.round(x[j] + (y[j] - x[j]) * k).toString(16)).slice(-2); }).join('');
-  };
-  var drawBackdrop = function (c, o) {
-    var sky = SKIES[o.sky] || SKIES.day, night = o.sky === 'night', horizon = stageOf(o).horizon;
-    var ground = GROUNDS[o.ground] || (/^#[0-9a-f]{6}$/i.test(o.ground || '') ? o.ground : GROUNDS.grass);
-    if (night) ground = mix(ground, '#1a2238', 0.6);
-    var seed = num(+o.seed, 3), L = -450, R = 1730, T = -260, B = 980;
-    c.save();
-    var g = c.createLinearGradient(0, T, 0, horizon);
-    g.addColorStop(0, sky[0]); g.addColorStop(1, sky[1]);
-    c.fillStyle = g; c.fillRect(L, T, R - L, horizon - T + 2);
-    // Far hills: one or two soft ridges on the horizon, the far one closer to the sky colour.
-    var ridges = o.hills === false ? 0 : o.hills === 'far' || o.hills == null ? 1 : 2;
-    for (var k = ridges; k >= 1; k--) {
-      var top = horizon - (k === 2 ? 70 : 40), col = mix(ground, sky[1], k === 2 ? 0.55 : 0.35);
-      c.beginPath(); c.moveTo(L, horizon + 2);
-      for (var x = L; x <= R; x += 40) c.lineTo(x, top + 18 * Math.sin(x / (170 + 40 * k) + seed * k) + 12 * Math.sin(x / 67 + seed * 2.3));
-      c.lineTo(R, horizon + 2); c.closePath(); c.fillStyle = col; c.fill();
-    }
-    // Ground from the horizon to the bottom, a little darker toward the front.
-    var gg = c.createLinearGradient(0, horizon, 0, B);
-    gg.addColorStop(0, mix(ground, sky[1], 0.25)); gg.addColorStop(0.5, ground); gg.addColorStop(1, mix(ground, '#000000', 0.18));
-    c.fillStyle = gg; c.fillRect(L, horizon, R - L, B - horizon);
-    // Water across the view: a band from y (its far bank) down height px.
-    if (o.water && o.water.y != null) {
-      var wy = num(+o.water.y, horizon + 40), wh = Math.max(8, num(+o.water.h, 80)), wc = night ? '#34476a' : o.water.color || GROUNDS.water;
-      var wg = c.createLinearGradient(0, wy, 0, wy + wh);
-      wg.addColorStop(0, mix(wc, sky[1], 0.3)); wg.addColorStop(1, wc);
-      c.fillStyle = wg; c.fillRect(L, wy, R - L, wh);
-      c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 2;
-      for (var j = 0; j < 6; j++) { var ry = wy + wh * (0.25 + j * 0.12), rx = ((seed * 97 + j * 211) % 1100) + 60; c.beginPath(); c.moveTo(rx, ry); c.lineTo(rx + 40 + j * 6, ry); c.stroke(); }
-    }
-    c.restore();
-    return { horizon: horizon };
-  };
   window.MotionFigures = {
     track: track,
-    phase: phase,
     header: header,
-    use: function (own) {
-      // The scene's own functions stay as written; the object they came in is pointed at the table, so a figure one of
-      // them draws inside another (a wagon's team through FIG_IMPL.animal) goes through the table too.
-      var mine = own && typeof own === 'object' ? Object.assign({}, own) : {};
+    use: function () {
+      // Every figure is drawn by the kit in the chosen style, fitted into the box the scene gives; a thing the kit
+      // cannot draw is left out (never something only like it).
       var table = {};
-      // Arrows belong to maps: on any other scene an arrow is not drawn by either renderer.
-      var noArrows = !!(window.__motionView && window.__motionView.map === false);
       FNS.forEach(function (fn) {
         table[fn] = function (c, o) {
           var raw = o && typeof o === 'object' ? o : {};
           var gloves = fn === 'person' ? handLook(raw) : null;
-          // The same options for both renderers, in the vocabulary's words; a thing named only by its mark is that thing.
           var opt = normalized(fn, raw);
           var heldThing = fn === 'person' ? heldOf.get(opt) || null : null;
-          var mineOpt = ownOf.get(opt) || opt;
           if (gloves && opt.gloves == null) opt = Object.assign({}, opt, { gloves: gloves });
           if (!opt.kind && THINGS.indexOf(fn) >= 0 && markKind(fn, opt)) opt = Object.assign({}, opt, { kind: markKind(fn, opt) });
-          // Inside a hidden run of a scene function, a figure call is only noted (with where it was drawn): it is drawn
-          // for real afterwards, by the table.
-          if (ghosting) {
-            if (capture && c) capture.push({ fn: fn, o: raw, m: c.getTransform() });
-            return { box: boxOf(fn, opt) };
-          }
-          if (fn === 'arrow' && noArrows) return { box: boxOf(fn, opt) };
           var K = kit(), out = null, view = window.__motionViewHooks;
-          var byKit = false, nested = [];
-          var own = typeof mine[fn] === 'function' ? mine[fn] : null;
-          var kitDraws = !!(K && c && !(inDevice > 0 && own) && kitCan(fn, opt, !!own && nestsIn(own)));
-          var drawn = opt;
-          if (kitDraws && own && (fn === 'person' || nestsIn(own))) {
-            var ghost = ghostRun(c, fn, mineOpt, mine);
-            nested = ghost.calls;
-            var follow = fn === 'person' && !(inDevice > 0) ? ghostPose(ghost.res, opt) : null;
-            if (follow) drawn = Object.assign({}, opt, follow);
-          }
-          if (kitDraws) {
+          if (K && c && kitCan(fn, opt)) {
+            // While the kit draws, the camera and the style's tones stay off its own device-space transforms and colours.
             if (view) view.kit++;
-            try { out = KIT[fn](c, K, Object.assign({}, drawn, { mark: undefined, seed: opt.seed != null ? opt.seed : seedOf(opt) }, fn === 'person' && !opt.talking && speakingNow(opt) ? { talking: true } : {})); } catch (e) { out = null; } finally { if (view) view.kit--; }
-            byKit = !!out;
+            try { out = KIT[fn](c, K, Object.assign({}, opt, { mark: undefined, seed: opt.seed != null ? opt.seed : seedOf(opt) }, fn === 'person' && !opt.talking && speakingNow(opt) ? { talking: true } : {})); } catch (e) { out = null; } finally { if (view) view.kit--; }
           }
-          // A figure drawn inside another (a rider in its animal's function) is part of that one, never a subject alone.
-          var inner = depth > 0;
-          depth++;
-          try {
-            if (!out) out = own ? own(c, mineOpt) : null;
-            else if (nested.length) replay(c, table, nested);
-          } finally { depth--; }
+          if (!out) return {};
           // A held thing outside the hold words: a prop of that kind in the near hand, as large as a hand-held thing.
-          var held = heldThing;
-          if (held && out && Array.isArray(out.hand) && table.prop) {
+          if (heldThing && Array.isArray(out.hand) && table.prop) {
             var hs = num(+opt.h, 100) * 0.22;
-            try { table.prop(c, { kind: held, x: +out.hand[0], y: +out.hand[1] + hs * 0.35, h: hs, w: hs }); } catch (e) {}
+            try { table.prop(c, { kind: heldThing, x: +out.hand[0], y: +out.hand[1] + hs * 0.35, h: hs, w: hs }); } catch (e) {}
           }
-          // A check page can count which renderer drew each call (window.__motionFigureStats set by the page).
-          var stats = window.__motionFigureStats;
-          if (stats && K && c && !inner && THINGS.concat(['person']).indexOf(fn) >= 0) { var key = (byKit ? 'kit:' : 'own:') + fn + ':' + (opt.kind || ''); stats[key] = (stats[key] || 0) + 1; }
-          var res = out && typeof out === 'object' ? out : {};
+          var res = typeof out === 'object' ? out : {};
           res.box = boxOf(fn, opt);
           markBox(c, opt, res.box, fn);
-          if (view && view.keep && fn !== 'person' && opt.mark != null && !inner) view.keep(c, res.box, opt.mark);
-          if (view && fn === 'person' && c && !inner) view.person(c, opt, res, byKit);
+          if (view && view.keep && fn !== 'person' && opt.mark != null) view.keep(c, res.box, opt.mark);
+          if (view && fn === 'person' && c) view.person(c, opt, res, true);
           return res;
         };
       });
-      if (own && typeof own === 'object') FNS.forEach(function (fn) { if (typeof own[fn] === 'function') { try { own[fn] = table[fn]; } catch (e) {} } });
-      table.stage = function (o) { return stageOf(o && typeof o === 'object' ? o : {}); };
-      table.backdrop = function (c, o) {
-        if (!c) return {};
-        var out = {};
-        asScene(function () { out = drawBackdrop(c, o && typeof o === 'object' ? o : {}); });
-        return out;
-      };
       table.device = function (c, o, inner) {
         if (!c || !o || typeof o !== 'object') return {};
         var out = null;
-        // A scene with its own device function draws its bubbles, insets and their tails its own way, picture and all;
-        // otherwise the standard device frames the scene's picture.
-        if (typeof mine.device === 'function') {
-          depth++; inDevice++;
-          try { out = mine.device(c, o, inner); } catch (e) { out = null; } finally { depth--; inDevice--; }
-          out = out && typeof out === 'object' ? out : {};
-          if (!out.box) { var dr = Math.max(4, num(+o.r, 40)); out.box = { x: num(+o.x, 0) - dr, y: num(+o.y, 0) - dr, w: dr * 2, h: dr * 2 }; }
-        } else asScene(function () { out = drawDevice(c, o, inner); });
+        asScene(function () { out = drawDevice(c, o, inner); });
         var view = window.__motionViewHooks;
         if (view && view.keep && out && out.box && o.kind !== 'spotlight') view.keep(c, out.box);
         return out || {};

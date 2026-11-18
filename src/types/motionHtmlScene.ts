@@ -12,9 +12,13 @@ export interface MotionHtmlArtifact {
   seed: string;
   duration: number;
   attempts: number;
-  // Drawn on the figure table: shown with either "Cách dựng" choice without a new drawing. Scenes without it are redrawn.
-  figures?: boolean;
-  // The "Cách dựng" choice the thumbnail was captured with (motionFigureRenderKey).
+  // The scene spec version the scene was built from (scenes without one were drawn the old way and are built again).
+  spec?: number;
+  // Things the scene asked for that the library does not have (left out): what the library still lacks.
+  gaps?: import("../lib/motionObjectCatalog.js").MotionCatalogGap[];
+  // The engine version the thumbnail was captured with (a newer engine captures it again, no AI request).
+  engine?: number;
+  // The drawing style the thumbnail was captured with (motionFigureRenderKey).
   render?: string;
   cast?: string;
   continuity?: string;
@@ -22,9 +26,6 @@ export interface MotionHtmlArtifact {
   error?: string;
   warnings?: string[];
   fallback?: boolean;
-  // The things the scene calls that the standard kit cannot draw (the scene's own drawing shows them): what the object
-  // library still lacks, counted on the project's scorecard.
-  gaps?: import("../lib/motionObjectCatalog.js").MotionCatalogGap[];
 }
 export interface MotionHtmlPendingSubmission {
   prompt: string;

@@ -12,7 +12,6 @@ export const motionOutputSettings = (input: Record<string, any>, result?: Motion
     controlSnapshot: {
       mode: visualSettings.mode,
       profile: visualSettings.profileId,
-      figureKit: visualSettings.figureKit === true,
       genre: input.videoGenre ?? input.analysis?.videoGenre,
       storytelling: input.storytelling ?? input.analysis?.storytelling,
       length: input.length,

@@ -81,9 +81,9 @@ try {
     const result = await page.evaluate(() => ({ requests: (window as any).motionDraftFixture.requests, thumbnails: (window as any).motionDraftStudio.state.thumbnails }));
     assert.equal(result.requests.length, 1);
     assert.equal(result.requests[0].script.gen.previews["new-scene"].file, "latest.jpg", "Even a previously bound click handler must read the latest built scenes");
-    assert.equal(result.requests[0].visualSettings.mode, mode);
+    assert.equal(result.requests[0].visualSettings.mode, "remotion", "the old library mode opens as scenes");
     assert.equal(result.requests[0].seo.title, "Second option");
-    assert.deepEqual(result.requests[0].aiExecution, { provider: "gemini-chat", model: "gemini-flash::low", mode: "room-only", chromeHeadless: false, allowFallback: false });
+    assert.deepEqual(result.requests[0].aiExecution, { provider: "gemini-chat", model: "gemini-flash::low", mode: "room-only", chromeHeadless: false, allowFallback: false, multiSceneRooms: false });
     assert.equal(result.thumbnails[0].image, "keep-first");
     assert.equal(result.thumbnails[1].image, "thumbnail-1");
     assert.deepEqual(errors, []);

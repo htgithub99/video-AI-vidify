@@ -528,15 +528,8 @@
   padding-right: 8px !important;
   cursor: pointer;
 }
-.studio-player .studio-player-action {
-  cursor: pointer;
-}
 .studio-player button.studio-player-pill:hover {
   background: rgba(20, 20, 24, 0.85) !important;
-}
-.studio-player .studio-player-action.is-on {
-  background: #fff !important;
-  color: #000 !important;
 }
 /* Volume: the icon sits in a pill that widens on hover to show a white slider. */
 .studio-player .studio-player-vol {
@@ -553,7 +546,8 @@
 .studio-player .studio-player-vol:hover .studio-player-ctrl {
   background: transparent !important;
 }
-/* Player volume: thin white slider that opens on hover, like YouTube (overrides the app-wide range style). */
+/* Player volume: thin white slider that opens on hover, like YouTube. The app-wide range style (and its light-theme
+   border and ring on the track and the thumb) is overridden at the same weight, so the dot sits centred on the line. */
 .studio-player input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -572,20 +566,22 @@
   margin-right: 14px;
   opacity: 1;
 }
-.studio-player input[type="range"]::-webkit-slider-runnable-track {
+:root:is(.light, .dark) .studio-player input.studio-player-volume[type="range"]::-webkit-slider-runnable-track {
+  box-sizing: border-box;
   height: 3px;
   background: linear-gradient(to right, #fff var(--studio-volume, 100%), rgba(255, 255, 255, 0.35) var(--studio-volume, 100%));
   border: 0;
   border-radius: 9999px;
 }
-.studio-player input[type="range"]::-moz-range-track {
+:root:is(.light, .dark) .studio-player input.studio-player-volume[type="range"]::-moz-range-track {
   height: 3px;
   background: linear-gradient(to right, #fff var(--studio-volume, 100%), rgba(255, 255, 255, 0.35) var(--studio-volume, 100%));
   border: 0;
   border-radius: 9999px;
 }
-.studio-player input[type="range"]::-webkit-slider-thumb {
+:root:is(.light, .dark) .studio-player input.studio-player-volume[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
+  box-sizing: border-box;
   width: 12px;
   height: 12px;
   margin-top: -4.5px;
@@ -594,7 +590,7 @@
   background: #fff;
   box-shadow: none;
 }
-.studio-player input[type="range"]::-moz-range-thumb {
+:root:is(.light, .dark) .studio-player input.studio-player-volume[type="range"]::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border: 0;

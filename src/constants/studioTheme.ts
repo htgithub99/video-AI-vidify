@@ -130,7 +130,10 @@ export const STUDIO_PLAYER = {
   HOVER_TIME: "shrink-0",
   HOVER_TITLE: "truncate min-w-0",
   CONTROLS: "mt-1 flex items-center justify-between gap-2",
-  GROUP: "flex items-center gap-1.5 min-w-0",
+  // The left group takes the room left and its chapter pill shrinks; the right group never shrinks, so the fullscreen
+  // button keeps the same inset from the right edge as Back has from the left.
+  GROUP: "flex items-center gap-1.5 min-w-0 flex-1",
+  GROUP_END: "flex items-center gap-1.5 shrink-0",
   CTRL: "studio-player-ctrl",
   CTRL_ICON: "w-5 h-5",
   CTRL_ICON_FILL: "w-5 h-5 fill-white",
@@ -139,8 +142,6 @@ export const STUDIO_PLAYER = {
   PILL: "studio-player-pill",
   CHAPTER: "studio-player-pill studio-player-chapter",
   CHAPTER_TEXT: "truncate max-w-[16rem]",
-  ACTION: "studio-player-pill studio-player-action",
-  ACTION_ON: "is-on",
   LOADING: "absolute inset-0 flex items-center justify-center bg-black/50 z-[6]",
   LOADING_ICON: "w-8 h-8 text-white animate-spin",
   ERROR: "text-xs text-rose-400 mt-2",

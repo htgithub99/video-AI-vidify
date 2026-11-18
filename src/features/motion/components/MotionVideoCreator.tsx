@@ -280,7 +280,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
     void work().finally(() => setSceneAction(null));
   };
   // Scenes on the figure table follow "Cách dựng" on the spot; scenes drawn before it are redrawn by the next scene build.
-  const legacyCount = Object.values(state.script?.gen?.remotion?.scenes || {}).flat().filter((scene) => !!scene.html && scene.html.figures !== true).length;
+  const legacyCount = Object.values(state.script?.gen?.remotion?.scenes || {}).flat().filter((scene) => !!scene.html && !scene.html.spec).length;
   const scenesBusy = busyKind === MOTION_TEXT_SCENES;
   const sceneTotal = remotionProgress?.planned ? remotionProgress.total : 0;
   const estimateTotal = studio.compiled?.spec.duration || 0;

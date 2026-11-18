@@ -90,7 +90,7 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   building("stiltHouse", ALWAYS, "stiltHouse", ["houseOnStilts"]),
   building("longhouse", { to: 1700 }, "longhouse", ["hall", "greatHall"]),
   building("yurt", ALWAYS, "yurt", ["ger"]),
-  { id: "tent", fn: "building", names: ["armyTent"], variants: [{ to: 500, kit: ["building", "tent"] }, { from: 501, to: 1650, kit: ["building", "pavilionTent"] }, { from: 1651, kit: ["building", "tent"] }] },
+  { id: "tent", fn: "building", names: [], variants: [{ to: 500, kit: ["building", "tent"] }, { from: 501, to: 1650, kit: ["building", "pavilionTent"] }, { from: 1651, kit: ["building", "tent"] }] },
   building("church", { from: 300 }, "church", ["chapel", "abbey"]),
   building("temple", { from: -3000 }),
   building("pagoda", { from: 500 }),
@@ -106,7 +106,7 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   building("trench", { from: 1860 }),
   building("ruins", ALWAYS, "ruins", ["ruin", "smokingRuins"]),
   // Library buildings (markets, guard posts, gates, faith and village halls).
-  building("stall", ALWAYS, "stall", ["marketStall", "booth"]),
+  building("stall", ALWAYS, "stall", ["marketStall", "booth", "awning", "marketAwning", "stallAwning"]),
   building("watchtower", ALWAYS, "watchtower", ["lookout", "lookoutTower"], { builds: ["wood", "timber"] }),
   building("gatehouse", { from: 900, to: 1800 }, "gatehouse", ["castleGate", "barbican"], { builds: ["stone"] }),
   building("cityGate", { from: -500 }, "cityGate", ["gateTower"]),

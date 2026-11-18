@@ -63,6 +63,8 @@ const lands = [
   { id: "riceTerraces", names: ["terraces", "terracedFields", "riceTerrace"] },
   { id: "cliff", names: ["rockFace", "bluff"] },
   { id: "hillFort", names: ["moundFort", "tumulus"] },
+  // A village or small town seen from afar: a cluster of roofs (and a church tower once there are churches).
+  { id: "villageCluster", names: ["village", "hamlet", "distantVillage", "farVillage", "town", "smallTown", "settlement"] },
 ];
 
 const landBody = `
@@ -75,6 +77,11 @@ const landBody = `
     case "caveMouth": fl(S([[-2.6, 0], [-2.4, -2.2], [-1.0, -3.0], [1.2, -2.9], [2.6, -2.0], [2.6, 0]]), T(night ? "#6a645c" : "#9a9288")); fl(S([[-1.2, 0], [-1.1, -1.4], [0, -2.0], [1.1, -1.4], [1.2, 0]]), black, { hatch: false }); break;
     case "riceTerraces": for (let i = 0; i < 5; i++) { const y = -i * 0.6; fl(S([[-3.0 + i * 0.4, y], [-2.8 + i * 0.4, y - 0.6], [2.8 - i * 0.4, y - 0.6], [3.0 - i * 0.4, y]]), i % 2 ? T("#7aa05a") : T("#8ab06a")); ln([[-2.8 + i * 0.4, y - 0.6], [2.8 - i * 0.4, y - 0.6]], 0.6, T("#6a8a9a")); } break;
     case "cliff": fl(P([[-2.4, 0], [-2.2, -4.0], [0.6, -4.2], [1.0, -2.6], [1.4, -1.0], [2.4, 0]]), T(night ? "#6a645c" : "#9a9288")); for (let i = 0; i < 5; i++) ln([[-1.8 + i * 0.6, -3.8], [-1.6 + i * 0.6, -0.4]], 0.4); fl(rect(-2.3, -4.2, 0.7, -3.95), green, { hatch: false }); break;
+    case "villageCluster": { const wall = T(night ? "#9a8e7a" : "#d8ccb0"), roof = T(o.color || (night ? "#5a3a2e" : "#9a4a34")), thatch = T(night ? "#7a6a46" : "#b89a5a"), yr = K.num(window.__motionView && window.__motionView.year, 1500), tower = yr >= 600;
+      const houses = [[-2.6, 0.55, 0.55, 1], [-1.9, 0.7, 0.75, 0], [-1.0, 0.6, 0.6, 1], [0.95, 0.65, 0.7, 0], [1.75, 0.55, 0.6, 1], [2.5, 0.6, 0.65, 0], [-0.4, 0.5, 0.5, 0], [0.5, 0.45, 0.5, 1]];
+      if (tower) { fl(rect(-0.2, -2.3, 0.25, -0.2), wall); fl(P([[-0.3, -2.3], [0.03, -3.1], [0.35, -2.3]]), roof); fl(rect(-0.07, -1.95, 0.12, -1.65), T("#3a3028"), { hatch: false }); }
+      houses.forEach(([x, hw, h, k], i) => { const y = -0.05 * (i % 3); fl(rect(x - hw, y - h, x + hw, y), wall); fl(P([[x - hw - 0.12, y - h], [x, y - h - hw * 0.9], [x + hw + 0.12, y - h]]), k || yr < 1300 ? thatch : roof); fl(rect(x - 0.1, y - h * 0.55, x + 0.1, y), T("#4a3a2c"), { hatch: false }); });
+      for (let i = 0; i < 5; i++) fl(E(-2.8 + i * 1.4, 0.05, 0.6, 0.18), green); if (o.smoking !== false) smoke(-1.9, -1.6, 0.35); break; }
     case "hillFort": fl(S([[-3.0, 0], [-1.8, -1.6], [1.8, -1.6], [3.0, 0]]), green); for (let i = 0; i < 12; i++) { const x = -1.7 + i * 0.31; beam([[x, -1.55], [x, -2.2]], 0.07); } break;`;
 
 export const MOTION_LIBRARY_TREES: MotionLibraryPart = { part: "lib_trees", fn: "tree", items: trees, js: motionLibraryPart(trees, treeBody, 1.0, leaf) };

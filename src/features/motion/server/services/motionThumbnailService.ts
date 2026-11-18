@@ -7,37 +7,26 @@ import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import * as MR from "../../../../constants/motionRuntime.js";
 import { MOTION_THUMBNAIL as T } from "../../../../constants/motionThumbnail.js";
 import { MOTION_AI_ROLE } from "../../../../constants/motionAiFallback.js";
-import { MOTION_RESPONSE_SCHEMAS } from "../../../../constants/motionResponseContract.js";
-import { motionResponseErrors, motionResponseRepair, withMotionResponsePrompt } from "../../../../lib/motionResponseContract.js";
 import { motionVideoGenrePackaging } from "../../../../constants/motionGenre.js";
 import { motionVisualSettingsFor } from "../../../../lib/motionVisual.js";
-import { normalizeMotionVector } from "../../../../lib/motionVectorAsset.js";
 import { resolveMotionSceneExecution } from "../../lib/motionSceneAi.js";
 import { getDownloadedImageMimeType } from "../../../../server/utils/imageMedia.js";
 import { readBase64ImageDimensions } from "../../../../server/utils/imageAspectRatio.js";
-import { runMotionAi, motionAiRoutes, type MotionAiImage } from "./motionStoryService.js";
-import { requestMotionAiContract, type MotionAiResponseContract } from "./motionAiContractService.js";
-import { rasterizeMotionSvgs } from "./motionRenderService.js";
+import { runMotionAi, extractJson, type MotionAiImage } from "./motionStoryService.js";
+import { motionSceneSpecFix, motionSceneSpecPage, motionSceneSpecPrompt, motionSceneSpecRead } from "../../../../lib/motionSceneSpec.js";
 import { getMotionWorkDirectory } from "./motionLibraryService.js";
 import { genPreviewDir } from "./motionGenState.js";
 import { motionThumbnailStyle, prepareMotionThumbnailReferences } from "./motionThumbnailReferences.js";
 import type { MotionAiExecution, MotionSeoOption, MotionStoryAnalysis, MotionStoryScript } from "../../../../types/motionVideo.js";
 import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";
-import { motionRenameLeaks, motionRenameMapActive } from "../../../../lib/motionRename.js";
+import { motionRenameMapActive } from "../../../../lib/motionRename.js";
 import type { MotionVisualSettings } from "../../../../types/motionVisual.js";
-import { motionHtmlDrawIssue } from "../../../../lib/motionHtmlPrompt.js";
 import { MOTION_LAYOUT_WIDE } from "../../../../constants/motionLayouts/index.js";
-import { MOTION_HTML } from "../../../../constants/motionHtmlTemplate.js";
-import { motionHtmlFigureDoc } from "../../../../lib/motionHtmlFigure.js";
-import { motionHtmlFigures, motionHtmlFiguresIssue } from "../../../../lib/motionFigures.js";
+import { motionHtmlFigures } from "../../../../lib/motionFigures.js";
 import { motionProportionOf } from "../../../../lib/motionDrawStyle.js";
-import { motionCatalogKinds } from "../../../../lib/motionObjectCatalog.js";
 import { motionAnalysisEraYear } from "../../../../lib/motionEra.js";
-import { MOTION_FIGURES } from "../../../../constants/motionFigures.js";
-import { PROMPT_REFERENCE_DOC } from "../../../../constants/promptSourceData.js";
-import { motionHtmlSource } from "../../../../lib/motionHtmlScene.js";
 import { openMotionHtmlRuntime } from "./html/sceneRuntime.js";
-const dependencies = { runMotionAi, rasterizeMotionSvgs, prepareMotionThumbnailReferences, openMotionHtmlRuntime };
+const dependencies = { runMotionAi, prepareMotionThumbnailReferences, openMotionHtmlRuntime };
 export const createMotionThumbnailService = (overrides: Partial<typeof dependencies> = {}) => {
   const deps = { ...dependencies, ...overrides };
   return async (analysis: MotionStoryAnalysis, seo: MotionSeoOption | undefined, opts: { language: string; aspect?: string; note?: string; script?: MotionStoryScript; visualSettings?: MotionVisualSettings; exec: MotionAiExecution; chromeHeadless?: boolean; signal?: AbortSignal; log?: (s: string) => void }): Promise<{ thumbnail: string; prompt: string }> => {
@@ -83,30 +72,47 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         userNote: opts.note || "",
         ...(motionRenameMapActive(analysis).length ? { renaming: RENAME.PROMPT.THUMBNAIL } : {}),
       };
-      if (settings.figureKit === true) {
-        opts.log?.(T.LOG_KIT);
-        // The thumbnail page is written against the same figure table as the scenes; the kit draws its figures when it is captured.
-        const render = { kit: true, profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE };
-        const htmlExec: MotionAiExecution = { ...exec, outputFormat: RT_MAINTENANCE.HTML, singleResponse: true };
-        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, MOTION_HTML.GRAPHICS, PROMPT_REFERENCE_DOC.WRAP(PROMPT_REFERENCE_DOC.FIGURE_NAME, [motionHtmlFigureDoc(settings), MOTION_FIGURES.DOC(motionCatalogKinds(motionAnalysisEraYear(analysis), JSON.stringify(analysis)))].join(RT_MAINTENANCE.NEWLINE)), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
-        let reason = "";
-        for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
+      opts.log?.(T.LOG_SPEC);
+      // The thumbnail is a spec like every scene: the kit draws it in the video's drawing style.
+      const render = { profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE, year: motionAnalysisEraYear(analysis) };
+      const specExec: MotionAiExecution = { ...exec, singleResponse: true };
+      const base = [
+        motionSceneSpecPrompt({}, { year: motionAnalysisEraYear(analysis), task: T.SPEC_TASK(width, height), frame: [width, height] }),
+        T.LAYOUT,
+        T.REFERENCE_RULE,
+        T.STYLE_RULE + style,
+        T.SPEC_HEADLINE,
+        stringifyJson(brief),
+      ].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+      let reason = "";
+      for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
+        opts.signal?.throwIfAborted();
+        const prompt = reason ? [base, T.SPEC_RETRY(reason)].join(RT_MAINTENANCE.NEWLINE) : base;
+        let page = "";
+        // The AI's own failures (no answer, quota) are the AI runner's to resend or report; only an answer that is not a
+        // usable spec asks again here.
+        const answer = await deps.runMotionAi(prompt, T.HTML_ARTIFACT, specExec, opts.signal, opts.log, images);
+        try {
+          const spec = motionSceneSpecRead(typeof answer === "string" ? extractJson(answer) : answer, [width, height]);
+          if (!spec.headline?.lines.length) throw new Error(T.HEADLINE_MISSING);
+          motionSceneSpecFix(spec, { year: render.year });
+          page = motionSceneSpecPage(spec);
+        } catch (error) {
           opts.signal?.throwIfAborted();
-          const prompt = reason ? [base, T.HTML_RETRY(reason)].join(RT_MAINTENANCE.NEWLINE) : base;
-          const source = motionHtmlSource(await deps.runMotionAi(prompt, T.HTML_ARTIFACT, htmlExec, opts.signal, opts.log, images));
-          const issue = motionHtmlFiguresIssue(source) || motionHtmlDrawIssue(source) || (T.HEADLINE_CALL.test(source) ? undefined : T.HEADLINE_MISSING);
-          if (issue) {
-            reason = issue;
-            opts.log?.(T.LOG_KIT_RETRY(attempt, issue));
-            continue;
-          }
-          const html = source;
-          const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.PNG}`);
-          await fs.promises.writeFile(file.replace(/\.png$/u, T.HTML_FILE_EXT), motionHtmlFigures(html, render));
+          reason = String((error as Error).message);
+          opts.log?.(T.LOG_SPEC_RETRY(attempt, reason));
+          continue;
+        }
+        const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.PNG}`);
+        await fs.promises.writeFile(file.replace(/\.png$/u, T.HTML_FILE_EXT), motionHtmlFigures(page, render));
+        // The browser can fail on its own: the accepted spec is shown again (no new AI request). A blank or wrongly sized
+        // picture is the spec's fault and asks for a new one.
+        for (let show = 1; show <= T.RENDER_TRIES; show++) {
           opts.log?.(T.RENDER_LOG);
-          const runtime = await deps.openMotionHtmlRuntime(html, opts.signal, true, undefined, render);
+          let runtime: Awaited<ReturnType<typeof deps.openMotionHtmlRuntime>> | undefined;
           try {
-            const buffer = await runtime.render({ time: 0, progress: 0, frame: 0, fps: T.REFERENCE_FPS, duration: T.REFERENCE_SECONDS, width, height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: false, sceneEffectsEnabled: true, seed: requestId, speaking: [] } as Parameters<typeof runtime.render>[0]);
+            runtime = await deps.openMotionHtmlRuntime(page, opts.signal, true, undefined, render);
+            const buffer = await runtime.render({ time: 0, progress: 0.5, frame: 0, fps: T.REFERENCE_FPS, duration: T.REFERENCE_SECONDS, width, height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: false, sceneEffectsEnabled: true, seed: requestId, speaking: [] } as Parameters<typeof runtime.render>[0]);
             const base64 = buffer.toString(RT_MAINTENANCE.BASE64);
             const dimensions = readBase64ImageDimensions(base64);
             const blank = buffer.length / (width * height) < T.BLANK_BYTES_PER_PIXEL;
@@ -116,63 +122,17 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
               return { thumbnail: MR.MOTION_TEMPLATE_DATA_BASE64(MR.MOTION_TEXT_IMAGE_PNG, base64), prompt };
             }
             reason = blank ? T.BLANK : T.VIEWBOX_ERROR;
+            break;
           } catch (error) {
             opts.signal?.throwIfAborted();
             reason = String((error as Error).message);
           } finally {
-            await runtime.close();
+            await runtime?.close();
           }
-          opts.log?.(T.LOG_KIT_RETRY(attempt, reason));
         }
-        throw new Error(T.HTML_ERROR(reason));
+        opts.log?.(T.LOG_SPEC_RETRY(attempt, reason));
       }
-      const prompt = withMotionResponsePrompt(T.ARTIFACT, [T.DRAW_TASK, T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE));
-      const contract: MotionAiResponseContract = {
-        schema: MOTION_RESPONSE_SCHEMAS[T.ARTIFACT],
-        attempts: T.DRAW_ATTEMPTS,
-        routeAttempts: T.DRAW_ATTEMPTS,
-        budget: T.DRAW_ATTEMPTS * motionAiRoutes(exec).length,
-        assess: (raw) => {
-          const errors = motionResponseErrors(raw, MOTION_RESPONSE_SCHEMAS[T.ARTIFACT]);
-          if (errors.length) return { value: raw, errors };
-          try {
-            const vector = normalizeMotionVector(raw.svg, requestId, requestId, title, true);
-            if (vector.width !== width || vector.height !== height) return { value: raw, errors: [T.VIEWBOX_ERROR] };
-            return { value: vector, errors: [] };
-          } catch (error) {
-            return { value: raw, errors: [String((error as Error).message)] };
-          }
-        },
-        repair: (question, draft, errors) => motionResponseRepair(question, { draft, errors }),
-        failure: (errors) => new Error(MR.MOTION_TEMPLATE_CHUA_TAO_DUOC_THUMBNAIL(errors.join(RT_MAINTENANCE.SEMICOLON_SPACE))),
-      };
-      const vector = overrides.runMotionAi ? await requestMotionAiContract(prompt, exec, (question) => deps.runMotionAi(question, T.ARTIFACT, exec, opts.signal, opts.log, images), contract, opts.signal) : await deps.runMotionAi(prompt, T.ARTIFACT, exec, opts.signal, opts.log, images, 0, contract);
-      opts.signal?.throwIfAborted();
-      const renameMap = motionRenameMapActive(analysis);
-      if (renameMap.length) {
-        const leaked = [...new Set([...vector.svg.matchAll(RENAME.SVG_TEXT)].flatMap((match) => motionRenameLeaks(match[1], renameMap)))];
-        if (leaked.length) opts.log?.(RENAME.LOG.THUMBNAIL_LEAK(leaked));
-      }
-      const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.PNG}`);
-      await fs.promises.writeFile(file.replace(/\.png$/u, RT_MAINTENANCE.SVG_3), vector.svg);
-      opts.log?.(T.RENDER_LOG);
-      for (let attempt = 0; attempt < T.RENDER_ATTEMPTS; attempt++) {
-        opts.signal?.throwIfAborted();
-        if (attempt) opts.log?.(T.RENDER_RETRY);
-        await deps.rasterizeMotionSvgs([{ svg: vector.svg, file, width, height }]).catch((error) => {
-          opts.signal?.throwIfAborted();
-          opts.log?.(String((error as Error).message));
-        });
-        opts.signal?.throwIfAborted();
-        const buffer = await fs.promises.readFile(file).catch(() => undefined);
-        if (!buffer || buffer.length < T.PNG_HEADER_BYTES || getDownloadedImageMimeType(buffer) !== MR.MOTION_TEXT_IMAGE_PNG) continue;
-        const base64 = buffer.toString(RT_MAINTENANCE.BASE64);
-        const dimensions = readBase64ImageDimensions(base64);
-        if (dimensions?.width !== width || dimensions.height !== height) continue;
-        opts.log?.(MR.MOTION_TEXT_THUMBNAIL_XONG);
-        return { thumbnail: MR.MOTION_TEMPLATE_DATA_BASE64(MR.MOTION_TEXT_IMAGE_PNG, base64), prompt };
-      }
-      throw new Error(T.RENDER_ERROR);
+      throw new Error(T.SPEC_ERROR(reason));
     } finally {
       await fs.promises.rm(directory, { recursive: true, force: true }).catch(() => opts.log?.(T.CLEANUP_WARNING));
     }

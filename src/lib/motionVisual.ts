@@ -10,17 +10,17 @@ import { motionIsLayout } from "./motionLayout.js";
 import { MOTION_DRAW_STYLE_ALIAS } from "../constants/motionDrawStyles/index.js";
 import type { MotionRemotionProfile, MotionRenderSpec, MotionRemotionSpec, MotionScenePacing, MotionVisualSettings } from "../types/motionVisual.js";
 export const normalizeMotionVisualSettings = (raw?: unknown): MotionVisualSettings => {
-  const base = (profileId: MotionRemotionProfile, figureKit: boolean, pacing: { pacing?: MotionScenePacing }, proportion?: unknown, layout?: unknown, movement?: unknown): MotionVisualSettings => ({ version: 1, mode: RT_SHARED.REMOTION, engine: RT_SHARED.REMOTION, profileId, componentRevision: V.COMPONENT_REVISION, ...(figureKit ? { figureKit: true } : {}), ...pacing, ...(motionIsProportion(proportion) ? { proportion } : {}), ...(motionIsLayout(layout) ? { layout } : {}), ...(motionIsMovement(movement) ? { movement } : {}) });
-  if (raw == null) return base(RT_SHARED.HISTORY, false, {});
+  const base = (profileId: MotionRemotionProfile, pacing: { pacing?: MotionScenePacing }, proportion?: unknown, layout?: unknown, movement?: unknown): MotionVisualSettings => ({ version: 1, mode: RT_SHARED.REMOTION, engine: RT_SHARED.REMOTION, profileId, componentRevision: V.COMPONENT_REVISION, ...pacing, ...(motionIsProportion(proportion) ? { proportion } : {}), ...(motionIsLayout(layout) ? { layout } : {}), ...(motionIsMovement(movement) ? { movement } : {}) });
+  if (raw == null) return base(RT_SHARED.HISTORY, {});
   if (typeof raw !== "object" || Array.isArray(raw)) throw new Error(V.INVALID);
   const value = { ...(raw as Record<string, unknown>) };
   if (typeof value.profileId === "string" && Object.hasOwn(MOTION_DRAW_STYLE_ALIAS, value.profileId)) value.profileId = MOTION_DRAW_STYLE_ALIAS[value.profileId];
   if (value.pacing != null && !([RT_CORE.FEW, RT_CORE.MEDIUM, RT_CORE.MANY] as string[]).includes(String(value.pacing))) throw new Error(V.INVALID);
   const pacing = value.pacing ? { pacing: value.pacing as MotionScenePacing } : {};
   if (value.version !== 1) throw new Error(V.INVALID);
-  if (value.mode === V.LEGACY_LIBRARY) return base(V.LEGACY_LIBRARY_PROFILE, true, pacing);
+  if (value.mode === V.LEGACY_LIBRARY) return base(V.LEGACY_LIBRARY_PROFILE, pacing);
   if (value.mode === RT_SHARED.REMOTION && (value.engine == null || value.engine === RT_SHARED.REMOTION) && typeof value.profileId === "string" && Object.hasOwn(V.PROFILES, value.profileId) && (value.componentRevision == null || value.componentRevision === V.COMPONENT_REVISION))
-    return base(value.profileId as MotionRemotionProfile, value.figureKit === true, pacing, value.proportion, value.layout, value.movement);
+    return base(value.profileId as MotionRemotionProfile, pacing, value.proportion, value.layout, value.movement);
   throw new Error(V.INVALID);
 };
 export const motionVisualSettingsFor = (input: Record<string, any>): MotionVisualSettings => {
@@ -32,9 +32,9 @@ export const motionVisualSettingsFor = (input: Record<string, any>): MotionVisua
 };
 // What the scene plan and the drawings depend on. "Cách dựng", the drawing style, the proportion and the layout are applied
 // when the scenes are shown, so one set of scenes serves every choice of them.
-export const motionPlanSettings = (settings: MotionVisualSettings): Partial<MotionVisualSettings> => ({ ...settings, profileId: undefined, layout: undefined, figureKit: undefined, proportion: undefined, movement: undefined });
+export const motionPlanSettings = (settings: MotionVisualSettings): Partial<MotionVisualSettings> => ({ ...settings, profileId: undefined, layout: undefined, proportion: undefined, movement: undefined });
 // A scene drawn on the figure table serves both "Cách dựng" choices; a scene from before it has to be drawn again.
-export const motionSceneCurrent = (artifact: { figures?: boolean } | undefined): boolean => artifact?.figures === true;
+export const motionSceneCurrent = (artifact: { spec?: number } | undefined): boolean => (artifact?.spec ?? 0) >= 1;
 export const isRemotionSpec = (spec: MotionRenderSpec | null | undefined): spec is MotionRemotionSpec => !!spec && RT_CORE.ENGINE in spec && spec.engine === RT_SHARED.REMOTION;
 export const motionVisualRequest = (input: Record<string, any>): Record<string, unknown> => {
   const visualSettings = motionVisualSettingsFor(input);

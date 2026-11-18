@@ -1507,7 +1507,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       const isTimeoutError = _.get(caught, RT_MAINTENANCE.CODE) === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE;
       const unsent =
         !recovered && !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || isTimeoutError || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
-      if (!captchaRetry && exec.singleResponse && !unsent && exec.outputFormat !== RT_MAINTENANCE.HTML && artifactType !== MOTION_HTML.PLAN) {
+      if (!captchaRetry && exec.singleResponse && !unsent && exec.outputFormat !== RT_MAINTENANCE.HTML && artifactType !== MOTION_HTML.PLAN && artifactType !== MOTION_HTML.ARTIFACT) {
         roomOk = submission.completed;
         throw caught;
       }

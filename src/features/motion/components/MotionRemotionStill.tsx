@@ -14,7 +14,7 @@ const MotionHtmlLiveStill = ({ document, onReady, className }: { document: Motio
   const scene = document.scenes[0];
   const frame = useRef<HTMLIFrameElement>(null);
   const token = useMemo(() => `${RT_MAINTENANCE.MOTION}${Math.random().toString(36).slice(2)}`, [scene?.html?.hash]);
-  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token, motionFigureRenderOf(document, scene as MotionFigureScene)) : ""), [scene, token, document.figureKit, document.profileId, document.proportion, document.layout, document.movement]);
+  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token, motionFigureRenderOf(document, scene as MotionFigureScene)) : ""), [scene, token, document.profileId, document.proportion, document.layout, document.movement]);
   useEffect(() => {
     const listen = (event: MessageEvent) => {
       if (event.source === frame.current?.contentWindow && event.data?.token === token) onReady();
@@ -47,7 +47,7 @@ const MotionHtmlStill = ({ document }: { document: MotionRemotionSpec }) => {
   return (
     <div className={MOTION_STYLES.MEDIA_THUMB} style={{ aspectRatio: motionAspect(document.width, document.height) }}>
       {/* The stored picture is used while it shows the current "Cách dựng"; otherwise the scene itself is drawn. */}
-      {html && (!html.thumbnail || (html.figures === true && html.render !== motionFigureRenderKey(motionFigureRenderOf(document, document.scenes[0] as MotionFigureScene)))) ? (
+      {html && (!html.thumbnail || (!!html.spec && html.render !== motionFigureRenderKey(motionFigureRenderOf(document, document.scenes[0] as MotionFigureScene)))) ? (
         <MotionHtmlLiveStill document={document} onReady={done} className={fade} />
       ) : (
         <img src={html?.thumbnail} alt={document.title} onLoad={done} onError={done} className={fade} style={{ width: RT_MAINTENANCE.VALUE_100, aspectRatio: motionAspect(document.width, document.height), objectFit: RT_MAINTENANCE.CONTAIN }} />

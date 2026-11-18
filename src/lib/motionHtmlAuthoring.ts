@@ -13,8 +13,8 @@ import { motionProportionOf, motionProportionPlanner } from "./motionDrawStyle.j
 import { motionRenameMapActive, motionRenamePairs } from "./motionRename.js";
 import type { MotionChapter, MotionStoryAnalysis } from "../types/motionVideo.js";
 import type { MotionVisualSettings } from "../types/motionVisual.js";
-export const motionHtmlLanguageDirection = (language?: string, options: { codeOnly?: boolean; plan?: boolean } = {}) =>
-  options.codeOnly ? MOTION_HTML.CODE_LANGUAGE(language) : `${options.plan ? MOTION_HTML_WRITING.PLAN_LANGUAGE : MOTION_HTML_WRITING.TEXT_LANGUAGE}${RT_MAINTENANCE.SELECTED_VIDEO_LANGUAGE}${language || RT_MAINTENANCE.AS_SPECIFIED_BY_THE_SUPPLIED_NARRATION_AND_EXACT_DISPLAY_STRINGS}${RT_MAINTENANCE.PRODUCTION_INSTRUCTIONS_ARE_ENGLISH_THIS_DOES_NOT_CHANGE_THE_SELECTED}`;
+export const motionHtmlLanguageDirection = (language?: string, options: { plan?: boolean } = {}) =>
+  `${options.plan ? MOTION_HTML_WRITING.PLAN_LANGUAGE : MOTION_HTML_WRITING.TEXT_LANGUAGE}${RT_MAINTENANCE.SELECTED_VIDEO_LANGUAGE}${language || RT_MAINTENANCE.AS_SPECIFIED_BY_THE_SUPPLIED_NARRATION_AND_EXACT_DISPLAY_STRINGS}${RT_MAINTENANCE.PRODUCTION_INSTRUCTIONS_ARE_ENGLISH_THIS_DOES_NOT_CHANGE_THE_SELECTED}`;
 export const motionHtmlChapterBudget = (analysis: MotionStoryAnalysis, chapter: MotionChapter, speechRate: number, first = false, last = false) => {
   const silent = motionStorytellingSilent(analysis.storytelling);
   const pause = (silent ? (last ? silent.videoEnd : silent.chapterCard + silent.chapterEnd) : 0) + (first ? 0.3 : 0);

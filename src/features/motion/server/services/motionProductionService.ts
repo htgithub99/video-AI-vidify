@@ -377,7 +377,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         const ai = (exec?: { provider?: unknown; model?: unknown }) => (exec?.provider ? `${exec.provider}${exec.model ? `/${exec.model}` : ""}` : undefined);
         const input = base as unknown as Record<string, any>;
         const visual = visualSettings as unknown as Record<string, any>;
-        log(record, VISUAL.LOG_CONFIG({ genre: input.videoGenre, storytelling: input.storytelling, length: input.length, language: input.language, style: visual.profileId, layout: visual.layout, pacing: visual.pacing, kit: visual.figureKit === true, mainAi: ai(input.aiExecution), scriptAi: ai(input.scriptAiExecution || input.aiExecution), planAi: ai(input.planAiExecution || input.aiExecution), sceneAi: ai(input.sceneAiExecution || input.aiExecution), review: input.aiReview !== false, lowSpec: isLowSpecMode(), subtitles: input.subtitles !== false, music: input.musicMood, sfx: input.sfx !== false }));
+        log(record, VISUAL.LOG_CONFIG({ genre: input.videoGenre, storytelling: input.storytelling, length: input.length, language: input.language, style: visual.profileId, layout: visual.layout, pacing: visual.pacing, mainAi: ai(input.aiExecution), scriptAi: ai(input.scriptAiExecution || input.aiExecution), planAi: ai(input.planAiExecution || input.aiExecution), sceneAi: ai(input.sceneAiExecution || input.aiExecution), review: input.aiReview !== false, lowSpec: isLowSpecMode(), subtitles: input.subtitles !== false, music: input.musicMood, sfx: input.sfx !== false }));
       }
       if (visualSettings.mode === RT_SHARED.REMOTION) {
         if (base.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);

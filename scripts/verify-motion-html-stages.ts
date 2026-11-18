@@ -31,15 +31,16 @@ const jobBundle = await build({ stdin: { contents: 'export { scriptMotionStoryIn
 await fs.writeFile(modulePath, jobBundle.outputFiles[0].text);
 const actions = await import(pathToFileURL(modulePath).href);
 hooks.ai = async (prompt: string, artifact: string) => {
-  hooks.calls.push(artifact); assert.equal(artifact, MOTION_HTML.PLAN, "Resuming scene planning must not rewrite narration or draw HTML");
-  assert.ok(!prompt.includes(MOTION_HTML.GRAPHICS), "Scene planning does not carry the drawing style rules");
+  hooks.calls.push(artifact);
+  // The script step's editorial pass is optional (skipped when it fails); this fixture only answers the scene plan.
+  if (artifact !== MOTION_HTML.PLAN) throw new Error("fixture: editorial pass skipped");
   await delay(25);
   const context = JSON.parse(prompt.slice(prompt.lastIndexOf("\n") + 1));
-  return { scenes: context.lines.map((line: any) => ({ fromLineId: line.id, toLineId: line.id, purpose: line.text, sceneTemplate: context.beats.find((beat: any) => line.id.startsWith(beat.id + "::")).sceneTemplateDraft })) };
+  return { scenes: context.lines.map((line: any) => ({ fromLineId: line.id, toLineId: line.id, purpose: line.text, sceneTemplate: script.beats.find((beat: any) => beat.id === line.beat).sceneTemplateDraft })) };
 };
 const until = async (read: () => any): Promise<any> => {
   for (let index = 0; index < 1000; index++) { const state = read(); if (["completed", "error", "cancelled"].includes(state?.status)) return state; await delay(5); }
-  throw new Error("Fixture did not finish");
+  throw new Error("Fixture did not finish: " + JSON.stringify(read()?.status) + " " + JSON.stringify((read()?.log || []).slice(-3)));
 };
 try {
   const input = { source, analysis, ...script, resume: true, gen: script.gen, multiVoice: false, aiExecution: {}, sfx: true, aspect: "16:9", productionId: "script-stage" };
@@ -47,12 +48,13 @@ try {
   const job = await until(() => actions.getStoryJob(started.job.id));
   assert.equal(job.status, "completed", job.error);
   const planned = job.result;
-  assert.equal(hooks.calls.length, 2, "Both chapter groups are planned before SCRIPT completes");
+  assert.equal(hooks.calls.filter((artifact: string) => artifact === MOTION_HTML.PLAN).length, 2, "Both chapter groups are planned before SCRIPT completes");
+  assert.ok(!hooks.calls.includes(MOTION_HTML.ARTIFACT), "Planning never draws a scene");
   assert.equal(motionHtmlPlanCurrent(planned, analysis), true);
   assert.equal(Object.values(planned.gen.remotion.scenes).flat().length, 3);
   assert.deepEqual(planned.beats.map((beat: any) => beat.narration), script.beats.map((beat: any) => beat.narration));
   assert.ok(Object.values(planned.gen.remotion.scenes).flat().every((scene: any) => !scene.html));
-  const html = '<!DOCTYPE html><html><body><canvas id="motion-canvas"></canvas><script>window.motionScene={renderAt:p=>{const c=document.getElementById("motion-canvas");c.width=p.width;c.height=p.height;c.getContext("2d").fillRect(0,0,c.width,c.height)}};</script></body></html>';
+  const html = JSON.stringify({ horizon: 300, time: "day", ground: "stone", items: [{ id: "messenger", fn: "person", x: 640, y: 620, h: 240, focal: true }] });
   const progress: string[] = []; let drawing = 0;
   const drawn = await buildMotionHtmlScenes(planned, analysis, { exec: {}, log: () => undefined, progress: (_value, stage) => progress.push(stage), scope: "draw-stage", ai: async (_prompt, artifact) => { assert.equal(artifact, MOTION_HTML.ARTIFACT); drawing++; return html; } });
   assert.equal(drawing, 3); assert.match(progress.at(-1)!, /3\/3 phân cảnh/);

@@ -36,10 +36,10 @@ const remotionAssetAnchors = (raw: unknown, required: string[] = []): MotionVect
   return anchors;
 };
 // figures: the "Cách dựng" choice to preview with (the current one in the editor); defaults to the one the scenes were built with.
-export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState, figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown; layout?: unknown; movement?: unknown }): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
+export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState, figures?: { profileId?: unknown; proportion?: unknown; layout?: unknown; movement?: unknown }): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
   if (scene.renderer === RT_MAINTENANCE.HTML_CANVAS) {
     if (!scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status) || !state || state.settings.mode !== RT_MAINTENANCE.REMOTION) return { error: scene.htmlRequest?.error };
-    if (scene.html.figures !== true) return { error: V.LEGACY_SCENE };
+    if (!scene.html.spec) return { error: V.LEGACY_SCENE };
     const aspect = scene.aspect || RT_MAINTENANCE.VALUE_16_9;
     const { w: width, h: height } = MOTION_ASPECT_BASE[aspect] || MOTION_ASPECT_BASE[RT_MAINTENANCE.VALUE_16_9];
     const frames = Math.max(1, Math.ceil(scene.html.duration * 30));
@@ -57,11 +57,10 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
         motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE,
         renderBehavior: state.renderBehavior,
         profileId: (figures && typeof figures.profileId === "string" && Object.hasOwn(V.PROFILES, figures.profileId) ? figures.profileId : state.settings.profileId) as MotionRemotionSpec["profileId"],
-        figureKit: (figures ?? state.settings).figureKit === true,
         eraYear: state.eraYear,
         proportion: motionProportionOf(figures ?? state.settings),
         movement: motionMovementOf(figures ?? state.settings),
-        layout: motionLayoutOf({ profileId: figures?.profileId ?? state.settings.profileId, layout: (figures ?? state.settings).layout, figureKit: (figures ?? state.settings).figureKit }),
+        layout: motionLayoutOf({ profileId: figures?.profileId ?? state.settings.profileId, layout: (figures ?? state.settings).layout }),
         assets: {},
         scenes: [{ ...scene, nodes: [], startFrame: 0, endFrame: frames }],
         subtitles: [],

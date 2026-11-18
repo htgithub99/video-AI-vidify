@@ -1,11 +1,9 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import type { FC } from "react";
-import { Clapperboard, PersonStanding } from "lucide-react";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_STYLES as S } from "../constants/motionStyles.js";
 import type { MotionRemotionProfile, MotionVisualSettings } from "../../../types/motionVisual.js";
-import { MotionToggle } from "./MotionToggle.js";
 import { MotionVisualPicker } from "./MotionVisualPicker.js";
 import { MOTION_LAYOUTS as L, MOTION_LAYOUT_DEFAULT, MOTION_LAYOUT_TEXT } from "../../../constants/motionLayouts/index.js";
 import { motionIsLayout } from "../../../lib/motionLayout.js";
@@ -15,7 +13,6 @@ export const MotionVisualModeField: FC<{ value: MotionVisualSettings; language: 
   const lang = language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI;
   const text = V.TEXT[lang];
   const layoutTitle = MOTION_LAYOUT_TEXT[lang].title;
-  const kit = value.figureKit === true;
   const styles = Object.entries(V.PROFILES).map(([id, p]) => ({ id, name: p[lang], hint: p.hint[lang], preview: p.preview }));
   const movementTitle = MOTION_MOVEMENT_TEXT[lang].title;
   const movements = Object.entries(MOTION_MOVEMENT_OPTIONS).map(([id, m]) => ({ id, name: m.label[lang], hint: m.hint[lang], preview: m.preview }));
@@ -25,34 +22,17 @@ export const MotionVisualModeField: FC<{ value: MotionVisualSettings; language: 
   return (
     <fieldset disabled={disabled} aria-label={text.title} className={RT_MOTION.GRID_VISUAL_ROW}>
       <div className={S.STEP1_TOGGLE_WRAPPER}>
-        <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.title}</span>
-        <MotionToggle
-          checked={kit}
-          label={text.title}
-          text={kit ? text.kit : text.remotion}
-          title={kit ? text.kitHint : text.remotionHint}
-          icon={kit ? PersonStanding : Clapperboard}
-          disabled={disabled}
-          onClick={() => onChange({ ...value, figureKit: kit ? undefined : true })}
-        />
+        <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.profile}</span>
+        <MotionVisualPicker label={text.profile} value={value.profileId} options={styles} disabled={disabled} onChange={(id) => onChange({ ...value, profileId: id as MotionRemotionProfile, proportion: undefined })} />
       </div>
-      {/* The drawing style is the kit's line and tone over the scene; "Dựng cảnh AI" shows the scene exactly as the AI drew it. */}
-      {kit ? (
-        <div className={S.STEP1_TOGGLE_WRAPPER}>
-          <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.profile}</span>
-          <MotionVisualPicker label={text.profile} value={value.profileId} options={styles} disabled={disabled} onChange={(id) => onChange({ ...value, profileId: id as MotionRemotionProfile, proportion: undefined })} />
-        </div>
-      ) : null}
       <div className={S.STEP1_TOGGLE_WRAPPER}>
         <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{layoutTitle}</span>
         <MotionVisualPicker label={layoutTitle} value={value.layout || MOTION_LAYOUT_DEFAULT} options={layouts} disabled={disabled} onChange={(id) => onChange({ ...value, layout: motionIsLayout(id) && id !== MOTION_LAYOUT_DEFAULT ? id : undefined })} />
       </div>
-      {kit ? (
-        <div className={S.STEP1_TOGGLE_WRAPPER}>
-          <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{movementTitle}</span>
-          <MotionVisualPicker label={movementTitle} value={motionMovementOf(value)} options={movements} disabled={disabled} onChange={(id) => onChange({ ...value, movement: motionIsMovement(id) && id !== ownMovement ? id : undefined })} />
-        </div>
-      ) : null}
+      <div className={S.STEP1_TOGGLE_WRAPPER}>
+        <span className={S.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{movementTitle}</span>
+        <MotionVisualPicker label={movementTitle} value={motionMovementOf(value)} options={movements} disabled={disabled} onChange={(id) => onChange({ ...value, movement: motionIsMovement(id) && id !== ownMovement ? id : undefined })} />
+      </div>
     </fieldset>
   );
 };

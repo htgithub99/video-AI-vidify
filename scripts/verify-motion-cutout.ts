@@ -4,21 +4,17 @@
 // start and then holds; the smooth styles keep their camera and walk.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { motionHtmlFigures, motionFigureView, motionFigureRenderKey, motionHtmlUsesFigures } from "../src/lib/motionFigures.js";
+import { motionFigureView, motionFigureRenderKey } from "../src/lib/motionFigures.js";
+import { motionFigureKitPage as motionHtmlFigures } from "../src/lib/motionFigures.js";
 import { motionHtmlFrame } from "../src/lib/motionHtmlScene.js";
 import { normalizeMotionVisualSettings } from "../src/lib/motionVisual.js";
-import { MOTION_FIGURES } from "../src/constants/motionFigures.js";
-import { MOTION_HTML_WRITING } from "../src/constants/motionHtmlWriting.js";
 
-// A scene that reaches the figure table through a variable (with its own stand-in) still gets the table, the kit and
-// the chosen drawing style, so its people are drawn and marked by the kit.
-assert.ok(motionHtmlUsesFigures("const MF = window.MotionFigures || fallbackMF; const FIG = MF.use({});"), "the figure table is found when used through a variable");
-assert.equal(motionFigureView({ kit: true, profile: "cutout" }).movement, "cutout", "the cut-out style moves as a cut-out");
-assert.equal(motionFigureView({ kit: true, profile: "history" }).movement, "smooth", "other styles move smoothly");
+assert.equal(motionFigureView({ profile: "cutout" }).movement, "cutout", "the cut-out style moves as a cut-out");
+assert.equal(motionFigureView({ profile: "history" }).movement, "smooth", "other styles move smoothly");
 // "Chuyển động" is its own choice: any drawing style can move as a cut-out, and the cut-out style can move smoothly.
-assert.equal(motionFigureView({ kit: true, profile: "history", movement: "cutout" }).movement, "cutout", "the chosen movement wins over the style's");
-assert.equal(motionFigureView({ kit: true, profile: "cutout", movement: "smooth" }).movement, "smooth", "the cut-out style can move smoothly");
-assert.notEqual(motionFigureRenderKey({ kit: true, profile: "history" }), motionFigureRenderKey({ kit: true, profile: "history", movement: "cutout" }), "a picture shown with the other movement is out of date");
+assert.equal(motionFigureView({ profile: "history", movement: "cutout" }).movement, "cutout", "the chosen movement wins over the style's");
+assert.equal(motionFigureView({ profile: "cutout", movement: "smooth" }).movement, "smooth", "the cut-out style can move smoothly");
+assert.notEqual(motionFigureRenderKey({ profile: "history" }), motionFigureRenderKey({ profile: "history", movement: "cutout" }), "a picture shown with the other movement is out of date");
 assert.equal(normalizeMotionVisualSettings({ version: 1, mode: "remotion", profileId: "history", movement: "cutout" }).movement, "cutout", "the movement is kept in the settings");
 assert.equal(normalizeMotionVisualSettings({ version: 1, mode: "remotion", profileId: "history", movement: "bounce" }).movement, undefined, "an unknown movement is dropped");
 
@@ -36,7 +32,7 @@ assert.ok((motionHtmlFrame({ fps: 30, width: 1280, height: 720, motion: true, pr
 assert.equal(motionHtmlFrame({ fps: 30, width: 1280, height: 720, motion: false, profileId: "cutout", scenes } as never, scenes[1] as never, 150).headerTime, 1.2, "a still frame shows the place and time title in full");
 
 const SCENE = `<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
-var FIG = window.MotionFigures.use({ person: function (c, o) { c.fillStyle = '#333'; c.fillRect(o.x - o.h * 0.12, o.y - o.h, o.h * 0.24, o.h); } });
+var FIG = window.MotionFigures.use({});
 window.motionScene = { ready: Promise.resolve(), renderAt: async function (input) {
   var c = document.getElementById('motion-canvas').getContext('2d');
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#ddd'; c.fillRect(0, 0, 1280, 720);
@@ -50,7 +46,7 @@ const page = await browser.newPage();
 page.on("pageerror", (error) => assert.fail(String(error)));
 
 // The camera: three shots at the cues, the middle one framed closer on the hero, a short push-in at each shot's start.
-await page.setContent(motionHtmlFigures(SCENE, { kit: false, profile: "cutout", layout: "wide" } as never));
+await page.setContent(motionHtmlFigures(SCENE, { profile: "cutout", layout: "wide" } as never));
 // tsx names inner functions through a helper that the page does not have.
 await page.evaluate("window.__name = function (f) { return f; }");
 const camera = await page.evaluate(async () => {
@@ -67,7 +63,7 @@ assert.ok(camera.held > camera.start && Math.abs(camera.late - camera.held) < 1e
 assert.ok(camera.wide >= 1 && camera.wide < 1.3, "the opening shot is the whole frame, with a little room to pan with a walker");
 
 // The walk: drawn ahead of its even track mid-step, back on it at each footfall; lifted mid-step.
-await page.setContent(motionHtmlFigures(SCENE.replace("person: function", "unused: function"), { kit: true, profile: "cutout", layout: "wide" } as never));
+await page.setContent(motionHtmlFigures(SCENE.replace("person: function", "unused: function"), { profile: "cutout", layout: "wide" } as never));
 await page.evaluate("window.__name = function (f) { return f; }");
 const walk = await page.evaluate(async () => {
   const canvas = document.getElementById("motion-canvas") as HTMLCanvasElement, c = canvas.getContext("2d")!, F = (window as any).MotionFigures.use({});
@@ -112,109 +108,41 @@ const talk = await page.evaluate(async () => {
 });
 assert.ok(talk.moved > 0, "the person the narration has speaking moves the mouth");
 
-// A thought bubble or inset keeps the scene's own little picture: inside it the scene's own functions draw (never the
-// kit), and the box it gets carries the bubble's centre and radius.
+// A thought bubble or inset hands its picture a box with the bubble's centre and radius.
 const DEVICE = `<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
-var FIG = window.MotionFigures.use({ prop: function (c, o) { window.__own = (window.__own || 0) + 1; c.fillStyle = '#123456'; c.fillRect(o.x - 10, o.y - 10, 20, 20); } });
+var FIG = window.MotionFigures.use({});
 window.motionScene = { ready: Promise.resolve(), renderAt: async function () {
-  var c = document.getElementById('motion-canvas').getContext('2d'); window.__own = 0;
+  var c = document.getElementById('motion-canvas').getContext('2d');
   FIG.device(c, { kind: 'inset', x: 640, y: 300, r: 80 }, function (dc, box) { window.__box = box; FIG.prop(dc, { kind: 'whetstone', x: box.cx, y: box.cy, w: 50, h: 30 }); });
-  FIG.prop(c, { kind: 'crate', x: 200, y: 600, w: 60, h: 60 });
 } };
 </script></body></html>`;
-await page.setContent(motionHtmlFigures(DEVICE, { kit: true, profile: "cutout", layout: "wide" } as never));
+await page.setContent(motionHtmlFigures(DEVICE, { profile: "cutout", layout: "wide" } as never));
 await page.evaluate("window.__name = function (f) { return f; }");
-const device = await page.evaluate(async () => { await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false }); const b = (window as any).__box; return { own: (window as any).__own, cx: b && b.cx, cy: b && b.cy, r: b && b.r }; });
-assert.equal(device.own, 1, "inside the bubble the scene's own function draws; outside it the kit does");
+const device = await page.evaluate(async () => { await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false }); const b = (window as any).__box; return { cx: b && b.cx, cy: b && b.cy, r: b && b.r }; });
 assert.deepEqual([device.cx, device.cy, device.r], [640, 300, 80], "the bubble's box gives its centre and radius");
-// A scene with its own device function draws the whole bubble its own way (frame, tail and picture): nothing standard.
-await page.setContent(motionHtmlFigures(DEVICE.replace("prop: function", "device: function (c, o, draw) { window.__ownDevice = 1; draw(c, { x: o.x - 10, y: o.y - 10, w: 20, h: 20, cx: o.x, cy: o.y, r: 10 }); }, prop: function"), { kit: true, profile: "cutout", layout: "wide" } as never));
-await page.evaluate("window.__name = function (f) { return f; }");
-const own = await page.evaluate(async () => { const c = (document.getElementById("motion-canvas") as HTMLCanvasElement).getContext("2d")!; await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false }); return { own: (window as any).__ownDevice, edge: c.getImageData(640 + 70, 300, 1, 1).data[3] }; });
-assert.equal(own.own, 1, "the scene's own device function draws the bubble");
-assert.equal(own.edge, 0, "and no standard bubble is drawn around it");
 
 // A thing called without a kind is named by its mark ('wagons' is a wagon, drawn by the kit); a rider's banner and a
-// banner prop wear the scene's colour; a generic helmet is the period's; arrows are kept for maps.
+// banner prop wear the scene's colour.
 const NAMED = `<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
-var FIG = window.MotionFigures.use({ vehicle: function (c, o) { window.__ownVehicle = (window.__ownVehicle || 0) + 1; }, prop: function () {}, animal: function () {} });
+var FIG = window.MotionFigures.use({});
 window.motionScene = { ready: Promise.resolve(), renderAt: async function () {
-  var c = document.getElementById('motion-canvas').getContext('2d'); window.__ownVehicle = 0; c.fillStyle = '#ffffff'; c.fillRect(0, 0, 1280, 720);
-  FIG.vehicle(c, { mark: 'wagons', x: 200, y: 600, w: 220, h: 110 });
+  var c = document.getElementById('motion-canvas').getContext('2d'); window.__wagon = 0; c.fillStyle = '#ffffff'; c.fillRect(0, 0, 1280, 720);
+  window.__wagon = FIG.vehicle(c, { mark: 'wagons', x: 200, y: 600, w: 220, h: 110 }).box ? 1 : 0;
   FIG.animal(c, { kind: 'horse', x: 640, y: 600, h: 260, facing: 1, rider: { pose: 'ride', hold: 'banner', itemColor: '#1f60ff', head: 'helmet' } });
   FIG.prop(c, { kind: 'banner', x: 1050, y: 600, w: 120, h: 300, color: '#00c040' });
 } };
 </script></body></html>`;
-await page.setContent(motionHtmlFigures(NAMED, { kit: true, profile: "cutout", layout: "wide", year: 1241 } as never));
+await page.setContent(motionHtmlFigures(NAMED, { profile: "cutout", layout: "wide", year: 1241 } as never));
 await page.evaluate("window.__name = function (f) { return f; }");
 const named = await page.evaluate(async () => {
   const c = (document.getElementById("motion-canvas") as HTMLCanvasElement).getContext("2d")!;
   await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false });
   const count = (x: number, w: number, test: (r: number, g: number, b: number) => boolean) => { const d = c.getImageData(x, 0, w, 720).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (test(d[i], d[i + 1], d[i + 2])) n++; return n; };
-  return { own: (window as any).__ownVehicle, blue: count(450, 400, (r, g, b) => b > 200 && r < 80), green: count(950, 250, (r, g, b) => g > 150 && r < 60 && b < 100) };
+  return { wagon: (window as any).__wagon, blue: count(450, 400, (r, g, b) => b > 200 && r < 80), green: count(950, 250, (r, g, b) => g > 150 && r < 60 && b < 100) };
 });
-assert.equal(named.own, 0, "a wagon named only by its mark is drawn by the kit");
+assert.equal(named.wagon, 1, "a wagon named only by its mark is drawn by the kit");
 assert.ok(named.blue > 300, "a rider's banner is drawn in the scene's colour");
 assert.ok(named.green > 300, "a banner prop's cloth is the scene's colour");
-assert.ok(!JSON.stringify(MOTION_HTML_WRITING).includes("arrow (who goes where)") && MOTION_FIGURES.DOC({ vehicle: "", building: "", animal: "", tree: "", prop: "", wall: "" }).includes("arrow (maps only)"), "arrows are only for maps");
-
-// One content, two renderers: every call's options are put in the vocabulary's words before either renderer draws
-// (the scene's own function gets exactly what the kit gets); a figure a scene function draws inside another (a wagon's
-// team) goes through the table, so the kit draws it too; an arrow is drawn only on a map.
-const SAME = `<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
-var IMPL = {
-  person: function (c, o) { window.__seen = o; return { hand: [o.x + 10, o.y - 60] }; },
-  animal: function (c, o) { c.fillStyle = '#00ffff'; c.fillRect(o.x - 40, o.y - o.h, 80, o.h); },
-  vehicle: function (c, o) { IMPL.animal(c, { kind: 'ox', x: o.x + 140, y: o.y, h: 90 }); c.fillStyle = '#ff00ff'; c.fillRect(o.x - 100, o.y - 100, 200, 100); },
-  arrow: function (c, o) { window.__ownArrow = (window.__ownArrow || 0) + 1; }
-};
-var FIG = window.MotionFigures.use(IMPL);
-window.motionScene = { ready: Promise.resolve(), renderAt: async function () {
-  var c = document.getElementById('motion-canvas').getContext('2d'); window.__ownAnimal = 0; window.__ownVehicle = 0; window.__ownArrow = 0; c.fillStyle = '#ffffff'; c.fillRect(0, 0, 1280, 720);
-  FIG.person(c, { mark: 'you', x: 300, y: 600, h: 200, cloak: '#123456', holding: 'banner', expression: 'terrified', pose: 'sitting', blackPalm: true, frontHandPos: [1, 2] });
-  FIG.vehicle(c, { kind: 'wagon', x: 700, y: 600, w: 220, h: 110 });
-  FIG.arrow(c, { from: [100, 100], to: [400, 100], width: 8 });
-} };
-</script></body></html>`;
-const sameRun = async (kit: boolean, kind: string) => {
-  // A fresh page each time: a kit left on an earlier page's window would draw for "Dựng cảnh AI" too.
-  const page = await browser.newPage();
-  await page.setContent(motionHtmlFigures(SAME, { kit, profile: "cutout", layout: "wide", year: 1241, scene: { kind } } as never));
-  await page.evaluate("window.__name = function (f) { return f; }; window.__motionMarks = [];");
-  return page.evaluate(async () => {
-    const W = window as any, c = (document.getElementById("motion-canvas") as HTMLCanvasElement).getContext("2d")!;
-    await W.motionScene.renderAt({ progress: 0.5, time: 1, duration: 4, cameraEnabled: false });
-    const count = (x: number, y: number, w: number, h: number, test: (r: number, g: number, b: number) => boolean) => { const d = c.getImageData(x, y, w, h).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (test(d[i], d[i + 1], d[i + 2])) n++; return n; };
-    const ink = count(780, 480, 160, 130, (r, g, b) => r < 200 && !(r < 30 && g > 230 && b > 230));
-    return { seen: W.__seen, ownAnimal: count(780, 480, 160, 130, (r, g, b) => r < 30 && g > 230 && b > 230), ownVehicle: count(580, 480, 220, 130, (r, g, b) => r > 230 && g < 30 && b > 230), ownArrow: W.__ownArrow, ox: ink, dropped: (W.__motionMarks || []).map((m: any) => m.id).filter((id: string) => id.startsWith("!fault:drop:")).sort() };
-  }).finally(() => page.close());
-};
-const aiSame = await sameRun(false, "here");
-const kitSame = await sameRun(true, "here"), kitMap = await sameRun(true, "map");
-assert.deepEqual(aiSame.seen, { mark: "you", x: 300, y: 600, h: 200, cloak: "#123456", holding: "banner", expression: "terrified", pose: "sitting", blackPalm: true }, "the scene's own function gets its own words for the options both renderers draw, and nothing that was left out");
-assert.deepEqual(aiSame.dropped, ["!fault:drop:person.frontHandPos"], "an option outside the vocabulary is left out and reported (a hand's look is the hands' colour)");
-assert.ok(aiSame.ownAnimal > 1000 && aiSame.ownVehicle > 1000, "Dựng cảnh AI: the wagon and the team inside it are the scene's own drawing");
-assert.equal(kitSame.ownVehicle, 0, "Bộ vẽ chuẩn: the kit draws the wagon");
-assert.equal(kitSame.ownAnimal, 0, "and the team the scene drew inside it is drawn by the kit too");
-assert.ok(kitSame.ox > 400, "so the team is still there");
-assert.equal(aiSame.ownArrow + kitSame.ownArrow, 0, "no arrow on a scene that is not a map");
-assert.equal(kitMap.ownArrow, 0, "a map's arrow is the kit's in Bộ vẽ chuẩn");
-const aiMap = await sameRun(false, "map");
-// Option names that say what they are (holdingSpear, sootFace, broad, seated) are read as those options; a held thing the
-// hold words lack (a horn) is drawn as its own prop in the hand, by the table, in both renderers.
-{
-  const page = await browser.newPage();
-  await page.setContent(motionHtmlFigures(`<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
-var FIG = window.MotionFigures.use({ person: function (c, o) { (window.__seen = window.__seen || {})[o.x] = o; return { hand: [o.x + 20, o.y - 100] }; }, prop: function (c, o) { window.__prop = o.kind; } });
-window.motionScene = { ready: Promise.resolve(), renderAt: async function () { var c = document.getElementById('motion-canvas').getContext('2d'); FIG.person(c, { x: 300, y: 600, h: 200, holdingSpear: true, sootFace: true, broad: true, seated: true, shield: '#3a4e6c' }); FIG.person(c, { x: 700, y: 600, h: 200, hold: 'horn' }); } };
-</script></body></html>`, { kit: false, profile: "cutout", layout: "wide" } as never));
-  const words = await page.evaluate(async () => { const W = window as any; await W.motionScene.renderAt({ progress: 0.5, time: 1, duration: 4 }); return { prop: W.__prop, first: W.__seen[300], second: W.__seen[700] }; });
-  await page.close();
-  assert.deepEqual(words.first, { x: 300, y: 600, h: 200, holdingSpear: true, sootFace: true, broad: true, seated: true, shield: "#3a4e6c" }, "option names that say what they are are kept (in the scene's own words for its function)");
-  assert.equal(words.second.hold, undefined, "a held thing outside the hold words is not a hold option (in neither renderer)");
-  assert.equal(words.prop, "horn", "it is a prop in the hand, for both renderers");
-}
-assert.equal(aiMap.ownArrow, 1, "and the scene's own on a map in Dựng cảnh AI");
 
 // A lying figure's head point is where its head is drawn (a bandage, an emote or a held thing follows it), in every style;
 // a ferry before engines is a railed scow, not a raft.
@@ -223,7 +151,7 @@ for (const profile of ["cutout", "history"]) {
   await page.setContent(motionHtmlFigures(`<!doctype html><html><head></head><body><canvas id="motion-canvas" width="1280" height="720"></canvas><script>
 var FIG = window.MotionFigures.use({});
 window.motionScene = { ready: Promise.resolve(), renderAt: async function () { var c = document.getElementById('motion-canvas').getContext('2d'); window.__lie = FIG.person(c, { x: 400, y: 600, h: 200, pose: 'lie', wounded: true }); window.__stand = FIG.person(c, { x: 800, y: 600, h: 200, pose: 'stand' }); } };
-</script></body></html>`, { kit: true, profile, layout: "wide", year: 1241 } as never));
+</script></body></html>`, { profile, layout: "wide", year: 1241 } as never));
   const heads = await page.evaluate(async () => { const W = window as any; await W.motionScene.renderAt({ progress: 0.5, time: 1, duration: 4 }); return { lie: W.__lie.head, stand: W.__stand.head }; });
   await page.close();
   assert.ok(heads.lie[1] > 600 - 200 * 0.35 && Math.abs(heads.lie[0] - 400) > 200 * 0.25, `${profile}: a lying figure's head is low beside its body`);
@@ -238,7 +166,7 @@ window.motionScene = { ready: Promise.resolve(), renderAt: async function () { v
 // The place and time title: a storybook caption at the top centre, shown at the scene's start and gone after a few seconds;
 // the dip covers the whole frame.
 const TITLED = SCENE.replace("FIG.person(c, { x: 1000", "FIG.header(c, { text: 'Thăng Long, 1407' }); FIG.person(c, { x: 1000");
-await page.setContent(motionHtmlFigures(TITLED, { kit: true, profile: "cutout", layout: "wide" } as never));
+await page.setContent(motionHtmlFigures(TITLED, { profile: "cutout", layout: "wide" } as never));
 await page.evaluate("window.__name = function (f) { return f; }");
 const title = await page.evaluate(async () => {
   const scene = (window as any).motionScene, c = (document.getElementById("motion-canvas") as HTMLCanvasElement).getContext("2d")!;
@@ -249,4 +177,4 @@ assert.ok(title.shown.light > 300, "the place and year show at the top at the sc
 assert.equal(title.gone.light, 0, "and fade away after a few seconds");
 assert.equal(title.black.centre, 0, "the dip covers the frame");
 await browser.close();
-console.log("Cut-out movement (its own choice): puppet drawings (two held drawings per repeated action, entrances, speaking mouths), dips at time jumps, a storybook title, shots at the narration cues with a closer frame and a short push-in, people, animals and vehicles carried along as one held drawing that hops and rocks; things named by their mark, banners in the scene's colour, arrows only on maps; one set of options for both renderers, figures drawn inside others drawn by the kit too.");
+console.log("Cut-out movement (its own choice): puppet drawings (two held drawings per repeated action, entrances, speaking mouths), dips at time jumps, a storybook title, shots at the narration cues with a closer frame and a short push-in, people, animals and vehicles carried along as one held drawing that hops and rocks; things named by their mark, banners in the scene's colour.");

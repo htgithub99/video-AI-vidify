@@ -29,7 +29,7 @@ const CORE: Record<"vehicle" | "building" | "animal" | "tree" | "prop" | "wall",
   animal: ["horse", "dog", "ox", "cow", "chicken", "crow"],
   tree: ["oak", "pine", "birch", "willow", "palm", "bamboo", "banana", "dead", "bush"],
   prop: ["spear", "sword", "bow", "arrows", "shieldProp", "banner", "barrel", "crate", "sack", "basket", "campfire", "torch", "lantern", "table", "chair", "rock", "boulder", "log", "grass", "flowers", "haystack", "woodpile", "well", "fence", "rifle", "musket"],
-  wall: ["palisade", "wall", "gate", "fence", "sandbags", "barbedWire"],
+  wall: ["palisade", "wall", "gate", "fence", "sandbags", "barbedWire", "stakeRow", "earthwork"],
 };
 // The words of a text, lower case, single and each pair joined ("covered wagon" also as "coveredwagon").
 const textWords = (text: string): Set<string> => {
@@ -53,35 +53,23 @@ export const motionCatalogKinds = (year?: number, text?: string): Record<"vehicl
 // A FIG call the kit cannot draw, so the scene's own drawing shows it: the word is not in the catalogue, names a thing
 // of another time, or asks for a build the thing is never made of.
 export type MotionCatalogGap = { fn: MotionCatalogFn; kind: string; build?: string; reason: "unknown" | "period" | "build" };
-const GAP_FNS: MotionCatalogFn[] = ["vehicle", "building", "animal", "tree", "prop", "wall"];
 const THING_GAP_FNS: MotionCatalogFn[] = ["vehicle", "building", "prop", "animal", "tree"];
-const stringOption = (body: string, name: string): string | undefined => body.match(new RegExp(`\\b${name}\\s*:\\s*(['"\`])([^'"\`]+)\\1`))?.[2];
 
 // The catalogue's answer for one call, the same as the figure runtime's (a thing called through another thing function
 // is still that thing).
-export const motionCatalogGap = (fn: MotionCatalogFn, kind: string, build: string | undefined, year?: number): MotionCatalogGap | null => {
+// The catalogue entry a word names for one function (a thing called through another thing function is still that thing).
+export const motionCatalogEntryOf = (fn: MotionCatalogFn, kind: string): MotionCatalogEntry | undefined => {
   const word = motionCatalogWord(kind);
   const words = MOTION_CATALOG_RUNTIME.words;
   let at = words[fn]?.[word];
   if (at == null && THING_GAP_FNS.includes(fn)) for (const other of THING_GAP_FNS) if ((at = words[other]?.[word]) != null) break;
+  return at == null ? undefined : MOTION_OBJECT_CATALOG[at];
+};
+export const motionCatalogGap = (fn: MotionCatalogFn, kind: string, build: string | undefined, year?: number): MotionCatalogGap | null => {
   const gap = (reason: MotionCatalogGap["reason"]): MotionCatalogGap => ({ fn, kind, ...(build ? { build } : {}), reason });
-  if (at == null) return gap("unknown");
-  const entry = MOTION_OBJECT_CATALOG[at];
+  const entry = motionCatalogEntryOf(fn, kind);
+  if (!entry) return gap("unknown");
   if (!inYears(entry, year) || !entry.variants.some((v) => !v.builds && inYears(v, year)) && !build) return gap("period");
   if (build && entry.builds && !entry.builds.includes(motionCatalogWord(build))) return gap("build");
   return null;
-};
-
-// Every distinct gap in a scene's code: the FIG calls with a written kind (a kind computed at run time is not counted).
-export const motionCatalogGaps = (code: string, year?: number): MotionCatalogGap[] => {
-  const table = code.match(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:window\.)?MotionFigures\.use\b/)?.[1] || "FIG";
-  const call = new RegExp(`\\b${table.replace(/\$/g, "\\$")}\\.(${GAP_FNS.join("|")})\\(\\s*[^,()]+,\\s*\\{([^{}]*)\\}`, "g");
-  const seen = new Map<string, MotionCatalogGap>();
-  for (const match of code.matchAll(call)) {
-    const kind = stringOption(match[2], "kind");
-    if (!kind) continue;
-    const gap = motionCatalogGap(match[1] as MotionCatalogFn, kind, stringOption(match[2], "build"), year);
-    if (gap) seen.set(`${gap.fn}:${motionCatalogWord(gap.kind)}:${gap.build || ""}`, gap);
-  }
-  return [...seen.values()];
 };

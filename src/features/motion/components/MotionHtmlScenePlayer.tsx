@@ -30,6 +30,8 @@ const PREVIEW = {
   HOST_BUFFERED: "motion-host-buffered",
   HOST_CLEARED: "motion-host-cleared",
   HOST_SNAP: "motion-host-snap",
+  // The scene pill shows the scene number and the narration it shows (the plan's purpose is a production note, not for viewers).
+  CHAPTER_TITLE: (index: number, text?: string) => [`Cảnh ${index + 1}`, String(text || "").replace(/\s+/g, " ").trim()].filter(Boolean).join(" · "),
   // Hover preview pictures are small.
   THUMB_WIDTH: 400,
 } as const;
@@ -41,8 +43,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     [playing, setPlaying] = useState(false),
     [error, setError] = useState(""),
     [buffering, setBuffering] = useState(false);
-  const [interactive, setInteractive] = useState(false),
-    [displayWidth, setDisplayWidth] = useState(0);
+  const [displayWidth, setDisplayWidth] = useState(0);
   const viewport = useRef<HTMLDivElement>(null),
     legacy = useRef<PlayerRef>(null),
     audio = useRef<HTMLAudioElement>(null);
@@ -107,20 +108,16 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
   useEffect(() => resetBuffers(), [renderWidth, spec, resetBuffers]);
   useEffect(() => {
     setError("");
-    setInteractive(false);
   }, [currentToken]);
 
   useEffect(() => {
     legacy.current?.seekTo(frame);
   }, [frame, scene?.id]);
-  useEffect(() => {
-    if (currentToken && loaded.has(currentToken)) post(currentToken, { type: RT_MAINTENANCE.MOTION_HOST_INTERACTION, enabled: interactive });
-  }, [interactive, loaded, currentToken, post]);
   // Paused: draw the current frame live (also hides the buffered picture).
   useEffect(() => {
-    if (playing || !scene?.html || !loaded.has(currentToken) || interactive) return;
+    if (playing || !scene?.html || !loaded.has(currentToken)) return;
     post(currentToken, { type: RT_MAINTENANCE.MOTION_HOST_RENDER, input: motionHtmlFrame(spec, scene, frame, renderWidth, renderHeight) });
-  }, [playing, frame, spec, scene, loaded, currentToken, interactive, renderWidth, renderHeight, post]);
+  }, [playing, frame, spec, scene, loaded, currentToken, renderWidth, renderHeight, post]);
   useEffect(() => {
     const receive = (event: MessageEvent) => {
       const token: string | undefined = event.data?.token;
@@ -292,7 +289,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
   );
   const subtitle = spec.subtitles.find((entry) => time >= entry.start && time < entry.end);
   const announce = useSinglePlayback(() => setPlaying(false));
-  const chapters = useMemo(() => spec.scenes.map((item) => ({ start: item.startFrame / spec.fps, title: item.purpose })), [spec.scenes, spec.fps]);
+  const chapters = useMemo(() => spec.scenes.map((item, index) => ({ start: item.startFrame / spec.fps, title: PREVIEW.CHAPTER_TITLE(index, item.text) })), [spec.scenes, spec.fps]);
   const [volume, setVolume] = useState(1),
     [muted, setMuted] = useState(false);
   useEffect(() => {
@@ -301,14 +298,12 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     audio.current.muted = muted;
   }, [volume, muted, audioUrl]);
   const toggle = () => {
-    setInteractive(false);
     setPlaying((value) => {
       if (!value) announce();
       return !value;
     });
   };
   const seek = (value: number) => {
-    setInteractive(false);
     resetBuffers();
     setTime(value);
     if (audio.current) audio.current.currentTime = value;
@@ -322,7 +317,6 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
         time={time}
         duration={spec.duration}
         disabled={!!error}
-        hidePlay={interactive}
         loading={playing && buffering}
         badge={motionRatioLabel(spec.width, spec.height)}
         chapters={chapters}
@@ -339,21 +333,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
         onMute={() => setMuted((value) => !value)}
         onToggle={toggle}
         onSeek={seek}
-        thumbnail={thumbnail}
-        actions={
-          currentToken ? (
-            <button
-              type={RT_MAINTENANCE.BUTTON}
-              aria-pressed={interactive}
-              className={cn(STUDIO_PLAYER.ACTION, interactive && STUDIO_PLAYER.ACTION_ON)}
-              onClick={() => {
-                setPlaying(false);
-                setInteractive((value) => !value);
-              }}>
-              {interactive ? RT_MAINTENANCE.VE_VIDEO : RT_MAINTENANCE.THU_TUONG_TAC}
-            </button>
-          ) : null
-        }>
+        thumbnail={thumbnail}>
         <div ref={viewport} className={cn(STUDIO_PLAYER.MEDIA, "bg-black")}>
           {slots.map((slot) => (
             <iframe
@@ -386,7 +366,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
           ) : !currentToken ? (
             <p>{RT_MAINTENANCE.DANG_DUNG_CANH}</p>
           ) : null}
-          {subtitle && !interactive && (
+          {subtitle && (
             <div
               style={{
                 position: RT_MAINTENANCE.ABSOLUTE,

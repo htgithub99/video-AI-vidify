@@ -75,7 +75,7 @@ export const prepareMotionThumbnailReferences = async (analysis: MotionStoryAnal
     for (const [index, { scene }] of unique.entries()) {
       opts.signal?.throwIfAborted();
       if (!scene.composition && scene.html) {
-        const image = await renderHtmlReference(scene, opts.signal, deps.openMotionHtmlRuntime, { kit: settings.figureKit === true, profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE });
+        const image = await renderHtmlReference(scene, opts.signal, deps.openMotionHtmlRuntime, { profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE });
         if (image) references.push(image);
         continue;
       }

@@ -36,8 +36,6 @@ interface StudioPlayerFrameProps {
   onToggle: () => void;
   onSeek: (seconds: number) => void;
   disabled?: boolean;
-  /** Hide the play controls on the picture (e.g. while the scene is in interactive mode). */
-  hidePlay?: boolean;
   loading?: boolean;
   badge?: ReactNode;
   badgeIcon?: LucideIcon;
@@ -51,15 +49,13 @@ interface StudioPlayerFrameProps {
   muted?: boolean;
   onVolume?: (volume: number) => void;
   onMute?: () => void;
-  /** Extra controls shown before the fullscreen button. */
-  actions?: ReactNode;
   /** Picture at a time, for the preview shown when hovering the seek bar. */
   thumbnail?: (seconds: number) => Promise<CanvasImageSource | null>;
   children: ReactNode;
 }
 
 /** The one video player used by every screen, with YouTube-style controls. */
-export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, className, playing, time, duration, onToggle, onSeek, disabled, hidePlay, loading, badge, badgeIcon: BadgeIcon = Eye, chapters, onPrev, onNext, volume = 1, muted, onVolume, onMute, actions, thumbnail, children }) => {
+export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, className, playing, time, duration, onToggle, onSeek, disabled, loading, badge, badgeIcon: BadgeIcon = Eye, chapters, onPrev, onNext, volume = 1, muted, onVolume, onMute, thumbnail, children }) => {
   const frame = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
@@ -151,8 +147,8 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
   return (
     <div ref={frame} className={cn(P.FRAME, className ?? "w-full")} style={style}>
       {children}
-      {!hidePlay && <div className={P.SURFACE} onClick={disabled ? undefined : onToggle} onDoubleClick={toggleFullscreen} />}
-      {!hidePlay && !loading && !playing && (
+      <div className={P.SURFACE} onClick={disabled ? undefined : onToggle} onDoubleClick={toggleFullscreen} />
+      {!loading && !playing && (
         <div className={P.BIG_PLAY}>
           <Play className={P.BIG_PLAY_ICON} />
         </div>
@@ -230,8 +226,7 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
               </button>
             )}
           </div>
-          <div className={P.GROUP}>
-            {actions}
+          <div className={P.GROUP_END}>
             <button type="button" className={P.CTRL} onClick={toggleFullscreen} title={fullscreen ? text.EXIT_FULLSCREEN : text.FULLSCREEN} aria-label={fullscreen ? text.EXIT_FULLSCREEN : text.FULLSCREEN}>
               {fullscreen ? <Minimize className={P.CTRL_ICON} /> : <Maximize className={P.CTRL_ICON} />}
             </button>

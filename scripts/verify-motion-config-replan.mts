@@ -4,7 +4,8 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), "cfg-")); process.env.VIDIFY_
 const R = "../src/";
 const { planMotionHtmlScenes, generateMotionHtmlScene } = await import(R + "features/motion/server/services/html/scenePipeline.ts");
 const { motionHtmlAuthoringSnapshot } = await import(R + "lib/motionHtmlAuthoring.ts");
-const { MOTION_HTML } = await import(R + "constants/motionHtmlTemplate.ts");
+const { MOTION_SCENE_SPEC_PROMPT: P } = await import(R + "constants/motionSceneSpec.ts");
+const spec = (p: string) => p.includes(P.ROLE.slice(0, 60)) && p.includes(P.SCHEMA.slice(0, 6));
 const { motionHtmlPlanCurrent } = await import(R + "lib/motionHtmlScene.ts");
 const lineCount = (p: string) => (p.match(/"id":"L\d+"/g) || []).length;
 const base = { version: 1, mode: "remotion", engine: "remotion", profileId: "history", componentRevision: 1, pacing: "medium" } as any;
@@ -24,7 +25,6 @@ const variants: [string, any, boolean, (p: string) => boolean][] = [
   ["Bố cục → wide", { ...base, layout: "wide" }, false, () => true],
   ["Nhịp → many", { ...base, pacing: "many" }, true, (p) => /many/.test(p)],
   ["Nhịp → few", { ...base, pacing: "few" }, true, (p) => /few/.test(p)],
-  ["Bộ vẽ chuẩn bật", { ...base, figureKit: true }, false, () => true],
 ];
 let failures = 0;
 for (const [name, vs, expectReplan, check] of variants) {
@@ -47,9 +47,9 @@ const sceneCase = async (name: string, s: any, check: (p: string) => boolean) =>
   if (!(got && check(got))) failures++;
   console.log((got && check(got) ? "OK  " : "FAIL") + " scene | " + name);
 };
-await sceneCase("Kiểu vẽ sketch + Bộ vẽ chuẩn: base style, no kit", { profile: "sketch", figureKit: true }, (p) => p.includes(MOTION_HTML.GRAPHICS) && !/MotionKit\./.test(p));
-await sceneCase("Kiểu vẽ horror: same base style", { profile: "horror" }, (p) => p.includes(MOTION_HTML.GRAPHICS) && !/Khuat Mat/.test(p));
-await sceneCase("Khung 9:16 (720x1280)", { width: 720, height: 1280 }, (p) => /720/.test(p) && /1280/.test(p));
+await sceneCase("Kiểu vẽ sketch: one scene spec prompt", { profile: "sketch" }, (p) => spec(p) && !/MotionKit\./.test(p));
+await sceneCase("Kiểu vẽ horror: same base style", { profile: "horror" }, (p) => spec(p) && !/Khuat Mat/.test(p));
+await sceneCase("Khung 9:16 (720x1280)", { width: 720, height: 1280 }, (p) => /720 x 1280/.test(p));
 await sceneCase("Ngôn ngữ vi", { language: "vi" }, (p) => /\bvi\b|Vietnamese/i.test(p));
 fs.rmSync(root, { recursive: true, force: true });
 if (failures) { console.error(`${failures} config check(s) failed`); process.exit(1); }

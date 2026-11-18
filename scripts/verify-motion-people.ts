@@ -3,7 +3,7 @@
 // wet, dirty) add to the figure, and filled shapes are shaded as volumes rather than flat colour.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { motionHtmlFigures } from "../src/lib/motionFigures.js";
+import { motionFigureKitPage as motionHtmlFigures } from "../src/lib/motionFigures.js";
 
 const SCENE = `<!doctype html><html><head></head><body><canvas id="motion-canvas" width="400" height="400"></canvas><script>
 var FIG = window.MotionFigures.use({});
@@ -31,7 +31,7 @@ const draw = (o: Record<string, unknown>, year: number) =>
     [o, year] as const,
   );
 for (const profile of STYLES) {
-  await page.setContent(motionHtmlFigures(SCENE, { kit: true, profile, proportion: "balanced", layout: "wide" } as any));
+  await page.setContent(motionHtmlFigures(SCENE, { profile, proportion: "balanced", layout: "wide" } as any));
   const medieval = await draw({ outfit: "soldier" }, 1250), modern = await draw({ outfit: "soldier" }, 1916);
   assert.ok(medieval.box && modern.box && medieval.n > 2000, `${profile}: an outfit draws`);
   assert.notEqual(medieval.sum, modern.sum, `${profile}: a soldier of 1250 is dressed unlike one of 1916`);

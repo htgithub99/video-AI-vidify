@@ -26,7 +26,7 @@ export interface MotionRemotionEffect {
   direction?: "up" | "ground" | "left" | "right";
   intensity?: number;
 }
-export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; figureKit?: boolean; pacing?: MotionScenePacing; proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId; layout?: import("../constants/motionLayouts/index.js").MotionLayoutId; movement?: import("../constants/motionDrawStyles/types.js").MotionMovement };
+export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; pacing?: MotionScenePacing; proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId; layout?: import("../constants/motionLayouts/index.js").MotionLayoutId; movement?: import("../constants/motionDrawStyles/types.js").MotionMovement };
 export interface MotionVectorAsset {
   key: string;
   inputKey: string;
@@ -307,8 +307,6 @@ export interface MotionRemotionSpec {
   height: number;
   motion: boolean;
   profileId: MotionRemotionProfile;
-  // How the figures of scenes written against the figure contract are drawn: true = "Bộ vẽ chuẩn", otherwise the scene's own drawing.
-  figureKit?: boolean;
   proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId;
   // The layout's camera over every scene (the scenes themselves are drawn once, whatever the layout).
   layout?: import("../constants/motionLayouts/index.js").MotionLayoutId;

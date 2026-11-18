@@ -42,11 +42,7 @@ export const MOTION_VISUAL = {
   TEXT: {
     vi: {
       title: "Cách dựng",
-      kit: "Bộ vẽ chuẩn",
       legacyNote: (count: number) => `${count} cảnh được dựng theo cách cũ (trước khung sườn chung) – bấm dựng cảnh để vẽ lại; kịch bản và phân cảnh giữ nguyên.`,
-      kitHint: "Cùng cảnh AI đã dựng: người, con vật, xe cộ, nhà cửa, cây cối, đồ vật và biểu đồ được vẽ lại bằng bộ vẽ chuẩn theo kiểu hình, giữ đúng vị trí, kích thước và màu AI chọn; đổi qua lại không cần dựng lại cảnh",
-      remotion: "Dựng cảnh AI",
-      remotionHint: "AI tạo trọn cảnh và chuyển động theo kịch bản",
       profile: "Kiểu vẽ",
       sceneHint: "AI dựng trọn bối cảnh, nhân vật và diễn biến theo mẫu cảnh; tự thử lại khi có lỗi thực thi.",
       ready: "Cảnh AI đã dựng",
@@ -80,11 +76,7 @@ export const MOTION_VISUAL = {
     },
     en: {
       title: "Video construction",
-      kit: "Standard figure kit",
       legacyNote: (count: number) => `${count} scenes were built the old way (before the shared figure table) – build scenes to redraw them; the script and scene plan stay the same.`,
-      kitHint: "The same AI scenes: people, animals, vehicles, buildings, trees, props and charts are redrawn by the standard figure kit in the selected style, keeping the position, size and colours the AI chose; switching needs no new drawing",
-      remotion: "AI scenes",
-      remotionHint: "Generate complete scenes and motion from the script",
       profile: "Visual style",
       sceneHint: "AI builds the full setting, characters and action from the scene template, retrying execution errors.",
       ready: "AI scenes ready",
@@ -160,8 +152,8 @@ export const MOTION_VISUAL = {
   BUNDLE_PUBLIC_FOLDER: "empty-public",
   PROJECT_FOLDER: "remotion-projects",
   // One line that states the configuration this run really applies, so a run can be checked against what the user chose.
-  LOG_CONFIG: (c: { genre?: string; storytelling?: string; length?: string; language?: string; style?: string; layout?: string; pacing?: string; kit?: boolean; mainAi?: string; scriptAi?: string; planAi?: string; sceneAi?: string; review: boolean; lowSpec: boolean; subtitles: boolean; music?: string; sfx: boolean }) =>
-    `Cấu hình áp dụng: thể loại ${c.genre || "-"} · cách kể ${c.storytelling || "-"} · ${c.length || "-"} · ngôn ngữ ${c.language || "-"} | kiểu vẽ ${c.style || "-"} · bố cục ${c.layout || "auto"} · nhịp đổi hình ${c.pacing || "mặc định"} · bộ vẽ chuẩn ${c.kit ? "bật" : "tắt"} | AI phân tích ${c.mainAi || "-"} · kịch bản ${c.scriptAi || "-"} · plan cảnh ${c.planAi || "-"} · dựng cảnh ${c.sceneAi || "-"} | AI duyệt ảnh ${c.review ? "bật" : "tắt"} · máy yếu ${c.lowSpec ? "bật" : "tắt"} · phụ đề ${c.subtitles ? "bật" : "tắt"} · nhạc ${c.music || "tắt"} · hiệu ứng âm ${c.sfx ? "bật" : "tắt"}.`,
+  LOG_CONFIG: (c: { genre?: string; storytelling?: string; length?: string; language?: string; style?: string; layout?: string; pacing?: string; mainAi?: string; scriptAi?: string; planAi?: string; sceneAi?: string; review: boolean; lowSpec: boolean; subtitles: boolean; music?: string; sfx: boolean }) =>
+    `Cấu hình áp dụng: thể loại ${c.genre || "-"} · cách kể ${c.storytelling || "-"} · ${c.length || "-"} · ngôn ngữ ${c.language || "-"} | kiểu vẽ ${c.style || "-"} · bố cục ${c.layout || "auto"} · nhịp đổi hình ${c.pacing || "mặc định"} | AI phân tích ${c.mainAi || "-"} · kịch bản ${c.scriptAi || "-"} · plan cảnh ${c.planAi || "-"} · dựng cảnh ${c.sceneAi || "-"} | AI duyệt ảnh ${c.review ? "bật" : "tắt"} · máy yếu ${c.lowSpec ? "bật" : "tắt"} · phụ đề ${c.subtitles ? "bật" : "tắt"} · nhạc ${c.music || "tắt"} · hiệu ứng âm ${c.sfx ? "bật" : "tắt"}.`,
   LOG_MODE: (mode: string) => `Phương thức dựng: ${mode === "remotion" ? "Remotion" : "Kho tài nguyên"}.`,
   LOG_SCENE: (i: number, total: number, id: string) => `Đọc và dựng cảnh Remotion ${i}/${total}: ${id}`,
   LOG_READY: (i: number, total: number) => `Đã dựng cảnh Remotion ${i}/${total}.`,

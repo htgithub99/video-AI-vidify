@@ -5,7 +5,7 @@ import { motionHtmlPlanSource, motionHtmlPlanSourceMatches } from "../src/lib/mo
 import { mergeMotionVisualDrafts, motionVisualDraftKey } from "../src/features/motion/lib/motionVisualDraft.js";
 import { stringifyJson } from "../src/lib/jsonStringify.js";
 const base: any = { version: 1, mode: "remotion", engine: "remotion", profileId: "history", componentRevision: 1, pacing: "medium" };
-assert.equal(motionVisualDraftKey({ ...base, profileId: "comic", layout: "close", figureKit: true }), motionVisualDraftKey(base), "one draft for every style, layout and renderer");
+assert.equal(motionVisualDraftKey({ ...base, profileId: "comic", layout: "close" }), motionVisualDraftKey(base), "one draft for every style and layout");
 assert.notEqual(motionVisualDraftKey({ ...base, pacing: "few" }), motionVisualDraftKey(base), "pacing still changes the plan");
 // A plan stored with the style and layout in its settings is still the current plan.
 const beats: any = [{ id: "b1", chapterId: "c1", narration: "A rider crosses the bridge." }];
