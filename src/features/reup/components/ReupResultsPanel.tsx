@@ -1,14 +1,13 @@
 import type { FC } from "react";
 import { FolderKanban, FolderOpen } from "lucide-react";
 import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
-import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
 import { cn } from "../../../lib/utils.js";
-import { ActionBtn, MOTION_LOADING_GLYPH } from "../../motion/components/MotionControls.js";
+import { ActionBtn } from "../../motion/components/MotionControls.js";
+import { MotionExportedVideo, MotionMediaPlaceholder } from "../../motion/components/MotionMediaFrame.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
-import { reupClock, reupDownload } from "./ReupControls.js";
-/** Past runs, newest first, laid out like Video Motion's results: the first video of each run and a way back into it. */
+/** Past runs, newest first, laid out like Video Motion's results: the first video of each run (saved through the "Save as" dialog) and a way back into it. */
 export const ReupResultsPanel: FC<{ studio: ReupStudio; onOpen: () => void }> = ({ studio, onOpen }) => {
   const { text, results } = studio;
   if (!results.length)
@@ -25,17 +24,14 @@ export const ReupResultsPanel: FC<{ studio: ReupStudio; onOpen: () => void }> = 
         return (
           <StudioCard key={run.id} className={cn(S.CARD, S.RESULT)}>
             {video ? (
-              <div className={S.VIDEO}>
-                <StudioVideoPlayer src={video.url} aspect={`${video.width}/${video.height}`} badge={reupClock(video.duration)} loadingIcon={MOTION_LOADING_GLYPH} />
-                <div className={S.VIDEO_ACTION}>
-                  <StudioDownloadButton onClick={() => reupDownload(video.url)} />
+              <div className={S.RESULT_MEDIA}>
+                <MotionExportedVideo url={video.url} width={video.width} height={video.height} />
+                <div className={S.RESULT_ACTIONS}>
+                  <StudioDownloadButton onClick={() => void studio.saveVideo(run.id, video.id)} />
                 </div>
               </div>
             ) : (
-              <div className={S.EMPTY_MEDIA}>
-                <FolderKanban className={S.EMPTY_ICON} />
-                <span>{text.STATUS[run.status]}</span>
-              </div>
+              <MotionMediaPlaceholder />
             )}
             <div className={S.RESULT_TITLE} title={run.name}>
               {run.name}

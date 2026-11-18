@@ -54,6 +54,7 @@ export const REUP_ERROR = {
   NO_SCENES: "AI không trả về đoạn cảnh hợp lệ nào",
   NO_SCRIPT: "AI không trả về kịch bản hợp lệ",
   NO_VOICE: "Chưa chọn giọng đọc",
+  NO_OUTPUT: "Không tìm thấy video đã dựng",
   NOT_WAITING: "Lần dựng không ở điểm dừng này",
   BAD_STEP: "Bước không hợp lệ",
   NEED_STEP: "Cần chạy xong bước trước",

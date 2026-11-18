@@ -4,7 +4,7 @@ import { StudioCard } from "../../../components/ui/Studio.js";
 import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_SEO_TEXTS } from "../../../constants/motionVideoTexts";
 import { Check, Copy, Download, FileText, Image as ImageIcon, Maximize2, RefreshCw, Search, SlidersHorizontal, Sparkles, Clock } from "lucide-react";
-import { useMemo, useState, type FC } from "react";
+import { useMemo, useState, type FC, type ReactNode } from "react";
 import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback";
 import { MotionCopyButton } from "./MotionCopyButton";
 import { chapterLines, renderSeoDescription, renderSeoOptionText } from "../../../lib/motionSeo";
@@ -29,8 +29,10 @@ interface MotionSeoCardProps {
   thumbnails?: Record<number, MotionThumbnail>;
   onThumbnail?: (optionIndex: number) => void;
   thumbnailBusy?: number | null;
+  /** Extra lines at the end of the card (e.g. Reup's pinned comment and upload notes). */
+  footer?: ReactNode;
 }
-export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail, thumbnailBusy }) => {
+export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail, thumbnailBusy, footer }) => {
   const { copiedKey, copyText: handleCopy } = useClipboardFeedback();
   const [zoomModal, setZoomModal] = useState<{ image: string; prompt: string; optionIndex?: number } | null>(null);
   const t = lang === MR.MOTION_TEXT_EN ? MOTION_SEO_TEXTS.en : MOTION_SEO_TEXTS.vi;
@@ -353,6 +355,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
           )}
         </div>
       )}
+      {footer}
     </StudioCard>
   );
 };

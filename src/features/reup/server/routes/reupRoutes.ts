@@ -1,11 +1,12 @@
 import express from "express";
 import { REUP_API } from "../../constants/reupConfig.js";
-import { approveReupScriptController, cancelReupController, inspectReupSourceController, pickReupFolderController, listReupJobsController, reupFrameController, reupStatusController, rerunReupController, startReupController } from "../controllers/reupController.js";
+import { approveReupScriptController, cancelReupController, inspectReupSourceController, pickReupFolderController, listReupJobsController, reupFrameController, reupStatusController, rerunReupController, saveReupVideoController, startReupController } from "../controllers/reupController.js";
 const router = express.Router();
 router.post(REUP_API.SOURCE, inspectReupSourceController);
 router.post(REUP_API.START, startReupController);
 router.get(REUP_API.STATUS, reupStatusController);
 router.post(REUP_API.APPROVE_SCRIPT, approveReupScriptController);
+router.post(REUP_API.SAVE_VIDEO, saveReupVideoController);
 router.post(REUP_API.RERUN, rerunReupController);
 router.post(REUP_API.CANCEL, cancelReupController);
 router.get(REUP_API.FRAME, reupFrameController);

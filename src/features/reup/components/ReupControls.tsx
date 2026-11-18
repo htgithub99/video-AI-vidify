@@ -33,10 +33,3 @@ export const ReupTextField: FC<{ label: string; value: string; onChange: (value:
   </label>
 );
 export const reupClock = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
-/** Save a served file through the browser's own download. */
-export const reupDownload = (url: string): void => {
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = url.split("/").pop() || "";
-  link.click();
-};

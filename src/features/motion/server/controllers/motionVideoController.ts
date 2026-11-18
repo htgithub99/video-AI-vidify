@@ -148,10 +148,11 @@ export const clearMotionVideoResults = (_req: Request, res: Response): void => {
   if (isMotionRenderBusy()) return void fail(res, 409, MOTION_TEXT_DANG_RENDER_KHONG_THE_XOA_TAT_CA);
   res.json({ success: true, ...clearMotionResults() });
 };
+/** The system "Save as" dialog for an MP4; empty when the user cancels. Shared with other video screens (Reup). */
+export const pickMotionSaveFile = (suggestedName: string): Promise<string> => execFileText(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), MOTION_TEXT_SELECT_SAVE_FILE, path.basename(suggestedName), MOTION_VIDEO_CONSTANTS.EXT_MP4]);
 export const selectMotionSaveDestination = async (req: Request, res: Response): Promise<void> => {
   try {
-    const suggested = path.basename(_.toString(req.body?.suggestedName || MOTION_TEMPLATE_MOTION(String(MOTION_VIDEO_CONSTANTS.EXT_MP4))));
-    const target = await execFileText(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), MOTION_TEXT_SELECT_SAVE_FILE, suggested, MOTION_VIDEO_CONSTANTS.EXT_MP4]);
+    const target = await pickMotionSaveFile(_.toString(req.body?.suggestedName || MOTION_TEMPLATE_MOTION(String(MOTION_VIDEO_CONSTANTS.EXT_MP4))));
     if (!target) return void res.json({ success: true, cancelled: true });
     const token = randomUUID();
     saveDestinations.set(token, target);

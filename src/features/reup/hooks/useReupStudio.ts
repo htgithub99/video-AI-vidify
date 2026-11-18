@@ -139,11 +139,20 @@ export const useReupStudio = (lang: Lang) => {
   /** Re-run a step with the current choices for the run's video type (e.g. another voice channel). */
   const rerun = useCallback((step: ReupStepId) => job && act(REUP_URL.RERUN, { jobId: job.id, step, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
   const approveScript = useCallback((script: ReupScript) => job && act(REUP_URL.APPROVE_SCRIPT, { jobId: job.id, script }), [act, job]);
+  /** Save an edited video through the "Save as" dialog, like Video Motion's download button. */
+  const saveVideo = useCallback(async (jobId: string, outputId: string) => {
+    try {
+      const res = await motionRequest<{ cancelled?: boolean; savedPath?: string }>(REUP_URL.SAVE_VIDEO, { jobId, outputId });
+      if (res.savedPath) toast.success(res.savedPath);
+    } catch (error) {
+      toast.error(errorText(error));
+    }
+  }, []);
   const newJob = useCallback(() => {
     setJob(null);
     setLicensed(false);
   }, []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
-  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, licensed, setLicensed, busy, running, job, openJob, results, voiceChannels, reloadVoiceChannels, start, cancel, rerun, approveScript, newJob };
+  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, licensed, setLicensed, busy, running, job, openJob, results, voiceChannels, reloadVoiceChannels, start, cancel, rerun, approveScript, saveVideo, newJob };
 };
 export type ReupStudio = ReturnType<typeof useReupStudio>;

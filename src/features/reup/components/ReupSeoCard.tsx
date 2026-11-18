@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FC } from "react";
+import { Info } from "lucide-react";
 import type { MotionThumbnail } from "../../../types/motionVideo.js";
 import { MotionSeoCard } from "../../motion/components/MotionSeoCard.js";
+import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { reupSeoPack } from "../lib/reupSeo.js";
 import { drawReupThumbnail } from "../lib/reupThumbnail.js";
@@ -14,7 +16,7 @@ const variant = (idea: ReupThumbIdea, frames: number[], turn: number): ReupThumb
 };
 /** The upload package in Video Motion's SEO card: options to copy or export, each with a thumbnail drawn from real frames. */
 export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, lang }) => {
-  const { job } = studio;
+  const { job, text } = studio;
   const pack = job?.package;
   const seo = useMemo(() => (job ? reupSeoPack(job) : null), [job]);
   const [turns, setTurns] = useState<Record<number, number>>({});
@@ -57,6 +59,27 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
       thumbnails={thumbnails}
       onThumbnail={pack?.thumbs.length ? (i) => (setDrawing(i), setTurns((all) => ({ ...all, [i]: (all[i] || 0) + 1 }))) : undefined}
       thumbnailBusy={drawing}
+      footer={
+        pack && (
+          <div className={S.SEO_NOTES}>
+            {pack.pinned && (
+              <p className={S.HINT}>
+                {text.PINNED}: {pack.pinned}
+              </p>
+            )}
+            <p className={pack.aiDisclosure ? S.HINT_WARN : S.HINT}>
+              <Info className={S.INLINE_ICON} />
+              {pack.aiDisclosure ? text.AI_YES : text.AI_NO}
+            </p>
+            {job.packageDir && (
+              <p className={S.HINT}>
+                {text.SAVED_TO} <span className={S.PATH}>{job.packageDir}</span>
+              </p>
+            )}
+            {!!job.credits && <p className={S.HINT}>{text.CREDITS(job.credits)}</p>}
+          </div>
+        )
+      }
     />
   );
 };

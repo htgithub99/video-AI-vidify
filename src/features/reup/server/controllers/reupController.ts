@@ -1,5 +1,8 @@
 import type { Request, Response } from "express";
+import fs from "fs";
+import path from "path";
 import _ from "lodash";
+import { pickMotionSaveFile } from "../../../motion/server/controllers/motionVideoController.js";
 import { pickVideoExportFolder } from "../../../video-export/server/services/videoExportScanService.js";
 import { REUP_ERROR } from "../../constants/reupServerText.js";
 import type { ReupJob, ReupStepId } from "../../types/reup.js";
@@ -65,4 +68,19 @@ export const pickReupFolderController = async (_req: Request, res: Response): Pr
 };
 export const listReupJobsController = (_req: Request, res: Response): void => {
   res.json({ success: true, jobs: listReupJobs().map((job) => ({ id: job.id, name: job.source.name, preset: job.preset, status: job.status, updatedAt: job.updatedAt, outputs: job.outputs.map(({ id, url, duration, width, height }) => ({ id, url, duration, width, height })), packageDir: job.packageDir })) });
+};
+/** Save an edited video where the user picks, through Video Motion's "Save as" dialog. */
+export const saveReupVideoController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const job = getReupJob(String(req.body?.jobId || ""));
+    const output = job?.outputs.find((o) => o.id === String(req.body?.outputId || ""));
+    if (!output || !fs.existsSync(output.file)) throw new Error(REUP_ERROR.NO_OUTPUT);
+    const target = await pickMotionSaveFile(path.basename(output.file));
+    if (!target) return void res.json({ success: true, cancelled: true });
+    await fs.promises.mkdir(path.dirname(target), { recursive: true });
+    await fs.promises.copyFile(output.file, target);
+    res.json({ success: true, savedPath: target });
+  } catch (error) {
+    fail(res, 400, error);
+  }
 };

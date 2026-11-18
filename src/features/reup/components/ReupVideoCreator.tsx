@@ -126,7 +126,7 @@ const ReupVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" as La
                 <ReupSeoCard studio={studio} lang={ui} />
               </div>
               <div className={S.RIGHT}>
-                <ReupPreviewCard studio={studio} />
+                <ReupPreviewCard studio={studio} motionText={motionText} />
                 <ReupExportCard studio={studio} motionText={motionText} />
                 <ReupLogCard studio={studio} motionText={motionText} />
               </div>
