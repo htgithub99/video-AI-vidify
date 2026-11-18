@@ -3,7 +3,8 @@ import { MOTION_FIGURE_VOCAB_RUNTIME } from "../constants/motionFigureVocabulary
 import { MOTION_FIGURES as F } from "../constants/motionFigures.js";
 import { MOTION_HTML_KIT as K } from "../constants/motionHtmlKit.js";
 import { motionDrawStyle, motionMovementOf } from "./motionDrawStyle.js";
-import { motionCameraShot, motionLayoutOf } from "./motionLayout.js";
+import { motionLayoutOf } from "./motionLayout.js";
+import { motionSceneInteractPairs } from "./motionSceneBlueprint.js";
 import { motionIsSpecPage, motionSceneSpecOf } from "./motionSceneSpec.js";
 import { MOTION_SCENE_ENGINE } from "../constants/motionSceneEngine.js";
 import { MOTION_SCENE_SPEC as S } from "../constants/motionSceneSpec.js";
@@ -17,19 +18,28 @@ export const motionFigureRenderOf = (spec: { profileId?: string; proportion?: st
   profile: spec?.profileId,
   proportion: spec?.proportion,
   movement: spec?.movement,
-  layout: motionLayoutOf({ profileId: spec?.profileId, layout: spec?.layout }),
-  scene: scene && { shot: scene.shot, kind: scene.kind },
+  layout: motionLayoutOf({ layout: spec?.layout }),
+  scene: scene && { shot: scene.shot, kind: scene.kind, sceneTemplate: scene.sceneTemplate },
 });
 // Names one way of showing the figures, so a picture captured another way is known to be out of date.
-export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `kit:${render?.profile || ""}:${render?.proportion || ""}|${motionLayoutOf({ profileId: render?.profile, layout: render?.layout })}|${motionMovementOf({ profileId: render?.profile, movement: render?.movement })}|r${F.RENDER_REVISION}e${S.ENGINE}`;
-// The view the page applies over the scene: the style layer, the camera's shot with the scene's subject (its spec's
-// focal item) as what it frames, and the story's year (what the kit builds things of when a scene does not say).
+export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `kit:${render?.profile || ""}:${render?.proportion || ""}|${motionLayoutOf({ layout: render?.layout })}|${motionMovementOf({ profileId: render?.profile, movement: render?.movement })}|r${F.RENDER_REVISION}e${S.ENGINE}`;
+// The view the page applies over the scene: the style layer, the layout the camera frames by (with the scene's planned
+// shot and kind, which "Tự động" reads), the scene's subject (its spec's focal item) and who acts on whom (the plan's
+// INTERACT pairs: they may stand close and are framed together), how figures move, and the story's year.
 export const motionFigureView = (render: MotionFigureRender | undefined, focus?: string) => {
   const style = render?.profile ? F.STYLES[motionDrawStyle(render.profile).kitLook] || null : null;
-  const shot = motionCameraShot(motionLayoutOf({ profileId: render?.profile, layout: render?.layout }), render?.scene);
   // How figures move ("Chuyển động"): the one chosen, else the drawing style's own ("Cắt dán kể chuyện": held poses, hops, the cut-out camera).
   const movement = motionMovementOf({ profileId: render?.profile, movement: render?.movement });
-  return { style, shot, focus: focus && (shot !== "wide" || movement === "cutout") ? [focus] : [], movement, ...(Number.isFinite(render?.year) ? { year: render!.year } : {}) };
+  const pairs = motionSceneInteractPairs(render?.scene?.sceneTemplate);
+  return {
+    style,
+    layout: motionLayoutOf({ layout: render?.layout }),
+    scene: { shot: render?.scene?.shot, kind: render?.scene?.kind },
+    focus: focus ? [focus] : [],
+    ...(pairs.length ? { pairs } : {}),
+    movement,
+    ...(Number.isFinite(render?.year) ? { year: render!.year } : {}),
+  };
 };
 // Adds the figure table, the kit and the scene engine (with the view) to a scene page.
 const CATALOG_JSON = JSON.stringify(MOTION_CATALOG_RUNTIME).replace(/</g, "\\u003c");

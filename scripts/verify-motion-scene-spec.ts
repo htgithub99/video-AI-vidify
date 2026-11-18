@@ -9,7 +9,7 @@ import path from "node:path";
 import { chromium } from "playwright";
 import { MOTION_SCENE_SPEC as S } from "../src/constants/motionSceneSpec.js";
 import { MOTION_SCENE_ENGINE } from "../src/constants/motionSceneEngine.js";
-import { motionIsSpecPage, motionSceneSpecFix, motionSceneSpecOf, motionSceneSpecPage, motionSceneSpecPrompt, motionSceneSpecRead } from "../src/lib/motionSceneSpec.js";
+import { motionIsSpecPage, motionSceneSpecFix, motionSceneSpecSplit, motionSceneSpecOf, motionSceneSpecPage, motionSceneSpecPrompt, motionSceneSpecRead } from "../src/lib/motionSceneSpec.js";
 import { motionHtmlFigures } from "../src/lib/motionFigures.js";
 import type { MotionCatalogGap } from "../src/lib/motionObjectCatalog.js";
 import type { MotionSceneSpec } from "../src/types/motionSceneSpec.js";
@@ -53,18 +53,38 @@ const person = (id: string, x: number, extra: Record<string, unknown> = {}) => (
   assert.equal(spec.items.find((item) => item.id === "horse")!.h, 230, "a reasonable size is kept");
   assert.ok(warnings.some((line) => line.includes("barrel")));
 }
-// Exactly one focal thing; a seat on a thing that is not there is dropped; an inset needs a head or a body.
+// Exactly one focal thing; a seat on a thing that is not there is dropped; a close-up is of a person's face or of the
+// small thing at their hand (a body part magnified is not), never of a thing or a group.
 {
-  const { spec } = fix({ items: [person("you", 300, { focal: true }), person("other", 700, { focal: true, on: "ghostBench" })], devices: [{ kind: "inset", of: "you", part: "hand", x: 900, y: 200, r: 90 }] });
+  const { spec } = fix({ items: [person("you", 300, { focal: true }), person("other", 700, { focal: true, on: "ghostBench" }), { id: "cart", fn: "vehicle", kind: "cart", x: 1000, y: 620, h: 150 }], devices: [{ kind: "inset", of: "you", part: "body", r: 90 }, { kind: "inset", of: "cart", part: "head", r: 90 }] });
   assert.equal(spec.items.filter((item) => item.focal).length, 1, "one focal thing");
   assert.equal(spec.items.find((item) => item.id === "other")!.on, undefined, "no seat on a missing thing");
-  assert.equal((spec.devices || []).filter((device) => device.kind === "inset").length, 0, "an inset on a hand is dropped (too small to read)");
+  assert.deepEqual((spec.devices || []).filter((device) => device.kind === "inset").map((device) => [device.of, device.part]), [["you", "hand"]], "a body close-up becomes the hand's thing; a cart has no close-up");
 }
-// A big thing in front of the focal subject is moved aside (or dropped); thick haze is thinned.
+// What covers the subject goes further back first (smaller, behind it), the pairs of the plan are never pulled apart.
+{
+  const { spec, warnings } = fix({ items: [person("you", 640, { focal: true, y: 600 }), { id: "wagon", fn: "vehicle", kind: "wagon", x: 640, y: 700, h: 210 }, person("miklos", 650, { y: 640 })] }, "5. REQUIRED: you (focal): x; miklos (support): y\n7. INTERACT: miklos -> you");
+  const wagon = spec.items.find((item) => item.id === "wagon")!;
+  assert.ok(wagon.y! < 600 && wagon.h! < 210 && Math.abs(wagon.x! - 640) < 1, "the wagon stands behind the subject, smaller, in its place");
+  assert.ok(warnings.some((line) => line.includes("lùi ra sau")));
+  assert.equal(spec.items.find((item) => item.id === "miklos")!.x, 650, "the partner the plan names stays where the plan put him");
+  assert.deepEqual(spec.pairs, [["miklos", "you"]]);
+}
+// A person at a required thing stays at it (a smith at his whetstone, a soldier on the bridge); a stone that only flies over
+// the planks does not cover them. The fixer's repairs are notes, not something the scene lacks.
+{
+  const { spec, warnings } = fix({ items: [person("you", 300, { focal: true }), { id: "whetstone", fn: "prop", kind: "whetstone", x: 760, y: 640, h: 30 }, person("miklos", 760, { y: 650 }), { id: "planks", fn: "prop", kind: "planks", x: 1000, y: 630, h: 30, w: 160 }, { id: "stone", fn: "prop", kind: "rock", h: 60, keys: [{ t: 0, x: 200, y: 200 }, { t: 0.45, x: 990, y: 600 }, { t: 0.5, x: 1000, y: 610 }, { t: 1, x: 1270, y: 300 }] }] } as never, "5. REQUIRED: you (focal): x; miklos (support): y; whetstone (support): z; planks (support): p; stone (support): s");
+  assert.equal(spec.items.find((item) => item.id === "miklos")!.x, 760, "a person is never moved off a thing");
+  assert.ok(!warnings.some((line) => line.includes("che")), "nothing covers anything: " + warnings.join("; "));
+  const split = motionSceneSpecSplit(['"miklos" che "whetstone" – đã dời sang bên', 'Bỏ "gadget": kho không có "x" (cũng không có đồ gần đúng cùng thời đại)', "Cảnh thiếu: banner", 'Bỏ "far": che "gap" mà không dời được', 'Bỏ ô phóng to vào "cart": thứ được phóng không rõ']);
+  assert.equal(split.issues.length, 3, "dropped things and missing ones are what a scene lacks");
+  assert.equal(split.notes.length, 2, "a repair is a note");
+}
+// A big thing in front of the focal subject goes behind it, aside or is left out; thick haze is thinned.
 {
   const { spec, warnings } = fix({ items: [person("you", 640, { focal: true }), { id: "barn", fn: "building", kind: "house", x: 640, y: 680, h: 420 }], haze: { kind: "dust", amount: 0.9 } });
   const barn = spec.items.find((item) => item.id === "barn");
-  assert.ok(!barn || Math.abs(barn.x! - 640) > 150, "the focal subject is not covered");
+  assert.ok(!barn || barn.y! < 620 || Math.abs(barn.x! - 640) > 150, "the focal subject is not covered (the barn behind it, aside or left out)");
   assert.ok(warnings.length > 0);
   assert.ok(spec.haze!.amount <= S.HAZE_MAX);
 }
@@ -152,6 +172,36 @@ try {
   assert.equal(raid.items.length, 8, "the new library things are found by their usual names (none dropped)");
   const raidShot = await show(raid, "raid", 0.5);
   for (const id of ["village", "stakes", "bank", "stall", "khan", "levy", "flame", "volley"]) inFrame(raidShot.marks, id);
+  // Staging when shown (no AI): an idea marker and edge junk left out, a natural framing rock kept small, the scene seen
+  // from further back when drawn too close, a crowded cavalry block given the width its riders need, three named men
+  // apart, a bridge and a wagon fort with an opening.
+  const crowded = { version: 1, horizon: 300, time: "day", ground: "grass", water: [{ kind: "river", y: 560, h: 50 }], items: [
+    { id: "gap", fn: "prop", kind: "earthwork", x: 300, y: 360, h: 40 },
+    { id: "fg_wheel", fn: "prop", kind: "brokenWheel", x: 1180, y: 712, h: 120 },
+    { id: "fg_rock", fn: "prop", kind: "boulder", x: 60, y: 715, h: 260 },
+    { id: "riders", fn: "person", x: 900, y: 470, h: 200, mount: "horse", group: { count: 6, width: 300, rows: 2 }, look: { region: "steppe", outfit: "soldier" } },
+    { id: "fort", fn: "wall", kind: "wagonFort", from: 40, to: 560, y: 420, h: 70, gaps: [[240, 330]] },
+    { id: "bridge", fn: "bridge", x: 640, y: 560, w: 520, h: 40 },
+    person("you", 600, { focal: true, y: 690, h: 520 }), person("miklos", 660, { y: 690, h: 500 }), person("andras", 720, { y: 690, h: 500 }),
+  ] } as unknown as MotionSceneSpec;
+  const tab = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await tab.setContent(motionHtmlFigures(motionSceneSpecPage(crowded), { profile: "cutout", layout: "wide", year: 1241 }).replace("<head>", `<head><script>${RECORD}</script>`));
+  const staged = await tab.evaluate(async () => {
+    const w = window as any; await w.motionScene.ready; w.__motionMarks = [];
+    await w.motionScene.renderAt({ mode: "export", width: 1280, height: 720, time: 3, frame: 90, fps: 30, duration: 6, progress: 0.5, motionEnabled: true, cameraEnabled: false, sceneEffectsEnabled: true, seed: "x", speaking: [] });
+    const S = w.__motionSpec;
+    return { ids: S.items.map((it: any) => it.id), master: S.__master, items: Object.fromEntries(S.items.map((it: any) => [it.id, { x: it.x, y: it.y, h: it.h, group: it.group }])), marks: w.__motionMarks };
+  });
+  await tab.screenshot({ path: path.join(out, "staged.png") });
+  await tab.close();
+  assert.ok(!staged.ids.includes("gap") && !staged.ids.includes("fg_wheel"), "an idea marker and junk at the frame's edge are left out");
+  assert.ok(staged.items.fg_rock.h <= 720 * 0.18 + 0.5, "a framing rock is at most 18 % of the frame");
+  assert.ok(staged.master > 0.5 && staged.master < 0.65 && Math.abs(staged.items.you.h - 288) < 2, "the scene is seen from further back: the lead 40 % of the frame (" + staged.master + ")");
+  const g = staged.items.riders.group, cols = Math.ceil(g.count / g.rows);
+  assert.ok(g.width >= cols * staged.items.riders.h * 1.0 * 0.95 - 1 || g.count < 6, "the riders get the width they need, or fewer riders");
+  const named = ["you", "miklos", "andras"].map((id) => staged.items[id]).sort((a: any, b: any) => a.x - b.x);
+  for (let i = 1; i < named.length; i++) assert.ok(named[i].x - named[i - 1].x > named[i].h * 0.3 || Math.abs(named[i].y - named[i - 1].y) > 10, "named men stand apart or one behind the other");
+  for (const id of ["bridge", "fort", "riders", "you"]) inFrame(staged.marks, id);
   // An interior: a room, a seated person at a table.
   const hall = fix({ horizon: 420, time: "day", ground: "stone", interior: { wall: "#9a8466", floor: "#6f5b45" }, items: [{ id: "table", fn: "prop", kind: "table", x: 640, y: 640, h: 110 }, { id: "bench", fn: "prop", kind: "bench", x: 560, y: 650, h: 60 }, person("king", 560, { focal: true, on: "bench", look: { outfit: "king", pose: "sit" } })] }).spec;
   inFrame((await show(hall, "hall")).marks, "king");

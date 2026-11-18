@@ -54,10 +54,10 @@ window.motionScene = { ready: Promise.resolve(), renderAt: async (input) => { co
 </script></body></html>`;
   const cam = await browser.newPage();
   await cam.setContent(motionKitPage(scene, { profile: "stick", proportion: "balanced", layout: "close" }));
-  return cam.evaluate(async () => { await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, frame: 30, fps: 30, duration: 2 }); const p = (window as any).__motionViewHooks.path; return p ? p.z : 1; }).finally(() => cam.close());
+  return cam.evaluate(async () => { await (window as any).motionScene.renderAt({ progress: 0.5, time: 1, frame: 30, fps: 30, duration: 2 }); const p = (window as any).__motionViewHooks.plan; return p && p.shots.length ? p.shots[0].z : 1; }).finally(() => cam.close());
 };
 const bare = await cameraZoom(false), kept = await cameraZoom(true);
 assert.ok(bare > 1.5, "a close shot zooms in on the person: " + bare);
-assert.ok(kept < bare, "the thought bubble makes the camera ease out: " + kept + " < " + bare);
+assert.ok(Math.abs(kept - bare) < 1e-6, "a thought bubble never holds the camera back (it is drawn over the frame): " + kept + " = " + bare);
 await browser.close();
-console.log("Story devices: thought, inset, emote, count, time, sound, speed, impact and spotlight draw inside their boxes; the camera keeps a thought bubble in view.");
+console.log("Story devices: thought, inset, emote, count, time, sound, speed, impact and spotlight draw inside their boxes; a thought bubble never holds the camera back.");

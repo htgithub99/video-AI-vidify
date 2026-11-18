@@ -1,7 +1,7 @@
 export const MOTION_PLAN_VARIETY = {
   ENFORCE: false,
   KINDS: ["here", "cutaway", "map", "detail"] as readonly string[],
-  SHOTS: ["wide", "medium", "close", "overhead"] as readonly string[],
+  SHOTS: ["establishing", "wide", "medium", "close"] as readonly string[],
   MAX_SAME_RUN: 3,
   MIN_GROUP_FOR_SHOTS: 4,
   MIN_SHOTS: 2,

@@ -43,16 +43,20 @@ const MotionHtmlStill = ({ document }: { document: MotionRemotionSpec }) => {
   const html = document.scenes[0]?.html;
   const [ready, setReady] = useState(false);
   const done = useMemo(() => () => setReady(true), []);
-  const fade = cn(MOTION_STYLES.MEDIA_THUMB_FILL, ready ? MOTION_STYLES.MEDIA_SHOWN : MOTION_STYLES.MEDIA_HIDDEN);
+  const [stored, setStored] = useState(false);
+  const shownWhen = (on: boolean) => cn(MOTION_STYLES.MEDIA_THUMB_FILL, on ? MOTION_STYLES.MEDIA_SHOWN : MOTION_STYLES.MEDIA_HIDDEN);
+  const storedDone = useMemo(() => () => setStored(true), []);
+  // The stored picture is used while it shows the current "Cách dựng"; otherwise the scene itself is drawn, and the
+  // stored picture (an older look) stands in until that drawing is done, so a card is never an empty box.
+  const live = !!html && (!html.thumbnail || (!!html.spec && html.render !== motionFigureRenderKey(motionFigureRenderOf(document, document.scenes[0] as MotionFigureScene))));
+  const picture = html?.thumbnail ? (
+    <img src={html.thumbnail} alt={document.title} onLoad={live ? storedDone : done} onError={live ? storedDone : done} className={cn(shownWhen(live ? stored && !ready : ready), live && MOTION_STYLES.MEDIA_THUMB_UNDER)} style={{ width: RT_MAINTENANCE.VALUE_100, aspectRatio: motionAspect(document.width, document.height), objectFit: RT_MAINTENANCE.CONTAIN }} />
+  ) : null;
   return (
     <div className={MOTION_STYLES.MEDIA_THUMB} style={{ aspectRatio: motionAspect(document.width, document.height) }}>
-      {/* The stored picture is used while it shows the current "Cách dựng"; otherwise the scene itself is drawn. */}
-      {html && (!html.thumbnail || (!!html.spec && html.render !== motionFigureRenderKey(motionFigureRenderOf(document, document.scenes[0] as MotionFigureScene)))) ? (
-        <MotionHtmlLiveStill document={document} onReady={done} className={fade} />
-      ) : (
-        <img src={html?.thumbnail} alt={document.title} onLoad={done} onError={done} className={fade} style={{ width: RT_MAINTENANCE.VALUE_100, aspectRatio: motionAspect(document.width, document.height), objectFit: RT_MAINTENANCE.CONTAIN }} />
-      )}
-      {!ready && <MotionMediaLoading small />}
+      {picture}
+      {live && <MotionHtmlLiveStill document={document} onReady={done} className={shownWhen(ready)} />}
+      {!ready && !(live && stored) && <MotionMediaLoading small />}
     </div>
   );
 };

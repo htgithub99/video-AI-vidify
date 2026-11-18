@@ -138,7 +138,7 @@ import type { StorageJunkReport } from "../../../types/storage.js";
 import { MotionAiSettings } from "./MotionAiSettings.js";
 import { MotionReviewToggle } from "./MotionReviewToggle.js";
 import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl } from "./motionApi";
-import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionAiStatusLine, MotionFlowLog, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./MotionControls.js";
+import { ActionBtn, MOTION_LOADING_GLYPH, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionAiStatusLine, MotionFlowLog, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./MotionControls.js";
 import { MotionSeoCard } from "./MotionSeoCard.js";
 import { MotionSpecPlayer } from "./MotionSpecPlayer";
 import { MotionVideoDnaCard } from "./MotionVideoDnaCard.js";
@@ -1071,7 +1071,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               {displayedJob === rj && rj?.result && (
                 <div className={MR.MOTION_TEXT_PT_2_BORDER_T_BORDER_SLATE_800}>
                   <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_LG_GROUP}>
-                    <StudioVideoPlayer src={rj.result.videoUrl} aspect={motionAspect(rj.result.width, rj.result.height)} />
+                    <StudioVideoPlayer src={rj.result.videoUrl} aspect={motionAspect(rj.result.width, rj.result.height)} loadingIcon={MOTION_LOADING_GLYPH} />
                     <div className={MR.MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_Z_10}>
                       <StudioDownloadButton onClick={() => rj.result && void studio.saveResult(rj.result)} />
                     </div>
@@ -1420,7 +1420,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
         {_.map(studio.results, (r) => (
           <StudioCard key={r.id} className={cn(cardCls, MR.P_4_SPACE_Y_3_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_80_3FC799, picked.has(r.id) && MOTION_STYLES.RESULT_SELECTED)}>
             <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD}>
-              <StudioVideoPlayer src={r.videoUrl} aspect={motionAspect(r.width, r.height)} />
+              <StudioVideoPlayer src={r.videoUrl} aspect={motionAspect(r.width, r.height)} loadingIcon={MOTION_LOADING_GLYPH} />
               <label className={MOTION_STYLES.RESULT_SELECT} title={`${text.RESULTS_SELECT_VIDEO}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`}>
                 <StudioInput
                   type={MOTION_TEXT_CHECKBOX}

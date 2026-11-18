@@ -5,8 +5,8 @@ import { MOTION_SCENE_SPEC as S, MOTION_SCENE_SPEC_PROMPT as P } from "../consta
 import { MOTION_FIGURE_VOCAB as V } from "../constants/motionFigureVocabulary.js";
 import { MOTION_SCENE_BLUEPRINT as B } from "../constants/motionSceneBlueprint.js";
 import { motionCatalogEntryOf, motionCatalogGap, motionCatalogKinds, motionCatalogWord, type MotionCatalogGap } from "./motionObjectCatalog.js";
-import { motionSceneBlueprint, type MotionCastLooks } from "./motionSceneBlueprint.js";
-import { motionHtmlRequired } from "./motionHtmlQuality.js";
+import { motionSceneBlueprint, motionSceneInteractPairs, type MotionCastLooks } from "./motionSceneBlueprint.js";
+import { motionHtmlMarkId, motionHtmlRequired } from "./motionHtmlQuality.js";
 import type { MotionSceneSpec, MotionSpecDevice, MotionSpecItem, MotionSpecKey } from "../types/motionSceneSpec.js";
 
 type Ctx = { year?: number; template?: string; map?: boolean; castLooks?: MotionCastLooks; header?: string; gaps?: MotionCatalogGap[] };
@@ -73,6 +73,7 @@ const itemOf = (raw: unknown, index: number): MotionSpecItem | undefined => {
   const item: MotionSpecItem = { id: idOf(raw.id) || `${fn}_${index + 1}`, fn };
   if (raw.kind != null) item.kind = String(raw.kind);
   for (const k of ["x", "y", "h", "w", "facing", "from", "to", "z"] as const) { const v = num(raw[k]); if (v != null) item[k] = v; }
+  if (Array.isArray(raw.gaps)) { const gaps = raw.gaps.map((g) => (Array.isArray(g) ? [num(g[0]), num(g[1])] : [])).filter((g): g is [number, number] => g.length === 2 && g[0] != null && g[1] != null && g[1] > g[0]); if (gaps.length) item.gaps = gaps.slice(0, 6); }
   if (isObj(raw.look)) item.look = { ...raw.look };
   if (Array.isArray(raw.keys)) item.keys = raw.keys.map(keyOf).filter((k): k is MotionSpecKey => !!k).sort((a, b) => a.at - b.at);
   if (isObj(raw.group) && num(raw.group.count)! > 1) item.group = { count: Math.round(clamp(num(raw.group.count)!, 2, 40)), width: num(raw.group.width), rows: num(raw.group.rows), depth: num(raw.group.depth) };
@@ -169,6 +170,14 @@ const boxAt = (it: MotionSpecItem, p: number) => {
   return { x0: s.x - w / 2, x1: s.x + w / 2, y0: s.y - s.h, y1: s.y };
 };
 const shown = (it: MotionSpecItem, p: number) => !(it.at && (p < it.at[0] || p > it.at[1])) && !(it.fade && p > it.fade[1]);
+// Further back by factor k (< 1) towards the horizon: ground point closer to it, smaller (the depth of the scene kept).
+const back = (it: MotionSpecItem, horizon: number, k: number) => {
+  const Y = (y: number) => horizon + (y - horizon) * k;
+  if (it.y != null) it.y = Y(it.y);
+  if (it.h != null) it.h *= k;
+  if (it.w != null) it.w *= k;
+  it.keys?.forEach((q) => { if (q.y != null) q.y = Y(q.y); if (q.h != null) q.h *= k; });
+};
 const shift = (it: MotionSpecItem, dx: number) => {
   if (it.x != null) it.x += dx;
   if (it.from != null) it.from += dx;
@@ -186,6 +195,13 @@ const resolveKind = (fn: string, kind: string, year?: number): { kind?: string; 
   if (near && (fn === "wall" ? (S.WALL_KINDS as readonly string[]).includes(near) : !motionCatalogGap(fn as never, near, undefined, year))) return { kind: near, near: true };
   return {};
 };
+// The fixer's lines split into what the scene really lacks (a thing left out, a required thing missing, a scene laid out
+// by code: shown on the scene) and what code put right on its own (notes, kept for the log and the tooltip). Old scenes
+// stored both together, so the split reads the lines themselves.
+export const motionSceneSpecSplit = (lines: readonly string[] = []): { issues: string[]; notes: string[] } => ({
+  issues: lines.filter((line) => S.ISSUE.test(line)),
+  notes: lines.filter((line) => !S.ISSUE.test(line)),
+});
 // Puts the spec right where it is not reasonable. Returns the warnings (what was repaired or left out).
 export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string[] => {
   const warn: string[] = [];
@@ -194,7 +210,7 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
   if (spec.map) return warn;
   // Words the library does not have: a near thing of the same period, or left out.
   spec.items = spec.items.filter((it) => {
-    if (it.fn === "sticker" || it.fn === "person") return true;
+    if (it.fn === "sticker" || it.fn === "person" || it.fn === "bridge") return true;
     if (!it.kind) { if (it.fn === "animal") { it.kind = "horse"; return true; } warn.push(S.WARN.DROPPED_KIND(it.id, it.fn)); return false; }
     const r = resolveKind(it.fn, it.kind, ctx.year);
     if (!r.kind) { warn.push(S.WARN.DROPPED_KIND(it.id, it.kind)); ctx.gaps?.push(motionCatalogGap(it.fn as never, it.kind, undefined, ctx.year) || { fn: it.fn as never, kind: it.kind, reason: "unknown" }); return false; }
@@ -257,6 +273,9 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
     focal = pick ? [pick] : [];
   }
   spec.focus = focal[0]?.id;
+  const pairs = motionSceneInteractPairs(ctx.template);
+  if (pairs.length) spec.pairs = pairs;
+  const together = (a: MotionSpecItem, b: MotionSpecItem) => pairs.some(([x, y]) => (x === motionHtmlMarkId(a.id) && y === motionHtmlMarkId(b.id)) || (y === motionHtmlMarkId(a.id) && x === motionHtmlMarkId(b.id)));
   // Frame: the focal subject and what the plan requires stay inside the frame (set dressing may be cut by the edge).
   for (const it of spec.items) {
     if (it.fn === "sticker" || it.heldBy || it.fn === "wall" || !(it.focal || required.some((r) => r.id === it.id))) continue;
@@ -270,11 +289,16 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
     it.keys?.forEach((k, i, all) => { if (k.x != null && (!moving || (i > 0 && i < all.length - 1))) k.x = pull(k.x); });
     if (moved) warn.push(S.WARN.INTO_FRAME(it.id));
   }
-  // Nothing drawn in front of the focal subject (or of a required thing) may cover it: moved aside, else left out.
-  const protect = spec.items.filter((it) => it.focal || (required.some((r) => r.id === it.id) && it.fn !== "person"));
+  // Nothing drawn in front of the focal subject (or of a required thing) may cover it for most of the scene: moved back
+  // or aside, else left out. People are never moved off a thing (a man at his whetstone, a soldier on the bridge: they
+  // stand at it on purpose), nor is the focal subject or another required thing moved for a mere thing; a thing that
+  // only passes over another (a flying stone) does not cover it.
+  const isRequired = (it: MotionSpecItem) => required.some((r) => r.id === it.id);
+  const protect = spec.items.filter((it) => it.focal || (isRequired(it) && it.fn !== "person"));
   for (const target of protect) {
     for (const other of [...spec.items]) {
-      if (other === target || other.heldBy || other.on === target.id || target.on === other.id || other.fn === "sticker") continue;
+      if (other === target || other.heldBy || other.on === target.id || target.on === other.id || other.fn === "sticker" || together(other, target)) continue;
+      if (!target.focal && (other.fn === "person" || other.focal || isRequired(other))) continue;
       const front = (p: number) => (other.z ?? at(other, p).y) > (target.z ?? at(target, p).y);
       const cover = (p: number) => {
         if (!shown(other, p) || !shown(target, p) || !front(p)) return 0;
@@ -282,10 +306,19 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
         const ix = Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)), iy = Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
         return (ix * iy) / Math.max(1, (a.x1 - a.x0) * (a.y1 - a.y0));
       };
-      const worst = () => Math.max(...S.SAMPLES.map(cover));
+      // How much it covers for most of the scene (the median of the samples).
+      const worst = () => S.SAMPLES.map(cover).sort((u, v) => u - v)[S.SAMPLES.length >> 1];
       if (worst() <= S.COVER_MAX) continue;
-      // Try aside (the nearer side first), then left out.
+      // Try further back (behind the subject, smaller: the picture's relations kept), then aside (the nearer side first),
+      // then left out.
       const p = S.SAMPLES.reduce((best, s) => (cover(s) > cover(best) ? s : best), 0);
+      const behind = at(target, p).y - Math.max(4, at(target, p).h * 0.04), from = at(other, p).y;
+      if (other.fn !== "wall" && !other.group && from - H0 > 1 && behind - H0 > 12) {
+        const k = (behind - H0) / (from - H0);
+        back(other, H0, k);
+        if (worst() <= S.COVER_MAX) { warn.push(S.WARN.MOVED_BACK(other.id, target.id)); continue; }
+        back(other, H0, 1 / k);
+      }
       const a = boxAt(target, p), b = boxAt(other, p);
       const tries = [(b.x0 + b.x1) / 2 < (a.x0 + a.x1) / 2 ? a.x0 - b.x1 - 8 : a.x1 - b.x0 + 8, (b.x0 + b.x1) / 2 < (a.x0 + a.x1) / 2 ? a.x1 - b.x0 + 8 : a.x0 - b.x1 - 8];
       let done = false;
@@ -309,9 +342,10 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
       if (d.of && !present.has(d.of) && d.kind !== "impact" && d.kind !== "count" && d.kind !== "time") return false;
       if (d.kind === "inset") {
         const of = spec.items.find((it) => it.id === d.of);
-        // A hand, held cord or small object magnified reads as a blur of shapes: only a face or a whole figure is shown close.
-        const big = of && (d.part === "head" ? (of.h ?? 0) >= 160 : d.part === "body");
-        if (!big) { warn.push(S.WARN.INSET(String(d.of))); return false; }
+        // A close-up is of a person: their face, or the small thing at their hand drawn large on its own (the engine picks
+        // it, and shows the face when there is none). A magnified piece of the body reads as a blur of shapes.
+        if (!of || of.fn !== "person" || of.group) { warn.push(S.WARN.INSET(String(d.of))); return false; }
+        if (d.part !== "head") d.part = "hand";
       }
       return true;
     });

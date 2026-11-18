@@ -45,8 +45,9 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH 
 const page = await browser.newPage();
 page.on("pageerror", (error) => assert.fail(String(error)));
 
-// The camera: three shots at the cues, the middle one framed closer on the hero, a short push-in at each shot's start.
-await page.setContent(motionHtmlFigures(SCENE, { profile: "cutout", layout: "wide" } as never));
+// The camera ("Điện ảnh"): a shot at each cue, wide then closer on the hero; the cut-out movement pushes in briefly at a
+// shot's start, then holds. "Toàn cảnh" with the cut-out movement is one still shot of the whole frame.
+await page.setContent(motionHtmlFigures(SCENE, { profile: "cutout", layout: "cinematic" } as never));
 // tsx names inner functions through a helper that the page does not have.
 await page.evaluate("window.__name = function (f) { return f; }");
 const camera = await page.evaluate(async () => {
@@ -54,13 +55,21 @@ const camera = await page.evaluate(async () => {
   const input = (p: number) => ({ progress: p, time: p * 9, duration: 9, fps: 30, cues: [0, 0.34, 0.67], cameraEnabled: true });
   const zoomAt = async (p: number) => { let a = 0; const fill = c.fillRect; c.fillRect = function (...args: any[]) { if (!a) a = this.getTransform().a; return (fill as any).apply(this, args); }; await scene.renderAt(input(p)); c.fillRect = fill; return a; };
   await scene.renderAt(input(0));
-  const plan = (window as any).__motionViewHooks.beats;
+  const plan = (window as any).__motionViewHooks.plan;
   return { shots: plan.shots.length, z: plan.shots.map((s: any) => s.z), start: await zoomAt(0.36), held: await zoomAt(0.55), late: await zoomAt(0.62), wide: await zoomAt(0.1) };
 });
 assert.equal(camera.shots, 3, "a shot for each line of the narration");
 assert.ok(camera.z[1] > camera.z[0] * 1.3, "the second shot is framed closer on the lead person");
 assert.ok(camera.held > camera.start && Math.abs(camera.late - camera.held) < 1e-6, "each shot pushes in briefly, then holds");
 assert.ok(camera.wide >= 1 && camera.wide < 1.3, "the opening shot is the whole frame, with a little room to pan with a walker");
+{
+  const still = await browser.newPage();
+  await still.setContent(motionHtmlFigures(SCENE, { profile: "cutout", layout: "wide" } as never));
+  await still.evaluate("window.__name = function (f) { return f; }");
+  const plan = await still.evaluate(async () => { await (window as any).motionScene.renderAt({ progress: 0.5, time: 4.5, duration: 9, fps: 30, cues: [0, 0.34, 0.67], cameraEnabled: true }); const p = (window as any).__motionViewHooks.plan; return { n: p.shots.length, z: p.shots[0].z }; });
+  assert.deepEqual(plan, { n: 1, z: 1 }, "Toàn cảnh with the cut-out movement is one still shot of the whole frame");
+  await still.close();
+}
 
 // The walk: drawn ahead of its even track mid-step, back on it at each footfall; lifted mid-step.
 await page.setContent(motionHtmlFigures(SCENE.replace("person: function", "unused: function"), { profile: "cutout", layout: "wide" } as never));

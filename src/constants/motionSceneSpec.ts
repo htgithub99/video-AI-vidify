@@ -6,7 +6,7 @@ export const MOTION_SCENE_SPEC = {
   ENGINE: 2,
   WIDTH: 1280,
   HEIGHT: 720,
-  FNS: ["person", "animal", "vehicle", "building", "prop", "tree", "wall", "sticker"] as const,
+  FNS: ["person", "animal", "vehicle", "building", "prop", "tree", "wall", "bridge", "sticker"] as const,
   WALL_KINDS: ["wall", "palisade", "fence", "wagonFort", "gate", "sandbags", "barbedWire", "stakeRow", "earthwork"] as const,
   SCATTER: ["rock", "boulder", "grass", "stump", "log", "reeds", "flowers", "stuckArrow"] as const,
   EFFECTS: ["darkSmoke", "whiteSmoke", "smokeColumn", "dustTrail", "bonfire", "burning", "embers", "sandstorm", "heat", "rays", "steam", "sparks", "splash", "ripple", "shockwave", "crater", "glow", "fireflies", "leaves", "petals", "explosion"] as const,
@@ -16,7 +16,7 @@ export const MOTION_SCENE_SPEC = {
   TIMES: ["day", "dawn", "dusk", "night"] as const,
   GROUNDS: ["dirt", "grass", "sand", "snow", "mud", "stone"] as const,
   // Width of one drawing for its height (the engine uses the same numbers to keep things apart).
-  ASPECT: { person: 0.42, animal: 1.35, vehicle: 1.7, building: 1.1, prop: 1, tree: 0.7, wall: 1, sticker: 1, rider: 1.35 } as Record<string, number>,
+  ASPECT: { person: 0.42, animal: 1.35, vehicle: 1.7, building: 1.1, prop: 1, tree: 0.7, wall: 1, bridge: 4, sticker: 1, rider: 1.35 } as Record<string, number>,
   // Real height of a thing against an adult standing next to it (1 = person). A size the AI gives that is off by more
   // than SIZE_TOLERANCE either way is set to this.
   SIZE: {
@@ -56,6 +56,7 @@ export const MOTION_SCENE_SPEC = {
     GROUNDED: (id: string): string => `"${id}" ở trên trời – đã đặt xuống mặt đất`,
     SEAT: (id: string): string => `"${id}" ngồi lên vật không có – bỏ chỗ ngồi`,
     MOVED: (id: string, focus: string): string => `"${id}" che "${focus}" – đã dời sang bên`,
+    MOVED_BACK: (id: string, focus: string): string => `"${id}" che "${focus}" – đã lùi ra sau`,
     DROPPED_COVER: (id: string, focus: string): string => `Bỏ "${id}": che "${focus}" mà không dời được`,
     MISSING: (ids: string[]): string => `Cảnh thiếu: ${ids.join(", ")}`,
     STICKER: (id: string): string => `Bỏ hình tự vẽ "${id}": quá nhỏ hoặc kho đã có`,
@@ -65,6 +66,9 @@ export const MOTION_SCENE_SPEC = {
     FALLBACK: "Cảnh dựng bằng code từ phân cảnh (AI không trả bản mô tả dùng được)",
     PARSE: "Bản mô tả của AI hỏng JSON – đã tự sửa",
   },
+  // The WARN lines that tell of something the scene lacks (DROPPED_KIND, DROPPED_COVER, MISSING, FALLBACK); every other
+  // line is a repair code made on its own.
+  ISSUE: /^Bỏ "[^"]*": (?:kho không có|che )|^Cảnh thiếu:|^Cảnh dựng bằng code/,
   FALLBACK_LOG: (id: string, tries: number): string => `Cảnh ${id}: AI không trả bản mô tả dùng được sau ${tries} lượt – dựng cảnh từ phân cảnh bằng code.`,
   PARSE_ERROR: "Bản mô tả cảnh không đọc được (không phải JSON hoặc thiếu items)",
   // The page every scene is: the spec, read by the engine the figure table adds when the scene is shown.
@@ -91,8 +95,8 @@ OUTPUT: one JSON object only (no prose, no comments).`,
 - Every item stands on the ground at its ground point (x, y) = the middle of its feet/base, and "h" is its full height in pixels (a person: feet to top of head; a rider: hooves to the rider's head).
 - Perspective: things further back stand higher (smaller y) and are smaller. Keep h proportional to (y − horizon): an item at y has h ≈ h_ref × (y − horizon) / (y_ref − horizon) compared with any other item.
 - Real sizes against a standing person (1): rider on horse 1.35, horse 0.95, wagon 0.85, tent 1.5, camp tent 1.1, house 2.2, tree 3, barrel 0.45, crate 0.4, sack 0.35, stump 0.3, campfire 0.35, boulder 0.6, palisade 1.4, wall 2.
-- Widths for spacing (from h): person ≈ 0.42h, rider on horse ≈ 1.35h, horse ≈ 1.35h, wagon ≈ 1.7h, tent ≈ 1.1h, house ≈ 1.1h, tree ≈ 0.7h.
-- Main subject size by shot: close 480-680 (may run past the bottom edge), medium 280-400, wide 120-220. Its ground point: close/medium y 640-720, wide y 560-680.`,
+- Real widths for spacing (from h): standing person ≈ 0.6h (arms and held things), running person ≈ 0.9h, rider on horse ≈ 1.25h, horse ≈ 1.25h, wagon ≈ 1.7h, tent ≈ 2.4h, house ≈ 1.1h, tree ≈ 0.7h. A group needs width ≥ members per row × member width × 0.8 for people, × 0.95 for riders, animals, carts and tents; use more rows (each row ≈ 0.3 × h further back) before squeezing.
+- THE MASTER SHOT: compose every scene as the whole stage seen from far enough back, whatever the plan's shot says (the app's camera cuts the medium and close shots out of it). The focal person stands 220-320 px tall (30-45 % of the frame), whole from head to feet, ground point y 560-680; the setting shows on both sides. Keep named people and the focal subject at least 8 % of the width from the side edges. The plan's shot (wide, medium, close) only tells the camera what to favour.`,
   SCHEMA: `SCHEMA
 {
  "horizon": 300,
@@ -106,7 +110,7 @@ OUTPUT: one JSON object only (no prose, no comments).`,
  "haze": { "kind": "dust"|"smoke"|"mist", "amount": 0-0.35, "at": [p0, p1], "frontOf": y },   // in front of everything above y frontOf, behind the rest
  "effects": [ { "kind": <effect word>, "x": px, "y": px, "r": px, "at": [p0, p1] } ],
  "items": [ {
-   "id": "...", "fn": "person"|"animal"|"vehicle"|"building"|"prop"|"tree"|"wall"|"sticker",
+   "id": "...", "fn": "person"|"animal"|"vehicle"|"building"|"prop"|"tree"|"wall"|"bridge"|"sticker",
    "kind": <library word (not for person)>,
    "x": px, "y": px, "h": px, "facing": 1 (looks right) | -1 (looks left),
    "look": { options below },
@@ -114,7 +118,7 @@ OUTPUT: one JSON object only (no prose, no comments).`,
    "group": { "count": n, "width": px, "rows": 1-3, "depth": px },
    "mount": <animal kind>, "mountLook": { animal options },
    "on": <id>,
-   "from": px, "to": px,
+   "from": px, "to": px, "gaps": [[x0, x1], ...],
    "z": number,
    "focal": true,
    "fade": [p0, p1],
@@ -125,12 +129,12 @@ OUTPUT: one JSON object only (no prose, no comments).`,
  "devices": [ { "kind": <device>, ... } ]
 }
 - keys: the item's track. "at" is scene progress 0..1. Numbers (x, y, h) glide smoothly from key to key; other values (pose, expression…) switch when their key starts. Before the first key the item holds that key; after the last key it holds it. A person or animal whose x changes runs (or walks with "pose": "walk") and turns to face its direction by itself. Things that only change pose/expression need keys too (e.g. { "at": 0.7, "expression": "worried" }).
-- group: n alike members in a block "width" px wide, "rows" deep (each back row "depth" px higher). mount: the person rides that animal; h = the whole rider. on: sits on that item (the seat is put under the hip). from/to: walls, palisades, fences, wagonFort: their length along the ground at this y. z: draw order (default: by y, lower y first). focal: the scene's main subject, exactly one. fade: fades out between p0 and p1. at: only shown between p0 and p1. burning: the thing itself burns.
+- group: n alike members in a block "width" px wide, "rows" deep (each back row "depth" px higher). mount: the person rides that animal; h = the whole rider. on: sits on that item (the seat is put under the hip). from/to: walls, palisades, fences, wagonFort: their length along the ground at this y; gaps: open stretches in it (a breach, an opening in a wagon fort). bridge: a bridge across a river or ditch, its deck at this y, "x" its middle, "w" its length in px, "h" the drop from the deck to the water, look { "build": "wood"|"stone" }. z: draw order (default: by y, lower y first). focal: the scene's main subject, exactly one. fade: fades out between p0 and p1. at: only shown between p0 and p1. burning: the thing itself burns.
 - Every id on the plan's REQUIRED line must be an item id (lower case, as written).`,
   DEVICES: `DEVICES (only those the plan's DEVICES line lists)
 - { "kind": "emote", "of": <person id>, "sign": "alarm"|"question"|"sweat"|"sleep"|"shiver"|"anger", "at": [p0, p1] } — a sign over that head.
 - { "kind": "thought", "of": <person id>, "x": px, "y": px, "r": 70-130, "at": [p0, p1], "items": [ 1-3 small library items (x, y relative to the bubble centre, h 30-70) ] } — a picture bubble rising from that head.
-- { "kind": "inset", "of": <id>, "part": "head"|"body", "x": px, "y": px, "r": 90-150, "zoom": 2-4, "at": [p0, p1] } — a round close-up of a face or a whole small figure (never of a hand or a small object: those do not read).
+- { "kind": "inset", "of": <person id>, "part": "head"|"hand", "r": 90-140, "zoom": 2-4, "at": [p0, p1] } — a round close-up drawn over the frame: "head" for the face's reaction; "hand" for the small thing at their hand (give that thing as a small prop item next to the hand, e.g. a whetstone or letter, or as their hold). The app places it in a free corner.
 - { "kind": "impact", "x": px, "y": px, "r": px, "at": [p0, p1] } — a burst where a blow, shot or stone lands.
 - { "kind": "sound", "of": <id> or "x"/"y", "r": px, "facing": ±1, "at": [p0, p1] } — rings from a horn, drum or shout.
 - { "kind": "speed", "of": <moving id>, "at": [p0, p1] } — streaks behind it.
@@ -179,12 +183,14 @@ effect words: ${lists.effects}`,
    - middle band: the setting the action happens in — set dressing that fits the place and the secondary groups.
    - near band: the focal subject plus 1-3 framing things at the edges (rocks, grass, a wagon or tree partly cut by the frame edge) that give the picture a front.
    The sky is never empty: clouds 2-5, smoke or birds where they fit. Inside, the room is furnished with what the place has.
-3. Readable masses. Groups (crowds, troops, riders, herds) are one item with "group", with real width and 1-2 rows. Keep separate groups apart from each other and from the focal subject; a leader (a king before his knights) is his own item at the head of the group, a little nearer or larger.
+3. Readable masses. Groups (crowds, troops, riders, herds) are one item with "group", with the real width their members need (see THE FRAME) and 1-3 rows. Keep separate groups apart from each other and from the focal subject; a leader (a king before his knights) is his own item at the head of the group, a little nearer or larger. Named people standing at the same depth do not overlap by more than a quarter of their width, unless the plan has them act on each other (holding, pulling, handing over); with no room side by side, put one a little further back.
 4. Never cover what matters: no item drawn in front (larger y) may overlap the focal subject's box (x ± width/2, y−h … y) or hide a key object of the plan at any moment. Check at p = 0, 0.25, 0.5, 0.75, 1 with the widths above.
 5. Movement that reads: keys follow the plan's MOTION and ACTION timing ("in the middle" ≈ 0.3-0.7, "at the end" ≥ 0.7); movers keep one direction; things enter or leave past the edges only when the plan says so. Prefer a few clear moves over many small ones.
 6. Effects stay light: smoke, dust and mist are mood, not walls — haze at most 0.35, effects behind or beside the action, never on the subject.
 7. Looks that are right for the period and the people: outfit, head, armor and hold as they were then and there (a padded coat for a common levy, mail for knights, steppe coats and fur hats for steppe riders…); hurt in one place = "bandage" there; a burning thing = "burning": true on it (no extra fire on the same spot). The library's "tent" is a striped pavilion (lords, tournaments); "campTent" is a plain canvas soldiers' tent.
-8. No text, labels, arrows or camera moves (maps excepted, see MAP).
+8. Only real, visible things are items. An idea (an escape route, a gap, a direction, a target, a plan) is shown by how things are placed — an empty stretch, an opening ("gaps" in a wall), people heading somewhere — never by an item named after it.
+9. The foreground's framing things at the bottom corners are natural ones only (rocks, bushes, grass, stumps, reeds), at most 18 % of the frame tall; everything else stands inside the frame.
+10. No text, labels, arrows or camera moves (maps excepted, see MAP). The scene is always seen from eye level or a little above (no view from straight overhead).
 Before answering, picture the frame at p = 0, 0.5 and 1: is the subject clear and uncovered, is every band filled, is everything right for the period, would a viewer understand the scene in one second? Fix it until the answer is yes.`,
   LANGUAGE: (language: string): string => `VIDEO LANGUAGE: ${language} (map place names and any other word shown are written in it)`,
   YEAR: (year?: number): string => (Number.isFinite(year) ? `STORY YEAR: ${year}` : "STORY YEAR: not stated (use the period the plan describes)"),

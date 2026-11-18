@@ -5,6 +5,5 @@ export const COMIC_DRAW_STYLE: MotionDrawStyleSpec = {
   hint: { vi: "Nét mực đen đậm, màu trầm, hạt giấy, người ~5 đầu", en: "Bold black ink line, muted colour, paper grain, ~5-head people" },
   kitLook: "comic",
   proportion: "storybook",
-  layout: "cinematic",
   preview: "/motion-styles/comic.webp?v=1116",
 };

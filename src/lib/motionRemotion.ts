@@ -60,7 +60,7 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
         eraYear: state.eraYear,
         proportion: motionProportionOf(figures ?? state.settings),
         movement: motionMovementOf(figures ?? state.settings),
-        layout: motionLayoutOf({ profileId: figures?.profileId ?? state.settings.profileId, layout: (figures ?? state.settings).layout }),
+        layout: motionLayoutOf({ layout: (figures ?? state.settings).layout }),
         assets: {},
         scenes: [{ ...scene, nodes: [], startFrame: 0, endFrame: frames }],
         subtitles: [],

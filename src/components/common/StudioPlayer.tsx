@@ -37,6 +37,8 @@ interface StudioPlayerFrameProps {
   onSeek: (seconds: number) => void;
   disabled?: boolean;
   loading?: boolean;
+  /** The icon spun while loading (a screen may use its own, e.g. the motion screen's sparkle). */
+  loadingIcon?: LucideIcon;
   badge?: ReactNode;
   badgeIcon?: LucideIcon;
   /** Scenes / chapters: the seek bar is split at each start, Back / Next jump between them, the pill shows the current title. */
@@ -55,7 +57,7 @@ interface StudioPlayerFrameProps {
 }
 
 /** The one video player used by every screen, with YouTube-style controls. */
-export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, className, playing, time, duration, onToggle, onSeek, disabled, loading, badge, badgeIcon: BadgeIcon = Eye, chapters, onPrev, onNext, volume = 1, muted, onVolume, onMute, thumbnail, children }) => {
+export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, className, playing, time, duration, onToggle, onSeek, disabled, loading, loadingIcon: LoadingIcon = Loader2, badge, badgeIcon: BadgeIcon = Eye, chapters, onPrev, onNext, volume = 1, muted, onVolume, onMute, thumbnail, children }) => {
   const frame = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
@@ -161,7 +163,7 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
       ) : null}
       {loading && (
         <div className={P.LOADING}>
-          <Loader2 className={P.LOADING_ICON} />
+          <LoadingIcon className={P.LOADING_ICON} />
         </div>
       )}
       <div className={cn(P.BAR, shown)} onClick={stopClick}>
@@ -260,6 +262,7 @@ interface StudioVideoPlayerProps {
   fit?: "contain" | "cover";
   badge?: ReactNode;
   badgeIcon?: LucideIcon;
+  loadingIcon?: LucideIcon;
   autoPlay?: boolean;
   loop?: boolean;
   chapters?: StudioPlayerChapter[];
@@ -269,7 +272,7 @@ interface StudioVideoPlayerProps {
 }
 
 /** A video file in the shared player. */
-export const StudioVideoPlayer: FC<StudioVideoPlayerProps> = ({ src, poster, aspect, className, fit = "contain", badge, badgeIcon, autoPlay = false, loop = false, chapters, onPrev, onNext, onError }) => {
+export const StudioVideoPlayer: FC<StudioVideoPlayerProps> = ({ src, poster, aspect, className, fit = "contain", badge, badgeIcon, loadingIcon, autoPlay = false, loop = false, chapters, onPrev, onNext, onError }) => {
   const video = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
@@ -338,6 +341,7 @@ export const StudioVideoPlayer: FC<StudioVideoPlayerProps> = ({ src, poster, asp
       time={time}
       duration={duration}
       loading={!ready && !poster}
+      loadingIcon={loadingIcon}
       badge={badge}
       badgeIcon={badgeIcon}
       chapters={chapters}

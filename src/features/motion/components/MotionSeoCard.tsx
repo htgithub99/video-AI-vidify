@@ -112,7 +112,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
             </>
           )}
           <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} disabled={busy || !canGenerate} onClick={onGenerate} className={MR.MOTION_TEXT_H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_2}>
-            <RefreshCw className={cn(MR.MOTION_TEXT_W_3_5_H_3_5, seoBusy && MR.MOTION_TEXT_ANIMATE_SPIN)} />
+            {seoBusy ? <MotionLoadingIcon className={cn(MR.MOTION_TEXT_W_3_5_H_3_5, MR.MOTION_TEXT_ANIMATE_SPIN)} /> : <RefreshCw className={MR.MOTION_TEXT_W_3_5_H_3_5} />}
             <span>{seo ? t.regenerate : t.generate}</span>
           </Button>
         </div>

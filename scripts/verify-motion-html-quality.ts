@@ -18,19 +18,13 @@ assert.equal(motionHtmlRequired("REQUIRED: hero: you; rope: a rope")[0].focal, t
 const planText = MOTION_HTML.TEMPLATE;
 assert.match(planText, /5\. REQUIRED:/);
 assert.match(planText, /6\. MOTION:/);
-// A layout is the camera over the scene the AI described once: the shot size per layout and plan shot, never a drawing rule.
-const { motionCameraShot, motionLayoutOf } = await import("../src/lib/motionLayout.js");
+// A layout is the camera over the scene the AI described once (planned in the page from the drawn people), never a
+// drawing rule: the setting reaches the page as is, and an unknown value falls back to "Tự động".
+const { motionLayoutOf } = await import("../src/lib/motionLayout.js");
 {
-  assert.equal(motionCameraShot("wide", { shot: "close" }), "wide", "Toàn cảnh is the whole frame");
-  assert.equal(motionCameraShot("stage", { shot: "medium" }), "full");
-  assert.equal(motionCameraShot("medium", { shot: "medium" }), "cowboy");
-  assert.equal(motionCameraShot("cinematic", { shot: "medium" }), "medium");
-  assert.equal(motionCameraShot("close", { shot: "medium" }), "mcu");
-  assert.equal(motionCameraShot("medium", { shot: "establishing" }), "full", "an establishing scene steps one size out");
-  assert.equal(motionCameraShot("cinematic", { shot: "close" }), "mcu", "a close scene steps one size in");
-  assert.equal(motionCameraShot("close", { shot: "close" }), "mcu", "never past the closest size");
-  assert.equal(motionCameraShot("close", { shot: "medium", kind: "map" }), "wide", "a map is never cut");
-  assert.equal(motionLayoutOf({ profileId: "sketch" }), "stage", "Tự động follows the drawing style");
+  for (const id of ["wide", "stage", "medium", "cinematic", "close", "auto"]) assert.equal(motionLayoutOf({ layout: id }), id);
+  assert.equal(motionLayoutOf({ layout: "nonsense" }), "auto", "an unknown layout is Tự động");
+  assert.equal(motionLayoutOf({}), "auto");
 }
 const { MOTION_HTML_QUALITY: QQ } = await import("../src/constants/motionHtmlQuality.js");
 const reviewPrompt = QQ.REVIEW_PROMPT({ narration: "You shove the rider off the bridge.", message: "You push the rider into the river", keyVisual: "you, the rider falling, the bridge", required: "protagonist (focal): You; rider (focal): Mongol rider", motion: "rider falls into the river", event: "the protagonist shoves a rider off the bridge" });

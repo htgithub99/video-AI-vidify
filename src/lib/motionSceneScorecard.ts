@@ -1,5 +1,6 @@
 import type { MotionRemotionScene } from "../types/motionVisual.js";
 import { motionCatalogWord } from "./motionObjectCatalog.js";
+import { motionSceneSpecSplit } from "./motionSceneSpec.js";
 
 // The project's scorecard after its scenes are drawn: how many pictures passed at once, still warn, missed their message
 // at the picture check, fell back to code, and which things the object library still lacks (most called first).
@@ -14,6 +15,8 @@ export type MotionSceneScorecard = {
 };
 
 export const motionSceneScorecard = (scenes: MotionRemotionScene[]): MotionSceneScorecard => {
+  // Only what a scene lacks counts against it; a repair code made on its own does not (old scenes kept both together).
+  const lacks = (scene: MotionRemotionScene) => motionSceneSpecSplit(scene.html?.warnings).issues.length > 0;
   const gaps = new Map<string, MotionSceneScorecard["gaps"][number]>();
   for (const scene of scenes)
     for (const gap of scene.html?.gaps || []) {
@@ -24,9 +27,9 @@ export const motionSceneScorecard = (scenes: MotionRemotionScene[]): MotionScene
     }
   return {
     total: scenes.length,
-    first: scenes.filter((scene) => (scene.html?.attempts || 1) <= 1 && !scene.html?.warnings?.length).length,
+    first: scenes.filter((scene) => (scene.html?.attempts || 1) <= 1 && !lacks(scene)).length,
     redrawn: scenes.filter((scene) => (scene.html?.attempts || 1) > 1 && !scene.html?.fallback).length,
-    warned: scenes.filter((scene) => scene.html?.warnings?.length && !scene.html?.fallback).length,
+    warned: scenes.filter((scene) => lacks(scene) && !scene.html?.fallback).length,
     offMessage: scenes.filter((scene) => scene.offMessage?.length).length,
     fallback: scenes.filter((scene) => scene.html?.fallback).length,
     gaps: [...gaps.values()].sort((a, b) => b.scenes - a.scenes || a.kind.localeCompare(b.kind)),

@@ -5,6 +5,5 @@ export const SKETCH_DRAW_STYLE: MotionDrawStyleSpec = {
   hint: { vi: "Nét đều xanh than, màu phẳng trầm, người ~4,5 đầu đầy đặn", en: "Uniform navy line, flat muted colour, full ~4.5-head people" },
   kitLook: "sketch",
   proportion: "balanced",
-  layout: "stage",
   preview: "/motion-styles/sketch.webp?v=1116",
 };

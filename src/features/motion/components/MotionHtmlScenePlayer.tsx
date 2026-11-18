@@ -10,6 +10,7 @@ import { StudioPlayerFrame, useSinglePlayback } from "../../../components/common
 import { STUDIO_PLAYER } from "../../../constants/studioTheme.js";
 import { cn } from "../../../lib/utils.js";
 import { motionRatioLabel } from "./MotionMediaFrame.js";
+import { MOTION_LOADING_GLYPH } from "./MotionControls.js";
 
 // Playback draws frames ahead into a buffer and plays them on a steady clock (like a video player), instead of
 // drawing each frame live: a heavy scene then waits briefly instead of stuttering.
@@ -318,6 +319,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
         duration={spec.duration}
         disabled={!!error}
         loading={playing && buffering}
+        loadingIcon={MOTION_LOADING_GLYPH}
         badge={motionRatioLabel(spec.width, spec.height)}
         chapters={chapters}
         volume={volume}

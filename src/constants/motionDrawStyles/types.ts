@@ -10,7 +10,6 @@ export interface MotionDrawStyleSpec {
   hint: { vi: string; en: string };
   kitLook: MotionKitLook;
   proportion: MotionProportionId;
-  layout?: import("../motionLayouts/index.js").MotionLayoutId;
   movement?: MotionMovement;
   preview: string;
 }

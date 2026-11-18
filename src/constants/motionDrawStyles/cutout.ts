@@ -7,7 +7,6 @@ export const CUTOUT_DRAW_STYLE: MotionDrawStyleSpec = {
   hint: { vi: "Nét mảnh, màu phẳng; dáng đổi tức thì, đi nhảy cóc; máy quay lia đều và đẩy vào theo lời kể", en: "Thin line, flat colour; poses snap, walks hop; the camera pans evenly and pushes in on the narration" },
   kitLook: "cutout",
   proportion: "storybook",
-  layout: "wide",
   movement: "cutout",
   preview: "/motion-styles/cutout.webp?v=1117b",
 };

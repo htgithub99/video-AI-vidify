@@ -83,6 +83,11 @@ export const motionSceneFigures = (template: string): Record<string, Record<stri
   }
   return out;
 };
+// Who acts on whom (the plan's INTERACT line), as mark ids: such pairs may stand close and are framed together.
+export const motionSceneInteractPairs = (template: string | undefined): [string, string][] => {
+  const line = template?.match(B.INTERACT_LINE)?.[1] || "";
+  return [...line.matchAll(B.INTERACT_PAIR)].map((match) => [motionHtmlMarkId(match[1]), motionHtmlMarkId(match[2])] as [string, string]).filter(([from, to]) => from && to && from !== to);
+};
 const pairsOf = (template: string, ids: Set<string>): [string, string][] => {
   const line = template.match(B.INTERACT_LINE)?.[1] || "";
   return [...line.matchAll(B.INTERACT_PAIR)].map((match) => [motionHtmlMarkId(match[1]), motionHtmlMarkId(match[2])] as [string, string]).filter(([from, to]) => from !== to && ids.has(from) && ids.has(to));

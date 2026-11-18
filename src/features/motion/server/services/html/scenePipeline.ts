@@ -40,7 +40,7 @@ import { motionSceneCastPrompt, motionSceneCastSeed, type MotionCastLooks } from
 import type { MotionCatalogGap } from "../../../../../lib/motionObjectCatalog.js";
 import { MOTION_SCENE_BLUEPRINT } from "../../../../../constants/motionSceneBlueprint.js";
 import { MOTION_SCENE_SPEC, MOTION_SCENE_SPEC_PROMPT } from "../../../../../constants/motionSceneSpec.js";
-import { motionSceneSpecCastLearn, motionSceneSpecFallback, motionSceneSpecFix, motionSceneSpecPage, motionSceneSpecPrompt, motionSceneSpecRead } from "../../../../../lib/motionSceneSpec.js";
+import { motionSceneSpecCastLearn, motionSceneSpecFallback, motionSceneSpecFix, motionSceneSpecSplit, motionSceneSpecPage, motionSceneSpecPrompt, motionSceneSpecRead } from "../../../../../lib/motionSceneSpec.js";
 import { getMotionWorkDirectory } from "../motionLibraryService.js";
 import type { RemotionSceneOptions } from "../remotion/scenePipeline.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionAiExecution } from "../../../../../types/motionVideo.js";
@@ -332,7 +332,8 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         await runtime.close();
       }
     });
-  const finalize = (html: string, image: string, warnings: string[], tries: number, fallback: boolean) => {
+  const finalize = (html: string, image: string, lines: string[], tries: number, fallback: boolean) => {
+    const { issues: warnings, notes } = motionSceneSpecSplit(lines);
     scene.html = {
       version: 1,
       html,
@@ -353,6 +354,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       thumbnail: image,
       render: motionFigureRenderKey(render),
       ...(warnings.length ? { warnings } : {}),
+      ...(notes.length ? { notes } : {}),
       ...(gaps.length ? { gaps: [...gaps] } : {}),
       ...(fallback ? { fallback: true } : {}),
     };

@@ -96,6 +96,8 @@ export const MOTION_STYLES = {
   MEDIA_THUMB: "relative w-full overflow-hidden bg-slate-900",
   MEDIA_FILL: "absolute inset-0 w-full h-full block bg-black transition-opacity duration-300",
   MEDIA_THUMB_FILL: "block w-full transition-opacity duration-300",
+  // The stored picture under a scene still being drawn again (same box, behind the drawing).
+  MEDIA_THUMB_UNDER: "absolute inset-0 h-full",
   MEDIA_HIDDEN: "opacity-0",
   MEDIA_SHOWN: "opacity-100",
   MEDIA_LOADING: "absolute inset-0 flex items-center justify-center bg-slate-900/80 pointer-events-none",

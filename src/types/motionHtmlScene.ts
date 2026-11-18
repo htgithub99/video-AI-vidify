@@ -24,7 +24,10 @@ export interface MotionHtmlArtifact {
   continuity?: string;
   status: "received" | "ready" | "rendered" | "retry_wait" | "waiting_external";
   error?: string;
+  // What the scene lacks (shown on it).
   warnings?: string[];
+  // What code put right on its own (the tooltip and the log).
+  notes?: string[];
   fallback?: boolean;
 }
 export interface MotionHtmlPendingSubmission {

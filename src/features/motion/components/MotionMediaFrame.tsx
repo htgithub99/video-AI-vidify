@@ -3,7 +3,7 @@ import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_STYLES } from "../constants/motionStyles.js";
-import { MotionLoadingIcon } from "./MotionControls.js";
+import { MOTION_LOADING_GLYPH, MotionLoadingIcon } from "./MotionControls.js";
 export const motionAspect = (width?: number, height?: number): string => (width && height ? `${width}${RT_MAINTENANCE.SLASH}${height}` : RT_MOTION.DEFAULT_ASPECT);
 export const MotionMediaLoading: FC<{ small?: boolean }> = ({ small }) => (
   <div className={MOTION_STYLES.MEDIA_LOADING}>
@@ -22,5 +22,5 @@ export const motionRatioLabel = (width: number, height: number): string => {
   return `${Math.round(width) / d}:${Math.round(height) / d}`;
 };
 export const MotionExportedVideo: FC<{ url: string; width?: number; height?: number }> = ({ url, width, height }) => (
-  <StudioVideoPlayer src={url} aspect={motionAspect(width, height)} badge={width && height ? motionRatioLabel(width, height) : undefined} />
+  <StudioVideoPlayer src={url} aspect={motionAspect(width, height)} badge={width && height ? motionRatioLabel(width, height) : undefined} loadingIcon={MOTION_LOADING_GLYPH} />
 );

@@ -8,6 +8,7 @@ import { MotionHtmlScenePlayer } from "./MotionHtmlScenePlayer.js";
 import type { MotionRemotionSpec } from "../../../types/motionVisual.js";
 import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { motionAspect, motionRatioLabel } from "./MotionMediaFrame.js";
+import { MOTION_LOADING_GLYPH } from "./MotionControls.js";
 const PreviewComposition: FC<{ document: MotionRemotionSpec; audioUrl?: string }> = ({ document, audioUrl }) => (
   <>
     <StoryComposition document={document} />
@@ -17,7 +18,7 @@ const PreviewComposition: FC<{ document: MotionRemotionSpec; audioUrl?: string }
 // Memoised: the studio page re-renders on every job update, which must not touch a preview that is playing.
 export const MotionRemotionPlayer = memo(({ spec, audioUrl, videoUrl }: { spec: MotionRemotionSpec; audioUrl?: string; videoUrl?: string }) =>
   videoUrl ? (
-    <StudioVideoPlayer src={videoUrl} aspect={motionAspect(spec.width, spec.height)} badge={motionRatioLabel(spec.width, spec.height)} />
+    <StudioVideoPlayer src={videoUrl} aspect={motionAspect(spec.width, spec.height)} badge={motionRatioLabel(spec.width, spec.height)} loadingIcon={MOTION_LOADING_GLYPH} />
   ) : spec.renderer === RT_MAINTENANCE.HTML_CANVAS ? (
     <MotionHtmlScenePlayer spec={spec} audioUrl={audioUrl} />
   ) : (

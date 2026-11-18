@@ -40,7 +40,7 @@ const items = [
   { id: "inkStone", from: -200, names: ["inkSlab"] },
   { id: "dyeVat", names: ["dyeTub"] },
   { id: "tanningRack", names: ["hideRack", "dryingRack"] },
-  { id: "shipHull", names: ["boatUnderConstruction", "shipyard"] },
+  { id: "shipHull", names: ["boatUnderConstruction"] },
   { id: "steamEngine", from: 1770, to: 1950, names: ["beamEngine"] },
 ];
 

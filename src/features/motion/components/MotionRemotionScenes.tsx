@@ -3,6 +3,7 @@ import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js"
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { useState, type FC } from "react";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
+import { MOTION_SCENE_SPEC } from "../../../constants/motionSceneSpec.js";
 import { MOTION_STORY_CONFIG } from "../../../constants/motionVideo.js";
 import { MOTION_REMOTION_STYLES as S } from "../constants/motionStyles.js";
 import { STUDIO_UI, STUDIO_PAGINATION, STUDIO_PAGINATION_TEXT } from "../../../constants/studioTheme.js";
@@ -23,6 +24,9 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
   const lang = language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI;
   const text = V.TEXT[lang];
   const scorecard = !busy ? script.gen?.remotion?.scorecard : undefined;
+  // Scenes that passed at once: drawn on the first try and lacking nothing (a repair code made on its own is not a miss).
+  const builtScenes = scorecard ? (Object.values(script.gen?.remotion?.scenes || {}) as MotionRemotionScene[][]).flat().filter((scene) => scene.html) : [];
+  const firstPassed = scorecard && builtScenes.length === scorecard.total ? builtScenes.filter((scene) => (scene.html?.attempts || 1) <= 1 && !(scene.html?.warnings || []).some((line) => MOTION_SCENE_SPEC.ISSUE.test(line))).length : undefined;
   const [pendingDelete, setPendingDelete] = useState<{ scene?: MotionRemotionScene; title: string } | null>(null);
   const confirmDelete = () => {
     const target = pendingDelete;
@@ -43,7 +47,7 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
       </div>
       {scorecard && (
         <p className={S.SCORECARD} title={scorecard.gaps.map((gap) => `${gap.fn} ${gap.kind}${gap.scenes > 1 ? ` ×${gap.scenes}` : ""}`).join(RT_MAINTENANCE.NEWLINE)}>
-          {text.scorecard({ ...scorecard, gaps: scorecard.gaps.length })}
+          {text.scorecard({ ...scorecard, first: firstPassed ?? scorecard.first, gaps: scorecard.gaps.length })}
         </p>
       )}
       {progress.failed > 0 && onRetryFailed && (
@@ -104,11 +108,26 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
                   {entry.preview ? "" : entry.scene.htmlRequest.error ? `${RT_MAINTENANCE.DOT_SEPARATOR}${entry.scene.htmlRequest.error}` : ""}
                 </p>
               )}
-              {entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && !!entry.scene.html?.warnings?.length && (
-                <p className={S.FAILURE} title={entry.scene.html.warnings.join(RT_MAINTENANCE.NEWLINE)}>
-                  {text.qualityWarning(entry.scene.html.warnings.join("; "))}
-                </p>
-              )}
+              {entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && (() => {
+                // What the scene lacks is a warning; a repair code made on its own is only a note (old scenes stored both
+                // together, so the lines are read again).
+                const lines = [...(entry.scene.html?.warnings || []), ...(entry.scene.html?.notes || [])];
+                const issues = lines.filter((line) => MOTION_SCENE_SPEC.ISSUE.test(line)), notes = lines.filter((line) => !MOTION_SCENE_SPEC.ISSUE.test(line));
+                return (
+                  <>
+                    {!!issues.length && (
+                      <p className={S.FAILURE} title={issues.join(RT_MAINTENANCE.NEWLINE)}>
+                        {text.qualityWarning(issues.join("; "))}
+                      </p>
+                    )}
+                    {!!notes.length && (
+                      <p className={S.ATTEMPT} title={notes.join(RT_MAINTENANCE.NEWLINE)}>
+                        {text.sceneNotes(notes.length)}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
               <p className={S.CAPTION} title={entry.narration || entry.scene?.purpose}>
                 {title}
                 {RT_MOTION.CAPTION_SEPARATOR}

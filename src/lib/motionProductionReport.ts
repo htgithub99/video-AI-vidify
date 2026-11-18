@@ -2,7 +2,7 @@ import { MOTION_PRODUCTION_REPORT as R } from "../constants/motionProductionRepo
 
 interface MotionReportScene {
   id: string;
-  html?: { attempts?: number; warnings?: string[]; fallback?: boolean };
+  html?: { attempts?: number; warnings?: string[]; notes?: string[]; fallback?: boolean };
 }
 interface MotionReportInput {
   id: string;
@@ -39,7 +39,7 @@ export const motionProductionReport = (data: MotionReportInput): { text: string;
     "",
     R.SCENES,
     R.SCENE_HEAD,
-    ...scenes.map((scene) => R.SCENE_ROW(scene.id, scene.html?.attempts || 1, sceneState(scene), (scene.html?.warnings || []).join("; ").replace(/\|/g, "/"))),
+    ...scenes.map((scene) => R.SCENE_ROW(scene.id, scene.html?.attempts || 1, sceneState(scene), [...(scene.html?.warnings || []), ...(scene.html?.notes || [])].join("; ").replace(/\|/g, "/"))),
     "",
     summary,
     "",

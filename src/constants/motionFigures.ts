@@ -15,7 +15,7 @@ export const MOTION_FIGURES = {
     horror: { ink: "#1c1a18", inkWidth: 1.2, tone: { col: [60, 70, 80], k: 0.3, sat: 0.45, light: -0.06 }, finish: "vignette", darkCard: true },
   } as Record<string, { ink: string; inkWidth: number; tone: { col: number[]; k: number; sat: number; light: number; split?: { shadow: number[]; highlight: number[]; k: number } }; finish?: string; darkCard?: boolean }>,
   // Bumped whenever the way a page's figures are drawn changes, so pictures captured the old way are drawn again.
-  RENDER_REVISION: 6,
+  RENDER_REVISION: 7,
   // Each frame starts the kit's clock; the kit's own whole-frame finishing (night tint, grain, header) does not run, the
   // scene engine lights and finishes the frame itself.
   KIT_HOOK:
@@ -29,9 +29,11 @@ export const MOTION_FIGURES = {
   //   whole head kept in, a single subject on the third behind its look, a two-shot only when both fit the action-safe
   //   area (93 %) at that size, one zoom for the whole scene, a smoothed pan, never past the drawn frame.
   VIEW: `(function () {
-  var cfg = window.__motionView || {}, S = cfg.style || null, SHOT = cfg.shot && cfg.shot !== 'wide' ? cfg.shot : null, CUTOUT = cfg.movement === 'cutout';
+  var cfg = window.__motionView || {}, S = cfg.style || null, CUTOUT = cfg.movement === 'cutout';
   var FOCUS = Array.isArray(cfg.focus) ? cfg.focus.map(String) : [];
-  var hooks = window.__motionViewHooks = { kit: 0, header: null, speak: null, person: function () {}, keep: function () {} };
+  // kit: the kit is drawing (its own device-space transforms and colours); screen: the scene draws over the frame (story
+  // devices, the finishing light), outside the camera.
+  var hooks = window.__motionViewHooks = { kit: 0, screen: 0, header: null, speak: null, person: function () {} };
   // Whether a person is speaking now: a speaker span of the narration names the person by its mark, id or cast key.
   hooks.speaking = function (o) {
     var sp = hooks.speak;
@@ -39,7 +41,7 @@ export const MOTION_FIGURES = {
     var ids = [o.mark, o.id, o.cast, o.who].filter(function (v) { return v != null; }).map(String);
     return ids.length > 0 && sp.list.some(function (s) { return s && ids.indexOf(String(s.entityId)) >= 0 && sp.t >= +s.start && sp.t < +s.end; });
   };
-  if ((!S && !SHOT && !CUTOUT) || typeof CanvasRenderingContext2D === 'undefined') return;
+  if (typeof CanvasRenderingContext2D === 'undefined') return;
   var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
   var proto = CanvasRenderingContext2D.prototype, Grad = window.CanvasGradient && CanvasGradient.prototype;
   var native = { setTransform: proto.setTransform, resetTransform: proto.resetTransform, stroke: proto.stroke, strokeRect: proto.strokeRect, addColorStop: Grad && Grad.addColorStop };
@@ -115,12 +117,12 @@ export const MOTION_FIGURES = {
   // device-space transforms of its own (read from the current transform, which already holds the camera), so it is left alone.
   var put = function (c) { if (M) native.setTransform.call(c, M.a, M.b, M.c, M.d, M.e, M.f); };
   proto.setTransform = function (a, b, c, d, e, f) {
-    if (!M || hooks.kit || !isScene(this)) return native.setTransform.apply(this, arguments);
+    if (!M || hooks.kit || hooks.screen || !isScene(this)) return native.setTransform.apply(this, arguments);
     var m = !arguments.length ? new DOMMatrix() : typeof a === 'object' && a ? new DOMMatrix([a.a != null ? a.a : a.m11 != null ? a.m11 : 1, a.b != null ? a.b : a.m12 || 0, a.c != null ? a.c : a.m21 || 0, a.d != null ? a.d : a.m22 != null ? a.m22 : 1, a.e != null ? a.e : a.m41 || 0, a.f != null ? a.f : a.m42 || 0]) : new DOMMatrix([a, b, c, d, e, f]);
     var r = M.multiply(m);
     return native.setTransform.call(this, r.a, r.b, r.c, r.d, r.e, r.f);
   };
-  proto.resetTransform = function () { if (!M || hooks.kit || !isScene(this)) return native.resetTransform.call(this); put(this); };
+  proto.resetTransform = function () { if (!M || hooks.kit || hooks.screen || !isScene(this)) return native.resetTransform.call(this); put(this); };
   ['width', 'height'].forEach(function (name) {
     var d = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, name);
     if (!d || !d.set) return;
@@ -145,51 +147,57 @@ export const MOTION_FIGURES = {
     var wide = Math.max(+o.w > 0 ? +o.w : 0, 0.5 * h), half = Math.abs(at(x + wide / 2, y)[0] - at(x - wide / 2, y)[0]) / 2;
     seen.push({ id: o.mark == null ? null : String(o.mark), x: foot[0], half: half, foot: foot[1], top: top, eye: eye, hip: hip, facing: +o.facing < 0 ? -1 : 1 });
   };
-  // What the camera must keep in view besides its subjects: the story devices (a thought bubble, an inset, a count) and
-  // the plan's focal things (the key visual), in frame shares. A device is always kept; a thing only when it is focal.
-  var keeps = [];
-  hooks.keep = function (c, box, mark) {
-    if (!recording || !isScene(c) || !box || !(box.w > 0) || !(box.h > 0)) return;
-    if (mark !== undefined && FOCUS.indexOf(String(mark)) < 0) return;
-    var t = c.getTransform(), W = c.canvas.width, H = c.canvas.height;
-    var xs = [box.x, box.x + box.w].map(function (px) { return [box.y, box.y + box.h].map(function (py) { return [(t.a * px + t.c * py + t.e) / W, (t.b * px + t.d * py + t.f) / H]; }); }).reduce(function (a, b) { return a.concat(b); }, []);
-    keeps.push({ l: Math.min.apply(null, xs.map(function (q) { return q[0]; })), r: Math.max.apply(null, xs.map(function (q) { return q[0]; })), t: Math.min.apply(null, xs.map(function (q) { return q[1]; })), b: Math.max.apply(null, xs.map(function (q) { return q[1]; })) });
-  };
-  var SAFE = 0.93, ZMAX = 8, SAMPLES = 20, SMOOTH = 4;
-  var CUT = {
-    cowboy: function (p) { return p.hip + 0.45 * (p.foot - p.hip); },
-    medium: function (p) { return p.hip + 0.08 * (p.foot - p.hip); },
-    mcu: function (p) { return p.eye + 0.6 * (p.hip - p.eye); },
-  };
+  // ---------- The camera: one shot list for every layout, two ways of moving through it ----------
+  // A layout sets the shot sizes (the cinematographer's cut points on the lead: full = head to toe, cowboy = mid-thigh,
+  // medium = just below the waist, mcu = mid-chest; wide = the whole master frame). The scene is cut into shots at the
+  // narration cues (each at least PLAN.MIN_SHOT seconds; in "Điện ảnh" a long sentence is cut once more in its middle);
+  // neighbouring shots differ by at least one size (else they are one shot: no jump cut). Inside a shot the smooth
+  // movement pushes in slowly and follows the lead; the cut-out movement pushes in briefly at the shot's start, then
+  // holds, panning at an even speed with a lead who crosses the frame. "Toàn cảnh" drifts by DRIFT (smooth) or holds still
+  // (cut-out). "Tự động" picks the layout from the kind of scene. Story devices never hold the camera back (they are drawn
+  // over the frame by the scene engine).
+  var LAYOUT = cfg.layout || 'wide', INTENT = cfg.scene || {};
+  var PAIRS = Array.isArray(cfg.pairs) ? cfg.pairs : [];
+  var SAFE = 0.93, SMOOTH = 3;
+  var PLAN = { SAMPLES: 24, MIN_SHOT: 1.8, LONG_SHOT: 7, PUSH: 0.08, PUSH_SECONDS: 1.2, DRIFT: 0.03, MIN_STEP: 1.18, TRAVEL: 0.15 };
+  var ZMAX = { full: 3, cowboy: 4, medium: 5, mcu: 6 };
+  // Where each size cuts the lead, as a share of their height from the crown (cartoon figures have big heads, so the cut
+  // points are read on the drawn figure, not on a real body): full shows all of them, cowboy to mid-thigh, medium to
+  // just below the waist, mcu to mid-chest. HEADROOM is the air above the crown.
+  var CUT = { full: 1, cowboy: 0.76, medium: 0.6, mcu: 0.44 }, HEADROOM = { full: 0.07, cowboy: 0.06, medium: 0.06, mcu: 0.05 }, FOOTROOM = 0.04;
+  var SEQUENCE = { wide: ['wide'], stage: ['full'], medium: ['full', 'cowboy'], cinematic: ['wide', 'medium', 'mcu', 'medium', 'mcu'], close: ['medium', 'mcu'] };
   var min = function (list, key) { return Math.min.apply(null, list.map(function (p) { return p[key]; })); };
   var max = function (list, key) { return Math.max.apply(null, list.map(function (p) { return p[key]; })); };
-  // The frame for these people: a full shot keeps 9 % above the crown and about 5 % below the feet; closer shots put the
-  // eyes on the upper third and the cut on the bottom edge; the crown never leaves the frame.
-  var frameFor = function (people, fixed) {
-    var top = min(people, 'top'), eye = min(people, 'eye'), cut = SHOT === 'full' ? max(people, 'foot') : Math.max.apply(null, people.map(CUT[SHOT]));
-    var z = clamp(fixed || (SHOT === 'full' ? 0.86 / (cut - top) : (2 / 3) / (cut - eye)), 1, ZMAX);
-    var viewTop = SHOT === 'full' ? top - 0.09 / z : eye - 1 / 3 / z;
-    if (top - viewTop < 0.03 / z) viewTop = top - 0.03 / z;
-    var left = Math.min.apply(null, people.map(function (p) { return p.x - p.half; })), right = Math.max.apply(null, people.map(function (p) { return p.x + p.half; }));
+  // The frame for these people at one size: the crown HEADROOM below the top edge, the cut on the bottom edge (a full
+  // shot keeps a little ground below the feet); a single is placed on a third with the room in front of the face.
+  var frameFor = function (people, size) {
+    var top = min(people, 'top'), cut = Math.max.apply(null, people.map(function (p) { return p.top + CUT[size] * (p.foot - p.top); })) + (size === 'full' ? FOOTROOM * (max(people, 'foot') - top) : 0);
+    var z = clamp((1 - HEADROOM[size]) / Math.max(1e-6, cut - top), 1, ZMAX[size] || 1);
+    var viewTop = top - HEADROOM[size] / z;
+    var left = min(people.map(function (p) { return { v: p.x - p.half }; }), 'v'), right = max(people.map(function (p) { return { v: p.x + p.half }; }), 'v');
     var cx = people.length === 1 ? people[0].x + (people[0].facing * (1 / 6)) / z : (left + right) / 2;
-    return { z: z, x: cx, y: viewTop + 0.5 / z };
+    var half = 0.5 / z;
+    return { z: z, x: clamp(cx, half, 1 - half), y: clamp(viewTop + half, half, 1 - half) };
   };
-  var measure = async function (render, self, input) {
-    var marks = window.__motionMarks, kept = Array.isArray(marks) ? marks.length : 0, frames = [], held = [];
+  var measurePlan = async function (render, self, input) {
+    var marks = window.__motionMarks, kept = Array.isArray(marks) ? marks.length : 0, frames = [];
     var duration = Number(input.duration) > 0 ? Number(input.duration) : 3, fps = Number(input.fps) > 0 ? Number(input.fps) : 30;
     recording = true;
+    // The samples are only read for where people stand: painted through a one-pixel clip, so the pixels cost nothing.
+    var pc = document.getElementById('motion-canvas'), pctx = pc && pc.getContext('2d');
     try {
-      for (var i = 0; i <= SAMPLES; i++) {
-        seen = []; keeps = [];
-        var k = i / SAMPLES;
-        await render.call(self, Object.assign({}, input, { progress: k, time: k * duration, frame: Math.round(k * duration * fps) }));
+      for (var i = 0; i <= PLAN.SAMPLES; i++) {
+        seen = [];
+        var k = i / PLAN.SAMPLES;
+        if (pctx) { proto.save.call(pctx); native.setTransform.call(pctx, 1, 0, 0, 1, 0, 0); proto.beginPath.call(pctx); proto.rect.call(pctx, 0, 0, 1, 1); proto.clip.call(pctx); }
+        try { await render.call(self, Object.assign({}, input, { progress: k, time: k * duration, frame: Math.round(k * duration * fps) })); } finally { if (pctx) proto.restore.call(pctx); }
         frames.push(seen.filter(function (p) { return p.id !== null; }));
-        held.push(keeps);
       }
-    } finally { recording = false; seen = []; keeps = []; hooks.header = null; if (Array.isArray(marks)) marks.length = kept; }
-    // The subjects: one person per mark (a mark shared by several people is a group, framed by the wide shot), the plan's
-    // focal people first, then whoever stands largest over the scene. A second subject joins only when it stands at about
-    // the same size and depth as the first, as a two-shot is framed; otherwise the shot is a single.
+    } finally { recording = false; seen = []; hooks.header = null; if (Array.isArray(marks)) marks.length = kept; }
+    // Subjects: one person per mark (a mark shared by several people is a group, never framed closer than its wide shot),
+    // the plan's focal person first, then whoever stands largest. A partner joins the frame when the plan pairs them with
+    // the lead, or when they stand at about the same size and depth (a two-shot); a pair too wide for the frame at that
+    // size is cut to a single.
     var size = {}, group = {}, height = {}, ground = {};
     frames.forEach(function (f) {
       var count = {};
@@ -197,105 +205,83 @@ export const MOTION_FIGURES = {
       Object.keys(count).forEach(function (id) { if (count[id] > 1) group[id] = true; });
     });
     var median = function (list) { var s = list.slice().sort(function (a, b) { return a - b; }); return s[s.length >> 1]; };
-    var ids = Object.keys(size).filter(function (id) { return !group[id]; }).sort(function (a, b) { var fa = FOCUS.indexOf(a), fb = FOCUS.indexOf(b); if ((fa >= 0) !== (fb >= 0)) return fa >= 0 ? -1 : 1; if (fa >= 0) return fa - fb; return size[b] - size[a]; });
-    if (!ids.length) return null;
-    var lead = ids[0], partner = ids.slice(1).filter(function (id) { var r = median(height[id]) / median(height[lead]); return r > 0.8 && r < 1.25 && Math.abs(median(ground[id]) - median(ground[lead])) < 0.06; })[0];
-    ids = partner ? [lead, partner] : [lead];
-    var pick = function (f, list) { return list.map(function (id) { return f.filter(function (p) { return p.id === id; })[0]; }).filter(Boolean); };
-    var zoomOf = function (list) { var zs = []; frames.forEach(function (f) { var ps = pick(f, list); if (ps.length) zs.push(frameFor(ps).z); }); zs.sort(function (a, b) { return a - b; }); return zs.length ? zs[zs.length >> 1] : 0; };
-    var list = ids, z = zoomOf(list);
-    // A pair whose bodies (shoulder to shoulder, with a little air) do not fit the action-safe area at this size is cut
-    // to a single on the main subject.
-    var span = function (ps) { return Math.max.apply(null, ps.map(function (p) { return p.x + p.half; })) - Math.min.apply(null, ps.map(function (p) { return p.x - p.half; })) + 0.04; };
-    if (list.length > 1 && frames.some(function (f) { var ps = pick(f, list); return ps.length > 1 && span(ps) * z > SAFE; })) { list = ids.slice(0, 1); z = zoomOf(list); }
-    var pathAt = function (zz) {
-      var pts = frames.map(function (f) { var ps = pick(f, list); return ps.length ? frameFor(ps, zz) : null; });
-      var first = pts.filter(Boolean)[0];
-      for (var j = 0; j < pts.length; j++) if (!pts[j]) pts[j] = pts[j - 1] || first;
-      var half = 0.5 / zz;
-      return pts.map(function (p, n) {
-        var w = 0, sx = 0, sy = 0;
-        for (var q = -SMOOTH; q <= SMOOTH; q++) { var r = pts[clamp(n + q, 0, pts.length - 1)], g = SMOOTH + 1 - Math.abs(q); w += g; sx += r.x * g; sy += r.y * g; }
-        return { x: clamp(sx / w, half, 1 - half), y: clamp(sy / w, half, 1 - half) };
-      });
-    };
-    // Devices and focal things stay inside the action-safe area: the zoom eases out until they fit (none at all when only
-    // the whole frame holds them).
-    var keepZoom = function (smooth) {
-      var most = ZMAX;
-      held.forEach(function (list, n) { var p = smooth[n]; list.forEach(function (b) { var dx = Math.max(Math.abs(b.l - p.x), Math.abs(b.r - p.x)), dy = Math.max(Math.abs(b.t - p.y), Math.abs(b.b - p.y)); most = Math.min(most, (0.5 * SAFE) / Math.max(dx, dy, 1e-6)); }); });
-      return most;
-    };
-    if (!(z > 1.001)) return null;
-    var smooth = pathAt(z);
-    for (var round = 0; round < 3; round++) { var fit = keepZoom(smooth); if (fit >= z - 1e-3) break; z = fit; if (!(z > 1.001)) return null; smooth = pathAt(z); }
-    return { z: z, pts: smooth, subjects: list, people: pick(frames[SAMPLES >> 1], list) };
-  };
-  // The cut-out camera ("Cắt dán kể chuyện"): the scene is cut into shots at the narration cues (each at least MIN_SHOT
-  // seconds); shots alternate between the whole frame and a closer frame on the lead person (the plan's focal person,
-  // else whoever stands largest). Each shot opens with a short eased push-in, then holds; when the lead walks across the
-  // shot the camera pans with them at an even speed. Cuts between shots are instant, as in a cut-out storybook.
-  var BEAT = { SAMPLES: 40, MIN_SHOT: 2.5, PUSH: 0.07, PUSH_SECONDS: 1.2, SECOND_PUSH: 5.5, CLOSE_H: 0.5, CLOSE_MIN: 1.18, CLOSE_MAX: 2.6, FOLLOW: 0.05, WALK_ROOM: 1.12 };
-  var measureBeats = async function (render, self, input) {
-    var marks = window.__motionMarks, kept = Array.isArray(marks) ? marks.length : 0, frames = [], held = [];
-    var duration = Number(input.duration) > 0 ? Number(input.duration) : 3, fps = Number(input.fps) > 0 ? Number(input.fps) : 30;
-    recording = true;
-    try {
-      for (var i = 0; i <= BEAT.SAMPLES; i++) {
-        seen = []; keeps = [];
-        var k = i / BEAT.SAMPLES;
-        await render.call(self, Object.assign({}, input, { progress: k, time: k * duration, frame: Math.round(k * duration * fps) }));
-        frames.push(seen.filter(function (p) { return p.id !== null; }));
-        held.push(keeps);
-      }
-    } finally { recording = false; seen = []; keeps = []; hooks.header = null; if (Array.isArray(marks)) marks.length = kept; }
-    // One person per mark is a subject; a mark shared by several people is a group (a crowd, a column), never framed close.
-    var size = {}, group = {};
-    frames.forEach(function (f) { var count = {}; f.forEach(function (p) { count[p.id] = (count[p.id] || 0) + 1; size[p.id] = (size[p.id] || 0) + (p.foot - p.top); }); Object.keys(count).forEach(function (id) { if (count[id] > 1) group[id] = true; }); });
+    var norm = function (v) { return String(v).toLowerCase().replace(/[^a-z0-9]+/g, ''); };
     var ids = Object.keys(size).filter(function (id) { return !group[id]; }).sort(function (a, b) { var fa = FOCUS.indexOf(a), fb = FOCUS.indexOf(b); if ((fa >= 0) !== (fb >= 0)) return fa >= 0 ? -1 : 1; return size[b] - size[a]; });
     var lead = ids[0] || null;
-    var leadAt = function (n) { return lead ? frames[n].filter(function (p) { return p.id === lead; })[0] || null : null; };
+    var pairedWith = function (a, b) { return PAIRS.some(function (p) { return (norm(p[0]) === norm(a) && norm(p[1]) === norm(b)) || (norm(p[1]) === norm(a) && norm(p[0]) === norm(b)); }); };
+    var partner = lead ? ids.slice(1).filter(function (id) { return pairedWith(lead, id); })[0] || ids.slice(1).filter(function (id) { var r = median(height[id]) / median(height[lead]); return r > 0.8 && r < 1.25 && Math.abs(median(ground[id]) - median(ground[lead])) < 0.06; })[0] : null;
+    var at = function (n, id) { return frames[n].filter(function (p) { return p.id === id; })[0] || null; };
+    // "Tự động": a map, an establishing or wide scene is seen whole; a close scene close; a lead who travels in medium
+    // shots; any other scene is cut like a film.
+    var layout = LAYOUT;
+    if (layout === 'auto') {
+      var first = lead && frames.map(function (f, n) { return at(n, lead); }).filter(Boolean);
+      var travels = first && first.length > 1 && Math.abs(first[first.length - 1].x - first[0].x) > PLAN.TRAVEL;
+      var shot = String(INTENT.shot || '').toLowerCase(), kind = String(INTENT.kind || '').toLowerCase();
+      layout = kind === 'map' || /establish|wide|overhead|aerial|extreme/.test(shot) ? 'wide' : /close/.test(shot) ? 'close' : travels ? 'medium' : 'cinematic';
+    }
+    if (String(INTENT.kind || '').toLowerCase() === 'map' || !lead) layout = 'wide';
     var cues = (Array.isArray(input.cues) ? input.cues : []).map(Number).filter(function (v) { return isFinite(v) && v > 0.02 && v < 0.98; }).sort(function (a, b) { return a - b; });
     var cuts = [0];
-    cues.forEach(function (v) { if ((v - cuts[cuts.length - 1]) * duration >= BEAT.MIN_SHOT && (1 - v) * duration >= BEAT.MIN_SHOT) cuts.push(v); });
+    cues.forEach(function (v) { if ((v - cuts[cuts.length - 1]) * duration >= PLAN.MIN_SHOT && (1 - v) * duration >= PLAN.MIN_SHOT) cuts.push(v); });
     cuts.push(1);
+    if (layout === 'cinematic') for (var c = 0; c + 1 < cuts.length; c++) if ((cuts[c + 1] - cuts[c]) * duration > PLAN.LONG_SHOT) { cuts.splice(c + 1, 0, (cuts[c] + cuts[c + 1]) / 2); c++; }
+    if (layout === 'wide' || layout === 'stage') cuts = [0, 1];
+    var seq = SEQUENCE[layout] || SEQUENCE.wide;
     var shots = [];
     for (var s = 0; s + 1 < cuts.length; s++) {
-      var a = cuts[s], b = cuts[s + 1], first = Math.round(a * BEAT.SAMPLES), last = Math.round(b * BEAT.SAMPLES);
-      var pts = []; for (var n = first; n <= last; n++) { var q = leadAt(n); if (q) pts.push({ n: n, p: q }); }
-      var shot = { a: a, b: b, z: 1, x0: 0.5, y0: 0.5, x1: 0.5, y1: 0.5 };
-      if (pts.length) {
-        var hs = pts.map(function (e) { return e.p.foot - e.p.top; }).sort(function (u, v) { return u - v; }), h = hs[hs.length >> 1];
-        var close = s % 2 === 1 ? clamp(BEAT.CLOSE_H / h, 1, BEAT.CLOSE_MAX) : 1;
-        var p0 = pts[0].p, p1 = pts[pts.length - 1].p, travels = Math.abs(p1.x - p0.x) > BEAT.FOLLOW;
-        shot.z = close >= BEAT.CLOSE_MIN ? close : travels ? BEAT.WALK_ROOM : 1;
-        if (shot.z > 1) {
-          var cy = function (p) { return (p.top + p.foot) / 2 + (shot.z > BEAT.WALK_ROOM ? -0.04 : 0); };
-          shot.x0 = travels ? p0.x : (p0.x + p1.x) / 2; shot.x1 = travels ? p1.x : shot.x0;
-          shot.y0 = cy(p0); shot.y1 = travels ? cy(p1) : shot.y0;
+      var a = cuts[s], b = cuts[s + 1], lo = Math.round(a * PLAN.SAMPLES), hi = Math.round(b * PLAN.SAMPLES);
+      var sz = seq[Math.min(s, seq.length - 1)];
+      if (layout === 'cinematic' && s >= seq.length) sz = seq[seq.length - 2 + ((s - seq.length) % 2)];
+      var shotInfo = { a: a, b: b, size: sz, z: 1, pts: [] };
+      if (sz !== 'wide') {
+        for (var n = lo; n <= hi; n++) {
+          var ps = [at(n, lead)], q = partner && at(n, partner);
+          if (q) ps.push(q);
+          ps = ps.filter(Boolean);
+          if (!ps.length) continue;
+          var fr = frameFor(ps, sz);
+          // A pair whose bodies do not fit the action-safe width at this size is framed as a single on the lead.
+          if (ps.length > 1 && (max(ps.map(function (p) { return { v: p.x + p.half }; }), 'v') - min(ps.map(function (p) { return { v: p.x - p.half }; }), 'v') + 0.04) * fr.z > SAFE) fr = frameFor([ps[0]], sz);
+          shotInfo.pts.push({ n: n, x: fr.x, y: fr.y, z: fr.z });
+        }
+        if (shotInfo.pts.length) {
+          var zs = shotInfo.pts.map(function (p) { return p.z; }).sort(function (u, v) { return u - v; });
+          shotInfo.z = zs[zs.length >> 1];
         }
       }
-      // Story devices and focal things in this shot stay inside the action-safe area: the shot widens until they fit.
-      for (n = first; n <= last; n++) (held[n] || []).forEach(function (bx) {
-        var u = (n / BEAT.SAMPLES - a) / Math.max(1e-6, b - a), cx = shot.x0 + (shot.x1 - shot.x0) * u, cyy = shot.y0 + (shot.y1 - shot.y0) * u;
-        var dx = Math.max(Math.abs(bx.l - cx), Math.abs(bx.r - cx)), dy = Math.max(Math.abs(bx.t - cyy), Math.abs(bx.b - cyy));
-        shot.z = Math.max(1, Math.min(shot.z, (0.5 * SAFE) / Math.max(dx, dy, 1e-6) / (1 + BEAT.PUSH)));
-      });
-      shots.push(shot);
+      // No jump cut: a shot that would look like its neighbour is part of it.
+      var prev = shots[shots.length - 1];
+      if (prev && Math.max(prev.z, shotInfo.z) / Math.max(1e-6, Math.min(prev.z, shotInfo.z)) < PLAN.MIN_STEP) { prev.b = b; prev.pts = prev.pts.concat(shotInfo.pts); continue; }
+      shots.push(shotInfo);
     }
-    return { shots: shots, duration: duration };
+    // The way through each shot: the frame centres smoothed over a few samples; the cut-out movement pans at an even
+    // speed from the shot's first frame to its last.
+    shots.forEach(function (sh) {
+      if (sh.z <= 1.001 || !sh.pts.length) { sh.z = 1; sh.path = null; return; }
+      var half = 0.5 / sh.z, pts = sh.pts.map(function (p) { return { x: clamp(p.x, half, 1 - half), y: clamp(p.y - 0.5 / p.z + half, half, 1 - half) }; });
+      if (CUTOUT) { var p0 = pts[0], p1 = pts[pts.length - 1], still = Math.abs(p1.x - p0.x) < PLAN.TRAVEL / 3; sh.path = still ? [{ x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }] : [p0, p1]; return; }
+      sh.path = pts.map(function (p, i) { var w = 0, sx = 0, sy = 0; for (var q = -SMOOTH; q <= SMOOTH; q++) { var r = pts[clamp(i + q, 0, pts.length - 1)], g = SMOOTH + 1 - Math.abs(q); w += g; sx += r.x * g; sy += r.y * g; } return { x: sx / w, y: sy / w }; });
+    });
+    var leadPts = lead ? frames.map(function (f, n) { return at(n, lead); }) : [];
+    var anchor = leadPts.filter(Boolean)[0];
+    return { layout: layout, shots: shots, duration: duration, subjects: [lead, partner].filter(Boolean), lead: anchor ? { x: anchor.x, y: (anchor.top + anchor.foot) / 2 } : null };
   };
-  var beatAt = function (plan, progress) {
+  var ease = function (s) { s = clamp(s, 0, 1); return s * s * (3 - 2 * s); };
+  var shotAt = function (plan, progress) {
     var p = clamp(progress, 0, 1), shot = plan.shots[plan.shots.length - 1];
     for (var i = 0; i < plan.shots.length; i++) if (p < plan.shots[i].b) { shot = plan.shots[i]; break; }
-    var u = clamp((p - shot.a) / Math.max(1e-6, shot.b - shot.a), 0, 1), local = (p - shot.a) * plan.duration, len = (shot.b - shot.a) * plan.duration;
-    var ease = function (s) { s = clamp(s, 0, 1); return s * s * (3 - 2 * s); };
-    // The scene opens with a short pull-out to its first frame; every later shot opens with a short push-in; a long shot
-    // pushes in once more at its middle (the narration's next beat). Each move takes PUSH_SECONDS, then the frame holds.
-    var k = shot === plan.shots[0] ? 1 + BEAT.PUSH * (1 - ease(local / BEAT.PUSH_SECONDS)) : 1 + BEAT.PUSH * ease(local / BEAT.PUSH_SECONDS);
-    if (len >= BEAT.SECOND_PUSH) k *= 1 + BEAT.PUSH * 0.6 * ease((local - len / 2) / BEAT.PUSH_SECONDS);
+    var u = clamp((p - shot.a) / Math.max(1e-6, shot.b - shot.a), 0, 1), local = (p - shot.a) * plan.duration;
+    // The whole frame: the smooth movement drifts in by DRIFT on the lead's side; the cut-out movement holds still.
+    if (shot.z <= 1.001) {
+      if (CUTOUT || plan.layout !== 'wide' || !plan.lead) return { z: 1, x: 0.5, y: 0.5 };
+      var zd = 1 + PLAN.DRIFT * ease(u), hd = 0.5 / zd;
+      return { z: zd, x: clamp(0.5 + (plan.lead.x - 0.5) * (zd - 1) * 8, hd, 1 - hd), y: clamp(0.5 + (plan.lead.y - 0.5) * (zd - 1) * 8, hd, 1 - hd) };
+    }
+    var k = CUTOUT ? 1 + PLAN.PUSH * ease(local / PLAN.PUSH_SECONDS) : 1 + PLAN.PUSH * ease(u);
+    var path = shot.path || [{ x: 0.5, y: 0.5 }], f = u * (path.length - 1), j = Math.floor(f), t = f - j, pa = path[j], pb = path[Math.min(j + 1, path.length - 1)];
     var z = shot.z * k, half = 0.5 / z;
-    return { z: z, x: clamp(shot.x0 + (shot.x1 - shot.x0) * u, half, 1 - half), y: clamp(shot.y0 + (shot.y1 - shot.y0) * u, half, 1 - half) };
+    return { z: z, x: clamp(pa.x + (pb.x - pa.x) * t, half, 1 - half), y: clamp(pa.y + (pb.y - pa.y) * t, half, 1 - half) };
   };
   // The finishing pass of a style, in screen pixels over the whole frame (same grain on every frame and every export page).
   var grain = null;
@@ -324,27 +310,23 @@ export const MOTION_FIGURES = {
   };
   var wrap = function (scene) {
     if (!scene || typeof scene.renderAt !== 'function' || scene.__motionView) return scene;
-    var render = scene.renderAt, path, beats, beatPlans = new Map();
+    var render = scene.renderAt, plans = new Map();
     scene.renderAt = async function (input) {
       var self = this, args = arguments, opt = input || {};
       var canvas = document.getElementById('motion-canvas'), ctx = canvas && canvas.getContext('2d');
       M = null; zoom = 1;
-      // The cut-out shots depend on the scene's length and narration cues: measured again when either changes.
-      var beatKey = CUTOUT ? JSON.stringify([Number(opt.duration) || 0, Array.isArray(opt.cues) ? opt.cues : []]) : '';
-      if (CUTOUT && !beatPlans.has(beatKey)) { var plan = null; try { plan = (await measureBeats(render, self, opt)) || null; } catch (e) { plan = null; } beatPlans.set(beatKey, plan); }
-      if (CUTOUT) { beats = beatPlans.get(beatKey); hooks.beats = beats; }
-      if (!CUTOUT && SHOT && path === undefined) { try { path = (await measure(render, self, opt)) || null; } catch (e) { path = null; } hooks.path = path; }
-      if (CUTOUT && beats && canvas && opt.cameraEnabled !== false) {
-        var bv = beatAt(beats, Number(opt.progress) || 0), BW = canvas.width, BH = canvas.height;
-        zoom = bv.z;
-        M = new DOMMatrix().translate(BW / 2, BH / 2).scale(zoom).translate(-bv.x * BW, -bv.y * BH);
-        put(ctx);
-      } else if (!CUTOUT && path && canvas) {
-        var f = clamp(Number(opt.progress) || 0, 0, 1) * (path.pts.length - 1), i = Math.floor(f), k = f - i, a = path.pts[i], b = path.pts[Math.min(i + 1, path.pts.length - 1)];
-        var W = canvas.width, H = canvas.height;
-        zoom = path.z;
-        M = new DOMMatrix().translate(W / 2, H / 2).scale(zoom).translate(-(a.x + (b.x - a.x) * k) * W, -(a.y + (b.y - a.y) * k) * H);
-        put(ctx);
+      // The shots depend on the scene's length and narration cues: planned again when either changes.
+      var key = JSON.stringify([Number(opt.duration) || 0, Array.isArray(opt.cues) ? opt.cues : []]);
+      if (!plans.has(key)) { var plan = null; try { plan = (await measurePlan(render, self, opt)) || null; } catch (e) { plan = null; } plans.set(key, plan); }
+      var current = plans.get(key);
+      hooks.plan = current;
+      if (current && canvas && opt.cameraEnabled !== false) {
+        var v = shotAt(current, Number(opt.progress) || 0), W = canvas.width, H = canvas.height;
+        if (v.z > 1.0005) {
+          zoom = v.z;
+          M = new DOMMatrix().translate(W / 2, H / 2).scale(zoom).translate(-v.x * W, -v.y * H);
+          put(ctx);
+        }
       }
       hooks.header = null;
       // Who is speaking now (the narration's speaker spans): the kit opens and closes their mouth.
@@ -578,13 +560,16 @@ export const MOTION_FIGURES = {
     var angle = fn === 'person' || fn === 'animal' ? 0 : turnOf(o);
     // A long thing (spear, pole, oar: the kit draws it lying) given as standing (its h is the longer side) stands on the
     // scene's point, h long, turned by angle around its foot like the scene's own drawing.
-    if (fn === 'prop' && fit !== 'ground' && unit.w >= unit.h * LONG && !(w > h)) return upright(c, K, o, opt, unit, key, x, y, h, angle);
+    if (fn === 'prop' && fit !== 'ground' && fit !== 'rigid' && unit.w >= unit.h * LONG && !(w > h)) return upright(c, K, o, opt, unit, key, x, y, h, angle);
     // A rigid or lying thing whose box has quite another shape than the standard drawing (a stump drawn as a fat log, a
     // squat barrel drawn tall) is the scene's own: the standard one would shrink inside the box and what rests on it (a sitter,
     // a load) would float.
     if (fn === 'prop' && (fit === 'rigid' || fit === 'ground') && w > 0 && h > 0) { var shape = (w / h) / (unit.w / unit.h); if (shape < SHAPE_FIT[0] || shape > SHAPE_FIT[1]) return null; }
     var size = h / unit.h, natural = unit.w * size;
     // A flat thing on the ground (a pond, a ditch, planks) is as long as its box: its height follows from its own shape.
+    // Given only a height, a very flat one is at most LONG times that height long (its height alone would make a fallen
+    // banner a bar across the frame).
+    if (fit === 'ground' && !(w > 0) && natural > h * LONG) { w = h * LONG; }
     if (fit === 'ground' && w > 0) { size = w / unit.w; natural = w; h = unit.h * size; }
     var sx = w > 0 ? clamp(w / natural, STRETCH_MIN, STRETCH_MAX) : 1;
     // A thing fills exactly the box the scene gives, its length following the box; an elastic thing (a vehicle: round
@@ -1095,7 +1080,6 @@ export const MOTION_FIGURES = {
           var res = typeof out === 'object' ? out : {};
           res.box = boxOf(fn, opt);
           markBox(c, opt, res.box, fn);
-          if (view && view.keep && fn !== 'person' && opt.mark != null) view.keep(c, res.box, opt.mark);
           if (view && fn === 'person' && c) view.person(c, opt, res, true);
           return res;
         };
@@ -1104,8 +1088,6 @@ export const MOTION_FIGURES = {
         if (!c || !o || typeof o !== 'object') return {};
         var out = null;
         asScene(function () { out = drawDevice(c, o, inner); });
-        var view = window.__motionViewHooks;
-        if (view && view.keep && out && out.box && o.kind !== 'spotlight') view.keep(c, out.box);
         return out || {};
       };
       // The time header is the video's own card in the title-safe corner, outside the camera: the scene only gives the text.

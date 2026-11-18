@@ -12,6 +12,7 @@ import type { MotionSpec } from "../../../types/motionVideo.js";
 import { MotionAspect } from "../../../types/motionVideo.js";
 import { type MotionEngineGlobal } from "./motionApi";
 import { MOTION_VOICE, MOTION_VOICE_TEXT } from "../../../constants/motionVoice.js";
+import { MOTION_LOADING_GLYPH } from "./MotionControls.js";
 export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | null; videoUrl?: string; audioUrl?: string; audioPending?: boolean; pending?: boolean; className?: string }> = ({ ME, spec, videoUrl, audioUrl, audioPending, pending = false, className }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -146,7 +147,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
   const visibility = loading ? MR.MOTION_TEXT_HIDDEN : MR.MOTION_TEXT_VISIBLE;
   const controlsDisabled = !spec || !duration || loading;
   const announce = useSinglePlayback(() => pause());
-  if (videoUrl) return <StudioVideoPlayer key={videoUrl} src={videoUrl} aspect={MR.MOTION_TEMPLATE_SYMBOL_47(w, h)} className={className} onError={() => setError(MOTION_VOICE.PREVIEW_FAILED)} />;
+  if (videoUrl) return <StudioVideoPlayer key={videoUrl} src={videoUrl} aspect={MR.MOTION_TEMPLATE_SYMBOL_47(w, h)} className={className} loadingIcon={MOTION_LOADING_GLYPH} onError={() => setError(MOTION_VOICE.PREVIEW_FAILED)} />;
   return (
     <div className={cn(MOTION_STYLES.FLEX_FLEX_COL_GAP_2_5_W_FULL, className)} aria-busy={loading}>
       <StudioPlayerFrame
@@ -157,6 +158,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
         duration={duration}
         disabled={controlsDisabled || audioPending}
         loading={loading}
+        loadingIcon={MOTION_LOADING_GLYPH}
         chapters={chapters}
         onToggle={() => {
           if (playing) return pause();

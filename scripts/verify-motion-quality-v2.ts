@@ -75,15 +75,18 @@ console.log("motion quality v2 ok");
   console.log("layout sizes and keyframe track ok");
 }
 
-// The view over the scene: the drawing style's finish, the layout's shot for the scene (never for a map), the spec's focal
-// thing for closer layouts.
+// The view over the scene: the drawing style's finish, the layout, the plan's shot and kind, the spec's focal thing.
 {
   assert.equal(motionFigureView({ profile: "comic", layout: "wide" }).style?.finish, "grain");
   assert.equal(motionFigureView({ profile: "horror", layout: "wide" }).style?.finish, "vignette");
-  assert.equal(motionFigureView({ layout: "close", scene: { shot: "medium" } }).shot, "mcu");
-  assert.equal(motionFigureView({ layout: "close", scene: { shot: "medium", kind: "map" } }).shot, "wide");
+  // The page plans its own shots from the drawn people: the view carries the layout, the plan's shot and kind (a map is
+  // never cut) and the focal thing, never a fixed shot size.
+  const close = motionFigureView({ layout: "close", scene: { shot: "medium", kind: "map" } });
+  assert.equal(close.layout, "close");
+  assert.deepEqual(close.scene, { shot: "medium", kind: "map" });
+  assert.equal((close as { shot?: unknown }).shot, undefined, "no fixed shot size");
   assert.deepEqual(motionFigureView({ layout: "medium", scene: { shot: "medium" } }, "king").focus, ["king"]);
-  assert.deepEqual(motionFigureView({ layout: "wide", scene: { shot: "wide" } }, "king").focus, [], "a wide shot frames the whole scene");
+  assert.deepEqual(motionFigureView({ layout: "auto" }).focus, []);
   assert.notEqual(motionFigureRenderKey({ layout: "close" }), motionFigureRenderKey({ layout: "wide" }), "a thumbnail knows the layout it was captured with");
   assert.notEqual(motionFigureRenderKey({ profile: "comic" }), motionFigureRenderKey({ profile: "sketch" }), "and the drawing style");
   console.log("view ok");
