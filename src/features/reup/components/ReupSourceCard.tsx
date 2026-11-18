@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { BookOpen, Captions, Clock, HardDrive, Image as ImageIcon, Monitor, PauseCircle, Rocket, RotateCcw, ShieldCheck, Volume2 } from "lucide-react";
+import { BookOpen, Captions, Clock, HardDrive, Image as ImageIcon, Monitor, PauseCircle, Rocket, RotateCcw, Volume2 } from "lucide-react";
 import { StudioCard, StudioFieldset, StudioInput } from "../../../components/ui/Studio.js";
 import { Button } from "../../../components/ui/Button.js";
 import { MOTION_LANGUAGES } from "../../../constants/motionLanguages/index.js";
@@ -14,8 +14,9 @@ import { REUP_PRESETS, reupPreset } from "../constants/reupPresets.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { REUP_LANGUAGES } from "../lib/reupSettings.js";
-import type { ReupCorner, ReupLanguage, ReupNatural, ReupPresetId } from "../types/reup.js";
-import { ReupSelect, ReupTextField, ReupToggle, reupClock, type ReupOption } from "./ReupControls.js";
+import { REUP_LIMITS } from "../constants/reupConfig.js";
+import type { ReupCorner, ReupLanguage, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
+import { ReupSelect, ReupTextArea, ReupTextField, ReupToggle, reupClock, type ReupOption } from "./ReupControls.js";
 const CORNERS: ReupCorner[] = ["tl", "tr", "bl", "br"];
 const SHORTS = [1, 2, 3, 4, 5];
 /** Step 01: the footage, the rights check and the few choices that are not fixed by the video type. */
@@ -81,12 +82,14 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
         )}
         <StudioFieldset disabled={locked} className={S.GROUPS}>
           <MotionSettingsGroup title={groups.CONTENT}>
+            <ReupSelect<ReupRights | ""> label={text.LICENSE} title={text.LICENSE_HINT} value={studio.rights} options={(["", "own", "licensed"] as const).map((value) => ({ value, label: text.RIGHTS[value] }))} onChange={studio.setRights} />
             <ReupSelect<ReupPresetId> label={text.TYPE} title={text.TYPE_HINT} value={studio.preset} options={REUP_PRESETS.map((p) => ({ value: p.id, label: text.TYPES[p.id] }))} onChange={studio.selectPreset} />
             <ReupSelect<number> label={text.LENGTH} value={settings.targetSeconds} options={def.lengths.map((n) => ({ value: n, label: n < 120 ? text.SECONDS(n) : text.MINUTES(n / 60) }))} onChange={(targetSeconds) => patch({ targetSeconds })} />
             {def.kind === "short" && !def.speech && <ReupSelect<number> label={text.SHORTS} value={settings.shortsCount} options={SHORTS.map((n) => ({ value: n, label: String(n) }))} onChange={(shortsCount) => patch({ shortsCount })} />}
             <ReupSelect<ReupLanguage> label={text.LANGUAGE} value={settings.language} options={languages} onChange={(language) => patch({ language })} />
             {def.bilingual && <ReupSelect<ReupLanguage> label={text.LANGUAGE_ALT} value={settings.languageAlt} options={languages.filter((l) => l.value !== settings.language)} onChange={(languageAlt) => patch({ languageAlt })} />}
-            {!def.speech && <ReupTextField label={text.SOURCE_LINK} value={settings.sourceLink} maxLength={300} onChange={(sourceLink) => patch({ sourceLink })} />}
+            {(!def.speech || studio.rights === "licensed") && <ReupTextField label={text.SOURCE_LINK} value={settings.sourceLink} maxLength={300} onChange={(sourceLink) => patch({ sourceLink })} />}
+            {!def.speech && <ReupTextArea label={text.ANGLE} value={settings.angle} placeholder={text.ANGLE_PLACEHOLDER} maxLength={REUP_LIMITS.NOTE} onChange={(angle) => patch({ angle })} />}
           </MotionSettingsGroup>
           <MotionSettingsGroup title={groups.AUDIO}>
             {!def.speech && <ReupSelect<string> label={voiceText.PICK_CHANNEL} title={voiceText.CHANNELS_HINT} value={settings.voiceChannel} options={channels} onChange={(voiceChannel) => patch({ voiceChannel })} />}
@@ -123,7 +126,6 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
               <ReupTextField label={text.LOGO_FILE} value={settings.logoFile} onChange={(logoFile) => patch({ logoFile })} />
             </MotionSettingsGroup>
           )}
-          <ReupToggle label={text.LICENSE} icon={ShieldCheck} checked={studio.licensed} on={text.LICENSE_ON} off={text.LICENSE_OFF} hint={text.LICENSE_HINT} onChange={studio.setLicensed} />
         </StudioFieldset>
         <div className={S.ACTIONS}>
           {running ? (

@@ -5,6 +5,7 @@ import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { logger } from "../../../../lib/logger.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
 import { REUP_DIR, REUP_LIMITS, REUP_STEPS } from "../../constants/reupConfig.js";
+import { reupPresetRules } from "../../constants/reupPresets.js";
 import { REUP_LOG } from "../../constants/reupServerText.js";
 import type { ReupJob, ReupLog, ReupStepId, ReupStepState } from "../../types/reup.js";
 interface Entry {
@@ -55,6 +56,10 @@ export const getReupJob = (id: string): ReupJob | undefined => {
   // Runs saved before the package became Video Motion's SEO options: the videos stand, the old package is dropped.
   if ((job.status as string) === "waiting-package") job.status = "done";
   if (job.package && !job.package.options) job.package = undefined;
+  // Runs from before footage rights were split into own / licensed: treat as licensed (the stricter notes).
+  job.rights ||= "licensed";
+  // Rules added since the run was saved take the type's values.
+  job.settings = { ...reupPresetRules(job.preset), ...job.settings, angle: job.settings.angle ?? "" };
   if (job.status === "running") {
     for (const step of REUP_STEPS) if (job.steps[step]?.status === "running") job.steps[step] = { ...job.steps[step], status: "error", message: REUP_LOG.INTERRUPTED };
     job.status = "error";

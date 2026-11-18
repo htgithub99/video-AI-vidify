@@ -16,6 +16,29 @@ export type ReupStepId = "source" | "scenes" | "script" | "voice" | "build" | "p
 export type ReupStepStatus = "idle" | "running" | "done" | "error" | "waiting";
 export type ReupJobStatus = "running" | "waiting-script" | "done" | "error" | "cancelled";
 export type ReupThumbLayout = "hero" | "split" | "circle";
+/** Who owns the footage: the user, or someone who licensed it to them (a link or licence note is then required). */
+export type ReupRights = "own" | "licensed";
+export type ReupCommentaryVoice = "expert" | "storyteller" | "analyst" | "curious" | "wry" | "coach";
+export type ReupCommentaryHook = "result" | "question" | "contrast" | "stakes" | "tease";
+export type ReupCommentaryEnding = "question" | "lesson" | "reflection" | "next";
+/** The commentary of one run: who narrates, how it opens and ends, and the music. Rotated across runs so videos do not share one template. */
+export interface ReupStyle {
+  voice: ReupCommentaryVoice;
+  hook?: ReupCommentaryHook;
+  ending: ReupCommentaryEnding;
+  music?: string;
+}
+export type ReupReportLevel = "ok" | "review" | "risk";
+export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual";
+/** Upload check against YouTube's reused / inauthentic content rules: measured on the edited video and the run history. */
+export interface ReupReport {
+  level: ReupReportLevel;
+  /** Share of the video carrying the channel's own narration (or the speaker's own words). */
+  narrated: number;
+  /** Longest stretch of footage with no words of ours (seconds). */
+  silentMax: number;
+  notes: { code: ReupReportCode; level: ReupReportLevel; value?: string }[];
+}
 export interface ReupAiChoice {
   provider: string;
   model: string;
@@ -43,6 +66,9 @@ export interface ReupSettings {
   logo: ReupLogo;
   logoCorner: ReupCorner;
   stopScript: boolean;
+  /** The channel's own knowledge or viewpoint, woven into every script (the human input that makes the video ours). */
+  angle: string;
+  /** Original source link, or licence note for licensed footage (credited in the description). */
   sourceLink: string;
   brandName: string;
   hotline: string;
@@ -59,11 +85,10 @@ export interface ReupPresetRules {
   vertical: ReupVertical;
   /** Accent of titles, callouts and karaoke words. */
   brandColor: string;
-  wordsMin: number;
-  wordsMax: number;
+  /** Narration words per second of the target length (min, max): the narration fills the video instead of silent footage. */
+  wordsPerSecond: [number, number];
   hook: boolean;
   teasers: boolean;
-  endQuestion: boolean;
   pauseSeconds: number;
   lufs: number;
   titleOverlay: ReupTitleOverlay;
@@ -81,10 +106,15 @@ export interface ReupPresetRules {
   seoOptions: number;
   /** Draw a thumbnail for each option (long videos and TikTok covers; not Shorts). */
   thumbnail: boolean;
-  musicMood: string;
+  /** Music moods "auto" rotates through, least recently used first. */
+  musicMoods: string[];
+  /** Commentary styles this type may use (all when empty). */
+  voices: ReupCommentaryVoice[];
+  hooks: ReupCommentaryHook[];
+  endings: ReupCommentaryEnding[];
 }
 /** What the pipeline reads: the screen's choices plus the type's rules. */
-export type ReupJobSettings = ReupSettings & Omit<ReupPresetRules, "musicMood">;
+export type ReupJobSettings = ReupSettings & ReupPresetRules;
 export interface ReupMediaItem {
   id: string;
   path: string;
@@ -183,6 +213,11 @@ export interface ReupScript {
 }
 export interface ReupOutputResult {
   id: string;
+  /** Seconds carrying our narration (or the speaker's own words), longest silent stretch, silent filler added, footage repeated. */
+  narrated?: number;
+  silentMax?: number;
+  padding?: number;
+  repeated?: boolean;
   /** Where each chapter starts on this output (photo reports), for YouTube chapter lines. */
   chapters?: { t: number; title: string }[];
   file: string;
@@ -251,6 +286,11 @@ export interface ReupJob {
   updatedAt: number;
   preset: ReupPresetId;
   settings: ReupJobSettings;
+  rights: ReupRights;
+  /** Fingerprint of the source file (or folder) to spot footage reused across runs. */
+  fingerprint?: string;
+  style?: ReupStyle;
+  report?: ReupReport;
   source: ReupSource;
   status: ReupJobStatus;
   steps: Record<ReupStepId, ReupStepState>;

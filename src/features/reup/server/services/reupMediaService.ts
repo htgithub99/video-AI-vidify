@@ -1,10 +1,11 @@
 import fs from "fs";
+import { createHash } from "crypto";
 import path from "path";
 import _ from "lodash";
 import { inspectVideoFile } from "../../../../server/services/shortsPreprocessService.js";
 import { probeMediaHasAudio } from "../../../video-export/server/services/videoExportFfmpegService.js";
 import { transcribeVieneuAudio } from "../../../../server/services/vieneuTtsService.js";
-import { REUP_DIR, REUP_FOLDER, REUP_OVERLAY, REUP_QUALITY, REUP_SHEET } from "../../constants/reupConfig.js";
+import { REUP_DIR, REUP_FINGERPRINT_BYTES, REUP_FOLDER, REUP_OVERLAY, REUP_QUALITY, REUP_SHEET } from "../../constants/reupConfig.js";
 import { REUP_ERROR } from "../../constants/reupServerText.js";
 import { reupBadRanges } from "../../lib/reupSceneMap.js";
 import { reupItemAt, reupPhrases } from "../../lib/reupSpeech.js";
@@ -130,4 +131,26 @@ export const reupFrame = async (jobId: string, source: ReupSource, time: number,
   const seek = item ? (item.type === "clip" ? time - item.start : 0) : time;
   await reupFfmpeg(["-y", ...(seek > 0 ? ["-ss", seek.toFixed(2)] : []), "-i", input, "-frames:v", "1", "-vf", `scale=${width}:-2`, "-q:v", "3", file], { signal });
   return file;
+};
+
+/** A source's fingerprint: size plus its first and last few MB (a folder: its items' names and sizes), to spot footage reused across runs. */
+export const reupFingerprint = async (source: ReupSource): Promise<string> => {
+  const hash = createHash("sha1");
+  if (source.kind === "folder") {
+    for (const item of _.sortBy(source.items || [], "name")) hash.update(`${item.name}:${fs.existsSync(item.path) ? fs.statSync(item.path).size : 0}\n`);
+    return hash.digest("hex").slice(0, 20);
+  }
+  const size = fs.statSync(source.path).size;
+  const handle = await fs.promises.open(source.path, "r");
+  try {
+    const block = Math.min(REUP_FINGERPRINT_BYTES, size);
+    for (const at of _.uniq([0, Math.max(0, size - block)])) {
+      const buffer = Buffer.alloc(block);
+      await handle.read(buffer, 0, block, at);
+      hash.update(buffer);
+    }
+  } finally {
+    await handle.close();
+  }
+  return hash.update(String(size)).digest("hex").slice(0, 20);
 };

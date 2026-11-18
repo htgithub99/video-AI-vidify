@@ -4,7 +4,7 @@ import _ from "lodash";
 import { probeMediaDurationSeconds } from "../../../video-export/server/services/videoExportFfmpegService.js";
 import { REUP_BUILD, REUP_DIR, REUP_OVERLAY } from "../../constants/reupConfig.js";
 import { REUP_LOG } from "../../constants/reupServerText.js";
-import { reupPreset } from "../../constants/reupPresets.js";
+import { reupMusicMood, reupPreset } from "../../constants/reupPresets.js";
 import { reupItemAt, reupKaraokeAss, reupShotPieces, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../../lib/reupSpeech.js";
 import { ReupFootageLedger, reupSectionSeconds } from "../../lib/reupTimeline.js";
 import type { ReupJob, ReupJobSettings, ReupOutputResult, ReupOutputScript, ReupSegment, ReupSettings, ReupShot, ReupWord } from "../../types/reup.js";
@@ -226,20 +226,28 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
   const map = job.sceneMap!;
   const ledgers = new Map<string, ReupFootageLedger>();
   const ledger = (lang: string) => ledgers.get(lang) || ledgers.set(lang, new ReupFootageLedger({ duration: job.source.duration, bad: job.bad, minShot: REUP_BUILD.MIN_SHOT, maxShot: REUP_BUILD.MAX_SHOT, hookCut: s.hookCutSeconds })).get(lang)!;
-  log(s.musicMood === MOTION_MUSIC.OFF ? REUP_LOG.MUSIC_NONE : REUP_LOG.MUSIC((MOTION_MUSIC.UI.vi.MOODS as Record<string, string>)[s.musicMood] || s.musicMood));
+  const mood = reupMusicMood(s, job.style);
+  log(mood === MOTION_MUSIC.OFF ? REUP_LOG.MUSIC_NONE : REUP_LOG.MUSIC((MOTION_MUSIC.UI.vi.MOODS as Record<string, string>)[mood] || mood));
   const outputs = job.script!.outputs;
   const results: ReupOutputResult[] = [];
   const [w, h] = reupFrameSize(s);
   for (const [oi, output] of outputs.entries()) {
     const dir = reupJobDir(job.id, REUP_DIR.SECTIONS, output.id);
     let planned: PlannedSection[];
+    // Words of ours per section (narration, or the speaker's own words), silent filler added, footage repeated.
+    let spoken: number[];
+    let padding = 0;
+    let repeated = false;
     if (output.speech) {
       planned = output.sections.map((sec, i) => ({ pieces: piecesOf(job, sec.shots[0], i), seconds: sec.shots[0].end - sec.shots[0].start, card: 0 }));
+      spoken = planned.map((p) => p.seconds);
     } else {
       const voices = await Promise.all(output.sections.map(async (sec) => await probeMediaDurationSeconds(job.voices![sec.id].file)));
       const fill = s.fillUnused && preset.source === "video";
       const target = preset.kind === "long" && preset.source === "video" ? s.targetSeconds + REUP_BUILD.LONG_MARGIN : 0;
-      const timing = reupSectionSeconds(voices, output.sections.map((x) => x.role), s.pauseSeconds, target, REUP_BUILD.TAIL_MAX, fill);
+      const timing = reupSectionSeconds(voices, output.sections.map((x) => x.role), s.pauseSeconds, target, REUP_BUILD.TAIL_MAX, REUP_BUILD.SILENT_SHARE, fill);
+      spoken = voices;
+      padding = timing.padding;
       if (target && timing.short > 1) log(REUP_LOG.SHORT_TARGET(timing.short), "warn");
       planned = output.sections.map((sec, i) => {
         const card = s.chapters && sec.chapter ? REUP_OVERLAY.CHAPTER_SECONDS : 0;
@@ -251,6 +259,7 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
         const plan = ledger(output.lang || s.language).plan(sec.shots, timing.seconds[i], sec.role === "hook", map.segments, fill);
         if (plan.filled > 1) log(REUP_LOG.FILLED(i + 1, plan.filled));
         if (plan.repeated) log(REUP_LOG.REPEATED(i + 1), "warn");
+        repeated ||= plan.repeated;
         const pieces = plan.shots.flatMap((shot, k) => piecesOf(job, shot, i * 100 + k));
         return { pieces, seconds: card + _.sumBy(pieces, "len"), card, chapter: card ? sec.chapter : undefined };
       });
@@ -281,7 +290,7 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
     const final = path.join(reupJobDir(job.id, REUP_DIR.OUT), name);
     const loud = `loudnorm=I=${s.lufs}:TP=${REUP_BUILD.TRUE_PEAK}:LRA=${REUP_BUILD.LRA}`;
     // Video Motion's generated score in the chosen mood, as long as this output.
-    const music = s.musicMood === MOTION_MUSIC.OFF ? undefined : await buildMotionMusic(total, [{ start: 0, mood: s.musicMood }], [], [...job.id + output.id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7));
+    const music = mood === MOTION_MUSIC.OFF ? undefined : await buildMotionMusic(total, [{ start: 0, mood }], [], [...job.id + output.id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7));
     const musicArgs = music ? ["-i", music] : [];
     const musicIn = (index: number) => `[${index}:a]aresample=${REUP_BUILD.AUDIO_RATE},aformat=channel_layouts=stereo,volume=${REUP_BUILD.MUSIC_VOLUME},atrim=duration=${total.toFixed(3)}[mus]`;
     const graph: string[] = [];
@@ -328,7 +337,9 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
       at += plan.seconds;
       return mark;
     });
-    results.push({ id: output.id, file: final, url: reupFileUrl(final), duration, width: w, height: h, ...(chapters.length ? { chapters } : {}) });
+    const narrated = _.round(Math.min(duration, _.sum(spoken)), 1);
+    const silentMax = _.round(_.max(planned.map((plan, i) => Math.max(0, plan.seconds - (spoken[i] || 0)))) || 0, 1);
+    results.push({ id: output.id, file: final, url: reupFileUrl(final), duration, width: w, height: h, narrated, silentMax, padding: _.round(padding, 1), repeated, ...(chapters.length ? { chapters } : {}) });
     log(REUP_LOG.BUILD_DONE(name, duration));
     progress((oi + 1) / outputs.length);
   }

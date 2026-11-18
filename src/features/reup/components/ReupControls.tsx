@@ -1,6 +1,7 @@
 import type { FC, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { StudioInput } from "../../../components/ui/Studio.js";
+import { StudioInput, StudioTextarea } from "../../../components/ui/Studio.js";
+import { cn } from "../../../lib/utils.js";
 import { MotionSelectField } from "../../motion/components/MotionControls.js";
 import { MotionToggle } from "../../motion/components/MotionToggle.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
@@ -30,6 +31,13 @@ export const ReupTextField: FC<{ label: string; value: string; onChange: (value:
   <label className={S.FIELD}>
     <span className={S.FIELD_LABEL}>{label}</span>
     <StudioInput deferred className={S.INPUT} value={value} placeholder={placeholder} maxLength={maxLength} disabled={disabled} onChange={(e) => onChange(e.target.value)} />
+  </label>
+);
+/** A labelled multi-line text field spanning the whole settings row. */
+export const ReupTextArea: FC<{ label: string; value: string; onChange: (value: string) => void; placeholder?: string; maxLength?: number; disabled?: boolean }> = ({ label, value, onChange, placeholder, maxLength, disabled }) => (
+  <label className={cn(S.FIELD, S.FIELD_WIDE)}>
+    <span className={S.FIELD_LABEL}>{label}</span>
+    <StudioTextarea deferred rows={3} className={cn(S.INPUT, S.TEXTAREA)} value={value} placeholder={placeholder} maxLength={maxLength} disabled={disabled} onChange={(e) => onChange(e.target.value)} />
   </label>
 );
 export const reupClock = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;

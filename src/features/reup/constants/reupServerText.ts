@@ -1,6 +1,8 @@
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 export const REUP_LOG = {
   START: (name: string, preset: string): string => `Bắt đầu: ${name} · loại ${preset}`,
+  STYLE: (voice: string, hook: string, ending: string): string => `Phong cách bình phẩm lần này: ${voice}${hook ? ` · mở đầu ${hook}` : ""} · kết ${ending} (đổi so với các video trước)`,
+  REPORT: (level: string, narrated: number): string => `Kiểm tra chính sách: ${level} · lời của kênh phủ ${narrated}% thời lượng`,
   FOLDER: (photos: number, clips: number, seconds: number): string => `Thư mục: ${photos} ảnh, ${clips} clip · dòng thời gian ${mmss(seconds)}`,
   PROXY: "Đã tạo bản xem nhanh của thư mục",
   ASR: (words: number, phrases: number): string => `Nhận giọng: ${words} từ, ${phrases} cụm`,
@@ -28,7 +30,7 @@ export const REUP_LOG = {
   BUILD_SECTION: (i: number, n: number): string => `Dựng phần ${i}/${n}`,
   BUILD_MIX: "Trộn giọng, nhạc, tiếng gốc và chuẩn hoá âm lượng",
   BUILD_DONE: (file: string, seconds: number): string => `Xong: ${file} (${mmss(seconds)})`,
-  SHORT_TARGET: (seconds: number): string => `Footage chưa dùng không đủ để đạt độ dài đích — còn thiếu ${Math.round(seconds)} giây`,
+  SHORT_TARGET: (seconds: number): string => `Video ngắn hơn độ dài đích ${Math.round(seconds)} giây: lời thuyết minh chưa đủ dài và tool không đệm footage không lời quá 15% (chính sách nội dung dùng lại). Viết thêm lời hoặc chọn độ dài ngắn hơn.`,
   REPEATED: (section: number): string => `Phần ${section}: hết footage mới, phải lặp lại một đoạn đã dùng`,
   FILLED: (section: number, seconds: number): string => `Phần ${section}: lấp ${Math.round(seconds)} giây bằng cảnh chưa dùng`,
   MUSIC_NONE: "Không dùng nhạc nền",
@@ -47,6 +49,7 @@ export const REUP_ERROR = {
   NEED_VIDEO: "Loại này cần một file video, không phải thư mục",
   NO_SPEECH: "Không nhận ra lời nói trong video — loại E cần video có người nói",
   LICENSE: "Cần xác nhận footage là của bạn hoặc có giấy phép",
+  LICENSE_LINK: "Footage có giấy phép: hãy điền link nguồn hoặc ghi chú giấy phép",
   PRESET_LATER: "Loại video này thuộc giai đoạn sau, chưa dùng được",
   NO_JOB: "Không tìm thấy lần dựng này",
   BUSY: "Lần dựng đang chạy — chờ xong hoặc huỷ trước",
@@ -61,3 +64,21 @@ export const REUP_ERROR = {
   EMPTY_SCRIPT: "Kịch bản trống",
 } as const;
 export const REUP_STEP_NAME: Record<string, string> = { source: "Nguồn", scenes: "Bản đồ cảnh", script: "Kịch bản", voice: "Giọng", build: "Dựng", package: "SEO & thumbnail" };
+/** Commentary style names for the log (Vietnamese, like every server log line). */
+export const REUP_STYLE_NAME: Record<string, string> = {
+  expert: "người trong nghề",
+  storyteller: "người kể chuyện",
+  analyst: "nhà phân tích",
+  curious: "người tò mò hỏi đáp",
+  wry: "hài hước nhẹ",
+  coach: "huấn luyện viên",
+  result: "bằng kết quả",
+  question: "bằng câu hỏi",
+  contrast: "bằng trước/sau",
+  stakes: "bằng thử thách",
+  tease: "bằng khoảnh khắc bất ngờ",
+  lesson: "bằng bài học",
+  reflection: "bằng suy ngẫm",
+  next: "bằng gợi mở phần sau",
+};
+export const REUP_REPORT_LEVEL_NAME: Record<string, string> = { ok: "ổn", review: "cần xem lại", risk: "rủi ro cao" };

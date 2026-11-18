@@ -5,7 +5,11 @@ import os from "os";
 import path from "path";
 import { spawnSync } from "child_process";
 import { REUP_UPLOAD } from "../src/features/reup/constants/reupConfig.js";
-import { reupJobSettings, reupPresetDefaults } from "../src/features/reup/constants/reupPresets.js";
+import { reupJobSettings, reupMusicMood, reupPresetDefaults, reupPresetRules } from "../src/features/reup/constants/reupPresets.js";
+import { REUP_COMMENTARY } from "../src/features/reup/constants/reupCommentary.js";
+import { REUP_PROMPT } from "../src/features/reup/constants/reupPrompts.js";
+import { pickReupStyle } from "../src/features/reup/lib/reupCommentary.js";
+import { reupReport, reupTextSimilarity } from "../src/features/reup/lib/reupCompliance.js";
 import { reupSeoPack } from "../src/features/reup/lib/reupSeo.js";
 import { reupUnbackedClaims } from "../src/features/reup/lib/reupFacts.js";
 import { cleanScenePart, mergeSceneParts, reupBadRanges, reupSheetBatches, reupUploadLimit } from "../src/features/reup/lib/reupSceneMap.js";
@@ -74,16 +78,48 @@ check("timeline: footage exhausted → repeat flagged", () => {
   assert.equal(plan.repeated, true);
   assert.ok(Math.abs(plan.seconds - 30) < 0.1);
 });
-check("section seconds: voice + pause, tails spread over body sections to reach 8 min", () => {
+check("section seconds: silent tails stay under 8 s each and 15% of the video; the rest is reported, not padded", () => {
   const voice = [25, 50, 50, 50, 50, 50, 50, 50, 40];
   const roles = ["hook", "body", "body", "teaser", "body", "body", "body", "body", "ending"];
-  const out = reupSectionSeconds(voice, roles, 0.2, 486, 12);
-  assert.ok(Math.abs(out.seconds.reduce((a, b) => a + b, 0) - 486) < 0.1);
+  const out = reupSectionSeconds(voice, roles, 0.2, 450, 8, 0.15);
+  assert.ok(Math.abs(out.seconds.reduce((a, b) => a + b, 0) - 450) < 0.1, "a small gap is filled");
   assert.equal(out.seconds[0], 25.2, "hook gets no tail");
   assert.equal(out.short, 0);
-  const few = reupSectionSeconds([10, 10], ["hook", "body"], 0, 100, 12);
-  assert.deepEqual(few.seconds, [10, 90], "past the soft cap tails keep growing so the target is still met");
-  assert.equal(reupSectionSeconds([10, 10], ["hook", "body"], 0, 100, 12, false).short, 80, "fill off reports the gap");
+  const few = reupSectionSeconds([10, 10], ["hook", "body"], 0, 100, 8, 0.15);
+  assert.deepEqual(few.seconds, [10, 13.53], "filler capped at 15% of the result (3.53 s for 20 s of voice)");
+  assert.equal(few.short, 76.47, "the missing length is reported for the script to fill");
+  assert.ok(reupSectionSeconds(voice, roles, 0.2, 600, 8, 0.15).seconds.slice(1).every((s, i) => s - voice[i + 1] - 0.2 <= 8.01), "no tail longer than 8 s");
+  assert.equal(reupSectionSeconds([10, 10], ["hook", "body"], 0, 100, 8, 0.15, false).short, 80, "fill off reports the gap");
+});
+check("commentary: each run takes the least recently used narrator, opening, ending and music, within the type", () => {
+  const rules = { ...reupPresetRules("A") };
+  const first = pickReupStyle(rules, [], "run-1");
+  const second = pickReupStyle(rules, [first], "run-2");
+  assert.notEqual(second.voice, first.voice);
+  assert.notEqual(second.hook, first.hook);
+  assert.notEqual(second.ending, first.ending);
+  assert.notEqual(second.music, first.music);
+  const history = [first, second];
+  for (let i = 0; i < 4; i++) history.unshift(pickReupStyle(rules, history, `run-${i + 3}`));
+  assert.equal(new Set(history.map((h) => h.voice)).size, 6, "six runs use all six narrators before any repeats");
+  const d = pickReupStyle(reupPresetRules("D"), [], "d");
+  assert.ok(["storyteller", "analyst", "expert"].includes(d.voice) && !d.hook && ["reflection", "lesson"].includes(d.ending), "photo report keeps its dignified styles, no hook");
+  const prompt = REUP_PROMPT.SCRIPT({ map: { summary: "s", segments: [], hook: [], ending: "", thumbnails: [] }, settings: reupJobSettings("A", { ...reupPresetDefaults("A"), angle: "I built three cabins myself." }), rules: "", kind: "long", count: 1, duration: 600, style: first });
+  assert.ok(prompt.includes(REUP_COMMENTARY.VOICES[first.voice]) && prompt.includes("I built three cabins myself.") && /Add value beyond what is seen/.test(prompt), "style, channel angle and the value rule reach the script AI");
+  assert.match(prompt, /Target 1026-1242 words/, "540 s at 1.9-2.3 words per second");
+});
+check("policy report: narration share, silence, reused source, echoed script and title, rights notes", () => {
+  const base = { id: "now", createdAt: 2, updatedAt: 2, preset: "A", settings: reupJobSettings("A", reupPresetDefaults("A")), rights: "own", fingerprint: "fp", source: {} as any, status: "done", steps: {}, logs: [], sheets: [], bad: [], warnings: [] } as unknown as ReupJob;
+  const words = "he cuts the logs then he notches each end so the walls lock together without nails which is how old cabins stand for a century";
+  const job: ReupJob = { ...base, outputs: [{ id: "o1", file: "", url: "", duration: 100, width: 1920, height: 1080, narrated: 90, silentMax: 6, padding: 5 }], script: { outputs: [{ id: "o1", kind: "long", title: [], sections: [{ id: "a", role: "body", text: words, shots: [] }] }] }, package: { options: [{ title: "Log Cabin Build", description: "", hashtags: [], tags: [], seoScore: 70 }], thumbs: [], frames: [], pinned: "", aiDisclosure: false } };
+  const clean = reupReport(job, []);
+  assert.equal(clean.narrated, 0.9);
+  assert.deepEqual(clean.notes.map((n) => n.code), ["narration", "noAngle"]);
+  const past = { ...job, id: "old", createdAt: 1, outputs: [] };
+  const echoed = reupReport({ ...job, settings: { ...job.settings, angle: "x" }, rights: "licensed", outputs: [{ ...job.outputs[0], narrated: 50, silentMax: 20 }] }, [past]);
+  assert.equal(echoed.level, "risk");
+  assert.deepEqual(echoed.notes.map((n) => `${n.code}:${n.level}`), ["narration:risk", "silence:review", "sourceReused:risk", "similar:risk", "titleReused:review", "licensed:ok"]);
+  assert.ok(reupTextSimilarity(words, "a completely different story about a boat on a quiet lake at dawn") < 0.05);
 });
 check("claims: numbers not in the scene map are flagged, backed ones pass", () => {
   const map = { summary: "He builds a shelter over 3 days.", segments: [{ id: "s1", start: 0, end: 10, what: "catches two fish", tags: [], value: 3 }] };
@@ -98,9 +134,10 @@ check("settings: screen choices cleaned per type, the rest follows the type (B v
   const job = reupJobSettings("B", b);
   assert.equal(job.lufs, -14);
   assert.equal(job.vertical, "blur");
-  assert.equal(job.musicMood, "tense", "auto music is the type's mood");
+  assert.equal(reupMusicMood(job), "tense", "auto music is the type's first mood until a run rotates it");
+  assert.equal(reupMusicMood(job, { music: "epic" }), "epic");
   assert.equal(reupJobSettings("E", cleanReupSettings({}, "E")).vertical, "crop");
-  assert.equal(reupJobSettings("A", { ...b, musicMood: "sad" }).musicMood, "sad");
+  assert.equal(reupMusicMood(reupJobSettings("A", { ...b, musicMood: "sad" }), { music: "epic" }), "sad", "a mood picked on screen wins");
   const a = cleanReupSettings({ targetSeconds: 100 }, "A");
   assert.equal(a.targetSeconds, 540, "long presets only take their offered lengths (8–15 min)");
 });
@@ -160,11 +197,13 @@ const media = async () => {
   };
   const settings = reupJobSettings("A", { ...reupPresetDefaults("A"), targetSeconds: 40, subtitles: true });
   const segments = [{ id: "s1", start: 0, end: 90, what: "a", tags: [], value: 3 }, { id: "s2", start: 140, end: 300, what: "b", tags: [], value: 5 }, { id: "s3", start: 300, end: 420, what: "c", tags: ["result"], value: 5 }];
-  const job: ReupJob = { id, createdAt: 0, updatedAt: 0, preset: "A", settings, source, status: "running", steps: reupEmptySteps(), logs: [], sheets, bad: quality.bad, warnings: [], outputs: [], sceneMap: { summary: "", segments, hook: ["s3"], ending: "s3", thumbnails: [] }, script: { outputs: [{ id: "o1", kind: "long", title: ["BUILT A SHELTER", "IN THE RAIN"], sections: [{ id: "h", role: "hook", text: "x", shots: [{ start: 300, end: 420 }, { start: 0, end: 90 }] }, { id: "b", role: "body", text: "y", shots: [{ start: 140, end: 300 }] }] }] }, voices: { h: voice("h.wav", 6), b: voice("b.wav", 10) } };
+  const job: ReupJob = { id, createdAt: 0, updatedAt: 0, preset: "A", settings, rights: "own", source, status: "running", steps: reupEmptySteps(), logs: [], sheets, bad: quality.bad, warnings: [], outputs: [], sceneMap: { summary: "", segments, hook: ["s3"], ending: "s3", thumbnails: [] }, script: { outputs: [{ id: "o1", kind: "long", title: ["BUILT A SHELTER", "IN THE RAIN"], sections: [{ id: "h", role: "hook", text: "x", shots: [{ start: 300, end: 420 }, { start: 0, end: 90 }] }, { id: "b", role: "body", text: "y", shots: [{ start: 140, end: 300 }] }] }] }, voices: { h: voice("h.wav", 6), b: voice("b.wav", 10) } };
   const logs: string[] = [];
   const outputs = await buildReupJob(job, (t) => logs.push(t), () => {});
   assert.equal(outputs.length, 1);
-  assert.ok(outputs[0].duration >= 45 && outputs[0].duration < 48, `long video reaches target + margin: ${outputs[0].duration}`);
+  assert.ok(outputs[0].duration > 18.5 && outputs[0].duration < 20, `16 s of narration + at most 15% silent filler, not padded to the 46 s target: ${outputs[0].duration}`);
+  assert.ok(outputs[0].narrated === 16 && outputs[0].padding! <= 2.9 && outputs[0].silentMax! <= 8.3, JSON.stringify(outputs[0]));
+  assert.ok(logs.some((l) => /ngắn hơn độ dài đích/.test(l)), "the shortfall is reported");
   const ass = fs.readFileSync(path.join(path.dirname(path.dirname(outputs[0].file)), "sections", "o1", "subs.ass"), "utf8");
   const shown = ass.split("\n").filter((l) => l.startsWith("Dialogue:"));
   assert.ok(shown.length >= 2 && /,S,,0,0,0,,x$/.test(shown[0]) && shown[1].startsWith("Dialogue: 0,0:00:"), `narration subtitles burned in, second section shifted: ${shown.join(" | ")}`);
@@ -197,7 +236,7 @@ const media2 = async () => {
     run(["-f", "lavfi", "-i", `sine=frequency=500:duration=${seconds}`, "-ar", "24000", "-ac", "1", file]);
     return { file, seconds, voice: "test" };
   };
-  const base = (id: string, preset: ReupJob["preset"], source: ReupJob["source"], extra: Partial<ReupJob["settings"]> = {}): ReupJob => ({ id, createdAt: 0, updatedAt: 0, preset, settings: { ...reupJobSettings(preset, reupPresetDefaults(preset)), ...extra }, source, status: "running", steps: reupEmptySteps(), logs: [], sheets: [], bad: [], warnings: [], outputs: [] });
+  const base = (id: string, preset: ReupJob["preset"], source: ReupJob["source"], extra: Partial<ReupJob["settings"]> = {}): ReupJob => ({ id, createdAt: 0, updatedAt: 0, preset, settings: { ...reupJobSettings(preset, reupPresetDefaults(preset)), ...extra }, rights: "own", source, status: "running", steps: reupEmptySteps(), logs: [], sheets: [], bad: [], warnings: [], outputs: [] });
   const ids: string[] = [];
   // D — a folder of photos (landscape and portrait) and a clip: proxy, sheets, chapters, captions, Ken Burns, cue timing.
   const folder = path.join(tmp, "album");

@@ -143,8 +143,8 @@ export const writeReupScript = async (job: ReupJob, log: Log, signal?: AbortSign
     return { outputs };
   }
   const folder = preset.source === "folder";
-  const raw = await runMotionAi(REUP_PROMPT.SCRIPT({ map, settings: s, rules: preset.rules, kind: preset.kind, count, duration: job.source.duration, bilingual: preset.bilingual, folder }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
-  const alt = s.language === "en" ? "vi" : "en";
+  const raw = await runMotionAi(REUP_PROMPT.SCRIPT({ map, settings: s, rules: preset.rules, kind: preset.kind, count, duration: job.source.duration, style: job.style!, bilingual: preset.bilingual, folder }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
+  const alt = s.languageAlt;
   const outputs: ReupOutputScript[] = _.castArray(raw?.outputs || [])
     .slice(0, count)
     .flatMap((output: any, i: number) => {
@@ -166,13 +166,13 @@ export const reupCandidateTimes = (map: ReupSceneMap, limit: number): number[] =
 };
 const clip = (value: unknown, length: number): string => _.truncate(_.trim(String(value ?? "")), { length });
 /** Step 6 — SEO options (title, description, hashtags, tags, score) with a thumbnail idea each, drawn from real frames. */
-export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file: string })[], log: Log, signal?: AbortSignal): Promise<ReupPackage> => {
+export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file: string })[], past: { titles: string[]; layouts: string[] }, log: Log, signal?: AbortSignal): Promise<ReupPackage> => {
   const s = job.settings;
   const choice = REUP_UPLOAD.NO_VISION.includes(s.scriptAi.provider) && s.scriptAi.mode !== REUP_UPLOAD.API_MODE ? s.visionAi : s.scriptAi;
   const room = s.thumbnail ? Math.min(frames.length, reupUploadLimit(choice.provider, choice.mode, readReupUploadLimits())) : 0;
   const sent = frames.slice(0, room);
   const narration = _.truncate((job.script?.outputs || []).flatMap((o) => o.sections.map((x) => x.text)).join(" "), { length: 2500 });
-  const raw = await runMotionAi(REUP_PROMPT.PACKAGE({ map: job.sceneMap!, script: narration, settings: s, frames: sent.map((f) => f.time), options: s.seoOptions, thumbnail: s.thumbnail }), REUP_ARTIFACT.PACKAGE, reupExec(choice), signal, aiLog(log), sent.map((f, i) => ({ name: `frame_${i + 1}.jpg`, mimeType: "image/jpeg", path: f.file })));
+  const raw = await runMotionAi(REUP_PROMPT.PACKAGE({ map: job.sceneMap!, script: narration, settings: s, frames: sent.map((f) => f.time), options: s.seoOptions, thumbnail: s.thumbnail, pastTitles: past.titles, pastLayouts: past.layouts }), REUP_ARTIFACT.PACKAGE, reupExec(choice), signal, aiLog(log), sent.map((f, i) => ({ name: `frame_${i + 1}.jpg`, mimeType: "image/jpeg", path: f.file })));
   const nearest = (t: unknown): number | undefined => {
     const n = Number(t);
     if (!Number.isFinite(n) || !frames.length) return undefined;

@@ -32,6 +32,7 @@ export const REUP_BASE_SETTINGS: ReupSettings = {
   logo: "off",
   logoCorner: "tr",
   stopScript: true,
+  angle: "",
   sourceLink: "",
   brandName: "",
   hotline: "",
@@ -45,11 +46,9 @@ export const REUP_BASE_SETTINGS: ReupSettings = {
 const BASE_RULES: ReupPresetRules = {
   vertical: "blur",
   brandColor: "#ff3b30",
-  wordsMin: 750,
-  wordsMax: 850,
+  wordsPerSecond: [1.9, 2.3],
   hook: true,
   teasers: true,
-  endQuestion: true,
   pauseSeconds: 0.2,
   lufs: -16,
   titleOverlay: "hook",
@@ -65,31 +64,33 @@ const BASE_RULES: ReupPresetRules = {
   sheetInterval: 10,
   seoOptions: 3,
   thumbnail: true,
-  musicMood: "tense",
+  musicMoods: ["tense", "epic", "neutral"],
+  voices: [],
+  hooks: [],
+  endings: [],
 };
 const LONG_RULES = [
-  "Hook about 25 seconds: open on the final result, then the 'before' state, then a run of fast cuts.",
+  "A hook of about 25 seconds over a run of fast cuts, opened the way the opening line below says.",
   "8 to 10 body sections in time order, each tied to the source scenes it shows.",
   "A teaser line roughly every 2 minutes that makes the viewer want the next part.",
-  "End with a question to the viewer. No chapter cards.",
+  "No chapter cards.",
 ].join("\n");
 const LONG = [480, 540, 600, 720, 900];
 export const REUP_PRESETS: readonly ReupPresetDef[] = [
   { id: "A", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES, settings: {}, editing: {} },
-  { id: "B", stage: "ready", kind: "short", source: "video", lengths: [22, 28, 35, 45, 60], rules: "Each short is 22-30 seconds and 50-75 words. The first sentence is the hook. End on an open question or cliffhanger. One fixed 2-line title on screen.", settings: { aspect: "9:16", targetSeconds: 28 }, editing: { wordsMin: 50, wordsMax: 75, lufs: -14, titleOverlay: "fixed", teasers: false, endQuestion: false, thumbnail: false, seoOptions: 2 } },
-  { id: "C", stage: "ready", kind: "long", source: "video", bilingual: true, lengths: [90, 120, 180], rules: "A 2-minute test cut: a short hook, 3-4 body sections, a closing line. Both languages say the same thing; each reads naturally in its own language (not word for word).", settings: { targetSeconds: 120 }, editing: { wordsMin: 250, wordsMax: 320, teasers: false, musicMood: "neutral" } },
-  { id: "D", stage: "ready", kind: "long", source: "folder", lengths: [120, 180, 240, 300], rules: "A dignified photo report in chapters (chapter cards, no hook tricks). Each part of the narration plays over the photo or clip it talks about. Name people and places only when the file names or the pictures show them.", settings: { targetSeconds: 180, language: "vi", natural: "off" }, editing: { wordsMin: 300, wordsMax: 600, titleOverlay: "off", chapters: true, captions: true, hook: false, teasers: false, endQuestion: false, sheetInterval: 5, musicMood: "warm" } },
-  { id: "E", stage: "ready", kind: "short", source: "video", speech: true, lengths: [30, 38, 45, 60], rules: "Cut the speaker's own words into a fast vertical promo: keep only the strongest phrases, in an order that makes sense. Write a POV hook (2 short lines), up to 4 callouts tied to phrases, and one call to action.", settings: { aspect: "9:16", targetSeconds: 38, shortsCount: 1, natural: "keep", subtitles: true }, editing: { vertical: "crop", lufs: -14, viewfinder: true, teasers: false, endQuestion: false, musicMood: "playful" } },
-  { id: "F", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nRenovation before/after: the hook shows AFTER then BEFORE. Tag scenes 'before' and 'after' only when the footage shows it.", settings: {}, editing: { beforeAfter: true, musicMood: "epic" } },
-  { id: "G", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nCabin / stone-house build: show progress stages clearly (ground, frame, walls, roof, interior).", settings: {}, editing: { musicMood: "warm" } },
-  { id: "H", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nGarage build of a vehicle or machine: name parts only when visible, never invent specs. Keep the builder's own short spoken lines when they explain a step.", settings: { natural: "keep" }, editing: { musicMood: "epic" } },
+  { id: "B", stage: "ready", kind: "short", source: "video", lengths: [22, 28, 35, 45, 60], rules: "Each short is one idea. The first sentence is the hook. One fixed 2-line title on screen.", settings: { aspect: "9:16", targetSeconds: 28 }, editing: { wordsPerSecond: [2.1, 2.6], lufs: -14, titleOverlay: "fixed", teasers: false, thumbnail: false, seoOptions: 2, hooks: ["question", "tease", "stakes", "contrast"], endings: ["question", "next"] } },
+  { id: "C", stage: "ready", kind: "long", source: "video", bilingual: true, lengths: [90, 120, 180], rules: "A 2-minute test cut: a short hook, 3-4 body sections, a closing line. Both languages say the same thing; each reads naturally in its own language (not word for word).", settings: { targetSeconds: 120 }, editing: { wordsPerSecond: [2, 2.5], teasers: false, musicMoods: ["neutral", "warm", "tense"], endings: ["question", "lesson", "reflection"] } },
+  { id: "D", stage: "ready", kind: "long", source: "folder", lengths: [120, 180, 240, 300], rules: "A dignified photo report in chapters (chapter cards, no hook tricks). Each part of the narration plays over the photo or clip it talks about. Name people and places only when the file names or the pictures show them.", settings: { targetSeconds: 180, language: "vi", natural: "off" }, editing: { wordsPerSecond: [1.5, 2], titleOverlay: "off", chapters: true, captions: true, hook: false, teasers: false, sheetInterval: 5, musicMoods: ["warm", "neutral", "sad"], voices: ["storyteller", "analyst", "expert"], endings: ["reflection", "lesson"] } },
+  { id: "E", stage: "ready", kind: "short", source: "video", speech: true, lengths: [30, 38, 45, 60], rules: "Cut the speaker's own words into a fast vertical promo: keep only the strongest phrases, in an order that makes sense. Write a POV hook (2 short lines), up to 4 callouts tied to phrases, and one call to action.", settings: { aspect: "9:16", targetSeconds: 38, shortsCount: 1, natural: "keep", subtitles: true }, editing: { vertical: "crop", lufs: -14, viewfinder: true, teasers: false, musicMoods: ["playful", "warm", "epic"] } },
+  { id: "F", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nRenovation before/after: tag scenes 'before' and 'after' only when the footage shows it.", settings: {}, editing: { beforeAfter: true, musicMoods: ["epic", "warm", "neutral"], hooks: ["contrast", "result", "question", "stakes"] } },
+  { id: "G", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nCabin / stone-house build: show progress stages clearly (ground, frame, walls, roof, interior).", settings: {}, editing: { musicMoods: ["warm", "neutral", "epic"] } },
+  { id: "H", stage: "ready", kind: "long", source: "video", lengths: LONG, rules: LONG_RULES + "\nGarage build of a vehicle or machine: name parts only when visible, never invent specs. Keep the builder's own short spoken lines when they explain a step.", settings: { natural: "keep" }, editing: { musicMoods: ["epic", "tense", "neutral"] } },
 ];
 export const REUP_DEFAULT_PRESET: ReupPresetId = "A";
 export const reupPreset = (id: unknown): ReupPresetDef => REUP_PRESETS.find((preset) => preset.id === id) || REUP_PRESETS[0];
 export const reupPresetDefaults = (id: ReupPresetId): ReupSettings => ({ ...REUP_BASE_SETTINGS, ...reupPreset(id).settings });
 export const reupPresetRules = (id: ReupPresetId): ReupPresetRules => ({ ...BASE_RULES, ...reupPreset(id).editing });
-/** The pipeline's settings: what the screen chose, the type's editing rules for the rest; "auto" music is the type's mood. */
-export const reupJobSettings = (id: ReupPresetId, settings: ReupSettings): ReupJobSettings => {
-  const { musicMood, ...rules } = reupPresetRules(id);
-  return { ...rules, ...settings, musicMood: settings.musicMood === MOTION_MUSIC.AUTO ? musicMood : settings.musicMood };
-};
+/** The pipeline's settings: what the screen chose, the type's editing rules for the rest ("auto" music is resolved per run, see reupMusicMood). */
+export const reupJobSettings = (id: ReupPresetId, settings: ReupSettings): ReupJobSettings => ({ ...reupPresetRules(id), ...settings });
+/** Music of a run: the screen's mood, or for "auto" the run's rotated mood (else the type's first). */
+export const reupMusicMood = (settings: Pick<ReupJobSettings, "musicMood" | "musicMoods">, style?: { music?: string }): string => (settings.musicMood === MOTION_MUSIC.AUTO ? style?.music || settings.musicMoods[0] || MOTION_MUSIC.OFF : settings.musicMood);

@@ -1,4 +1,5 @@
-import type { ReupJobSettings, ReupMediaItem, ReupOutputKind, ReupSceneMap, ReupTranscript } from "../types/reup.js";
+import { REUP_COMMENTARY } from "./reupCommentary.js";
+import type { ReupJobSettings, ReupMediaItem, ReupOutputKind, ReupSceneMap, ReupStyle, ReupTranscript } from "../types/reup.js";
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 export const REUP_ARTIFACT = { SCENES: "reup-scene-map", SCRIPT: "reup-script", PACKAGE: "reup-package" } as const;
 const LANG_NAME = { en: "English", vi: "Vietnamese", ja: "Japanese", ko: "Korean" } as const;
@@ -6,6 +7,18 @@ const LANG_NAME = { en: "English", vi: "Vietnamese", ja: "Japanese", ko: "Korean
 const lengthNote = (lang: keyof typeof LANG_NAME): string => (lang === "en" ? "" : ` (in ${LANG_NAME[lang]}, about the same spoken length)`);
 const itemsLine = (items: ReupMediaItem[]): string => items.map((it) => `${it.id} ${it.type} "${it.name}" ${Math.round(it.start)}-${Math.round(it.end)}s`).join("; ");
 const TRUTH = "Describe only what is visible. Never invent numbers, days, catches, animals, names or results that the images do not show. Missing is fine, wrong is not.";
+/**
+ * Added value (YouTube's reused-content rule): the narration must bring something the footage alone does not — stated
+ * as general know-how, never as invented facts about this footage.
+ */
+const VALUE = [
+  "Add value beyond what is seen: every body section carries at least one line of explanation the footage alone does not give — why it is done this way, how the technique works, a practical tip, a comparison or a risk.",
+  "Say such lines as general know-how (\"usually\", \"a common way is\", \"the reason is\"), never as facts about this person, place, time or result. Do not just describe the picture line by line.",
+].join(" ");
+const angleLine = (angle: string): string => (angle.trim() ? `The channel's own knowledge and viewpoint (from the creator; weave it in naturally in at least two places, in your own words): ${angle.trim()}` : "");
+const styleLines = (style: ReupStyle): string[] => [REUP_COMMENTARY.VOICES[style.voice], style.hook ? REUP_COMMENTARY.HOOKS[style.hook] : "", REUP_COMMENTARY.ENDINGS[style.ending]];
+/** Narration length from the type's words-per-second rate, so words (not silent footage) fill the video. */
+const wordRange = (s: Pick<ReupJobSettings, "targetSeconds" | "wordsPerSecond">): [number, number] => [Math.round(s.targetSeconds * s.wordsPerSecond[0]), Math.round(s.targetSeconds * s.wordsPerSecond[1])];
 export const REUP_PROMPT = {
   SCENES: (input: { sheets: { index: number; start: number; interval: number; count: number; cols: number }[]; duration: number; part: number; parts: number; bad: string; items?: ReupMediaItem[]; photoSeconds?: number }): string =>
     [
@@ -19,8 +32,9 @@ export const REUP_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n"),
-  SCRIPT: (input: { map: ReupSceneMap; settings: ReupJobSettings; rules: string; kind: ReupOutputKind; count: number; duration: number; bilingual?: boolean; folder?: boolean }): string => {
+  SCRIPT: (input: { map: ReupSceneMap; settings: ReupJobSettings; rules: string; kind: ReupOutputKind; count: number; duration: number; style: ReupStyle; bilingual?: boolean; folder?: boolean }): string => {
     const s = input.settings;
+    const [wordsMin, wordsMax] = wordRange(s);
     const lang = LANG_NAME[s.language];
     const alt = LANG_NAME[s.languageAlt];
     const scenes = input.map.segments.map((g) => `${g.id} [${mmss(g.start)}-${mmss(g.end)}] v${g.value} ${g.tags.join(",")}: ${g.what}`).join("\n");
@@ -30,11 +44,13 @@ export const REUP_PROMPT = {
       : `{"outputs": [{"title": [line1, line2] (on-screen title, max 28 characters per line)${input.bilingual ? `, "titleAlt": [the same in ${alt}]` : ""}, "sections": [{"role": "hook"|"body"|"teaser"|"ending", "text": narration${input.bilingual ? `, "textAlt": the same narration in ${alt}` : ""}, "scenes": [segment ids shown under this text, in order]}]}]}`;
     return [
       long ? `Write the voice-over for ONE ${input.folder ? "photo report" : "video"} (${s.targetSeconds >= 120 ? `${Math.round(s.targetSeconds / 60)}+ minutes` : `${s.targetSeconds} seconds`} on screen) built from real ${input.folder ? "photos and clips" : "footage"}.` : `Write ${input.count} separate vertical shorts (${s.targetSeconds} seconds each) cut from a real source video. Each short uses different scenes.`,
-      `Narration language: ${lang}${input.bilingual ? ` and, for every line, a natural ${alt} version` : ""}. Target ${s.wordsMin}-${s.wordsMax} words ${long ? "in total" : "per short"}${lengthNote(s.language)}. ${input.folder ? "Warm, clear, formal register." : "Energetic, fast, spoken style; short sentences."}`,
+      `Narration language: ${lang}${input.bilingual ? ` and, for every line, a natural ${alt} version` : ""}. Target ${wordsMin}-${wordsMax} words ${long ? "in total" : "per short"}${lengthNote(s.language)}. ${input.folder ? "Warm, clear, formal register." : "Energetic, fast, spoken style; short sentences."}`,
       input.rules,
+      ...styleLines(input.style),
       s.hook || input.folder ? "" : "No separate hook section.",
       s.teasers ? "" : "No teaser lines.",
-      s.endQuestion ? "" : "Do not end with a question.",
+      VALUE,
+      angleLine(s.angle),
       `Scene map (timeline ${mmss(input.duration)}). Summary: ${input.map.summary}`,
       scenes,
       input.folder ? "" : `Suggested hook scenes: ${input.map.hook.join(", ")}. Clearest result: ${input.map.ending}.`,
@@ -61,7 +77,7 @@ export const REUP_PROMPT = {
       .filter(Boolean)
       .join("\n");
   },
-  PACKAGE: (input: { map: ReupSceneMap; script: string; settings: ReupJobSettings; frames: number[]; options: number; thumbnail: boolean }): string =>
+  PACKAGE: (input: { map: ReupSceneMap; script: string; settings: ReupJobSettings; frames: number[]; options: number; thumbnail: boolean; pastTitles: string[]; pastLayouts: string[] }): string =>
     [
       `Prepare YouTube SEO for a narrated video made from real footage. Write everything in ${LANG_NAME[input.settings.language]}.`,
       input.thumbnail ? `Attached images are candidate frames, in this order (seconds): ${input.frames.join(", ")}.` : "",
@@ -69,6 +85,8 @@ export const REUP_PROMPT = {
       `Narration: ${input.script}`,
       TRUTH + " Titles, descriptions and thumbnail text may not promise anything the video does not show.",
       `Write ${input.options} clearly different options (different angle or hook each), best first.`,
+      input.pastTitles.length ? `This channel's recent titles — do not reuse their wording or their pattern: ${input.pastTitles.map((t) => `"${t}"`).join("; ")}.` : "",
+      input.thumbnail ? `Use a different thumbnail layout for each option${input.pastLayouts.length ? `; the last videos used ${input.pastLayouts.join(", ")}, so lead with another one` : ""}.` : "",
       `Return JSON: {"options": [{"title": string (max 70 characters, the strongest keyword early), "description": string (first 2 lines carry the hook and main keywords; then 2-4 short lines about what happens; mention the narration uses an AI voice${input.settings.sourceLink ? `; credit the original footage: ${input.settings.sourceLink}` : ""}), "hashtags": [3-5 hashtags starting with #], "tags": [10-15 search tags], "seoScore": 0-100 (honest estimate of search and click strength)${input.thumbnail ? `, "thumb": {"layout": "hero"|"split"|"circle", "frames": [frame seconds from the list; 2 for split/circle], "lines": [white line, yellow line] (max 18 characters each, matching this option's title)}` : ""}}], "pinned": string (one question that invites comments), "aiDisclosure": boolean (true only if the video would show realistic scenes that were generated or altered by AI)}.`,
     ]
       .filter(Boolean)

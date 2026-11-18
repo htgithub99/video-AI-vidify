@@ -25,7 +25,7 @@ export const ReupScriptReview: FC<{ studio: ReupStudio }> = ({ studio }) => {
   const frame = (start: number, end: number) => <img className={S.SHOT_IMG} loading="lazy" alt="" src={REUP_URL.FRAME(job.id, (start + end) / 2)} />;
   return (
     <StudioCard className={S.CARD}>
-      <StepHeader n="03" icon={FileText} title={text.STEP_SCRIPT} badge={text.STATUS["waiting-script"]} />
+      <StepHeader n="03" icon={FileText} title={text.STEP_SCRIPT} badge={job.style ? text.STYLE(text.STYLES[job.style.voice], job.style.hook ? text.STYLES[job.style.hook] : "", text.STYLES[job.style.ending]) : text.STATUS["waiting-script"]} />
       <div className={S.BODY}>
         <p className={S.HINT}>{text.SCRIPT_HINT}</p>
         {draft.outputs.map((output, o) => (

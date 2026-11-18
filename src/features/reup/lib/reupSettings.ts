@@ -37,6 +37,7 @@ export const cleanReupSettings = (raw: unknown, preset: ReupPresetId): ReupSetti
     logo: pick(v.logo, ["off", "crop", "blur"], d.logo),
     logoCorner: pick(v.logoCorner, ["tl", "tr", "bl", "br"], d.logoCorner),
     stopScript: bool(v.stopScript, d.stopScript),
+    angle: str(v.angle, REUP_LIMITS.NOTE, d.angle),
     sourceLink: str(v.sourceLink, 300, d.sourceLink),
     brandName: str(v.brandName, 60, d.brandName),
     hotline: str(v.hotline, 40, d.hotline),

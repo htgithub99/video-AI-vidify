@@ -55,7 +55,9 @@ export const REUP_BUILD = {
   SECTION_SHOTS: 36,
   LANES: 2,
   NATURAL_LEVEL: { keep: 0.9, low: 0.35, off: 0 } as Record<string, number>,
-  TAIL_MAX: 12,
+  /** Silent footage after a section (seconds) and its share of a video at most: the rest must be our narration. */
+  TAIL_MAX: 8,
+  SILENT_SHARE: 0.15,
   LONG_MARGIN: 6,
   LOGO_ZOOM: 1.08,
   LOGO_BOX: 0.16,
@@ -88,4 +90,6 @@ export const REUP_VOICE = { RETRY_MS: 17000, RETRIES: 24, BUSY: /queue|429|too m
 export const REUP_FOLDER = { PHOTO_SECONDS: 5, IMAGE_EXT: /\.(jpe?g|png|webp|bmp)$/i, VIDEO_EXT: /\.(mp4|mov|m4v|mkv|avi|webm)$/i, PROXY_HEIGHT: 360, PROXY_FPS: 2, MAX_ITEMS: 400 } as const;
 /** Chapter cards, callouts, the closing call to action, karaoke subtitles and narration subtitle lines (words or, for unspaced scripts, characters per line). */
 export const REUP_OVERLAY = { CHAPTER_SECONDS: 2.5, CALLOUT_SECONDS: 2.6, CTA_SECONDS: 3.2, KARAOKE_WORDS: 4, KARAOKE_GAP: 0.6, SUB_WORDS: 8, SUB_CHARS: 18, SUB_ABOVE_CAPTION: 0.17, KEN_BURNS_ZOOM: 0.12, PHRASE_GAP: 0.45, PHRASE_MAX: 7, CUT_PAD: 0.08 } as const;
+/** Bytes read from each end of a source video for its fingerprint. */
+export const REUP_FINGERPRINT_BYTES = 4 * 1024 * 1024;
 export const REUP_LIMITS = { LOGS: 400, TEXT: 4000, NOTE: 800, PATH: 1024, FRAMES: 10, POLL_MS: 1200 } as const;

@@ -6,6 +6,7 @@ import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { reupSeoPack } from "../lib/reupSeo.js";
 import { drawReupThumbnail } from "../lib/reupThumbnail.js";
+import { ReupReport } from "./ReupReport.js";
 import type { ReupThumbIdea, ReupThumbLayout } from "../types/reup.js";
 const LAYOUTS: ReupThumbLayout[] = ["hero", "split", "circle"];
 /** Another take of an option's thumbnail: the next layout, the next real frames. */
@@ -47,7 +48,7 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
     };
   }, [pack, turns]);
   const packaging = job?.steps.package.status === "running";
-  if (!job || (!seo && !packaging)) return null;
+  if (!job || (!seo && !packaging && !job.report)) return null;
   return (
     <MotionSeoCard
       seo={seo}
@@ -60,17 +61,20 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
       onThumbnail={pack?.thumbs.length ? (i) => (setDrawing(i), setTurns((all) => ({ ...all, [i]: (all[i] || 0) + 1 }))) : undefined}
       thumbnailBusy={drawing}
       footer={
-        pack && (
+        (pack || job.report) && (
           <div className={S.SEO_NOTES}>
-            {pack.pinned && (
+            {job.report && <ReupReport report={job.report} text={text} />}
+            {pack?.pinned && (
               <p className={S.HINT}>
                 {text.PINNED}: {pack.pinned}
               </p>
             )}
-            <p className={pack.aiDisclosure ? S.HINT_WARN : S.HINT}>
-              <Info className={S.INLINE_ICON} />
-              {pack.aiDisclosure ? text.AI_YES : text.AI_NO}
-            </p>
+            {pack && (
+              <p className={pack.aiDisclosure ? S.HINT_WARN : S.HINT}>
+                <Info className={S.INLINE_ICON} />
+                {pack.aiDisclosure ? text.AI_YES : text.AI_NO}
+              </p>
+            )}
             {job.packageDir && (
               <p className={S.HINT}>
                 {text.SAVED_TO} <span className={S.PATH}>{job.packageDir}</span>

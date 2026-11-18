@@ -21,7 +21,7 @@ export const inspectReupSourceController = async (req: Request, res: Response): 
 };
 export const startReupController = async (req: Request, res: Response): Promise<void> => {
   try {
-    res.json({ success: true, job: view(await startReup({ path: String(req.body?.path || ""), preset: req.body?.preset, settings: req.body?.settings, licensed: req.body?.licensed === true })) });
+    res.json({ success: true, job: view(await startReup({ path: String(req.body?.path || ""), preset: req.body?.preset, settings: req.body?.settings, rights: req.body?.rights })) });
   } catch (error) {
     fail(res, 400, error);
   }

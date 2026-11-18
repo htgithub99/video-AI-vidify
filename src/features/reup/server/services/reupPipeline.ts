@@ -5,21 +5,24 @@ import _ from "lodash";
 import { logger } from "../../../../lib/logger.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import { REUP_DIR, REUP_LIMITS, REUP_STEPS } from "../../constants/reupConfig.js";
-import { REUP_ERROR, REUP_LOG, REUP_STEP_NAME } from "../../constants/reupServerText.js";
+import { REUP_ERROR, REUP_LOG, REUP_REPORT_LEVEL_NAME, REUP_STEP_NAME, REUP_STYLE_NAME } from "../../constants/reupServerText.js";
 import { reupJobSettings, reupPreset } from "../../constants/reupPresets.js";
 import { MOTION_TEXT_SYMBOL_4 } from "../../../../constants/motionRuntime.js";
 import { MOTION_SEO } from "../../../../constants/motionSeo.js";
 import { MOTION_SEO_TEXTS } from "../../../../constants/motionVideoTexts.js";
 import { renderSeoOptionText } from "../../../../lib/motionSeo.js";
+import { REUP_COMMENTARY } from "../../constants/reupCommentary.js";
+import { pickReupStyle } from "../../lib/reupCommentary.js";
+import { reupReport } from "../../lib/reupCompliance.js";
 import { reupUnbackedClaims } from "../../lib/reupFacts.js";
 import { reupSeoChapters } from "../../lib/reupSeo.js";
 import { cleanReupSettings } from "../../lib/reupSettings.js";
-import type { ReupJob, ReupPackage, ReupPresetId, ReupScript, ReupStepId } from "../../types/reup.js";
+import type { ReupJob, ReupPackage, ReupPresetId, ReupRights, ReupScript, ReupStepId } from "../../types/reup.js";
 import { buildReupSceneMap, reupCandidateTimes, withReupAi, writeReupPackage, writeReupScript } from "./reupAiService.js";
 import { buildReupJob } from "./reupBuildService.js";
 import { isReupAbort } from "./reupFfmpeg.js";
-import { getReupJob, reupController, reupEmptySteps, reupFileUrl, reupJobDir, reupLog, reupStep, saveReupJob, setReupController } from "./reupJobStore.js";
-import { inspectReupSource, makeReupProxy, makeReupSheets, measureReupQuality, reupFrame, transcribeReupSource } from "./reupMediaService.js";
+import { getReupJob, listReupJobs, reupController, reupEmptySteps, reupFileUrl, reupJobDir, reupLog, reupStep, saveReupJob, setReupController } from "./reupJobStore.js";
+import { inspectReupSource, makeReupProxy, reupFingerprint, makeReupSheets, measureReupQuality, reupFrame, transcribeReupSource } from "./reupMediaService.js";
 import { voiceReupJob } from "./reupVoiceService.js";
 /** What each step produces; re-running a step drops its results and everything after it. */
 const clearFrom = (job: ReupJob, step: ReupStepId): void => {
@@ -32,10 +35,17 @@ const clearFrom = (job: ReupJob, step: ReupStepId): void => {
   if (at <= 1) job.sceneMap = undefined;
   if (at <= 2) job.script = undefined;
   if (at <= 4) job.outputs = [];
+  job.report = undefined;
   job.package = undefined;
   job.packageDir = undefined;
   job.warnings = [];
   for (const id of REUP_STEPS.slice(at)) job.steps[id] = { status: "idle", progress: 0, message: "" };
+};
+/** This channel's earlier runs, newest first (styles, sources, scripts and titles are compared against them). */
+const pastRuns = (job: ReupJob): ReupJob[] => listReupJobs(REUP_COMMENTARY.HISTORY * 6).filter((p) => p.id !== job.id && p.createdAt < job.createdAt);
+const checkPolicy = (job: ReupJob): void => {
+  job.report = reupReport(job, pastRuns(job));
+  reupLog(job, REUP_LOG.REPORT(REUP_REPORT_LEVEL_NAME[job.report.level], Math.round(job.report.narrated * 100)), job.report.level === "ok" ? "info" : "warn");
 };
 const scriptWords = (script: ReupScript): number => _.sumBy(script.outputs, (o) => _.sumBy(o.sections, (s) => s.text.split(/\s+/).filter(Boolean).length));
 const checkClaims = (job: ReupJob, text: string): void => {
@@ -56,6 +66,7 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       job.source.proxy = await makeReupProxy(job.id, job.source, signal);
       reupLog(job, REUP_LOG.PROXY);
     } else reupLog(job, REUP_LOG.SOURCE(job.source.duration, job.source.width, job.source.height, job.source.hasAudio));
+    job.fingerprint = await reupFingerprint(job.source);
     const speech = preset.speech
       ? transcribeReupSource(job.id, job.source, job.settings.language, signal, (line) => line && reupLog(job, line)).then((t) => {
           job.transcript = t;
@@ -77,6 +88,11 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     return "next";
   },
   script: async (job, signal) => {
+    // The commentary style is picked once per run, away from what recent videos used; re-running the script keeps it.
+    if (!job.style) {
+      job.style = pickReupStyle(job.settings, _.compact(pastRuns(job).map((p) => p.style)).slice(0, REUP_COMMENTARY.HISTORY), job.id);
+      reupLog(job, REUP_LOG.STYLE(REUP_STYLE_NAME[job.style.voice], job.style.hook ? REUP_STYLE_NAME[job.style.hook] : "", REUP_STYLE_NAME[job.style.ending]));
+    }
     job.script = await withReupAi(job, () => writeReupScript(job, (t, l) => reupLog(job, t, l), signal), (t) => reupLog(job, t), signal);
     reupLog(job, REUP_LOG.SCRIPT(job.script.outputs.length, scriptWords(job.script)));
     checkClaims(job, scriptClaimText(job.script));
@@ -99,6 +115,7 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
   },
   build: async (job, signal) => {
     job.outputs = await buildReupJob(job, (t, l) => reupLog(job, t, l), (p) => reupStep(job, "build", { progress: p }), signal);
+    checkPolicy(job);
     return "next";
   },
   package: async (job, signal) => {
@@ -109,9 +126,12 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
         return { time, file, url: reupFileUrl(file) };
       }),
     );
-    job.package = await withReupAi(job, () => writeReupPackage(job, frames, (t, l) => reupLog(job, t, l), signal), (t) => reupLog(job, t), signal);
+    const past = pastRuns(job);
+    const recent = { titles: past.flatMap((p) => (p.package?.options || []).map((o) => o.title)).slice(0, 20), layouts: _.compact(past.slice(0, 3).map((p) => p.package?.thumbs[0]?.layout)) };
+    job.package = await withReupAi(job, () => writeReupPackage(job, frames, recent, (t, l) => reupLog(job, t, l), signal), (t) => reupLog(job, t), signal);
     reupLog(job, REUP_LOG.PACKAGE(job.package.options.length, job.package.thumbs.length));
     checkClaims(job, [...job.package.options.map((o) => o.title), ...job.package.thumbs.flatMap((t) => t.lines)].join("\n"));
+    checkPolicy(job);
     writePackage(job, job.package);
     return "next";
   },
@@ -160,13 +180,16 @@ const launch = (job: ReupJob, from: ReupStepId): void => {
 const busy = (job: ReupJob): void => {
   if (job.status === "running" && reupController(job.id)) throw new Error(REUP_ERROR.BUSY);
 };
-export const startReup = async (input: { path: string; preset: ReupPresetId; settings: unknown; licensed: boolean }): Promise<ReupJob> => {
-  if (!input.licensed) throw new Error(REUP_ERROR.LICENSE);
+export const startReup = async (input: { path: string; preset: ReupPresetId; settings: unknown; rights: unknown }): Promise<ReupJob> => {
+  if (input.rights !== "own" && input.rights !== "licensed") throw new Error(REUP_ERROR.LICENSE);
+  const rights: ReupRights = input.rights;
   const preset = reupPreset(input.preset);
   if (preset.stage === "later") throw new Error(REUP_ERROR.PRESET_LATER);
   const source = await inspectReupSource(input.path);
   const now = Date.now();
-  const job: ReupJob = { id: randomUUID(), createdAt: now, updatedAt: now, preset: preset.id, settings: reupJobSettings(preset.id, cleanReupSettings(input.settings, preset.id)), source, status: "running", steps: reupEmptySteps(), logs: [], sheets: [], bad: [], warnings: [], outputs: [] };
+  const settings = reupJobSettings(preset.id, cleanReupSettings(input.settings, preset.id));
+  if (rights === "licensed" && !settings.sourceLink.trim()) throw new Error(REUP_ERROR.LICENSE_LINK);
+  const job: ReupJob = { id: randomUUID(), createdAt: now, updatedAt: now, preset: preset.id, settings, rights, source, status: "running", steps: reupEmptySteps(), logs: [], sheets: [], bad: [], warnings: [], outputs: [] };
   saveReupJob(job, true);
   reupLog(job, REUP_LOG.START(source.name, preset.id));
   launch(job, "source");
@@ -228,7 +251,7 @@ const writePackage = (job: ReupJob, pack: ReupPackage): void => {
   const text = (name: string, value: string) => fs.writeFileSync(path.join(dir, name), value, "utf8");
   text("seo.txt", MOTION_SEO.EXPORT_TEXT(t.exportTitle, pack.options.map((option, i) => renderSeoOptionText(option, seo, i, t)).join(MOTION_TEXT_SYMBOL_4)));
   text("pinned_comment.txt", pack.pinned);
-  text("package.json", stringifyJson({ options: pack.options, pinned: pack.pinned, videos: job.outputs.map((o) => path.basename(o.file)), aiDisclosure: pack.aiDisclosure, source: job.source.name, preset: job.preset }, null, 2));
+  text("package.json", stringifyJson({ options: pack.options, pinned: pack.pinned, videos: job.outputs.map((o) => path.basename(o.file)), aiDisclosure: pack.aiDisclosure, source: job.source.name, sourceLink: job.settings.sourceLink, rights: job.rights, preset: job.preset, style: job.style, report: job.report }, null, 2));
   job.packageDir = dir;
   reupLog(job, REUP_LOG.SAVED(dir));
 };

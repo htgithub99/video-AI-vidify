@@ -115,27 +115,29 @@ export class ReupFootageLedger {
 }
 /**
  * Seconds each section lasts: its voice plus the breath after it, then — for long videos — natural-sound tails
- * spread evenly over the body sections until the video reaches the target length. Tails first fill up to
- * `tailSoft` each, then grow evenly; `fill = false` adds none and reports the gap.
+ * spread evenly over the body sections toward the target length: at most `tailMax` each and `silentShare` of the
+ * whole; what is still missing is reported (`short`) instead of padded. `fill = false` adds none.
  */
-export const reupSectionSeconds = (voice: number[], roles: string[], pause: number, target: number, tailSoft: number, fill = true): { seconds: number[]; short: number } => {
+export const reupSectionSeconds = (voice: number[], roles: string[], pause: number, target: number, tailMax: number, silentShare: number, fill = true): { seconds: number[]; short: number; padding: number } => {
   const seconds = voice.map((v) => v + pause);
-  let missing = target - _.sum(seconds);
+  // Silent footage after a section may stretch a video toward its target, but never past `silentShare` of the result:
+  // a video carried mostly by someone else's footage with no words of ours is what YouTube calls reused content.
+  const room = silentShare >= 1 ? Number.POSITIVE_INFINITY : (silentShare / (1 - silentShare)) * _.sum(voice);
+  let missing = Math.min(target - _.sum(seconds), room);
   const bodies = roles.map((role, i) => (role === "hook" ? -1 : i)).filter((i) => i >= 0);
   const tails = seconds.map(() => 0);
   if (fill && missing > EPS && bodies.length) {
-    for (const cap of [tailSoft, Number.POSITIVE_INFINITY]) {
-      while (missing > EPS) {
-        const open = bodies.filter((i) => tails[i] < cap - EPS);
-        if (!open.length) break;
-        const share = missing / open.length;
-        for (const i of open) {
-          const add = Math.min(share, cap - tails[i]);
-          tails[i] += add;
-          missing -= add;
-        }
+    while (missing > EPS) {
+      const open = bodies.filter((i) => tails[i] < tailMax - EPS);
+      if (!open.length) break;
+      const share = missing / open.length;
+      for (const i of open) {
+        const add = Math.min(share, tailMax - tails[i]);
+        tails[i] += add;
+        missing -= add;
       }
     }
   }
-  return { seconds: seconds.map((s, i) => round(s + tails[i])), short: round(Math.max(0, missing)) };
+  const out = seconds.map((s, i) => round(s + tails[i]));
+  return { seconds: out, short: round(Math.max(0, target - _.sum(out))), padding: round(_.sum(tails)) };
 };

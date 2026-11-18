@@ -11,7 +11,7 @@ import { REUP_LIMITS, REUP_STORAGE, REUP_URL } from "../constants/reupConfig.js"
 import { REUP_DEFAULT_PRESET, reupPreset, reupPresetDefaults } from "../constants/reupPresets.js";
 import { reupTexts } from "../constants/reupTexts.js";
 import { cleanReupSettings } from "../lib/reupSettings.js";
-import type { ReupJob, ReupPresetId, ReupScript, ReupSettings, ReupSource, ReupStepId } from "../types/reup.js";
+import type { ReupJob, ReupPresetId, ReupRights, ReupScript, ReupSettings, ReupSource, ReupStepId } from "../types/reup.js";
 interface Stored {
   preset?: ReupPresetId;
   presetSettings?: Partial<Record<ReupPresetId, ReupSettings>>;
@@ -36,7 +36,7 @@ export const useReupStudio = (lang: Lang) => {
   const [presetSettings, setPresetSettings] = useState<Partial<Record<ReupPresetId, ReupSettings>>>({});
   const [sourcePath, setSourcePath] = useState("");
   const [source, setSource] = useState<ReupSource | null>(null);
-  const [licensed, setLicensed] = useState(false);
+  const [rights, setRights] = useState<ReupRights | "">("");
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<ReupJob | null>(null);
   const [results, setResults] = useState<ReupJobSummary[]>([]);
@@ -130,11 +130,12 @@ export const useReupStudio = (lang: Lang) => {
   const start = useCallback(() => {
     const def = reupPreset(preset);
     if (!source) return toast.error(text.NEED_SOURCE);
-    if (!licensed) return toast.error(text.NEED_LICENSE);
+    if (!rights) return toast.error(text.NEED_LICENSE);
+    if (rights === "licensed" && !settings.sourceLink.trim()) return toast.error(text.NEED_LICENSE_LINK);
     if (!def.speech && !settings.voiceChannel) return toast.error(text.NEED_VOICE);
     if (def.bilingual && !settings.voiceChannelAlt) return toast.error(text.NEED_VOICE_ALT);
-    void act(REUP_URL.START, { path: source.path, preset, settings, licensed });
-  }, [act, licensed, preset, settings, source, text]);
+    void act(REUP_URL.START, { path: source.path, preset, settings, rights });
+  }, [act, rights, preset, settings, source, text]);
   const cancel = useCallback(() => job && act(REUP_URL.CANCEL, { jobId: job.id }), [act, job]);
   /** Re-run a step with the current choices for the run's video type (e.g. another voice channel). */
   const rerun = useCallback((step: ReupStepId) => job && act(REUP_URL.RERUN, { jobId: job.id, step, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
@@ -150,9 +151,9 @@ export const useReupStudio = (lang: Lang) => {
   }, []);
   const newJob = useCallback(() => {
     setJob(null);
-    setLicensed(false);
+    setRights("");
   }, []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
-  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, licensed, setLicensed, busy, running, job, openJob, results, voiceChannels, reloadVoiceChannels, start, cancel, rerun, approveScript, saveVideo, newJob };
+  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, voiceChannels, reloadVoiceChannels, start, cancel, rerun, approveScript, saveVideo, newJob };
 };
 export type ReupStudio = ReturnType<typeof useReupStudio>;
