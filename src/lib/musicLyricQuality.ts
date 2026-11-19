@@ -1,5 +1,9 @@
 import { MUSIC_LYRIC_QUALITY as Q } from "../constants/musicPlanning.js";
-const words = (text: string): string[] => (String(text || "").toLowerCase().normalize("NFC").match(Q.WORD_RE) || []) as string[];
+const words = (text: string): string[] =>
+  (String(text || "")
+    .toLowerCase()
+    .normalize("NFC")
+    .match(Q.WORD_RE) || []) as string[];
 const grams = (list: string[]): Set<string> => {
   const out = new Set<string>();
   for (let i = 0; i + Q.NGRAM_WORDS <= list.length; i++) out.add(list.slice(i, i + Q.NGRAM_WORDS).join(" "));

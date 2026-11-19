@@ -54,8 +54,6 @@ export const inspectVoiceCadence = (wav: Buffer, text: string) => {
     .map((pause) => ({ ...pause, progress: cumulative[Math.min(levels.length, Math.round((pause.at * 1000) / V.AUDIO.HOP_MS))] / voiced }));
   return { articulation: units / active, seconds: info.duration, pauses, nuclei: syllableNuclei(levels, threshold) };
 };
-// Syllable nuclei: loudness peaks that stand clear of the dips around them. They are counted without knowing the words,
-// so the pace of every stretch of speech can be measured even when the voice paused somewhere the punctuation did not.
 const syllableNuclei = (levels: number[], threshold: number) => {
   const K = N.NUCLEUS,
     half = Math.floor(K.SMOOTH_FRAMES / 2);
@@ -74,7 +72,6 @@ const syllableNuclei = (levels: number[], threshold: number) => {
   }
   return nuclei;
 };
-// Pace of each stretch of speech between two pauses, as syllables per second between its first and last nucleus.
 const spanPaces = (nuclei: number[], spans: { from: number; to: number }[]) =>
   spans.map(({ from, to }) => {
     const inside = nuclei.filter((at) => at >= from && at < to);
@@ -86,9 +83,7 @@ const paceSpread = (paces: ReturnType<typeof spanPaces>) => {
   const rate = sumOf(measured.map((pace) => pace.syllables)) / sumOf(measured.map((pace) => pace.seconds));
   return Math.max(...measured.map((pace) => Math.abs(pace.syllables / pace.seconds / rate - 1)));
 };
-// Punctuation inside the line (followed by more words), with where it ends in the text.
-const punctuationMarks = (text: string) =>
-  [...text.matchAll(/[,;:，；：]|\.{3}|[.!?…]+/gu)].filter((mark) => /^["”’')\]]*\s+\S/u.test(text.slice(mark.index! + mark[0].length))).map((mark) => ({ mark: mark[0], end: mark.index! + mark[0].length }));
+const punctuationMarks = (text: string) => [...text.matchAll(/[,;:，；：]|\.{3}|[.!?…]+/gu)].filter((mark) => /^["”’')\]]*\s+\S/u.test(text.slice(mark.index! + mark[0].length))).map((mark) => ({ mark: mark[0], end: mark.index! + mark[0].length }));
 const referencePausePlan = (text: string, pauses: { at: number; d: number; progress: number }[], profile: ReferenceCadenceProfile) => {
   const units = speechUnits(text);
   const marks = punctuationMarks(text);
@@ -112,14 +107,11 @@ const referencePausePlan = (text: string, pauses: { at: number; d: number; progr
 };
 export type VoiceWord = { w: string; s: number; e: number };
 export type VoiceWordReader = (file: string) => Promise<VoiceWord[] | null>;
-// The words heard in the clip are only trusted for timing when they cover about as many syllables as the line has:
-// a transcript that missed or doubled part of the line would put the phrase boundaries in the wrong place.
 const usableWords = (words: VoiceWord[] | null | undefined, text: string) => {
   const list = (words || []).filter((word) => word.e > word.s && speechUnits(word.w) > 0);
   const heard = sumOf(list.map((word) => speechUnits(word.w)));
   return list.length >= 2 && Math.abs(heard / Math.max(1, speechUnits(text)) - 1) <= N.WORDS.COVERAGE ? list : undefined;
 };
-// Every punctuation mark of the line, as a share of its syllables, placed in the gap between the two heard words around it.
 const phraseCuts = (text: string, words: VoiceWord[], pauses: { at: number; d: number }[]) => {
   const total = sumOf(words.map((word) => speechUnits(word.w)));
   const units = speechUnits(text);
@@ -137,7 +129,6 @@ const phraseCuts = (text: string, words: VoiceWord[], pauses: { at: number; d: n
   }
   return cuts;
 };
-// Pace of each stretch from the words whose middle falls inside it: syllables from the first word's start to the last word's end.
 const wordPaces = (words: VoiceWord[], spans: { from: number; to: number }[]) =>
   spans.map(({ from, to }) => {
     const inside = words.filter((word) => (word.s + word.e) / 2 >= from && (word.s + word.e) / 2 < to);
@@ -153,28 +144,17 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
   const words = transcribe ? usableWords(await transcribe(file).catch((error) => (signal?.aborted ? Promise.reject(error) : null)), text) : undefined;
   const output = file + randomUUID() + RUNTIME_VALUES.CADENCE_WAV_A51E3FA2;
   const planned = referencePausePlan(text, before.pauses, profile);
-  // Pauses matched to punctuation take the reference length. Every other pause the voice model made (a breath in the middle
-  // of a phrase, a long stall, a pause at punctuation that could not be matched for certain) is only ever shortened: to the
-  // clause length, or to the sentence length when it was already that long. This keeps the rhythm even from line to line.
   const matched = new Set(planned.pauses.map((pause) => pause.at));
   const capped = before.pauses
     .filter((pause) => !matched.has(pause.at))
     .map((pause) => ({ at: pause.at, d: pause.d, target: pause.d >= profile.sentence * N.LONG_PAUSE_SHARE ? profile.sentence : profile.clause, progress: undefined as number | undefined }))
     .filter((pause) => pause.d > pause.target * N.CAP_MARGIN);
-  // Every pause the voice made splits the line into stretches of speech; the ones not planned above keep their own length.
   const edited = new Map([...planned.pauses, ...capped].map((pause) => [pause.at, pause.target]));
   const pauses = [...before.pauses.map((pause) => ({ at: pause.at, d: pause.d, target: edited.get(pause.at) ?? pause.d })), ...(words ? phraseCuts(text, words, before.pauses) : [])].sort((x, y) => x.at - y.at);
   const clamp = (value: number) => Math.max(N.TEMPO_MIN, Math.min(N.TEMPO_MAX, value));
-  // The reference rate was measured on one voice and language. When this clip would need more change than the limit
-  // allows (another language, a much slower or faster voice), forcing the limit on every clip only speeds everything up
-  // without making it even: the clip keeps its own rate and the caller evens the sentences against each other instead.
   const wanted = profile.articulation / before.articulation;
   const fits = wanted >= N.TEMPO_MIN / N.FIT_MARGIN && wanted <= N.TEMPO_MAX * N.FIT_MARGIN;
   let tempo = fits ? clamp(wanted) : 1;
-  // Even pace inside the line: the line is cut at every pause the voice made and, when the words were heard, at every
-  // punctuation mark even where the voice did not stop. Each stretch is timed (by its words, or by its syllable nuclei
-  // when no transcript is available) and brought to the line's average pace. Word timing is exact, so a stretch of two
-  // words is corrected in full; nuclei are trusted in full only from a few syllables on.
   const spans = Array.from({ length: pauses.length + 1 }, (_, index) => ({ from: index ? pauses[index - 1].at + pauses[index - 1].d : 0, to: pauses[index] ? pauses[index].at : before.seconds }));
   const paces = words ? wordPaces(words, spans) : spanPaces(before.nuclei, spans);
   const measured = paces.filter((pace) => !!pace);
@@ -186,9 +166,7 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
     return Math.max(1 - stretch, Math.min(1 + stretch, 1 + trust * (lineRate / (pace.syllables / pace.seconds) - 1)));
   });
   const phrases = lineRate ? measured.length : 0;
-  // atempo changes the pace by exactly its factor, so the pace each stretch ends at is known without measuring again.
   const shaped = paces.map((pace, index) => pace && { syllables: pace.syllables * shape[index], seconds: pace.seconds });
-  // The rendered line keeps the pauses where they were, so its stretches are found again from its own pauses.
   const afterSpans = (after: { seconds: number; pauses: { at: number; d: number }[] }) => Array.from({ length: after.pauses.length + 1 }, (_, index) => ({ from: index ? after.pauses[index - 1].at + after.pauses[index - 1].d : 0, to: after.pauses[index] ? after.pauses[index].at : after.seconds }));
   const render = async () => {
     const filters: string[] = [],
@@ -228,7 +206,20 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
         if (!after) return;
       }
     }
-    return { wav, cadence: { before: before.articulation, after: after.articulation, target: profile.articulation, tempo, limited: Math.abs(after.articulation / profile.articulation - 1) > N.REVIEW_DELTA, pausesMatched: planned.pauses.length, pausesExpected: planned.expected, ...(fits ? {} : { unfit: true }), ...(phrases ? { phrases, phraseSpread: paceSpread(paces), phraseSpreadAfter: paceSpread(words ? shaped : spanPaces(after.nuclei, afterSpans(after))), ...(words ? { timing: "words" as const } : {}) } : {}) } };
+    return {
+      wav,
+      cadence: {
+        before: before.articulation,
+        after: after.articulation,
+        target: profile.articulation,
+        tempo,
+        limited: Math.abs(after.articulation / profile.articulation - 1) > N.REVIEW_DELTA,
+        pausesMatched: planned.pauses.length,
+        pausesExpected: planned.expected,
+        ...(fits ? {} : { unfit: true }),
+        ...(phrases ? { phrases, phraseSpread: paceSpread(paces), phraseSpreadAfter: paceSpread(words ? shaped : spanPaces(after.nuclei, afterSpans(after))), ...(words ? { timing: "words" as const } : {}) } : {}),
+      },
+    };
   } finally {
     await fs.promises.rm(output, { force: true }).catch(() => {});
   }

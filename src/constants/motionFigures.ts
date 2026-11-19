@@ -1,33 +1,16 @@
-// The figure table every scene is drawn through: window.MotionFigures.use() gives FIG.<fn>(ctx, o), which puts the options
-// in the figure vocabulary's words and draws each thing with the kit in the chosen style, fitted into the box the scene
-// gives (ground point x, y, height h, width w). A thing the kit cannot draw is left out, never drawn as something else.
 export const MOTION_FIGURES = {
   ATTR: "data-motion-figures",
-  // The style layer of each kit look ("Bộ vẽ chuẩn" only): outline ink and width factor, the tone every scene colour is
-  // pulled toward (k: how far, sat: saturation factor, light: lightness shift), the finishing pass, the header card.
   STYLES: {
     outline: { ink: "#26201c", inkWidth: 1.25, tone: { col: [192, 136, 80], k: 0.06, sat: 1.08, light: 0.02 } },
     sketch: { ink: "#16172a", inkWidth: 0.85, tone: { col: [58, 64, 88], k: 0.2, sat: 0.72, light: 0 } },
-    // split: dark tones lean to violet-navy, light ones to warm cream (lavender hills, sand ground, deep-navy nights).
     stick: { ink: "#2a1f1c", inkWidth: 1.15, tone: { col: [118, 104, 150], k: 0.05, sat: 1.1, light: 0.01, split: { shadow: [70, 60, 130], highlight: [250, 226, 182], k: 0.32 } } },
     comic: { ink: "#15140f", inkWidth: 1.3, tone: { col: [90, 90, 58], k: 0.12, sat: 0.8, light: -0.02 }, finish: "grain" },
     cutout: { ink: "#2b2622", inkWidth: 0.8, tone: { col: [74, 74, 64], k: 0.08, sat: 0.92, light: 0 } },
     horror: { ink: "#1c1a18", inkWidth: 1.2, tone: { col: [60, 70, 80], k: 0.3, sat: 0.45, light: -0.06 }, finish: "vignette", darkCard: true },
   } as Record<string, { ink: string; inkWidth: number; tone: { col: number[]; k: number; sat: number; light: number; split?: { shadow: number[]; highlight: number[]; k: number } }; finish?: string; darkCard?: boolean }>,
-  // Bumped whenever the way a page's figures are drawn changes, so pictures captured the old way are drawn again.
   RENDER_REVISION: 9,
-  // Each frame starts the kit's clock; the kit's own whole-frame finishing (night tint, grain, header) does not run, the
-  // scene engine lights and finishes the frame itself.
   KIT_HOOK:
     "(function(){var v=window.motionScene;var wrap=function(x){if(x&&typeof x.renderAt==='function'&&!x.__motionKit){var f=x.renderAt;x.renderAt=function(i){var K=window.MotionKit,self=this,args=arguments;var go=function(){K.time(i&&typeof i.time==='number'?i.time:0);return f.apply(self,args)};return K.fontsLoaded()?go():K.fontsReady.then(go)};x.__motionKit=true}return x};Object.defineProperty(window,'motionScene',{configurable:true,get:function(){return v},set:function(x){v=wrap(x)}});wrap(v)})();",
-  // How a scene is shown, over the scene the AI drew once (window.__motionView, set by the app before this script):
-  // - style: "Bộ vẽ chuẩn" only. Every colour the scene paints goes through the style's tone (what the scene reads back is
-  //   what it set), thin dark outlines take the style's ink and width, and a finish (vignette and mist, paper grain) goes
-  //   over the frame. Coordinates and paths are never touched, and the kit, which draws in its own style, is left alone.
-  // - shot: the layout's virtual camera. One measuring pass records every person the figure table draws; the frame then
-  //   follows the editor's rules: eyes on the upper third, the cut at the shot's point on the body (never a joint), the
-  //   whole head kept in, a single subject on the third behind its look, a two-shot only when both fit the action-safe
-  //   area (93 %) at that size, one zoom for the whole scene, a smoothed pan, never past the drawn frame.
   VIEW: `(function () {
   var cfg = window.__motionView || {}, S = cfg.style || null, CUTOUT = cfg.movement === 'cutout';
   var FOCUS = Array.isArray(cfg.focus) ? cfg.focus.map(String) : [];

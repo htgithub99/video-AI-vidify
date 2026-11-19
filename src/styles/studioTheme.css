@@ -20,7 +20,6 @@
   border: 1px solid var(--studio-border) !important;
   border-radius: 16px !important;
   box-shadow: var(--studio-shadow) !important;
-  /* Cards sit on a flat page: a backdrop blur would cost a repaint on every change and show nothing. */
   backdrop-filter: none;
 }
 :root:is(.light, .dark) .studio-title,
@@ -225,7 +224,6 @@
   opacity: 1;
   transition: color 0.15s ease !important;
 }
-/* An icon-only button answers the pointer with its icon colour alone: no fill, frame, shadow, scale or movement. */
 :root:is(.light, .dark) .studio-button[data-icon-only="true"]:is(:hover, :focus-visible):not(:disabled) {
   color: var(--studio-accent-strong) !important;
 }
@@ -467,7 +465,6 @@
     grid-template-columns: minmax(0, 1fr) 300px;
   }
 }
-/* Shared video player in fullscreen fills the screen. */
 .studio-player:fullscreen {
   width: 100vw !important;
   height: 100vh !important;
@@ -475,7 +472,6 @@
   border: 0 !important;
   border-radius: 0 !important;
 }
-/* Player controls, YouTube style: white icons; a dark rounded backdrop appears on hover. */
 .studio-player .studio-player-ctrl {
   width: 40px !important;
   height: 40px !important;
@@ -531,7 +527,6 @@
 .studio-player button.studio-player-pill:hover {
   background: rgba(20, 20, 24, 0.85) !important;
 }
-/* Volume: the icon sits in a pill that widens on hover to show a white slider. */
 .studio-player .studio-player-vol {
   display: inline-flex;
   align-items: center;
@@ -546,8 +541,6 @@
 .studio-player .studio-player-vol:hover .studio-player-ctrl {
   background: transparent !important;
 }
-/* Player volume: thin white slider that opens on hover, like YouTube. The app-wide range style (and its light-theme
-   border and ring on the track and the thumb) is overridden at the same weight, so the dot sits centred on the line. */
 .studio-player input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -558,7 +551,10 @@
   background: transparent;
   cursor: pointer;
   opacity: 0;
-  transition: width 0.15s ease, margin 0.15s ease, opacity 0.15s ease;
+  transition:
+    width 0.15s ease,
+    margin 0.15s ease,
+    opacity 0.15s ease;
 }
 .studio-player .group\/vol:hover input[type="range"],
 .studio-player input[type="range"]:focus-visible {
@@ -598,7 +594,6 @@
   background: #fff;
   box-shadow: none;
 }
-/* Sticky band behind the Video Motion chapter bar: the card's own colour, so the beats vanish under it. */
 .motion-chapter-band {
   background: var(--studio-surface);
 }

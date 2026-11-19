@@ -113,8 +113,11 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     frame = endFrame;
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
-  if (analysis) motionSceneOnScreen(scenes.map((scene) => ({ scene, beats: (scene.sourceBeatIds || []).map((id) => script.beats.find((beat) => beat.id === id)).filter((beat): beat is MotionBeat => !!beat) })), analysis);
-  // Each chapter opens with its title over the first scene.
+  if (analysis)
+    motionSceneOnScreen(
+      scenes.map((scene) => ({ scene, beats: (scene.sourceBeatIds || []).map((id) => script.beats.find((beat) => beat.id === id)).filter((beat): beat is MotionBeat => !!beat) })),
+      analysis,
+    );
   const timedScenes = analysis && state.renderer === RT_MAINTENANCE.HTML_CANVAS && analysis.chapters.length > 1 ? motionApplyChapterTitles(scenes, { beats: script.beats, chapters: analysis.chapters, places: analysis.places, fps, language: script.language }) : scenes;
   const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {

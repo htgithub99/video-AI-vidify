@@ -1,9 +1,6 @@
 import type { MotionStoryAnalysis } from "../types/motionVideo.js";
-// The year a story takes place, read from the analysis's story period ("Hungary, April 1241", "thế kỷ 13", "5th century
-// BC", "modern Saigon"), so the figure kit builds things as they were then. undefined when the period names no time.
 const ROMAN: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100 };
 const roman = (text: string): number => [...text.toUpperCase()].reduce((sum, ch, i, all) => sum + ((ROMAN[all[i + 1]] || 0) > ROMAN[ch] ? -ROMAN[ch] : ROMAN[ch]), 0);
-// Whole words in any script (\b only knows ASCII letters, so "trung cổ" would never end a word).
 const word = (body: string): RegExp => new RegExp(`(?<![\\p{L}\\d])(?:${body})(?![\\p{L}\\d])`, "iu");
 const BEFORE_YEAR = word("(\\d{1,4})\\s*(?:b\\.?\\s?c\\.?e?\\.?|tcn|trước công nguyên)");
 const BEFORE = word("b\\.?\\s?c\\.?e?\\.?|tcn|trước công nguyên");

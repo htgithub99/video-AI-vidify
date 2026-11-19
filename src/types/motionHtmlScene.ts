@@ -12,21 +12,15 @@ export interface MotionHtmlArtifact {
   seed: string;
   duration: number;
   attempts: number;
-  // The scene spec version the scene was built from (scenes without one were drawn the old way and are built again).
   spec?: number;
-  // Things the scene asked for that the library does not have (left out): what the library still lacks.
   gaps?: import("../lib/motionObjectCatalog.js").MotionCatalogGap[];
-  // The engine version the thumbnail was captured with (a newer engine captures it again, no AI request).
   engine?: number;
-  // The drawing style the thumbnail was captured with (motionFigureRenderKey).
   render?: string;
   cast?: string;
   continuity?: string;
   status: "received" | "ready" | "rendered" | "retry_wait" | "waiting_external";
   error?: string;
-  // What the scene lacks (shown on it).
   warnings?: string[];
-  // What code put right on its own (the tooltip and the log).
   notes?: string[];
   fallback?: boolean;
 }
@@ -65,7 +59,6 @@ export interface MotionHtmlFrameInput {
   width: number;
   height: number;
   mode: "preview" | "export";
-  // Export only: how the frame is encoded (JPEG for draft/standard exports, PNG otherwise) and the subtitle laid over it.
   format?: "jpeg" | "png";
   quality?: number;
   subtitle?: { text: string; font: string };
@@ -77,11 +70,8 @@ export interface MotionHtmlFrameInput {
   places?: string[];
   header?: boolean;
   cues?: number[];
-  /** Black over the whole frame, 0..1: the cut-out style dips to black into and out of a jump in time. */
   dip?: number;
-  // Seconds into the scene for its place and time title (a still frame shows the title as the scene opens).
   headerTime?: number;
-  /** Chapter title drawn over this frame by the scene host (lower third); `t` is seconds since it appeared. */
   titleCard?: import("./motionVisual.js").MotionTitleCard & { t: number };
 }
 export interface MotionAuthoringSettings {
@@ -93,7 +83,6 @@ export interface MotionAuthoringSettings {
   picturePacing: string;
   targetPictureSeconds: number;
   language: string;
-  // The figure proportion the plan describes (the drawing style and the layout are applied when the video is shown).
   visualProportion?: string;
   requestedParts: number;
 }
@@ -103,12 +92,10 @@ export interface MotionHtmlMark {
   y: number;
   w: number;
   h: number;
-  // Recorded by the figure table (FIG.<fn> with a mark), with the figure function and kind.
   src?: "fig";
   fn?: string;
   kind?: string;
   look?: Record<string, string | number | boolean>;
-  // A large building, vehicle, tree, bridge or wall (unmarked ones are recorded as ~fn:kind) for the frame-cut check.
   large?: boolean;
 }
 export interface MotionHtmlChange {

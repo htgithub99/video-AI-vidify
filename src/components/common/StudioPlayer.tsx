@@ -3,15 +3,12 @@ import _ from "lodash";
 import { ChevronRight, Eye, Loader2, Maximize, Minimize, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX, type LucideIcon } from "lucide-react";
 import { STUDIO_PLAYER as P, STUDIO_PLAYER_HOVER_WORDS, STUDIO_PLAYER_PLAY_EVENT, STUDIO_PLAYER_STEP_SECONDS, STUDIO_PLAYER_TEXT } from "../../constants/studioTheme.js";
 import { cn } from "../../lib/utils.js";
-
 const playerText = () => (document.documentElement.lang === "en" ? STUDIO_PLAYER_TEXT.en : STUDIO_PLAYER_TEXT.vi);
 const stopClick = (event: MouseEvent) => event.stopPropagation();
-/** Hover label: at most a few words, then "…". */
 const shortTitle = (title: string): string => {
   const words = title.trim().split(/\s+/);
   return words.length > STUDIO_PLAYER_HOVER_WORDS ? `${words.slice(0, STUDIO_PLAYER_HOVER_WORDS).join(" ")}…` : title.trim();
 };
-/** YouTube-style clock: 3:09, 11:07, 1:02:05. */
 const clock = (seconds: number): string => {
   const total = Math.max(0, Math.floor(seconds || 0));
   const h = Math.floor(total / 3600);
@@ -19,15 +16,11 @@ const clock = (seconds: number): string => {
   const ss = String(total % 60).padStart(2, "0");
   return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 };
-
 export interface StudioPlayerChapter {
-  /** Start in seconds. */
   start: number;
   title?: string;
 }
-
 interface StudioPlayerFrameProps {
-  /** CSS aspect-ratio such as "16/9"; leave out when the className already sizes the frame. */
   aspect?: string;
   className?: string;
   playing: boolean;
@@ -37,26 +30,19 @@ interface StudioPlayerFrameProps {
   onSeek: (seconds: number) => void;
   disabled?: boolean;
   loading?: boolean;
-  /** The icon spun while loading (a screen may use its own, e.g. the motion screen's sparkle). */
   loadingIcon?: LucideIcon;
   badge?: ReactNode;
   badgeIcon?: LucideIcon;
-  /** Scenes / chapters: the seek bar is split at each start, Back / Next jump between them, the pill shows the current title. */
   chapters?: StudioPlayerChapter[];
-  /** Back / Next move to another video (lists); without them they jump between chapters or by a few seconds. */
   onPrev?: () => void;
   onNext?: () => void;
-  /** Volume 0–1; the volume control shows only when onVolume is given. */
   volume?: number;
   muted?: boolean;
   onVolume?: (volume: number) => void;
   onMute?: () => void;
-  /** Picture at a time, for the preview shown when hovering the seek bar. */
   thumbnail?: (seconds: number) => Promise<CanvasImageSource | null>;
   children: ReactNode;
 }
-
-/** The one video player used by every screen, with YouTube-style controls. */
 export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, className, playing, time, duration, onToggle, onSeek, disabled, loading, loadingIcon: LoadingIcon = Loader2, badge, badgeIcon: BadgeIcon = Eye, chapters, onPrev, onNext, volume = 1, muted, onVolume, onMute, thumbnail, children }) => {
   const frame = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -99,7 +85,6 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
   };
   const back = () => {
     if (onPrev) return onPrev();
-    // Within the first second of a chapter, Back goes to the chapter before it.
     const previous = [...stops].reverse().find((m) => m < time - 1);
     onSeek(stops.length ? (previous ?? 0) : Math.max(0, time - STUDIO_PLAYER_STEP_SECONDS));
   };
@@ -116,7 +101,6 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
     if (document.fullscreenElement) void document.exitFullscreen();
     else void frame.current?.requestFullscreen().catch(() => undefined);
   };
-  // Hover preview: draw the picture at the hovered time; only the latest request is shown.
   const hoverBucket = hover === null ? null : Math.round(hover * 4) / 4;
   useEffect(() => {
     if (hoverBucket === null || !thumbnail) return;
@@ -137,11 +121,9 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
   }, [hover]);
   const percent = duration > 0 ? Math.min(100, (time / duration) * 100) : 0;
   const style: CSSProperties | undefined = aspect ? { aspectRatio: aspect } : undefined;
-  // Like YouTube: the controls show only while the pointer is over the video (or while dragging the seek bar).
   const shown = dragging ? "opacity-100" : "opacity-0 group-hover/video:opacity-100 focus-within:opacity-100";
   const hoverTitle = hover !== null ? _.findLast(parts, (part) => hover >= part.start)?.title : undefined;
   const silent = muted || volume === 0;
-  // Hover preview size follows the video's shape (YouTube-like, ~200 px wide).
   const frameRatio = frame.current && frame.current.clientHeight ? frame.current.clientWidth / frame.current.clientHeight : 16 / 9;
   const thumbWidth = frameRatio >= 1 ? 200 : Math.round(120 * frameRatio * 1.6);
   const thumbHeight = Math.round(thumbWidth / frameRatio);
@@ -167,14 +149,7 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
         </div>
       )}
       <div className={cn(P.BAR, shown)} onClick={stopClick}>
-        <div
-          ref={track}
-          className={cn(P.TRACK, noMedia && P.TRACK_DISABLED)}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={() => setDragging(false)}
-          onPointerCancel={() => setDragging(false)}
-          onPointerLeave={() => setHover(null)}>
+        <div ref={track} className={cn(P.TRACK, noMedia && P.TRACK_DISABLED)} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setDragging(false)} onPointerCancel={() => setDragging(false)} onPointerLeave={() => setHover(null)}>
           <div className={P.SEGMENTS}>
             {parts.map((part) => {
               const span = Math.max(part.end - part.start, 0.001);
@@ -238,8 +213,6 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
     </div>
   );
 };
-
-/** Pauses this player whenever another player in the app starts. */
 export const useSinglePlayback = (pause: () => void): (() => void) => {
   const id = useId();
   const pauseRef = useRef(pause);
@@ -253,7 +226,6 @@ export const useSinglePlayback = (pause: () => void): (() => void) => {
   }, [id]);
   return () => window.dispatchEvent(new CustomEvent(STUDIO_PLAYER_PLAY_EVENT, { detail: id }));
 };
-
 interface StudioVideoPlayerProps {
   src: string;
   poster?: string;
@@ -270,8 +242,6 @@ interface StudioVideoPlayerProps {
   onNext?: () => void;
   onError?: () => void;
 }
-
-/** A video file in the shared player. */
 export const StudioVideoPlayer: FC<StudioVideoPlayerProps> = ({ src, poster, aspect, className, fit = "contain", badge, badgeIcon, loadingIcon, autoPlay = false, loop = false, chapters, onPrev, onNext, onError }) => {
   const video = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -281,7 +251,6 @@ export const StudioVideoPlayer: FC<StudioVideoPlayerProps> = ({ src, poster, asp
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const announce = useSinglePlayback(() => video.current?.pause());
-  // Hover preview: a hidden copy of the video seeks to the hovered time (one request at a time).
   const thumbVideo = useRef<HTMLVideoElement | null>(null);
   const thumbChain = useRef<Promise<unknown>>(Promise.resolve());
   useEffect(

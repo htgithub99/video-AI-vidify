@@ -118,7 +118,8 @@ check("policy report: narration share, silence, reused source, echoed script and
   const job: ReupJob = { ...base, outputs: [{ id: "o1", file: "", url: "", duration: 100, width: 1920, height: 1080, narrated: 90, silentMax: 6, padding: 5 }], script: { outputs: [{ id: "o1", kind: "long", title: [], sections: [{ id: "a", role: "body", text: words, shots: [] }] }] }, package: { options: [{ title: "Log Cabin Build", description: "", hashtags: [], tags: [], seoScore: 70 }], thumbs: [], frames: [], pinned: "", aiDisclosure: false } };
   const clean = reupReport(job, []);
   assert.equal(clean.narrated, 0.9);
-  assert.deepEqual(clean.notes.map((n) => n.code), ["narration", "noAngle"]);
+  assert.deepEqual(clean.notes.map((n) => n.code), ["narration"], "type A comes with its own channel angle");
+  assert.deepEqual(reupReport({ ...job, settings: { ...job.settings, angle: " " } }, []).notes.map((n) => n.code), ["narration", "noAngle"]);
   const past = { ...job, id: "old", createdAt: 1, outputs: [] };
   const echoed = reupReport({ ...job, settings: { ...job.settings, angle: "x" }, rights: "licensed", outputs: [{ ...job.outputs[0], narrated: 30, silentMax: 20 }] }, [past]);
   assert.equal(echoed.level, "risk");

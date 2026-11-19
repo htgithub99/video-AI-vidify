@@ -1,12 +1,10 @@
 import { MOTION_OBJECT_SIZE } from "../../motionObjectSize.js";
-// Vehicles for every skin, side view, drawn flat with skin ink: carts, siege engines, guns,
-// WW1/WW2/modern armour, jeeps, trucks, cars, boats, ferries, sailing ships and propeller planes (29 kinds).
-// Footprints follow the core kit in units of R (ground y = 0, front toward +x). Other kinds and front/back views return null (the scene's own drawing shows them).
-// Supports crew (person or list, seated with pose ride), moving (wheel/track spin), firing (muzzle flash + smoke) and damaged (smoke).
-// Where each kind is, from the library's size table (one source with the scene checks): flying things draw no ground
-// shadow and bob in the air unless parked; water things float.
-const AIR = Object.entries(MOTION_OBJECT_SIZE).filter(([, z]) => z.place === "air").map(([id]) => id);
-const WATER = Object.entries(MOTION_OBJECT_SIZE).filter(([, z]) => z.place === "water").map(([id]) => id);
+const AIR = Object.entries(MOTION_OBJECT_SIZE)
+  .filter(([, z]) => z.place === "air")
+  .map(([id]) => id);
+const WATER = Object.entries(MOTION_OBJECT_SIZE)
+  .filter(([, z]) => z.place === "water")
+  .map(([id]) => id);
 export const SKIN_PART_VEHICLE = `(c, o0, K) => {
   const o = Object.assign({}, o0 || {});
   const kind = o.kind;

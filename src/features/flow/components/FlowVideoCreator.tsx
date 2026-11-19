@@ -6,7 +6,47 @@ import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
 import { RUNTIME_TEXT as RT_FLOW } from "../constants/runtimeText.js";
 import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea } from "../../../components/ui/Studio.js";
 import _ from "lodash";
-import { SOURCE_TEMPLATE_00_00, SOURCE_TEMPLATE_FLOWCLIP, SOURCE_TEMPLATE_SYMBOL, SOURCE_TEMPLATE_SYMBOL_5, SOURCE_TEMPLATE_SYMBOL_6, SOURCE_TEXT_0, SOURCE_TEXT_00_00_00, SOURCE_TEXT_01, SOURCE_TEXT_02, SOURCE_TEXT_03, SOURCE_TEXT_AI_FLOW, SOURCE_TEXT_AI_VIET_PROMPT_TU_YEU_CAU, SOURCE_TEXT_AI_WRITES_PROMPTS_FROM_YOUR_CONCEPT, SOURCE_TEXT_APPLICATION_JSON, SOURCE_TEXT_BOLERO_TRU_TINH, SOURCE_TEXT_BUTTON, SOURCE_TEXT_CINEMATIC, SOURCE_TEXT_CONTAINER, SOURCE_TEXT_COPIED, SOURCE_TEXT_CYBERPUNK_NEON, SOURCE_TEXT_DA_SAO_CHEP, SOURCE_TEXT_FLOW_VIDEO_CLIPS, SOURCE_TEXT_FLOW_VIDEO_CREATOR_STATE_V1, SOURCE_TEXT_LO_FI_CHILLOUT, SOURCE_TEXT_METADATA, SOURCE_TEXT_POST, SOURCE_TEXT_PUT, SOURCE_TEXT_SECONDARY, SOURCE_TEXT_SYMBOL_2, SOURCE_TEXT_SYMBOL_3, SOURCE_TEXT_TAO_10_VIDEO_DA_DANG_THEO, SOURCE_TEXT_TAO_10_VIDEO_FLYCAM_GOC_RONG, SOURCE_TEXT_TAO_10_VIDEO_KHONG_GIAN_QUAN, SOURCE_TEXT_TAO_10_VIDEO_THANH_PHO_TUONG, SOURCE_TEXT_THIEN_NHIEN_4K, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_VIDEO_CHUA_DAT_TEN, SOURCE_TEXT_WAITING, SOURCE_TEXT_XL } from "../../../constants/sourceText";
+import {
+  SOURCE_TEMPLATE_00_00,
+  SOURCE_TEMPLATE_FLOWCLIP,
+  SOURCE_TEMPLATE_SYMBOL,
+  SOURCE_TEMPLATE_SYMBOL_5,
+  SOURCE_TEMPLATE_SYMBOL_6,
+  SOURCE_TEXT_0,
+  SOURCE_TEXT_00_00_00,
+  SOURCE_TEXT_01,
+  SOURCE_TEXT_02,
+  SOURCE_TEXT_03,
+  SOURCE_TEXT_AI_FLOW,
+  SOURCE_TEXT_AI_VIET_PROMPT_TU_YEU_CAU,
+  SOURCE_TEXT_AI_WRITES_PROMPTS_FROM_YOUR_CONCEPT,
+  SOURCE_TEXT_APPLICATION_JSON,
+  SOURCE_TEXT_BOLERO_TRU_TINH,
+  SOURCE_TEXT_BUTTON,
+  SOURCE_TEXT_CINEMATIC,
+  SOURCE_TEXT_CONTAINER,
+  SOURCE_TEXT_COPIED,
+  SOURCE_TEXT_CYBERPUNK_NEON,
+  SOURCE_TEXT_DA_SAO_CHEP,
+  SOURCE_TEXT_FLOW_VIDEO_CLIPS,
+  SOURCE_TEXT_FLOW_VIDEO_CREATOR_STATE_V1,
+  SOURCE_TEXT_LO_FI_CHILLOUT,
+  SOURCE_TEXT_METADATA,
+  SOURCE_TEXT_POST,
+  SOURCE_TEXT_PUT,
+  SOURCE_TEXT_SECONDARY,
+  SOURCE_TEXT_SYMBOL_2,
+  SOURCE_TEXT_SYMBOL_3,
+  SOURCE_TEXT_TAO_10_VIDEO_DA_DANG_THEO,
+  SOURCE_TEXT_TAO_10_VIDEO_FLYCAM_GOC_RONG,
+  SOURCE_TEXT_TAO_10_VIDEO_KHONG_GIAN_QUAN,
+  SOURCE_TEXT_TAO_10_VIDEO_THANH_PHO_TUONG,
+  SOURCE_TEXT_THIEN_NHIEN_4K,
+  SOURCE_TEXT_UNSTYLED,
+  SOURCE_TEXT_VIDEO_CHUA_DAT_TEN,
+  SOURCE_TEXT_WAITING,
+  SOURCE_TEXT_XL,
+} from "../../../constants/sourceText";
 import { readBlobAsDataUrl } from "../../../lib/fileUtils";
 import { ConfirmDeleteModal } from "../../../components/common/ConfirmDeleteModal";
 import { StudioResults } from "../../../components/common/StudioResults.js";
@@ -92,7 +132,6 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
   const { copiedKey: copiedAllKey, copyText: copyAll } = useClipboardFeedback({ language: currentLang });
   const isCopiedAll = copiedAllKey !== null;
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
-  // The preview modal pages through every finished clip with Back / Next.
   const previewUrls = clips.flatMap((clip) => (clip.url ? [clip.url] : []));
   const previewIndex = previewVideoUrl ? previewUrls.indexOf(previewVideoUrl) : -1;
   const previewPosition = previewIndex >= 0 ? `${previewIndex + 1}/${previewUrls.length}` : undefined;
@@ -365,7 +404,6 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
     toast.success(flowTexts.PROMPT_DELETED);
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowDelete);
   };
-  /** Rendered-videos list: removes the clips (and their prompts) from this screen; files saved in the chosen folder stay. */
   const removeClips = async (items: Clip[]): Promise<void> => {
     const gone = new Set(_.map(items, "id"));
     setClips((prev) => _.reject(prev, (clip) => gone.has(clip.id)));
@@ -442,10 +480,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                         type={SOURCE_TEXT_BUTTON}
                         disabled={!!busy}
                         onClick={() => setRequest(sample.text)}
-                        className={cn(RT_FLOW.RELATIVE_H_8_PX_3_ROUNDED_XL_BORDER_FONT_BOLD, {
-                          "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected,
-                          "bg-slate-955/90 border-slate-800 !text-slate-300 hover:!text-white hover:border-purple-500/40 hover:bg-slate-900/90": !isSelected,
-                        })}>
+                        className={cn(RT_FLOW.RELATIVE_H_8_PX_3_ROUNDED_XL_BORDER_FONT_BOLD, { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 !text-slate-300 hover:!text-white hover:border-purple-500/40 hover:bg-slate-900/90": !isSelected })}>
                         <span>{sample.title}</span>
                       </Button>
                     );
@@ -611,7 +646,13 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                 const isGenerating = clip.status === FLOW_CLIP_STATUSES.GENERATING;
                 const isFailed = clip.status === FLOW_CLIP_STATUSES.FAILED;
                 return (
-                  <div className={cn(RT_FLOW.GROUP_ROUNDED_2XL_BORDER_BG_SLATE_955_OVERFLOW_HIDDEN_TRANSITION, slots.selected && STUDIO_RESULTS.SELECTED, { "border-purple-500/30 hover:border-purple-500/60": isDone, "border-rose-500/30": !isDone && isFailed, "border-purple-500/60 ring-1 ring-purple-500/20 animate-pulse": !isDone && !isFailed && isGenerating, "border-slate-800": !isDone && !isFailed && !isGenerating })}>
+                  <div
+                    className={cn(RT_FLOW.GROUP_ROUNDED_2XL_BORDER_BG_SLATE_955_OVERFLOW_HIDDEN_TRANSITION, slots.selected && STUDIO_RESULTS.SELECTED, {
+                      "border-purple-500/30 hover:border-purple-500/60": isDone,
+                      "border-rose-500/30": !isDone && isFailed,
+                      "border-purple-500/60 ring-1 ring-purple-500/20 animate-pulse": !isDone && !isFailed && isGenerating,
+                      "border-slate-800": !isDone && !isFailed && !isGenerating,
+                    })}>
                     <div className={cn(RT_FLOW.RELATIVE_ASPECT_VIDEO_BG_BLACK_FLEX_ITEMS_CENTER_JUSTIFY_CENTER)}>
                       {clip.url ? (
                         <div onClick={() => setPreviewVideoUrl(clip.url || null)} className={cn(RT_FLOW.RELATIVE_W_FULL_H_FULL_CURSOR_POINTER_GROUP_VIDEO_FLEX)} title={flowTexts.VIEW_VIDEO}>
@@ -682,16 +723,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
       {previewVideoUrl && (
         <Modal isOpen={Boolean(previewVideoUrl)} onClose={() => setPreviewVideoUrl(null)} title={flowTexts.PREVIEW} maxWidth={SOURCE_TEXT_XL}>
           <div className={cn(RT_FLOW.SPACE_Y_4_P_2)}>
-            <StudioVideoPlayer
-              key={previewVideoUrl}
-              src={previewVideoUrl}
-              aspect={productionConfig.aspectRatio.replace(":", "/")}
-              className="w-full max-h-[70vh]"
-              autoPlay
-              badge={previewPosition}
-              onPrev={previewUrls.length > 1 ? () => stepPreview(-1) : undefined}
-              onNext={previewUrls.length > 1 ? () => stepPreview(1) : undefined}
-            />
+            <StudioVideoPlayer key={previewVideoUrl} src={previewVideoUrl} aspect={productionConfig.aspectRatio.replace(":", "/")} className="w-full max-h-[70vh]" autoPlay badge={previewPosition} onPrev={previewUrls.length > 1 ? () => stepPreview(-1) : undefined} onNext={previewUrls.length > 1 ? () => stepPreview(1) : undefined} />
             <div className={cn(RT_FLOW.FLEX_ITEMS_CENTER_JUSTIFY_END)}>
               <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_SECONDARY} onClick={() => setPreviewVideoUrl(null)}>
                 {flowTexts.CLOSE}
@@ -700,15 +732,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
           </div>
         </Modal>
       )}
-      <ConfirmDeleteModal
-        isOpen={Boolean(clipToDelete)}
-        onClose={() => setClipToDelete(null)}
-        onConfirm={confirmDeleteClip}
-        title={flowTexts.CONFIRM_DELETE}
-        message={flowTexts.CONFIRM_DELETE_BODY}
-        warning={flowTexts.IRREVERSIBLE}
-        cancelLabel={flowTexts.CANCEL}
-        confirmLabel={flowTexts.DELETE}>
+      <ConfirmDeleteModal isOpen={Boolean(clipToDelete)} onClose={() => setClipToDelete(null)} onConfirm={confirmDeleteClip} title={flowTexts.CONFIRM_DELETE} message={flowTexts.CONFIRM_DELETE_BODY} warning={flowTexts.IRREVERSIBLE} cancelLabel={flowTexts.CANCEL} confirmLabel={flowTexts.DELETE}>
         {clipToDelete && (
           <div className={cn(RT_FLOW.P_3_ROUNDED_XL_BG_SLATE_955_BORDER_BORDER_SLATE)}>
             {SOURCE_TEXT_SYMBOL_3}
@@ -717,16 +741,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
           </div>
         )}
       </ConfirmDeleteModal>
-      <ConfirmDeleteModal
-        isOpen={showClearAllModal}
-        onClose={() => setShowClearAllModal(false)}
-        onConfirm={confirmClearAllPrompts}
-        title={flowTexts.CLEAR_ALL}
-        message={flowTexts.CLEAR_ALL_CONFIRM(clips.length)}
-        warning={flowTexts.IRREVERSIBLE}
-        cancelLabel={flowTexts.CANCEL}
-        confirmLabel={flowTexts.CLEAR_PROMPTS}
-      />
+      <ConfirmDeleteModal isOpen={showClearAllModal} onClose={() => setShowClearAllModal(false)} onConfirm={confirmClearAllPrompts} title={flowTexts.CLEAR_ALL} message={flowTexts.CLEAR_ALL_CONFIRM(clips.length)} warning={flowTexts.IRREVERSIBLE} cancelLabel={flowTexts.CANCEL} confirmLabel={flowTexts.CLEAR_PROMPTS} />
     </StudioPage>
   );
 }

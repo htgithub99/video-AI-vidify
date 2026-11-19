@@ -6,9 +6,49 @@ import { STUDIO_RESULTS } from "../../../constants/studioResults.js";
 import { openIndexedDatabase } from "../../../lib/indexedDatabase.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SHORTS } from "../constants/runtimeText.js";
-import { StudioHeader, StudioPage, StudioInput, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard } from "../../../components/ui/Studio.js";
+import { StudioHeader, StudioPage, StudioInput, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioEmptyState } from "../../../components/ui/Studio.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
-import { SOURCE_TEMPLATE_0, SOURCE_TEMPLATE_CLIP, SOURCE_TEMPLATE_PATH, SOURCE_TEMPLATE_SHORT, SOURCE_TEMPLATE_SHORTS_EXPORT, SOURCE_TEMPLATE_SYMBOL_24, SOURCE_TEMPLATE_SYMBOL_7, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEXT_0, SOURCE_TEXT_15_30S, SOURCE_TEXT_16_9, SOURCE_TEXT_1_1, SOURCE_TEXT_30_60S, SOURCE_TEXT_60_90S, SOURCE_TEXT_9_16, SOURCE_TEXT_ABORTERROR, SOURCE_TEXT_APPLICATION_JSON, SOURCE_TEXT_BUTTON, SOURCE_TEXT_COMPLETED, SOURCE_TEXT_EN, SOURCE_TEXT_END, SOURCE_TEXT_ERROR, SOURCE_TEXT_FILE, SOURCE_TEXT_FPS, SOURCE_TEXT_ID, SOURCE_TEXT_IDLE, SOURCE_TEXT_POST, SOURCE_TEXT_READONLY, SOURCE_TEXT_READWRITE, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_SYMBOL_26, SOURCE_TEXT_SYMBOL_27, SOURCE_TEXT_SYMBOL_28, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_VI, SOURCE_TEXT_VIDEO, SOURCE_TEXT_X } from "../../../constants/sourceText";
+import {
+  SOURCE_TEMPLATE_0,
+  SOURCE_TEMPLATE_CLIP,
+  SOURCE_TEMPLATE_PATH,
+  SOURCE_TEMPLATE_SHORT,
+  SOURCE_TEMPLATE_SHORTS_EXPORT,
+  SOURCE_TEMPLATE_SYMBOL_24,
+  SOURCE_TEMPLATE_SYMBOL_7,
+  SOURCE_TEMPLATE_SYMBOL_8,
+  SOURCE_TEXT_0,
+  SOURCE_TEXT_15_30S,
+  SOURCE_TEXT_16_9,
+  SOURCE_TEXT_1_1,
+  SOURCE_TEXT_30_60S,
+  SOURCE_TEXT_60_90S,
+  SOURCE_TEXT_9_16,
+  SOURCE_TEXT_ABORTERROR,
+  SOURCE_TEXT_APPLICATION_JSON,
+  SOURCE_TEXT_BUTTON,
+  SOURCE_TEXT_COMPLETED,
+  SOURCE_TEXT_EN,
+  SOURCE_TEXT_END,
+  SOURCE_TEXT_ERROR,
+  SOURCE_TEXT_FILE,
+  SOURCE_TEXT_FPS,
+  SOURCE_TEXT_ID,
+  SOURCE_TEXT_IDLE,
+  SOURCE_TEXT_POST,
+  SOURCE_TEXT_READONLY,
+  SOURCE_TEXT_READWRITE,
+  SOURCE_TEXT_SYMBOL_25,
+  SOURCE_TEXT_SYMBOL_26,
+  SOURCE_TEXT_SYMBOL_27,
+  SOURCE_TEXT_SYMBOL_28,
+  SOURCE_TEXT_SYMBOL_8,
+  SOURCE_TEXT_SYMBOL_9,
+  SOURCE_TEXT_UNSTYLED,
+  SOURCE_TEXT_VI,
+  SOURCE_TEXT_VIDEO,
+  SOURCE_TEXT_X,
+} from "../../../constants/sourceText";
 import { ChangeEvent, DragEvent, FC, useEffect, useRef, useState } from "react";
 import _ from "lodash";
 import { Scissors, Sparkles, Flame, FileVideo, Clock, Monitor, HardDrive, Upload, SlidersHorizontal, Smartphone, Tv, Square, Layers, Crop, Crosshair, FolderDown, Film } from "lucide-react";
@@ -100,7 +140,6 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
     jsonUtils.setItem(SHORTS_CONSTANTS.SETTINGS_STORAGE_KEY, { aspectRatio, reframeMode, clipCount, durationMode, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless });
   }, [settingsLoaded, aspectRatio, reframeMode, clipCount, durationMode, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless]);
   useEffect(() => {
-    // Saved once the stored list is read, so deleting the last clip is kept too.
     if (!clipsLoaded) return;
     openShortsDatabase()
       .then((db) => {
@@ -284,14 +323,16 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       setIsExportingZip(false);
     }
   };
-  /** Delete clips (video + cover) from disk and the list; ids whose video could not go come back as failed. */
   const handleDeleteClips = async (clips: HighlightClipItem[]): Promise<{ freedBytes?: number; failed?: string[] }> => {
     const name = (url?: string) => (url ? _.last(_.split(_.split(url, "?")[0], "/")) || "" : "");
     const response = await fetch(API_ROUTES.SHORTS_DELETE_CLIPS, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: stringifyJson({ fileNames: _.compact(_.flatMap(clips, (clip) => [name(clip.videoUrl), name(clip.thumbnailUrl)])) }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data?.success === false) throw new Error(_.toString(data?.error) || response.statusText);
     const failedNames = new Set<string>(data.failed || []);
-    const failed = _.map(_.filter(clips, (clip) => failedNames.has(name(clip.videoUrl))), "id");
+    const failed = _.map(
+      _.filter(clips, (clip) => failedNames.has(name(clip.videoUrl))),
+      "id",
+    );
     const gone = new Set(_.difference(_.map(clips, "id"), failed));
     setHighlightClips((prev) => _.reject(prev, (clip) => gone.has(clip.id)));
     return { freedBytes: data.freedBytes, failed };
@@ -656,15 +697,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
               </div>
             </div>
           ) : !hasClips ? (
-            <div className={cn(RT_SHARED.PY_14_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT)}>
-              <div className={cn(RT_SHORTS.W_14_H_14_ROUNDED_2XL_BG_SLATE_800_80)}>
-                <Scissors className={cn(RT_SHARED.W_7_H_7_TEXT_PURPLE_400_80)} />
-              </div>
-              <div className={cn(RT_SHARED.SPACE_Y_1_MAX_W_SM)}>
-                <h3 className={cn(RT_SHARED.TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_200)}>{text.RESULTS_EMPTY_TITLE}</h3>
-                <p className={cn(RT_SHARED.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED)}>{text.RESULTS_EMPTY_DESC}</p>
-              </div>
-            </div>
+            <StudioEmptyState icon={Scissors} title={text.RESULTS_EMPTY_TITLE} description={text.RESULTS_EMPTY_DESC} />
           ) : (
             <StudioResults
               items={highlightClips}

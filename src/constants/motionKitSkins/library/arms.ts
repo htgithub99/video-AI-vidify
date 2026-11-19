@@ -1,7 +1,4 @@
-// Hand weapons of every age, drawn lying (handle or stock at -x, the working end at +x) so a standing one is turned up
-// in its box: blades from stone to sabre, pole arms, bows, and guns from the hand cannon to the assault rifle.
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "stoneAxe", to: -2000, names: ["flintAxe", "handAxe"] },
   { id: "sling" },
@@ -39,10 +36,8 @@ const items = [
   { id: "mortarTube", from: 1915, names: ["fieldMortar", "trenchMortar"] },
   { id: "flamethrower", from: 1915 },
 ];
-
 const blade = `const sword = (L, curve, guard, col, hilt) => { beam([[-0.95, -0.12], [-0.3, -0.12]], 0.13, hilt || leather); ring(-1.0, -0.12, 0.09, gold); if (guard === "cross") beam([[-0.3, -0.42], [-0.3, 0.18]], 0.08, gold); if (guard === "disc") fl(E(-0.3, -0.12, 0.08, 0.2), gold); if (guard === "hand") ln([[-0.3, -0.26], [-0.6, -0.34], [-0.9, -0.22]], 1.2, gold); const p = S([[-0.28, -0.2], [L * 0.5, -0.22 - curve * 0.5], [L, -0.12 - curve], [L * 0.55, -0.02 - curve * 0.35], [-0.28, -0.04]]); fl(p, col || steel); ln([[-0.2, -0.13], [L * 0.8, -0.13 - curve * 0.8]], 0.3, K.shade(col || steel, 0.75)); };
   const gun = (L, stock, mag, col) => { fl(S([[-1.7, -0.32], [-1.15, -0.42], [-0.3, -0.32], [0.2, -0.28], [0.2, -0.1], [-0.3, -0.08], [-1.15, -0.02], [-1.7, 0]]), stock || dark); beam([[0.15, -0.24], [L, -0.24]], 0.08, col || iron); ln([[-0.45, -0.1], [-0.35, 0.06], [-0.15, 0.06]], 0.5); if (mag) fl(P([[-0.05, -0.12], [0.2, -0.12], mag === "curve" ? [0.35, 0.35] : [0.2, 0.3], mag === "curve" ? [0.12, 0.38] : [-0.05, 0.3]]), iron); };`;
-
 const body = `
     case "stoneAxe": beam([[-1.2, -0.1], [0.7, -0.18]], 0.12); fl(S([[0.45, -0.45], [0.95, -0.55], [1.1, -0.2], [0.9, 0.12], [0.5, 0.05]]), stone); ln([[0.55, -0.35], [0.6, 0.0]], 0.8, rope); break;
     case "sling": ln([[-1.0, -0.1], [0.2, -0.15]], 0.8, rope); fl(E(0.35, -0.15, 0.18, 0.12), leather); ln([[0.5, -0.15], [1.2, -0.1]], 0.8, rope); ring(0.35, -0.22, 0.07, stone); break;
@@ -79,5 +74,4 @@ const body = `
     case "rocketLauncher": fl(rect(-1.6, -0.36, 1.4, -0.06), olive); fl(P([[1.4, -0.42], [1.7, -0.5], [1.7, 0.02], [1.4, -0.0]]), olive); fl(rect(-0.2, -0.06, 0.0, 0.3), dark); fl(rect(0.3, -0.06, 0.45, 0.22), dark); ring(-1.6, -0.21, 0.13, black); break;
     case "mortarTube": beam([[-0.5, 0.0], [0.9, -1.5]], 0.22, olive); ring(0.92, -1.53, 0.09, black); beam([[0.2, -0.75], [0.7, 0.0]], 0.05, iron); beam([[0.2, -0.75], [-0.05, 0.0]], 0.05, iron); fl(E(-0.55, 0.0, 0.45, 0.08), iron); break;
     case "flamethrower": fl(rect(-1.5, -0.95, -1.15, 0.0), olive); fl(rect(-1.1, -0.95, -0.75, 0.0), olive); ln([[-0.95, -0.5], [-0.6, -0.35], [0.0, -0.3]], 1.4, black); beam([[-0.1, -0.3], [1.3, -0.3]], 0.1, iron); fl(rect(0.0, -0.3, 0.12, 0.0), dark); if (o.firing) flame(1.8, -0.2, 0.6); break;`;
-
 export const MOTION_LIBRARY_ARMS: MotionLibraryPart = { part: "lib_arms", fn: "prop", items, js: motionLibraryPart(items, body, 0, blade) };

@@ -41,8 +41,6 @@ export const motionHtmlPlanSourceMatches = (stored: string | undefined, source: 
   if (!stored) return false;
   if (stored === source) return true;
   try {
-    // Plans from before: one carried the graphics text, and plans before one scene set served every drawing style and
-    // layout carried the style and layout in their settings.
     const legacy = parseJson<Record<string, unknown>>(stored);
     if (!legacy || typeof legacy !== typeof {}) return false;
     delete legacy[MOTION_HTML.LEGACY_PLAN_FIELD];
@@ -64,14 +62,12 @@ export const motionHtmlFrame = (spec: MotionRemotionSpec, scene: MotionRemotionS
   const duration = (scene.endFrame - scene.startFrame) / spec.fps;
   const span = Math.max(1, scene.endFrame - scene.startFrame - 1);
   const local = enabled ? Math.max(0, frame - scene.startFrame) : Math.round(span * MOTION_HTML_QUALITY.KEY_PROGRESS);
-  // The chapter title runs on the real clock, so it animates even when the scene itself holds still.
   const titleTime = (frame - scene.startFrame) / spec.fps;
   const titleCard = scene.titleCard && titleTime >= 0 && titleTime < scene.titleCard.seconds ? { ...scene.titleCard, t: titleTime } : undefined;
-  // The cut-out style dips to black into a scene that jumps in time (its time card shows a new date) and out of the scene
-  // before one; every other cut is straight.
   const dip = (() => {
     if (motionMovementOf(spec) !== "cutout") return 0;
-    const at = spec.scenes.findIndex((item) => item.id === scene.id), next = at >= 0 ? spec.scenes[at + 1] : undefined;
+    const at = spec.scenes.findIndex((item) => item.id === scene.id),
+      next = at >= 0 ? spec.scenes[at + 1] : undefined;
     const into = at > 0 && scene.timeLabel ? 1 - titleTime / MOTION_HTML_QUALITY.DIP_SECONDS : 0;
     const out = next?.timeLabel ? 1 - (duration - titleTime) / MOTION_HTML_QUALITY.DIP_SECONDS : 0;
     return Math.min(1, Math.max(0, into, out));
@@ -95,7 +91,6 @@ export const motionHtmlFrame = (spec: MotionRemotionSpec, scene: MotionRemotionS
     header: scene.places ? !!scene.timeLabel : undefined,
     cues: enabled ? scene.cues : undefined,
     ...(dip > 0 ? { dip } : {}),
-    // A still frame (motion off) shows the scene as it opens: its place and time title in full.
     ...(enabled ? {} : { headerTime: MOTION_HTML_QUALITY.TITLE_STILL_SECONDS }),
   };
 };
@@ -112,7 +107,6 @@ export const motionSceneOnScreen = (items: { scene: MotionRemotionScene; beats: 
     if (date) lastTime = date;
   }
 };
-// Finished scenes drop what was only needed while drawing them (the prompt, the raw answer, the pending submission).
 type CompactScene = { html?: { html?: string; prompt?: string; status?: string; thumbnail?: string }; htmlRequest?: { raw?: string; submission?: { pending?: unknown } }; build?: { status?: string } };
 export const motionCompactScene = (scene: CompactScene | undefined): void => {
   if (!scene?.html?.html) return;

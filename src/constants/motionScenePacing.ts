@@ -15,13 +15,7 @@ export const MOTION_SCENE_PACING = {
   LEVELS_PREVIOUS: { few: { groupSeconds: 60, groupBeats: 10, groupLines: 40, placeHold: 14 }, medium: { groupSeconds: 45, groupBeats: 8, groupLines: 32, placeHold: 0 }, many: { groupSeconds: 30, groupBeats: 6, groupLines: 24, placeHold: 0 } },
   OVER_RATIO: 1.5,
   TEXT: {
-    vi: {
-      label: "Nhịp đổi hình",
-      hint: "Bao lâu đổi hình. Thưa: một hình qua nhiều câu. Dày: đổi theo từng ý. Luôn đổi khi sang chương hoặc đổi giờ.",
-      few: "Thưa – giữ hình lâu (~14 giây/hình)",
-      medium: "Vừa (~9 giây/hình)",
-      many: "Dày – đổi hình nhanh (~6 giây/hình)",
-    },
+    vi: { label: "Nhịp đổi hình", hint: "Bao lâu đổi hình. Thưa: một hình qua nhiều câu. Dày: đổi theo từng ý. Luôn đổi khi sang chương hoặc đổi giờ.", few: "Thưa – giữ hình lâu (~14 giây/hình)", medium: "Vừa (~9 giây/hình)", many: "Dày – đổi hình nhanh (~6 giây/hình)" },
     en: {
       label: "Picture pacing",
       hint: "How long each illustration stays on screen. Sparse holds one picture across several narration beats and folds brief cutaways into it. Dense changes the picture with each idea. Every level still cuts for a new chapter, a time-of-day change or an essential clue.",

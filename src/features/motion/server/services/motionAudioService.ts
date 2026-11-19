@@ -33,18 +33,13 @@ import { hasMisassignedMotionSpeech } from "../../../../lib/motionSpeech.js";
 import type { MotionStorytellingSilent } from "../../../../constants/motionStorytelling.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
 const voiceTrackSpeedKey = (plan: MotionVoicePlan): string => hash([PACE.VERSION, C.SENTENCES.VERSION, cadenceProfile(), readVoiceSpeedSettings().target?.pauses, _.uniq(plan.roles.map((role) => role.voiceId)).map((voiceId) => [voiceId, voiceSpeedKey(voiceId), knownVoiceTempoFactor(voiceId)])]);
-// Whether the track being built reads in the flowing rhythm (every genre except horror); carried per build, not globally.
 const flowingRead = new AsyncLocalStorage<boolean>();
 const isHorror = (analysis: MotionStoryAnalysis | null): boolean => !!analysis && PACE.HORROR_RE.test([analysis.videoGenre, analysis.genre, analysis.genre2, analysis.sfxMood, analysis.musicMood].join(MR.MOTION_TEXT_SYMBOL_13));
-const flowPauses = <T extends { clause?: number; sentence: number; suspense: number; beat: number }>(pauses: T): T =>
-  flowingRead.getStore() ? { ...pauses, clause: Math.min(pauses.clause ?? pauses.sentence, PACE.FLOW.CLAUSE), sentence: Math.min(pauses.sentence, PACE.FLOW.SENTENCE), suspense: Math.min(pauses.suspense, PACE.FLOW.SUSPENSE), beat: Math.min(pauses.beat, PACE.FLOW.BEAT) } : pauses;
+const flowPauses = <T extends { clause?: number; sentence: number; suspense: number; beat: number }>(pauses: T): T => (flowingRead.getStore() ? { ...pauses, clause: Math.min(pauses.clause ?? pauses.sentence, PACE.FLOW.CLAUSE), sentence: Math.min(pauses.sentence, PACE.FLOW.SENTENCE), suspense: Math.min(pauses.suspense, PACE.FLOW.SUSPENSE), beat: Math.min(pauses.beat, PACE.FLOW.BEAT) } : pauses);
 const cadenceProfile = () => {
   const profile = referenceCadenceProfile(readVoiceSpeedSettings().target, readVoiceSpeedSettings().correction);
   return profile && flowPauses(profile);
 };
-// Every paced line of a voice that follows the reference speed is evened phrase by phrase to the reference articulation:
-// the narration at it, a character's line at it times the line's delivery (a scared line a little faster, a sad one
-// slower), so the narrator and every character voice of a channel speak at one even pace.
 const referenceCadence = (line: MotionUtterance, voiceId: string, paced: boolean, delivery?: MotionVoiceDelivery) => {
   if (!paced || !voiceUsesReferenceSpeed(voiceId)) return undefined;
   const profile = cadenceProfile();
@@ -166,7 +161,6 @@ const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: 
     if (rechecked && voiceTextPassed(rechecked)) words = rechecked.words;
   }
   let best: { wav: Buffer; result: Awaited<ReturnType<typeof checkClip>>; cadence?: MotionVoiceCadence } | undefined;
-  // The evenest take of the line so far: a take still uneven after the pace correction is read again by the voice model.
   let evenest: { wav: Buffer; cadence: MotionVoiceCadence } | undefined;
   let retakes = 0;
   for (let check = 0; ; check++) {
@@ -311,8 +305,10 @@ export const motionSentencePieces = (text: string): string[] => {
   const S = C.SENTENCES;
   const out: string[] = [];
   let carry = "";
-  // An abbreviation ("Dr.") or a very short sentence stays with the sentence that follows it.
-  for (const part of text.split(S.SPLIT).map((item) => item.trim()).filter(Boolean)) {
+  for (const part of text
+    .split(S.SPLIT)
+    .map((item) => item.trim())
+    .filter(Boolean)) {
     const piece = carry ? carry + " " + part : part;
     if (S.ABBREVIATION.test(piece) || speechTokens(piece).length < S.MIN_PIECE_WORDS) carry = piece;
     else {
@@ -323,7 +319,6 @@ export const motionSentencePieces = (text: string): string[] => {
   if (carry) out.length ? (out[out.length - 1] += " " + carry) : out.push(carry);
   return out;
 };
-// One line, spoken sentence by sentence and joined into a single clip, so everything after this step still sees one clip per line.
 const speechClipJoined = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced: boolean, preset: number | null | undefined, gap: number): Promise<SpeechClipAudio> => {
   const S = C.SENTENCES;
   const parts = speechTokens(line.text).length >= S.MIN_WORDS ? motionSentencePieces(line.text) : [];
@@ -332,8 +327,6 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
   const clips: SpeechClipAudio[] = [];
   for (const text of parts) clips.push(await make(text));
   const rateOf = (clip: SpeechClipAudio, text: string): number => {
-    // The cadence service measures the speaking rate without the pauses inside the sentence; prefer it when it exists,
-    // because a sentence with more commas is not a faster or slower voice.
     if (clip.cadence?.after) return clip.cadence.after;
     const voiced = clip.duration - clip.leading - clip.trailing;
     return voiced >= S.MIN_VOICED && speechUnits(text) >= S.MIN_UNITS ? speechUnits(text) / voiced : 0;
@@ -342,7 +335,6 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
   const sorted = rates.filter((value) => value > 0).sort((a, b) => a - b);
   const middle = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
   let adjusted = 0;
-  // Two passes: the second corrects a sentence whose first correction still left it outside the tolerance.
   const speeds = clips.map(() => line.rateFix || 1);
   if (middle && (!referenceCadence(line, voiceId, paced, delivery) || clips.every((clip) => clip.cadence?.unfit)))
     for (let pass = 0; pass < S.PASSES; pass++)
@@ -521,8 +513,6 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
     opts.onProgress?.(++done, totalLines);
     return ready;
   });
-  // A voice the reference rate does not fit keeps its own speed, so its lines are levelled against each other here:
-  // every narration line is brought to the median speaking rate of the video, within the same limit as a sentence.
   const lineRate = (audio: SpeechClipAudio | undefined): number => {
     const rates = (audio?.cadences || (audio?.cadence ? [audio.cadence] : [])).filter((item) => item.unfit).map((item) => item.after);
     return rates.length ? _.mean(rates) : 0;
@@ -565,14 +555,20 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
     }
     durations.push(Math.max(0.6, cursor));
   }
-  // The video ends on the fixed tail only: the silence recorded after the very last spoken word and the gap that would
-  // lead into a next line are dropped, so the ending never sits on several seconds of dead air.
   if (durations.length) durations[durations.length - 1] = Math.max(0.6, durations[durations.length - 1] - endSlack);
   if (!totalLines) throw new Error(C.EMPTY);
   opts.log?.(D.LOG(moods, ai33));
   if (pacing) opts.log?.(PACE.LOG(pacing.key, split));
   const joined = local.filter((item) => item.audio.sentences);
-  if (joined.length) opts.log?.(C.SENTENCES.LOG(joined.length, _.sumBy(joined, (item) => item.audio.sentences || 0), _.sumBy(joined, (item) => item.audio.adjusted || 0), Math.max(...joined.map((item) => item.audio.spread || 0))));
+  if (joined.length)
+    opts.log?.(
+      C.SENTENCES.LOG(
+        joined.length,
+        _.sumBy(joined, (item) => item.audio.sentences || 0),
+        _.sumBy(joined, (item) => item.audio.adjusted || 0),
+        Math.max(...joined.map((item) => item.audio.spread || 0)),
+      ),
+    );
   const cadences = local.flatMap((item) => item.audio.cadences || (item.audio.cadence ? [item.audio.cadence] : []));
   const measured = cadences;
   if (measured.length)
@@ -590,137 +586,146 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
   const unfit = cadences.filter((item) => item.unfit).length;
   if (unfit) opts.log?.(C.SENTENCES.UNFIT_LOG(unfit));
   const shaped = cadences.filter((item) => item.phrases);
-  if (shaped.length) opts.log?.(PACE.PHRASE_LOG(_.sumBy(shaped, (item) => item.phrases || 0), Math.max(...shaped.map((item) => item.phraseSpread || 0)), Math.max(...shaped.map((item) => item.phraseSpreadAfter || 0))));
+  if (shaped.length)
+    opts.log?.(
+      PACE.PHRASE_LOG(
+        _.sumBy(shaped, (item) => item.phrases || 0),
+        Math.max(...shaped.map((item) => item.phraseSpread || 0)),
+        Math.max(...shaped.map((item) => item.phraseSpreadAfter || 0)),
+      ),
+    );
   const checks = local.map((item) => item.audio.quality.status);
   if (opts.asr) opts.log?.(Q.SUMMARY(checks.filter((status) => status === Q.STATUS.REVIEW).length, checks.filter((status) => status === Q.STATUS.UNAVAILABLE).length));
   return { local, durations };
 };
 export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTrack> =>
-  flowingRead.run(!isHorror(analysis), () => withMotionVoiceSpeedSnapshot(async () => {
-    if (flowingRead.getStore() && readVoiceSpeedSettings().target?.pauses) opts.log?.(PACE.FLOW_LOG(PACE.FLOW.CLAUSE, PACE.FLOW.SENTENCE));
-    const rateProfile = motionSpeechRateProfile(script.voiceChannel);
-    const rememberRate = (track: MotionVoiceTrack): MotionVoiceTrack => {
-      if (!deps.synthesize && !opts.warmup) {
-        const measured = recordSpeechRate(script, track.totalSeconds, rateProfile);
-        if (measured) opts.log?.(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));
-      }
-      return track;
-    };
-    const plan = await voicePlan(script, analysis, opts, deps);
-    const pacing = motionVoicePacing(analysis);
-    const speedKey = voiceTrackSpeedKey(plan);
-    const id = C.PREFIX + hash([C.VERSION, C.TRACK_VERSION, C.PACKAGE, speedKey, plan, opts.aspect, script.gen?.staging, opts.asr === true, ...(pacing ? [PACE.VERSION, pacing] : [])]) + MR.MOTION_TEXT_WAV,
-      folder = getMotionAudioDirectory(),
-      file = path.join(folder, id),
-      metadata = file + MR.MOTION_TEXT_JSON;
-    try {
-      const cached = parseJson(fs.readFileSync(metadata, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
-      if (
-        cached.signature === plan.signature &&
-        cached.provider === C.PROVIDER &&
-        cached.speedKey === speedKey &&
-        motionVoiceAsrSatisfied(cached, opts.asr === true) &&
-        motionVoiceTrackFilesValid(cached, script) &&
-        cached.clips?.every((clip) => !opts.asr || ![Q.STATUS.REVIEW, Q.STATUS.UNAVAILABLE].includes(clip.quality?.status as any) || Date.now() - (clip.quality?.verifiedAt || 0) < C.ASR.RECHECK_MS)
-      ) {
-        return rememberRate(cached);
-      }
-    } catch {}
-    const running = active.get(id);
-    if (running) return running;
-    const task = (async (): Promise<MotionVoiceTrack> => {
-      opts.log?.(C.GENERATING);
-      const silent = analysis && motionStorytellingPreset(analysis.storytelling).dramaticAudio ? motionStorytellingSilent(analysis.storytelling) : undefined;
-      const { local, durations } = await layoutMotionVoice(plan, script, opts, deps, pacing, silent);
-      const timeline = computeBeatTimeline(script.beats, durations, !!pacing),
-        temporary = file + randomUUID() + MR.MOTION_TEXT_WAV,
-        frames = Math.ceil(timeline.total * C.SAMPLE_RATE);
-      const clips = local.map((item) => {
-        const index = script.beats.findIndex((beat) => beat.id === item.beatId);
-        const start = timeline.starts[index] + item.t;
-        return {
-          id: item.line.id,
-          beatId: item.beatId,
-          speaker: item.line.speaker,
-          ...(item.line.voiceSpeaker ? { voiceSpeaker: item.line.voiceSpeaker } : {}),
-          voiceId: item.voiceId,
-          text: item.line.text,
-          audioId: item.audio.id,
-          start,
-          end: start + item.audio.duration,
-          delivery: item.delivery,
-          quality: item.audio.quality,
-          ...(item.audio.cadence ? { cadence: item.audio.cadence } : {}),
-          ...(item.audio.words ? { words: item.audio.words } : {}),
-        };
-      });
-      const handle = await fs.promises.open(temporary, MR.MOTION_TEXT_W);
-      try {
-        try {
-          await handle.write(motionWavHeader(frames * 4, 2));
-          const silence = Buffer.alloc(C.SAMPLE_RATE * 4);
-          let written = 0;
-          const padTo = async (target: number): Promise<void> => {
-            while (written < target) {
-              const count = Math.min(C.SAMPLE_RATE, target - written);
-              await handle.write(silence, 0, count * 4);
-              written += count;
-            }
-          };
-          for (let index = 0; index < local.length; index++) {
-            if (opts.signal?.aborted) throw new Error(C.CANCELLED);
-            const target = Math.round(clips[index].start * C.SAMPLE_RATE);
-            await padTo(target);
-            const audio = await fs.promises.readFile(path.join(folder, local[index].audio.id));
-            const pcm = motionWavData(audio);
-            const item = local[index],
-              pan = 0;
-            const stereo = Buffer.alloc(item.audio.bytes * 2),
-              gain = item.delivery.gain;
-            for (let sample = 0; sample < item.audio.bytes / 2; sample++) {
-              const value = audio.readInt16LE(pcm.start + sample * 2) * gain;
-              stereo.writeInt16LE(Math.round(Math.max(-32767, Math.min(32767, value * Math.sqrt((1 - pan) / 2)))), sample * 4);
-              stereo.writeInt16LE(Math.round(Math.max(-32767, Math.min(32767, value * Math.sqrt((1 + pan) / 2)))), sample * 4 + 2);
-            }
-            await handle.write(stereo);
-            written += item.audio.bytes / 2;
-          }
-          await padTo(frames);
-        } finally {
-          await handle.close();
+  flowingRead.run(!isHorror(analysis), () =>
+    withMotionVoiceSpeedSnapshot(async () => {
+      if (flowingRead.getStore() && readVoiceSpeedSettings().target?.pauses) opts.log?.(PACE.FLOW_LOG(PACE.FLOW.CLAUSE, PACE.FLOW.SENTENCE));
+      const rateProfile = motionSpeechRateProfile(script.voiceChannel);
+      const rememberRate = (track: MotionVoiceTrack): MotionVoiceTrack => {
+        if (!deps.synthesize && !opts.warmup) {
+          const measured = recordSpeechRate(script, track.totalSeconds, rateProfile);
+          if (measured) opts.log?.(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));
         }
-        if (opts.signal?.aborted) throw new Error(C.CANCELLED);
-        fs.renameSync(temporary, file);
-      } finally {
-        await fs.promises.rm(temporary, { force: true }).catch(() => {});
-      }
-      const track: MotionVoiceTrack = {
-        asr: { version: C.ASR.VERSION, checked: opts.asr === true },
-        continuous: !!pacing,
-        speedKey: voiceTrackSpeedKey(plan),
-        audioId: id,
-        provider: C.PROVIDER,
-        voiceId: C.MODEL,
-        signature: plan.signature,
-        durations,
-        totalSeconds: timeline.total,
-        plan,
-        clips,
-        subtitles: clips.map((clip) => ({ start: clip.start, end: clip.end, text: clip.text, speaker: clip.speaker })),
+        return track;
       };
-      writeMotionJsonAtomic(metadata, track);
-      await measureVoicePaceFile(file, opts.signal)
-        .then((r) => opts.log?.(C.LOG_PACE(r)))
-        .catch(_.noop);
-      return rememberRate(track);
-    })();
-    active.set(id, task);
-    try {
-      return await task;
-    } finally {
-      active.delete(id);
-    }
-  }));
+      const plan = await voicePlan(script, analysis, opts, deps);
+      const pacing = motionVoicePacing(analysis);
+      const speedKey = voiceTrackSpeedKey(plan);
+      const id = C.PREFIX + hash([C.VERSION, C.TRACK_VERSION, C.PACKAGE, speedKey, plan, opts.aspect, script.gen?.staging, opts.asr === true, ...(pacing ? [PACE.VERSION, pacing] : [])]) + MR.MOTION_TEXT_WAV,
+        folder = getMotionAudioDirectory(),
+        file = path.join(folder, id),
+        metadata = file + MR.MOTION_TEXT_JSON;
+      try {
+        const cached = parseJson(fs.readFileSync(metadata, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
+        if (
+          cached.signature === plan.signature &&
+          cached.provider === C.PROVIDER &&
+          cached.speedKey === speedKey &&
+          motionVoiceAsrSatisfied(cached, opts.asr === true) &&
+          motionVoiceTrackFilesValid(cached, script) &&
+          cached.clips?.every((clip) => !opts.asr || ![Q.STATUS.REVIEW, Q.STATUS.UNAVAILABLE].includes(clip.quality?.status as any) || Date.now() - (clip.quality?.verifiedAt || 0) < C.ASR.RECHECK_MS)
+        ) {
+          return rememberRate(cached);
+        }
+      } catch {}
+      const running = active.get(id);
+      if (running) return running;
+      const task = (async (): Promise<MotionVoiceTrack> => {
+        opts.log?.(C.GENERATING);
+        const silent = analysis && motionStorytellingPreset(analysis.storytelling).dramaticAudio ? motionStorytellingSilent(analysis.storytelling) : undefined;
+        const { local, durations } = await layoutMotionVoice(plan, script, opts, deps, pacing, silent);
+        const timeline = computeBeatTimeline(script.beats, durations, !!pacing),
+          temporary = file + randomUUID() + MR.MOTION_TEXT_WAV,
+          frames = Math.ceil(timeline.total * C.SAMPLE_RATE);
+        const clips = local.map((item) => {
+          const index = script.beats.findIndex((beat) => beat.id === item.beatId);
+          const start = timeline.starts[index] + item.t;
+          return {
+            id: item.line.id,
+            beatId: item.beatId,
+            speaker: item.line.speaker,
+            ...(item.line.voiceSpeaker ? { voiceSpeaker: item.line.voiceSpeaker } : {}),
+            voiceId: item.voiceId,
+            text: item.line.text,
+            audioId: item.audio.id,
+            start,
+            end: start + item.audio.duration,
+            delivery: item.delivery,
+            quality: item.audio.quality,
+            ...(item.audio.cadence ? { cadence: item.audio.cadence } : {}),
+            ...(item.audio.words ? { words: item.audio.words } : {}),
+          };
+        });
+        const handle = await fs.promises.open(temporary, MR.MOTION_TEXT_W);
+        try {
+          try {
+            await handle.write(motionWavHeader(frames * 4, 2));
+            const silence = Buffer.alloc(C.SAMPLE_RATE * 4);
+            let written = 0;
+            const padTo = async (target: number): Promise<void> => {
+              while (written < target) {
+                const count = Math.min(C.SAMPLE_RATE, target - written);
+                await handle.write(silence, 0, count * 4);
+                written += count;
+              }
+            };
+            for (let index = 0; index < local.length; index++) {
+              if (opts.signal?.aborted) throw new Error(C.CANCELLED);
+              const target = Math.round(clips[index].start * C.SAMPLE_RATE);
+              await padTo(target);
+              const audio = await fs.promises.readFile(path.join(folder, local[index].audio.id));
+              const pcm = motionWavData(audio);
+              const item = local[index],
+                pan = 0;
+              const stereo = Buffer.alloc(item.audio.bytes * 2),
+                gain = item.delivery.gain;
+              for (let sample = 0; sample < item.audio.bytes / 2; sample++) {
+                const value = audio.readInt16LE(pcm.start + sample * 2) * gain;
+                stereo.writeInt16LE(Math.round(Math.max(-32767, Math.min(32767, value * Math.sqrt((1 - pan) / 2)))), sample * 4);
+                stereo.writeInt16LE(Math.round(Math.max(-32767, Math.min(32767, value * Math.sqrt((1 + pan) / 2)))), sample * 4 + 2);
+              }
+              await handle.write(stereo);
+              written += item.audio.bytes / 2;
+            }
+            await padTo(frames);
+          } finally {
+            await handle.close();
+          }
+          if (opts.signal?.aborted) throw new Error(C.CANCELLED);
+          fs.renameSync(temporary, file);
+        } finally {
+          await fs.promises.rm(temporary, { force: true }).catch(() => {});
+        }
+        const track: MotionVoiceTrack = {
+          asr: { version: C.ASR.VERSION, checked: opts.asr === true },
+          continuous: !!pacing,
+          speedKey: voiceTrackSpeedKey(plan),
+          audioId: id,
+          provider: C.PROVIDER,
+          voiceId: C.MODEL,
+          signature: plan.signature,
+          durations,
+          totalSeconds: timeline.total,
+          plan,
+          clips,
+          subtitles: clips.map((clip) => ({ start: clip.start, end: clip.end, text: clip.text, speaker: clip.speaker })),
+        };
+        writeMotionJsonAtomic(metadata, track);
+        await measureVoicePaceFile(file, opts.signal)
+          .then((r) => opts.log?.(C.LOG_PACE(r)))
+          .catch(_.noop);
+        return rememberRate(track);
+      })();
+      active.set(id, task);
+      try {
+        return await task;
+      } finally {
+        active.delete(id);
+      }
+    }),
+  );
 export const fitUploadedVoice = (beats: MotionBeat[], estimates: number[], audioSeconds: number): number[] => {
   const { total } = computeBeatTimeline(beats, estimates),
     speech = estimates.reduce((sum, duration) => sum + duration, 0),
@@ -734,7 +739,15 @@ export const readMotionVoiceTrack = (id: unknown, script: MotionStoryScript, ana
   const file = path.join(getMotionAudioDirectory(), id as string);
   try {
     const track = parseJson(fs.readFileSync(file + MR.MOTION_TEXT_JSON, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
-    if (track.provider === C.PROVIDER && track.signature === motionVoiceSignature(script, analysis, voiceChannelRef(findVoiceChannel(script.voiceChannel)) || script.voiceChannel) && motionVoiceAsrSatisfied(track, asrCheck) && (!track.plan || [true, false].some((flow) => track.speedKey === flowingRead.run(flow, () => voiceTrackSpeedKey(track.plan!)))) && track.audioId === id && motionVoiceTrackFilesValid(track, script)) return track;
+    if (
+      track.provider === C.PROVIDER &&
+      track.signature === motionVoiceSignature(script, analysis, voiceChannelRef(findVoiceChannel(script.voiceChannel)) || script.voiceChannel) &&
+      motionVoiceAsrSatisfied(track, asrCheck) &&
+      (!track.plan || [true, false].some((flow) => track.speedKey === flowingRead.run(flow, () => voiceTrackSpeedKey(track.plan!)))) &&
+      track.audioId === id &&
+      motionVoiceTrackFilesValid(track, script)
+    )
+      return track;
   } catch {}
 };
 export const motionVoiceTrackFilesValid = (track: MotionVoiceTrack, script: MotionStoryScript): boolean => {

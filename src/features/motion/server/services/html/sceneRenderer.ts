@@ -42,7 +42,6 @@ interface HtmlRenderOptions {
   recoverScene?: typeof generateMotionHtmlScene;
 }
 const gpuReported = new WeakSet<MotionRemotionSpec>();
-// Once the graphics card has failed in this process, later exports start on the CPU instead of failing the same way again.
 let gpuFailed = false;
 const chromeGpuRenderer = async (browser: Browser): Promise<string> => {
   const page = await browser.newPage().catch(() => undefined);
@@ -66,7 +65,6 @@ const chromeGpuRenderer = async (browser: Browser): Promise<string> => {
 };
 export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segments: { start: number; end: number; output: string }[], opts: HtmlRenderOptions): Promise<void> => {
   let completed = 0;
-  // Draft and standard exports take JPEG frames from the page (one fast encode, invisible after x264); finer ones PNG.
   const format: "jpeg" | "png" = opts.crf >= R.JPEG_MIN_CRF ? "jpeg" : "png";
   const total = segments.reduce((sum, item) => sum + item.end - item.start + 1, 0);
   let shared: Browser | undefined;
@@ -91,132 +89,133 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
   };
   opts.signal.addEventListener(RT_MAINTENANCE.ABORT, closeShared, { once: true });
   try {
-  for (const [index, segment] of segments.entries()) {
-    let active: MotionRemotionTimedScene | undefined;
-    for (;;) {
-      opts.signal.throwIfAborted();
-      let runtime: Awaited<ReturnType<typeof openMotionHtmlRuntime>> | undefined;
-      let current = "";
-      fs.mkdirSync(path.dirname(segment.output), { recursive: true });
-      const ff = spawn(
-        getFfmpegPath(),
-        [
-          RT_MAINTENANCE.HIDE_BANNER,
-          RT_MAINTENANCE.LOGLEVEL,
-          RT_MAINTENANCE.ERROR,
-          RT_MAINTENANCE.Y_3,
-          RT_MAINTENANCE.F,
-          RT_MAINTENANCE.IMAGE2PIPE,
-          RT_MAINTENANCE.VCODEC,
-          format === "jpeg" ? R.MJPEG : RT_MAINTENANCE.PNG_2,
-          RT_MAINTENANCE.FRAMERATE,
-          String(spec.fps),
-          RT_MAINTENANCE.I_2,
-          RT_MAINTENANCE.PIPE_0,
-          RT_MAINTENANCE.AN,
-          RT_MAINTENANCE.C_V,
-          RT_MAINTENANCE.LIBX264,
-          RT_MAINTENANCE.PRESET,
-          RT_MAINTENANCE.X264_EXPORT_PRESET,
-          RT_MAINTENANCE.CRF,
-          String(opts.crf),
-          RT_MAINTENANCE.PIX_FMT,
-          RT_MAINTENANCE.YUV420P,
-          RT_MAINTENANCE.THREADS,
-          RT_MAINTENANCE.VALUE_2_2,
-          RT_MAINTENANCE.F,
-          RT_MAINTENANCE.MP4,
-          segment.output,
-        ],
-        { windowsHide: true, stdio: [RT_MAINTENANCE.STDIO_PIPE, RT_MAINTENANCE.IGNORE, RT_MAINTENANCE.STDIO_PIPE] },
-      );
-      let stderr = "";
-      ff.stderr.on(RT_MAINTENANCE.DATA, (chunk) => {
-        stderr = (stderr + chunk).slice(-4000);
-      });
-      const exit = new Promise<void>((resolve, reject) => {
-        ff.once(RT_MAINTENANCE.ERROR, reject);
-        ff.once(RT_MAINTENANCE.CLOSE, (code) => (code === 0 ? resolve() : reject(new Error(`${RT_MAINTENANCE.FFMPEG}${stderr || code}`))));
-      });
-      void exit.catch(() => undefined);
-      ff.stdin.on(RT_MAINTENANCE.ERROR, () => undefined);
-      const stop = () => {
-        ff.kill();
-        void runtime?.close();
-      };
-      opts.signal.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
-      const blankScenes = new Set<string>();
-      try {
+    for (const [index, segment] of segments.entries()) {
+      let active: MotionRemotionTimedScene | undefined;
+      for (;;) {
+        opts.signal.throwIfAborted();
+        let runtime: Awaited<ReturnType<typeof openMotionHtmlRuntime>> | undefined;
+        let current = "";
         fs.mkdirSync(path.dirname(segment.output), { recursive: true });
-        for (let frame = segment.start; frame <= segment.end; frame++) {
-          opts.signal.throwIfAborted();
-          active = spec.scenes.find((scene) => frame >= scene.startFrame && frame < scene.endFrame);
-          if (!active?.html) throw new Error(RT_MAINTENANCE.THIEU_TAI_LIEU_HTML_CUA_CANH_CAN_XUAT);
-          if (current !== active.html.hash) {
-            await runtime?.close();
-            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec, active as MotionFigureScene));
-            current = active.html.hash;
-          }
-          const subtitle = spec.subtitles.find((item) => frame / spec.fps >= item.start && frame / spec.fps < item.end);
-          const input = { ...motionHtmlFrame(spec, active, frame, opts.width, opts.height, RT_MAINTENANCE.EXPORT), format, quality: R.JPEG_QUALITY };
-          let image = await runtime!.render(input, subtitle?.text, spec.fontFamily);
-          // A frame that comes back as one flat colour (a tiny PNG) means the page lost its canvas, not that the scene is
-          // empty: reopen the page and draw the frame again instead of writing blank or black video.
-          const blankBytes = (opts.width || spec.width) * (opts.height || spec.height) * R.BLANK_BYTES_PER_PIXEL[format];
-          for (let retry = 0; retry < MOTION_HTML_QUALITY.BLANK.RETRIES && image.length < blankBytes && !blankScenes.has(active.id); retry++) {
-            opts.log?.(MOTION_HTML_QUALITY.BLANK.LOG(active.id, frame, retry + 1));
-            await runtime?.close();
-            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec, active as MotionFigureScene));
-            image = await runtime.render(input, subtitle?.text, spec.fontFamily);
-            if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes && (await leaveGpu(MOTION_GPU_CHROME.CPU_REASON.BLANK))) {
+        const ff = spawn(
+          getFfmpegPath(),
+          [
+            RT_MAINTENANCE.HIDE_BANNER,
+            RT_MAINTENANCE.LOGLEVEL,
+            RT_MAINTENANCE.ERROR,
+            RT_MAINTENANCE.Y_3,
+            RT_MAINTENANCE.F,
+            RT_MAINTENANCE.IMAGE2PIPE,
+            RT_MAINTENANCE.VCODEC,
+            format === "jpeg" ? R.MJPEG : RT_MAINTENANCE.PNG_2,
+            RT_MAINTENANCE.FRAMERATE,
+            String(spec.fps),
+            RT_MAINTENANCE.I_2,
+            RT_MAINTENANCE.PIPE_0,
+            RT_MAINTENANCE.AN,
+            RT_MAINTENANCE.C_V,
+            RT_MAINTENANCE.LIBX264,
+            RT_MAINTENANCE.PRESET,
+            RT_MAINTENANCE.X264_EXPORT_PRESET,
+            RT_MAINTENANCE.CRF,
+            String(opts.crf),
+            RT_MAINTENANCE.PIX_FMT,
+            RT_MAINTENANCE.YUV420P,
+            RT_MAINTENANCE.THREADS,
+            RT_MAINTENANCE.VALUE_2_2,
+            RT_MAINTENANCE.F,
+            RT_MAINTENANCE.MP4,
+            segment.output,
+          ],
+          { windowsHide: true, stdio: [RT_MAINTENANCE.STDIO_PIPE, RT_MAINTENANCE.IGNORE, RT_MAINTENANCE.STDIO_PIPE] },
+        );
+        let stderr = "";
+        ff.stderr.on(RT_MAINTENANCE.DATA, (chunk) => {
+          stderr = (stderr + chunk).slice(-4000);
+        });
+        const exit = new Promise<void>((resolve, reject) => {
+          ff.once(RT_MAINTENANCE.ERROR, reject);
+          ff.once(RT_MAINTENANCE.CLOSE, (code) => (code === 0 ? resolve() : reject(new Error(`${RT_MAINTENANCE.FFMPEG}${stderr || code}`))));
+        });
+        void exit.catch(() => undefined);
+        ff.stdin.on(RT_MAINTENANCE.ERROR, () => undefined);
+        const stop = () => {
+          ff.kill();
+          void runtime?.close();
+        };
+        opts.signal.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
+        const blankScenes = new Set<string>();
+        try {
+          fs.mkdirSync(path.dirname(segment.output), { recursive: true });
+          for (let frame = segment.start; frame <= segment.end; frame++) {
+            opts.signal.throwIfAborted();
+            active = spec.scenes.find((scene) => frame >= scene.startFrame && frame < scene.endFrame);
+            if (!active?.html) throw new Error(RT_MAINTENANCE.THIEU_TAI_LIEU_HTML_CUA_CANH_CAN_XUAT);
+            if (current !== active.html.hash) {
+              await runtime?.close();
+              runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec, active as MotionFigureScene));
+              current = active.html.hash;
+            }
+            const subtitle = spec.subtitles.find((item) => frame / spec.fps >= item.start && frame / spec.fps < item.end);
+            const input = { ...motionHtmlFrame(spec, active, frame, opts.width, opts.height, RT_MAINTENANCE.EXPORT), format, quality: R.JPEG_QUALITY };
+            let image = await runtime!.render(input, subtitle?.text, spec.fontFamily);
+            const blankBytes = (opts.width || spec.width) * (opts.height || spec.height) * R.BLANK_BYTES_PER_PIXEL[format];
+            for (let retry = 0; retry < MOTION_HTML_QUALITY.BLANK.RETRIES && image.length < blankBytes && !blankScenes.has(active.id); retry++) {
+              opts.log?.(MOTION_HTML_QUALITY.BLANK.LOG(active.id, frame, retry + 1));
               await runtime?.close();
               runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec, active as MotionFigureScene));
               image = await runtime.render(input, subtitle?.text, spec.fontFamily);
+              if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes && (await leaveGpu(MOTION_GPU_CHROME.CPU_REASON.BLANK))) {
+                await runtime?.close();
+                runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec, active as MotionFigureScene));
+                image = await runtime.render(input, subtitle?.text, spec.fontFamily);
+              }
+              if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes) {
+                blankScenes.add(active.id);
+                opts.log?.(MOTION_HTML_QUALITY.BLANK.KEPT_LOG(active.id));
+              }
             }
-            if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes) {
-              blankScenes.add(active.id);
-              opts.log?.(MOTION_HTML_QUALITY.BLANK.KEPT_LOG(active.id));
-            }
+            if (!ff.stdin.write(image))
+              await Promise.race([
+                once(ff.stdin, RT_MAINTENANCE.DRAIN),
+                exit.then(() => {
+                  throw new Error(RT_MAINTENANCE.FFMPEG_DONG_INPUT_TRUOC_KHI_NHAN_DU_FRAME);
+                }),
+              ]);
+            opts.onProgress(completed + frame - segment.start + 1, total);
           }
-          if (!ff.stdin.write(image))
-            await Promise.race([
-              once(ff.stdin, RT_MAINTENANCE.DRAIN),
-              exit.then(() => {
-                throw new Error(RT_MAINTENANCE.FFMPEG_DONG_INPUT_TRUOC_KHI_NHAN_DU_FRAME);
-              }),
-            ]);
-          opts.onProgress(completed + frame - segment.start + 1, total);
+          ff.stdin.end();
+          await exit;
+          completed += segment.end - segment.start + 1;
+          await opts.onSegment?.(index);
+          break;
+        } catch (error) {
+          ff.kill();
+          await exit.catch(() => undefined);
+          await runtime?.close();
+          runtime = undefined;
+          opts.signal.throwIfAborted();
+          if (MOTION_GPU_CHROME.TIMEOUT.test(String((error as Error).message)) && (await leaveGpu(MOTION_GPU_CHROME.CPU_REASON.TIMEOUT))) continue;
+          if ((error as any).motionHtmlExecution && active?.html?.execution) {
+            const artifact = active.html;
+            active.html.status = RT_MAINTENANCE.RETRY_WAIT;
+            active.htmlRequest = { id: randomUUID(), attempt: artifact.attempts, status: RT_MAINTENANCE.RETRY_WAIT, error: String((error as Error).message) };
+            opts.log?.(`${RT_MAINTENANCE.CANH_2}${active.id}${RT_MAINTENANCE.LOI_KHI_XUAT_TAO_LAI_TRON_CANH_TU_PROMPT_DA}`);
+            await (opts.recoverScene || generateMotionHtmlScene)(
+              active,
+              { width: spec.width, height: spec.height, seconds: artifact.duration, profile: spec.profileId, scope: artifact.scope, language: artifact.language, proportion: spec.proportion, cast: artifact.cast, continuity: artifact.continuity, year: spec.eraYear, kind: active.kind, shot: active.shot },
+              { exec: artifact.execution && { ...artifact.execution, renderRecovery: true }, signal: opts.signal, log: opts.log || (() => undefined) },
+            );
+          } else if (/Thiếu tài liệu HTML/.test(String((error as Error).message))) throw error;
+          else {
+            opts.log?.(`${RT_MAINTENANCE.XUAT_CANVAS_CHAY_LAI_CUNG_HTML}${String((error as Error).message)}${RT_MAINTENANCE.SENTENCE_END}`);
+            await delay(2000, undefined, { signal: opts.signal });
+          }
+        } finally {
+          opts.signal.removeEventListener(RT_MAINTENANCE.ABORT, stop);
+          await runtime?.close();
         }
-        ff.stdin.end();
-        await exit;
-        completed += segment.end - segment.start + 1;
-        await opts.onSegment?.(index);
-        break;
-      } catch (error) {
-        ff.kill();
-        await exit.catch(() => undefined);
-        await runtime?.close();
-        runtime = undefined;
-        opts.signal.throwIfAborted();
-        // A frame that stalls is the graphics card's fault until the CPU has failed on it too: redraw on the CPU with the same page.
-        if (MOTION_GPU_CHROME.TIMEOUT.test(String((error as Error).message)) && (await leaveGpu(MOTION_GPU_CHROME.CPU_REASON.TIMEOUT))) continue;
-        if ((error as any).motionHtmlExecution && active?.html?.execution) {
-          const artifact = active.html;
-          active.html.status = RT_MAINTENANCE.RETRY_WAIT;
-          active.htmlRequest = { id: randomUUID(), attempt: artifact.attempts, status: RT_MAINTENANCE.RETRY_WAIT, error: String((error as Error).message) };
-          opts.log?.(`${RT_MAINTENANCE.CANH_2}${active.id}${RT_MAINTENANCE.LOI_KHI_XUAT_TAO_LAI_TRON_CANH_TU_PROMPT_DA}`);
-          await (opts.recoverScene || generateMotionHtmlScene)(active, { width: spec.width, height: spec.height, seconds: artifact.duration, profile: spec.profileId, scope: artifact.scope, language: artifact.language, proportion: spec.proportion, cast: artifact.cast, continuity: artifact.continuity, year: spec.eraYear, kind: active.kind, shot: active.shot }, { exec: artifact.execution && { ...artifact.execution, renderRecovery: true }, signal: opts.signal, log: opts.log || (() => undefined) });
-        } else if (/Thiếu tài liệu HTML/.test(String((error as Error).message))) throw error;
-        else {
-          opts.log?.(`${RT_MAINTENANCE.XUAT_CANVAS_CHAY_LAI_CUNG_HTML}${String((error as Error).message)}${RT_MAINTENANCE.SENTENCE_END}`);
-          await delay(2000, undefined, { signal: opts.signal });
-        }
-      } finally {
-        opts.signal.removeEventListener(RT_MAINTENANCE.ABORT, stop);
-        await runtime?.close();
       }
     }
-  }
   } finally {
     opts.signal.removeEventListener(RT_MAINTENANCE.ABORT, closeShared);
     closeShared();

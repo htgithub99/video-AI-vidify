@@ -1,29 +1,70 @@
-// The one list of things the standard figure kit draws: every FIG call kind a scene may use, the other words that name
-// exactly the same thing, the years it existed in, what it can be built of and which kit drawing shows it. A word that is
-// not here, or a thing outside its years, is drawn by the scene's own function: the kit never draws something "close".
 import type { MotionCatalogEntry } from "../types/motionObjectCatalog.js";
 import { MOTION_LIBRARY_PARTS } from "./motionKitSkins/library/index.js";
-
-// Years: from/to are inclusive calendar years (negative = BC); open ends have no bound.
 const ALWAYS = {};
 const GUNPOWDER = { from: 1350 };
 const INDUSTRIAL = { from: 1830 };
 const MOTOR = { from: 1900 };
-// Buildings that stand tall and narrow (a box much wider than their drawing would distort them): elastic.
 const TALL = ["tower", "lighthouse", "windmill", "skyscraper", "pagoda", "watchtower", "mosque", "pyramid", "church", "temple"];
-// Props lying flat on the ground (never stood up as long things).
 const FLAT_PROPS = ["planks", "tray", "log", "net", "pier", "rope", "coins"];
-// Props whose shape must not stretch (round, upright or symbolic things).
-const RIGID_PROPS = ["barrel", "wheel", "bucket", "jar", "bowl", "cookpot", "cauldron", "bell", "gong", "warDrum", "helmetProp", "shieldProp", "skull", "crown", "key", "lock", "hourglass", "scale", "medal", "trophy", "globe", "clock", "coins", "lantern", "candle", "oilLamp", "torch", "anchor", "statue", "doll", "mask", "mirror", "chair", "throne", "basket", "sack", "well", "beehive", "cheese", "cup", "teapot", "bread", "fish", "backpack", "bundle", "whetstone", "rock", "boulder", "stump", "lotus"];
-
+const RIGID_PROPS = [
+  "barrel",
+  "wheel",
+  "bucket",
+  "jar",
+  "bowl",
+  "cookpot",
+  "cauldron",
+  "bell",
+  "gong",
+  "warDrum",
+  "helmetProp",
+  "shieldProp",
+  "skull",
+  "crown",
+  "key",
+  "lock",
+  "hourglass",
+  "scale",
+  "medal",
+  "trophy",
+  "globe",
+  "clock",
+  "coins",
+  "lantern",
+  "candle",
+  "oilLamp",
+  "torch",
+  "anchor",
+  "statue",
+  "doll",
+  "mask",
+  "mirror",
+  "chair",
+  "throne",
+  "basket",
+  "sack",
+  "well",
+  "beehive",
+  "cheese",
+  "cup",
+  "teapot",
+  "bread",
+  "fish",
+  "backpack",
+  "bundle",
+  "whetstone",
+  "rock",
+  "boulder",
+  "stump",
+  "lotus",
+];
 const vehicle = (id: string, years: object, draw = id, names: string[] = [], more: Partial<MotionCatalogEntry> = {}): MotionCatalogEntry => ({ id, fn: "vehicle", names, fit: "elastic", ...years, variants: [{ kit: ["vehicle", draw] }], ...more });
 const building = (id: string, years: object, draw = id, names: string[] = [], more: Partial<MotionCatalogEntry> = {}): MotionCatalogEntry => ({ id, fn: "building", names, ...(TALL.includes(id) ? { fit: "elastic" as const } : {}), ...years, variants: [{ kit: ["building", draw] }], ...more });
 const animal = (id: string, names: string[] = []): MotionCatalogEntry => ({ id, fn: "animal", names, fit: "rigid", variants: [{ kit: ["animal", id] }] });
 const tree = (id: string, names: string[] = []): MotionCatalogEntry => ({ id, fn: "tree", names, variants: [{ kit: ["tree", id] }] });
 const prop = (id: string, years: object = ALWAYS, names: string[] = [], draw = id): MotionCatalogEntry => ({ id, fn: "prop", names, ...years, ...(RIGID_PROPS.includes(id) ? { fit: "rigid" as const } : FLAT_PROPS.includes(id) ? { fit: "ground" as const } : {}), variants: [{ kit: ["prop", draw] }] });
-
+export const MOTION_CATALOG_ERRORS = { DUPLICATE: (word: string, fn: string): string => `motion catalogue: "${word}" names two ${fn} entries` } as const;
 export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
-  // Vehicles and craft
   vehicle("wagon", { from: -1500, to: 1930 }, "wagon", ["coveredWagon", "supplyWagon", "warWagon"], { builds: ["wood"] }),
   vehicle("chariot", { from: -2000, to: 400 }),
   vehicle("catapult", { from: -400, to: 1500 }, "catapult", ["mangonel", "onager"]),
@@ -34,8 +75,17 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   vehicle("raft", ALWAYS),
   vehicle("canoe", ALWAYS, "canoe", ["dugout"]),
   vehicle("rowboat", ALWAYS, "rowboat", ["rowingBoat", "skiff", "dinghy"]),
-  // A boat is a rowing boat until motors; a ferry or barge before steam is a flat-bottomed scow with a railed side.
-  { id: "boat", fn: "vehicle", names: [], fit: "elastic", variants: [{ to: 1899, kit: ["vehicle", "rowboat"] }, { from: 1900, kit: ["vehicle", "boat"] }], builds: ["wood", "modern"] },
+  {
+    id: "boat",
+    fn: "vehicle",
+    names: [],
+    fit: "elastic",
+    variants: [
+      { to: 1899, kit: ["vehicle", "rowboat"] },
+      { from: 1900, kit: ["vehicle", "boat"] },
+    ],
+    builds: ["wood", "modern"],
+  },
   { id: "ferry", fn: "vehicle", names: ["barge", "scow", "ferryboat"], fit: "elastic", to: 1850, variants: [{ kit: ["vehicle", "ferry"] }] },
   vehicle("longship", { from: 700, to: 1100 }, "longship", ["drakkar"]),
   vehicle("trireme", { from: -700, to: 400 }, "trireme", ["galley", "bireme"]),
@@ -46,16 +96,77 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   vehicle("train", INDUSTRIAL, "train", ["locomotive"]),
   vehicle("bicycle", { from: 1870 }, "bicycle", ["bike"]),
   vehicle("motorbike", MOTOR, "motorbike", ["motorcycle"]),
-  // A car before 1936 is an early open car (a Model T), a truck before 1946 a canvas-covered lorry.
-  { id: "car", fn: "vehicle", names: ["automobile"], fit: "elastic", ...MOTOR, variants: [{ to: 1935, kit: ["vehicle", "earlyCar"] }, { from: 1936, kit: ["vehicle", "car"] }] },
+  {
+    id: "car",
+    fn: "vehicle",
+    names: ["automobile"],
+    fit: "elastic",
+    ...MOTOR,
+    variants: [
+      { to: 1935, kit: ["vehicle", "earlyCar"] },
+      { from: 1936, kit: ["vehicle", "car"] },
+    ],
+  },
   vehicle("classicCar", { from: 1900, to: 1975 }),
-  { id: "taxi", fn: "vehicle", names: ["cab"], fit: "elastic", from: 1834, variants: [{ to: 1909, kit: ["vehicle", "hansomCab"] }, { from: 1910, to: 1949, kit: ["vehicle", "vintageTaxi"] }, { from: 1950, kit: ["vehicle", "taxi"] }] },
-  { id: "police", fn: "vehicle", names: ["policeCar"], fit: "elastic", from: 1920, variants: [{ to: 1949, kit: ["vehicle", "vintagePolice"] }, { from: 1950, kit: ["vehicle", "police"] }] },
+  {
+    id: "taxi",
+    fn: "vehicle",
+    names: ["cab"],
+    fit: "elastic",
+    from: 1834,
+    variants: [
+      { to: 1909, kit: ["vehicle", "hansomCab"] },
+      { from: 1910, to: 1949, kit: ["vehicle", "vintageTaxi"] },
+      { from: 1950, kit: ["vehicle", "taxi"] },
+    ],
+  },
+  {
+    id: "police",
+    fn: "vehicle",
+    names: ["policeCar"],
+    fit: "elastic",
+    from: 1920,
+    variants: [
+      { to: 1949, kit: ["vehicle", "vintagePolice"] },
+      { from: 1950, kit: ["vehicle", "police"] },
+    ],
+  },
   vehicle("jeep", { from: 1940 }),
-  { id: "truck", fn: "vehicle", names: ["lorry"], fit: "elastic", from: 1910, variants: [{ to: 1945, kit: ["vehicle", "earlyTruck"] }, { from: 1946, kit: ["vehicle", "truck"] }] },
-  { id: "bus", fn: "vehicle", names: [], fit: "elastic", from: 1826, variants: [{ to: 1904, kit: ["vehicle", "horseBus"] }, { from: 1905, to: 1949, kit: ["vehicle", "vintageBus"] }, { from: 1950, kit: ["vehicle", "bus"] }] },
-  // A tank before 1919 is the rhomboid WW1 tank.
-  { id: "tank", fn: "vehicle", names: [], fit: "elastic", from: 1916, to: 1955, variants: [{ to: 1918, kit: ["vehicle", "tankWW1"] }, { from: 1919, kit: ["vehicle", "tank"] }] },
+  {
+    id: "truck",
+    fn: "vehicle",
+    names: ["lorry"],
+    fit: "elastic",
+    from: 1910,
+    variants: [
+      { to: 1945, kit: ["vehicle", "earlyTruck"] },
+      { from: 1946, kit: ["vehicle", "truck"] },
+    ],
+  },
+  {
+    id: "bus",
+    fn: "vehicle",
+    names: [],
+    fit: "elastic",
+    from: 1826,
+    variants: [
+      { to: 1904, kit: ["vehicle", "horseBus"] },
+      { from: 1905, to: 1949, kit: ["vehicle", "vintageBus"] },
+      { from: 1950, kit: ["vehicle", "bus"] },
+    ],
+  },
+  {
+    id: "tank",
+    fn: "vehicle",
+    names: [],
+    fit: "elastic",
+    from: 1916,
+    to: 1955,
+    variants: [
+      { to: 1918, kit: ["vehicle", "tankWW1"] },
+      { from: 1919, kit: ["vehicle", "tank"] },
+    ],
+  },
   vehicle("tankModern", { from: 1955 }),
   vehicle("apc", { from: 1950 }),
   vehicle("balloon", { from: 1783 }, "balloon", ["hotAirBalloon"]),
@@ -83,14 +194,34 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   vehicle("tram", { from: 1880 }, "tram", ["streetcar", "trolley"]),
   vehicle("scooter", { from: 1946 }, "scooter", ["vespa"]),
   vehicle("tractor", { from: 1910 }),
-  // Buildings: a house is a thatched cottage before 1600 or when built of thatch or timber, a mud house when built of mud.
-  { id: "house", fn: "building", names: ["home", "dwelling", "farmhouse"], builds: ["thatch", "timber", "wood", "mud", "stone", "brick", "modern"], variants: [{ builds: ["thatch", "timber", "wood"], kit: ["building", "cottage"] }, { builds: ["mud"], kit: ["building", "mudHouse"] }, { builds: ["stone", "brick", "modern"], kit: ["building", "house"] }, { to: 1599, kit: ["building", "cottage"] }, { from: 1600, kit: ["building", "house"] }] },
+  {
+    id: "house",
+    fn: "building",
+    names: ["home", "dwelling", "farmhouse"],
+    builds: ["thatch", "timber", "wood", "mud", "stone", "brick", "modern"],
+    variants: [
+      { builds: ["thatch", "timber", "wood"], kit: ["building", "cottage"] },
+      { builds: ["mud"], kit: ["building", "mudHouse"] },
+      { builds: ["stone", "brick", "modern"], kit: ["building", "house"] },
+      { to: 1599, kit: ["building", "cottage"] },
+      { from: 1600, kit: ["building", "house"] },
+    ],
+  },
   building("cottage", ALWAYS, "cottage", ["thatchedCottage", "thatchedHouse"], { builds: ["thatch"] }),
   building("hut", ALWAYS, "hut", ["hovel", "shack"]),
   building("stiltHouse", ALWAYS, "stiltHouse", ["houseOnStilts"]),
   building("longhouse", { to: 1700 }, "longhouse", ["hall", "greatHall"]),
   building("yurt", ALWAYS, "yurt", ["ger"]),
-  { id: "tent", fn: "building", names: [], variants: [{ to: 500, kit: ["building", "tent"] }, { from: 501, to: 1650, kit: ["building", "pavilionTent"] }, { from: 1651, kit: ["building", "tent"] }] },
+  {
+    id: "tent",
+    fn: "building",
+    names: [],
+    variants: [
+      { to: 500, kit: ["building", "tent"] },
+      { from: 501, to: 1650, kit: ["building", "pavilionTent"] },
+      { from: 1651, kit: ["building", "tent"] },
+    ],
+  },
   building("church", { from: 300 }, "church", ["chapel", "abbey"]),
   building("temple", { from: -3000 }),
   building("pagoda", { from: 500 }),
@@ -105,7 +236,6 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   building("bunker", { from: 1914 }, "bunker", ["pillbox"]),
   building("trench", { from: 1860 }),
   building("ruins", ALWAYS, "ruins", ["ruin", "smokingRuins"]),
-  // Library buildings (markets, guard posts, gates, faith and village halls).
   building("stall", ALWAYS, "stall", ["marketStall", "booth", "awning", "marketAwning", "stallAwning"]),
   building("watchtower", ALWAYS, "watchtower", ["lookout", "lookoutTower"], { builds: ["wood", "timber"] }),
   building("gatehouse", { from: 900, to: 1800 }, "gatehouse", ["castleGate", "barbican"], { builds: ["stone"] }),
@@ -114,7 +244,6 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   building("communalHouse", { from: 1000 }, "communalHouse", ["dinh", "villageHall", "communalHall"]),
   building("stockadeGate", { to: 1900 }, "stockadeGate", ["palisadeGate", "woodenGate", "fortGate"]),
   building("mudHouse", ALWAYS, "mudHouse", ["mudHut", "wattleHouse"], { builds: ["mud"] }),
-  // Animals and trees are drawn in every period.
   animal("horse", ["steed", "stallion", "mare", "pony"]),
   animal("mule"),
   animal("donkey", ["ass"]),
@@ -171,16 +300,30 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   tree("banyan"),
   tree("dead", ["deadTree"]),
   tree("bush", ["shrub"]),
-  // Props: weapons and war gear.
   prop("spear", { from: -10000 }, ["dory"]),
   prop("bow", { from: -10000, to: 1800 }, []),
   prop("arrows", { from: -10000, to: 1800 }, ["arrowsInGround", "stuckArrows"]),
   prop("axe", ALWAYS, ["hatchet", "battleaxe", "waraxe"]),
   prop("sword", { from: -1600 }, []),
   prop("shieldProp", { from: -2000, to: 1700 }, ["shield", "shields", "buckler"]),
-  { id: "helmetProp", fn: "prop", names: ["helmet", "helm"], fit: "rigid", from: -2000, variants: [{ to: -301, kit: ["prop", "corinthianHelmet"] }, { from: -300, to: 500, kit: ["prop", "galeaHelmet"] }, { from: 501, to: 1149, kit: ["prop", "nasalHelmet"] },
-    { from: 1150, to: 1449, kit: ["prop", "greatHelm"] }, { from: 1450, to: 1700, kit: ["prop", "morionHelmet"] }, { from: 1701, to: 1841, kit: ["prop", "helmetProp"] }, { from: 1842, to: 1914, kit: ["prop", "pickelhaube"] },
-    { from: 1915, to: 1945, kit: ["prop", "brodieHelmet"] }, { from: 1946, kit: ["prop", "helmetProp"] }] },
+  {
+    id: "helmetProp",
+    fn: "prop",
+    names: ["helmet", "helm"],
+    fit: "rigid",
+    from: -2000,
+    variants: [
+      { to: -301, kit: ["prop", "corinthianHelmet"] },
+      { from: -300, to: 500, kit: ["prop", "galeaHelmet"] },
+      { from: 501, to: 1149, kit: ["prop", "nasalHelmet"] },
+      { from: 1150, to: 1449, kit: ["prop", "greatHelm"] },
+      { from: 1450, to: 1700, kit: ["prop", "morionHelmet"] },
+      { from: 1701, to: 1841, kit: ["prop", "helmetProp"] },
+      { from: 1842, to: 1914, kit: ["prop", "pickelhaube"] },
+      { from: 1915, to: 1945, kit: ["prop", "brodieHelmet"] },
+      { from: 1946, kit: ["prop", "helmetProp"] },
+    ],
+  },
   prop("spearStand", { from: -10000, to: 1800 }, ["spearRack"]),
   prop("weaponRack", ALWAYS, ["armsRack"]),
   prop("arquebus", { from: 1450, to: 1650 }),
@@ -199,7 +342,6 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   prop("gallows", ALWAYS),
   prop("guillotine", { from: 1790, to: 1980 }),
   prop("stocks", { to: 1850 }, ["pillory"]),
-  // Props: home, farm and market.
   prop("barrel", ALWAYS, ["cask", "keg"]),
   prop("crate", ALWAYS, ["box"]),
   prop("sack", ALWAYS, ["bag", "grainSack", "riceSack"]),
@@ -254,7 +396,6 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   prop("lute", { from: 800, to: 1800 }),
   prop("signpost", ALWAYS, ["sign"]),
   prop("stonePile", ALWAYS, ["stones"]),
-  // Props: faith, death and memory.
   prop("altar", ALWAYS),
   prop("ancestorAltar", ALWAYS),
   prop("shrine", ALWAYS),
@@ -276,7 +417,6 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   prop("tomb", ALWAYS),
   prop("tombMound", ALWAYS, ["burialMound"]),
   prop("coffin", ALWAYS),
-  // Props shown as their symbol.
   prop("crown", ALWAYS),
   prop("skull", ALWAYS),
   prop("key", ALWAYS),
@@ -289,10 +429,20 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   prop("clock", { from: 1300 }),
   prop("document", { from: 1450 }, ["paper", "papers"]),
   prop("calendar", { from: 1800 }),
-  { id: "phone", fn: "prop", names: ["telephone"], fit: "rigid", from: 1878, variants: [{ to: 1904, kit: ["prop", "wallPhone"] }, { from: 1905, to: 1929, kit: ["prop", "candlestickPhone"] }, { from: 1930, kit: ["prop", "phone"] }] },
+  {
+    id: "phone",
+    fn: "prop",
+    names: ["telephone"],
+    fit: "rigid",
+    from: 1878,
+    variants: [
+      { to: 1904, kit: ["prop", "wallPhone"] },
+      { from: 1905, to: 1929, kit: ["prop", "candlestickPhone"] },
+      { from: 1930, kit: ["prop", "phone"] },
+    ],
+  },
   prop("bulb", { from: 1880 }, ["lightbulb"]),
   prop("computer", { from: 1975 }, ["laptop"]),
-  // Props: tools and hand weapons (drawn lying; a standing one is stood up in its box).
   prop("hammer"),
   prop("mallet"),
   prop("whetstone", ALWAYS, ["sharpeningStone"]),
@@ -313,7 +463,6 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   prop("fishingRod", ALWAYS, ["fishingPole"]),
   prop("broom"),
   prop("staff", ALWAYS, ["walkingStick", "quarterstaff"]),
-  // Props: food, goods and loads.
   prop("bread", ALWAYS, ["loaf"]),
   prop("meat", ALWAYS, ["carcass"]),
   prop("fish"),
@@ -326,7 +475,6 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   prop("teapot", { from: 1300 }),
   prop("cup", ALWAYS, ["mug"]),
   prop("palanquin", { to: 1920 }, ["sedanChair", "litter"]),
-  // Props: small natural things placed on the ground.
   prop("rock", ALWAYS, ["stone"]),
   prop("boulder"),
   prop("stump", ALWAYS, ["treeStump"]),
@@ -335,7 +483,6 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   prop("reeds", ALWAYS, ["reed", "rushes"]),
   prop("flowers", ALWAYS, ["flower"]),
   prop("lotus"),
-  // Walls, rows and spans: FIG.wall.
   { id: "palisade", fn: "wall", names: ["stockade"], to: 1900, variants: [{ kit: ["wall", "palisade"] }] },
   { id: "wall", fn: "wall", names: ["cityWall", "rampart"], builds: ["stone", "brick"], variants: [{ builds: ["stone", "brick"], kit: ["wall", "wall"] }, { kit: ["wall", "wall"] }] },
   { id: "gate", fn: "wall", names: [], builds: ["stone", "brick"], variants: [{ builds: ["stone", "brick"], kit: ["wall", "gate"] }] },
@@ -343,19 +490,23 @@ export const MOTION_OBJECT_CATALOG: MotionCatalogEntry[] = [
   { id: "wagonFort", fn: "wall", names: ["wagenburg", "wagonLaager", "laager"], from: 1200, to: 1900, variants: [{ kit: ["wall", "wagonFort"] }] },
   { id: "sandbags", fn: "wall", names: ["sandbag"], from: 1850, variants: [{ kit: ["wall", "sandbags"] }] },
   { id: "barbedWire", fn: "wall", names: [], from: 1870, variants: [{ kit: ["wall", "barbedWire"] }] },
-  // Bridges: as built in the period unless the scene says (build).
   {
     id: "bridge",
     fn: "bridge",
     names: [],
     builds: ["wood", "stone", "rope", "iron", "concrete"],
-    variants: [{ builds: ["wood"], kit: ["bridge", "wood"] }, { builds: ["stone"], kit: ["bridge", "stone"] }, { builds: ["rope"], kit: ["bridge", "rope"] }, { builds: ["iron"], kit: ["bridge", "iron"] }, { builds: ["concrete"], kit: ["bridge", "concrete"] }, { to: 1899, kit: ["bridge", "wood"] }, { from: 1900, kit: ["bridge", "concrete"] }],
+    variants: [
+      { builds: ["wood"], kit: ["bridge", "wood"] },
+      { builds: ["stone"], kit: ["bridge", "stone"] },
+      { builds: ["rope"], kit: ["bridge", "rope"] },
+      { builds: ["iron"], kit: ["bridge", "iron"] },
+      { builds: ["concrete"], kit: ["bridge", "concrete"] },
+      { to: 1899, kit: ["bridge", "wood"] },
+      { from: 1900, kit: ["bridge", "concrete"] },
+    ],
   },
-  // The library families: each kind with its years, other names and fit, drawn by its family's part.
   ...MOTION_LIBRARY_PARTS.flatMap((part) =>
     part.items.map((item): MotionCatalogEntry => ({ id: item.id, fn: part.fn, names: item.names || [], ...(item.from != null ? { from: item.from } : {}), ...(item.to != null ? { to: item.to } : {}), ...(item.fit ? { fit: item.fit } : part.fn === "vehicle" ? { fit: "elastic" as const } : part.fn === "animal" ? { fit: "rigid" as const } : {}), variants: [{ kit: [part.fn, item.id] }] })),
   ),
 ];
-
-// Building words that name what the thing is made of (build).
 export const MOTION_CATALOG_BUILDS = ["thatch", "timber", "wood", "mud", "stone", "brick", "rope", "iron", "concrete", "modern"] as const;

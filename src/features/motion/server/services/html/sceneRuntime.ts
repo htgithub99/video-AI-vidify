@@ -60,39 +60,34 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
       page = await openPage();
     };
     const draw = async (input: MotionHtmlFrameInput, subtitle: string, fontFamily: string, allowBlank: boolean): Promise<Buffer> => {
+      signal?.throwIfAborted();
+      let watchdog: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const frameInput = subtitle ? { ...input, subtitle: { text: subtitle, font: fontFamily } } : input;
+        const operation = page.evaluate(async ({ value, allowBlank, timeout }) => (await Promise.race([(window as any).renderMotionFrame(value, allowBlank), new Promise((_, reject) => setTimeout(() => reject(new Error(timeout)), 30000))])) as string, { value: frameInput, allowBlank, timeout: RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT });
+        const image = (await Promise.race([
+          operation,
+          new Promise<never>((_, reject) => {
+            watchdog = setTimeout(() => reject(new Error(RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT)), 35000);
+          }),
+        ])) as string;
+        return Buffer.from(image.split(RT_MAINTENANCE.COMMA)[1], RT_MAINTENANCE.BASE64);
+      } catch (error) {
         signal?.throwIfAborted();
-        let watchdog: ReturnType<typeof setTimeout> | undefined;
-        try {
-          // The page draws the frame, lays the subtitle over a copy of it and encodes it once (input.format: JPEG or PNG).
-          const frameInput = subtitle ? { ...input, subtitle: { text: subtitle, font: fontFamily } } : input;
-          const operation = page.evaluate(
-            async ({ value, allowBlank, timeout }) =>
-              (await Promise.race([(window as any).renderMotionFrame(value, allowBlank), new Promise((_, reject) => setTimeout(() => reject(new Error(timeout)), 30000))])) as string,
-            { value: frameInput, allowBlank, timeout: RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT },
-          );
-          const image = (await Promise.race([
-            operation,
-            new Promise<never>((_, reject) => {
-              watchdog = setTimeout(() => reject(new Error(RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT)), 35000);
-            }),
-          ])) as string;
-          return Buffer.from(image.split(RT_MAINTENANCE.COMMA)[1], RT_MAINTENANCE.BASE64);
-        } catch (error) {
-          signal?.throwIfAborted();
-          const reason = String((error as Error).message);
-          if (RT_MAINTENANCE.CANVAS_BLANK_FRAME_RE.test(reason)) throw error;
-          if (/Canvas renderAt timed out/.test(reason)) {
-            const key = `${contentKey}${RT_MAINTENANCE.COLON}${input.frame}${RT_MAINTENANCE.COLON}${input.width}${RT_MAINTENANCE.COLON}${input.height}`;
-            const count = (timedOutFrames.get(key) || 0) + 1;
-            timedOutFrames.set(key, count);
-            if (timedOutFrames.size > 512) timedOutFrames.delete(timedOutFrames.keys().next().value!);
-            if (count < 3) throw error;
-          }
-          if (!page.isClosed() && !/browser.*closed|target.*closed|crash|Connection closed/i.test(reason)) throw Object.assign(new Error(reason), { motionHtmlExecution: true });
-          throw error;
-        } finally {
-          clearTimeout(watchdog);
+        const reason = String((error as Error).message);
+        if (RT_MAINTENANCE.CANVAS_BLANK_FRAME_RE.test(reason)) throw error;
+        if (/Canvas renderAt timed out/.test(reason)) {
+          const key = `${contentKey}${RT_MAINTENANCE.COLON}${input.frame}${RT_MAINTENANCE.COLON}${input.width}${RT_MAINTENANCE.COLON}${input.height}`;
+          const count = (timedOutFrames.get(key) || 0) + 1;
+          timedOutFrames.set(key, count);
+          if (timedOutFrames.size > 512) timedOutFrames.delete(timedOutFrames.keys().next().value!);
+          if (count < 3) throw error;
         }
+        if (!page.isClosed() && !/browser.*closed|target.*closed|crash|Connection closed/i.test(reason)) throw Object.assign(new Error(reason), { motionHtmlExecution: true });
+        throw error;
+      } finally {
+        clearTimeout(watchdog);
+      }
     };
     return {
       async render(input: MotionHtmlFrameInput, subtitle = "", fontFamily: string = RT_MAINTENANCE.ARIAL): Promise<Buffer> {

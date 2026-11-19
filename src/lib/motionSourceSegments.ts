@@ -16,7 +16,10 @@ export const motionSplitUntimed = (text: string, offset = 0): MotionTimedSegment
     buffer = [];
     bufferWords = 0;
   };
-  for (const sentence of text.split(S.SENTENCE).map((line) => line.trim()).filter(Boolean)) {
+  for (const sentence of text
+    .split(S.SENTENCE)
+    .map((line) => line.trim())
+    .filter(Boolean)) {
     buffer.push(sentence);
     bufferWords += wordsOf(sentence);
     if (bufferWords >= S.CHUNK_WORDS) flush();

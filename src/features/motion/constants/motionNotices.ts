@@ -1,12 +1,1 @@
-export const MOTION_NOTICE_IDS = {
-  ANALYSIS: "analysis",
-  LANGUAGE: "language",
-  PARTS: "parts",
-  RESUME: "resume",
-  LEGACY: "legacy",
-  CONTINUE: "continue",
-  RESTART: "restart",
-  STALE: "stale",
-  WARN: "warn" as const,
-  INFO: "info" as const,
-} as const;
+export const MOTION_NOTICE_IDS = { ANALYSIS: "analysis", LANGUAGE: "language", PARTS: "parts", RESUME: "resume", LEGACY: "legacy", CONTINUE: "continue", RESTART: "restart", STALE: "stale", WARN: "warn" as const, INFO: "info" as const } as const;

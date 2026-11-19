@@ -1,8 +1,6 @@
 import { MOTION_CHAPTER_CARD as C } from "../../../../../constants/motionChapterCard.js";
 import type { MotionBeat, MotionChapter, MotionPlace } from "../../../../../types/motionVideo.js";
 import type { MotionRemotionTimedScene } from "../../../../../types/motionVisual.js";
-
-/** Puts each chapter's title over the start of its first scene (lower third), like a documentary chapter card. */
 export const motionApplyChapterTitles = (scenes: MotionRemotionTimedScene[], args: { beats: MotionBeat[]; chapters: MotionChapter[]; places: MotionPlace[]; fps: number; language: string }): MotionRemotionTimedScene[] => {
   const kicker = args.language === "en" ? C.KICKER.en : C.KICKER.vi;
   const seen = new Set<string>();

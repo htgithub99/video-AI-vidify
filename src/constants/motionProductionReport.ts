@@ -1,4 +1,3 @@
-// One-page report written when a production finishes: what was configured, how long each step took and how every scene was drawn.
 export const MOTION_PRODUCTION_REPORT = {
   FOLDER: "reports",
   EXT: ".md",

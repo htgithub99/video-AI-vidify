@@ -27,7 +27,6 @@ const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
       { once: true },
     );
   });
-/** One piece through motion's voice router (ai33 or VieNeu); a full queue is retried every ~17 s. */
 const speakPiece = async (text: string, voiceId: string, file: string, log: Log, signal?: AbortSignal): Promise<number> => {
   for (let attempt = 0; ; attempt++) {
     try {
@@ -40,12 +39,6 @@ const speakPiece = async (text: string, voiceId: string, file: string, log: Log,
     }
   }
 };
-/**
- * A section's narration as one WAV, read sentence by sentence like Video Motion (each sentence its own clip, joined in
- * order, with `gaps[k]` seconds of silence after clip k): the clips' lengths are the exact timing of subtitles and
- * picture changes. VieNeu writes only inside its own folder, so clips are spoken into a work folder there and joined
- * into the run's voice folder.
- */
 const speak = async (jobId: string, sentences: string[], gaps: number[], voiceId: string, file: string, log: Log, signal?: AbortSignal): Promise<number[]> => {
   const work = path.join(vieneuRoot(), REUP_VOICE.WORK_DIR, jobId);
   fs.mkdirSync(work, { recursive: true });
@@ -60,7 +53,6 @@ const speak = async (jobId: string, sentences: string[], gaps: number[], voiceId
       fs.writeFileSync(list, files.map((f) => `file '${f.replace(/\\/g, "/").replace(/'/g, "'\\''")}'`).join("\n"), "utf8");
       await reupFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", file], { signal });
     } else {
-      // Pauses between cues: each clip padded with silence, then joined (re-encoded to one PCM stream).
       const graph = files.map((_f, i) => `[${i}:a]aresample=${REUP_BUILD.AUDIO_RATE},aformat=channel_layouts=mono${gaps[i] > 0 ? `,apad=pad_dur=${gaps[i].toFixed(3)}` : ""}[c${i}]`);
       graph.push(`${files.map((_f, i) => `[c${i}]`).join("")}concat=n=${files.length}:v=0:a=1[out]`);
       await reupFfmpeg(["-y", ...files.flatMap((f) => ["-i", f]), "-filter_complex", graph.join(";"), "-map", "[out]", "-c:a", "pcm_s16le", file], { signal });
@@ -70,12 +62,7 @@ const speak = async (jobId: string, sentences: string[], gaps: number[], voiceId
     for (const f of [...files, list]) fs.rmSync(f, { force: true });
   }
 };
-/** Narrator of the output's voice channel (the Voices tab, shared with Video Motion); the second channel for the other language of a bilingual test. */
 export const reupVoiceFor = (job: ReupJob, lang?: string): string => findVoiceChannel(lang && lang !== job.settings.language ? job.settings.voiceChannelAlt : job.settings.voiceChannel)?.narratorVoiceId || "";
-/**
- * Step 4 — a WAV per section, read sentence by sentence; unchanged text with the same voice is reused. Subtitle lines
- * and photo-report picture changes take the sentence clips' own timing (no listening back needed).
- */
 export const voiceReupJob = async (job: ReupJob, log: Log, progress: (p: number) => void, signal?: AbortSignal, onVoice?: (id: string, voice: ReupVoice) => void): Promise<{ voices: Record<string, ReupVoice>; credits: number }> => {
   const items = (job.script?.outputs || []).flatMap((o) => o.sections.map((section) => ({ section, lang: o.lang || job.settings.language, voice: reupVoiceFor(job, o.lang) })));
   if (items.some((x) => !x.voice)) throw new Error(REUP_ERROR.NO_VOICE);
@@ -83,17 +70,17 @@ export const voiceReupJob = async (job: ReupJob, log: Log, progress: (p: number)
   const out: Record<string, ReupVoice> = {};
   let credits = 0;
   for (const [i, { section, lang, voice }] of items.entries()) {
-    // Pause after each cue but the last (narrated footage): the footage's own sound plays there.
     const cueGap = section.cues && section.cues.length > 1 && section.cues[0].moment ? reupPacing(job.settings.natural, job.source.hasAudio).cueGap : 0;
-    const key = createHash("sha1").update(`${voice}\n${section.text}${cueGap ? `\n${section.cues!.map((c) => c.text).join("\n")}\n${cueGap}` : ""}`).digest("hex").slice(0, 16);
+    const key = createHash("sha1")
+      .update(`${voice}\n${section.text}${cueGap ? `\n${section.cues!.map((c) => c.text).join("\n")}\n${cueGap}` : ""}`)
+      .digest("hex")
+      .slice(0, 16);
     const file = path.join(dir, `${section.id}_${key}.wav`);
     const old = job.voices?.[section.id];
     if (old && old.file === file && fs.existsSync(file)) out[section.id] = old;
-    // Read before an app restart cut the step short (same voice and text): kept; subtitles then follow text length.
     else if (fs.existsSync(file)) out[section.id] = { file, voice, seconds: await probeMediaDurationSeconds(file) };
     else {
       log(REUP_LOG.VOICE_LINE(i + 1, items.length));
-      // Photo reports: each picture's words are their own group, so the picture changes as its first sentence starts.
       const groups = (section.cues?.length ? section.cues.map((c) => c.text) : [section.text]).map((text) => reupSentences(text, REUP_VOICE.SENTENCE_MAX));
       const sentences = groups.flat();
       const firsts = groups.reduce<number[]>((acc, _g, k) => [...acc, k ? acc[k - 1] + groups[k - 1].length : 0], []);
@@ -105,17 +92,9 @@ export const voiceReupJob = async (job: ReupJob, log: Log, progress: (p: number)
         at = clip.end + gaps[k];
         return clip;
       });
-      out[section.id] = {
-        file,
-        voice,
-        seconds: _.round(at, 3),
-        ...(cueGap ? { gaps: _.round(_.sum(gaps), 2) } : {}),
-        subs: reupClipSubtitles(clips, reupSubChars(job.settings.aspect, lang)),
-        ...(section.cues && section.cues.length > 1 ? { cues: firsts.map((f) => _.round(clips[f]?.start ?? 0, 2)) } : {}),
-      };
+      out[section.id] = { file, voice, seconds: _.round(at, 3), ...(cueGap ? { gaps: _.round(_.sum(gaps), 2) } : {}), subs: reupClipSubtitles(clips, reupSubChars(job.settings.aspect, lang)), ...(section.cues && section.cues.length > 1 ? { cues: firsts.map((f) => _.round(clips[f]?.start ?? 0, 2)) } : {}) };
       if (isAi33Voice(voice)) credits += section.text.length;
     }
-    // Saved as each section finishes, so a restart resumes here instead of reading everything again.
     onVoice?.(section.id, out[section.id]);
     progress((i + 1) / items.length);
   }

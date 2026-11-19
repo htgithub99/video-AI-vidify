@@ -2,8 +2,6 @@ import { MOTION_SPEECH_ATTRIBUTION } from "./motionSpeech.js";
 export const MOTION_VOICE_RANK = { REGION: 4, REGION_MISS: -3, STORY: 1, NEWS: -2 } as const;
 export const MOTION_VOICE = {
   END_TRAILING_KEEP: 0.3,
-  // A long line is spoken one sentence per request and joined by code: short requests keep the engine's pace steady, each
-  // sentence is brought to the line's median rate, and the gaps between sentences are exact.
   SENTENCES: {
     VERSION: 1,
     MIN_WORDS: 16,
@@ -393,7 +391,6 @@ export const MOTION_VOICE_PANEL_STYLES = {
   STAT_BADGE: "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-800/80 bg-slate-900/60 text-slate-300 shadow-sm",
   STAT_BADGE_ACTIVE: "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-200 shadow-sm",
   GRID: "grid grid-cols-1 lg:grid-cols-12 gap-5 items-start lg:items-stretch",
-  // On wide screens the channel card fills the row, so it is as tall as the library column; its list scrolls.
   COL_CHANNELS: "lg:col-span-5 relative lg:min-h-[520px]",
   CARD_CHANNELS: "lg:absolute lg:inset-0 flex flex-col",
   COL_LIBRARY: "lg:col-span-7 space-y-4",
@@ -670,11 +667,33 @@ export const MOTION_VOICE_SPEED = {
   },
 } as const;
 export const MOTION_VOICE_PACING = {
-  // 13: character lines are evened phrase by phrase like the narration.
   VERSION: 15,
-  // Each phrase between two punctuation pauses is brought to the line's own speaking rate (never by more than PHRASE_STRETCH).
   PHRASE_LOG: (phrases: number, before: number, after: number): string => `Cân tốc độ từng cụm: ${phrases} cụm giữa các dấu câu được đưa về tốc độ chung của câu; độ lệch lớn nhất giữa các cụm ${(before * 100).toFixed(0)}% → khoảng ${(after * 100).toFixed(0)}%.`,
-  NARRATOR_CADENCE: { FIT_MARGIN: 1.12, PHRASE_STRETCH: 0.25, PHRASE_FULL_SYLLABLES: 6, WORD_STRETCH: 0.35, WORDS: { COVERAGE: 0.2, ALIGN_UNITS: 1.5, NEAR_PAUSE: 0.08, MIN_SYLLABLES: 2, MIN_SECONDS: 0.15 }, EVEN_GATE: 0.1, EVEN_RETRIES: 2, NUCLEUS: { SMOOTH_FRAMES: 5, PEAK_FRAMES: 6, VALLEY_FRAMES: 12, PROMINENCE_DB: 2.5, MIN_PER_SPAN: 3 }, LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
+  NARRATOR_CADENCE: {
+    FIT_MARGIN: 1.12,
+    PHRASE_STRETCH: 0.25,
+    PHRASE_FULL_SYLLABLES: 6,
+    WORD_STRETCH: 0.35,
+    WORDS: { COVERAGE: 0.2, ALIGN_UNITS: 1.5, NEAR_PAUSE: 0.08, MIN_SYLLABLES: 2, MIN_SECONDS: 0.15 },
+    EVEN_GATE: 0.1,
+    EVEN_RETRIES: 2,
+    NUCLEUS: { SMOOTH_FRAMES: 5, PEAK_FRAMES: 6, VALLEY_FRAMES: 12, PROMINENCE_DB: 2.5, MIN_PER_SPAN: 3 },
+    LONG_PAUSE_SHARE: 0.9,
+    CAP_MARGIN: 1.15,
+    MIN_UNITS: 8,
+    MIN_ACTIVE_SECONDS: 1.2,
+    MIN_RATIO: 0.3,
+    MAX_RATIO: 0.98,
+    TEMPO_MIN: 0.85,
+    TEMPO_MAX: 1.2,
+    PAUSE_MIN: 0.12,
+    PAUSE_GUARD: 0.03,
+    ALIGN_MAX_UNITS: 1.25,
+    ALIGN_MARGIN_UNITS: 0.3,
+    MAX_PAUSES: 48,
+    TOLERANCE: 0.015,
+    REVIEW_DELTA: 0.05,
+  },
   CADENCE_LOG: (count: number, min: number, max: number, target: number, limited: number, matched = 0, expected = 0): string => `Nhịp người kể: cân tốc độ trung bình ${count} đoạn theo mẫu ${target.toFixed(2)} tiếng/giây; đo lại ${min.toFixed(2)}–${max.toFixed(2)}. Khớp ${matched}/${expected} ranh giới dấu câu bằng âm thanh; phần chưa chắc giữ nhịp tự nhiên (${limited} đoạn chạm giới hạn).`,
   CADENCE_FALLBACK: "Đoạn kể chưa đo chắc nhịp; giữ tốc độ dự phòng và tiếp tục dựng.",
   WORD_TIMING_FALLBACK: (reason: string): string => `Chưa nghe được từng chữ để đo nhịp (${reason.slice(0, 120)}); đo nhịp theo âm tiết thay thế.`,
@@ -690,9 +709,6 @@ export const MOTION_VOICE_PACING = {
   DIALOGUE_RATE: { vi: 3.8, en: 2.6 } as Record<string, number>,
   DIALOGUE_MIN_UNITS: 4,
   DIALOGUE_RATE_MARGIN: 0.98,
-  // A reference profile taken from a slow ghost-story reading keeps its long pauses only for that kind of video. Every
-  // other genre reads in a flowing rhythm: the speaking rate of the profile stays, the pauses at commas and full stops
-  // are capped so the narration does not stop every second.
   FLOW: { CLAUSE: 0.26, SENTENCE: 0.46, SUSPENSE: 0.6, BEAT: 0.7 },
   FLOW_LOG: (clause: number, sentence: number): string => `Nhịp kể liền mạch cho thể loại này: nghỉ dấu phẩy tối đa ${clause.toFixed(2)} giây, nghỉ cuối câu tối đa ${sentence.toFixed(2)} giây (tốc độ nói giữ theo hồ sơ giọng).`,
   HORROR_RE: /(horror|ghost|kinh dị|truyện ma|tâm linh|ma quỷ|rùng rợn)/iu,
@@ -711,7 +727,6 @@ export const MOTION_VOICE_PACING = {
   PHRASE_MIN_WORDS: 4,
   CONJ: ["thì", "mà", "rồi", "nhưng", "và", "khi", "lúc", "để", "nên", "vì", "bỗng", "chợt", "liền", "cho đến", "and", "but", "when", "then", "while", "because", "until", "so"] as string[],
   NARRATION_SILENCE: 0.15,
-  // Narration reads with little randomness so its pace stays even; character lines keep more life.
   NARRATION_TEMPERATURE: 0.58,
   DIALOGUE_TEMPERATURE: 0.76,
   NARRATION_STRENGTH: 0.2,

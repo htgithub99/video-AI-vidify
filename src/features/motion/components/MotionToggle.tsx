@@ -3,8 +3,6 @@ import { MOTION_STYLES as S } from "../constants/motionStyles.js";
 import { TOGGLE_ELEMENTS } from "../../../constants/toggleStyles.js";
 import { cn } from "../../../lib/utils.js";
 import { ToggleField } from "../../../components/common/ToggleField.js";
-;
-;
 interface MotionToggleProps {
   checked: boolean;
   label: string;

@@ -650,7 +650,6 @@ export interface MotionUtterance {
   emotion: "neutral" | "warm" | "serious" | "tense" | "surprised" | "sad" | "excited" | "scared" | "angry";
   intensity?: number;
   speed: number;
-  // Rate correction set by code when it levels sentences and lines against each other (1 = unchanged).
   rateFix?: number;
   pauseBefore: number;
   pauseAfter: number;
@@ -724,7 +723,6 @@ export interface MotionVoiceCadence {
   phrases?: number;
   phraseSpread?: number;
   phraseSpreadAfter?: number;
-  /** How the stretches were timed: "words" when the clip was transcribed, otherwise by syllable nuclei. */
   timing?: "words";
   before: number;
   after: number;

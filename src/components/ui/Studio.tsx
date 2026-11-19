@@ -16,6 +16,18 @@ export const StudioLoadingState = ({ title, description, icon: Icon = Disc3, sec
     </div>
   </div>
 );
+export const StudioEmptyState = ({ title, description, icon: Icon, children, className }: { title: ReactNode; description?: ReactNode; icon: LucideIcon; children?: ReactNode; className?: string }) => (
+  <div className={cn(S.EMPTY_STATE, className)}>
+    <div className={S.EMPTY_FRAME}>
+      <Icon className={S.EMPTY_ICON} />
+    </div>
+    <div className={S.EMPTY_COPY}>
+      <h3 className={S.EMPTY_TITLE}>{title}</h3>
+      {description && <p className={S.EMPTY_DESCRIPTION}>{description}</p>}
+    </div>
+    {children}
+  </div>
+);
 export const StudioPage = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.PAGE, className)} />);
 export const StudioCanvas = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.CANVAS, className)} />);
 export const StudioCard = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.CARD, className)} />);

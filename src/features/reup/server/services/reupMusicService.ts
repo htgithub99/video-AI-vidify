@@ -8,13 +8,11 @@ import { REUP_PRESETS } from "../../constants/reupPresets.js";
 import type { ReupPresetId, ReupTrack } from "../../types/reup.js";
 import { reupFfmpeg } from "./reupFfmpeg.js";
 const PRESET_IDS = new Set<string>(REUP_PRESETS.map((p) => p.id));
-/** The music library folder (created on first use). */
 export const reupMusicDir = (): string => {
   const dir = path.join(getDataDirectory(), REUP_MUSIC.DIR);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 };
-/** Video type a library file belongs to: its sub-folder (A…H), else "Reup BGM X" in its name. */
 export const reupTrackPreset = (relative: string): ReupPresetId | undefined => {
   const [folder] = relative.split(/[\\/]/);
   if (relative.includes(path.sep) || relative.includes("/")) {
@@ -24,7 +22,6 @@ export const reupTrackPreset = (relative: string): ReupPresetId | undefined => {
   const id = REUP_MUSIC.NAME.exec(path.basename(relative))?.[1]?.toUpperCase();
   return id && PRESET_IDS.has(id) ? (id as ReupPresetId) : undefined;
 };
-/** Every track of the library (sorted by name), or only one video type's. */
 export const reupTracks = (preset?: ReupPresetId): ReupTrack[] => {
   const dir = reupMusicDir();
   const files = fs.readdirSync(dir, { recursive: true, encoding: "utf8" }).filter((f) => REUP_MUSIC.EXT.test(f));
@@ -36,10 +33,6 @@ export const reupTracks = (preset?: ReupPresetId): ReupTrack[] => {
     "name",
   );
 };
-/**
- * The track as a bed exactly `seconds` long: looped with crossfades when shorter, faded in at the start and out at
- * the end (written next to the output).
- */
 export const reupMusicBed = async (track: ReupTrack, seconds: number, dir: string, signal?: AbortSignal): Promise<string> => {
   const M = REUP_MUSIC;
   const length = await probeMediaDurationSeconds(track.file);

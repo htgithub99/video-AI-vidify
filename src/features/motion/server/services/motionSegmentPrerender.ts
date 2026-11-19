@@ -44,9 +44,6 @@ export const scheduleMotionSegmentPrerender = (id: string, spec: MotionRemotionS
       if (run.pending && !run.controller.signal.aborted) scheduleMotionSegmentPrerender(id, run.pending.spec, run.pending.ready, quality, log);
     });
 };
-// The export takes over from the background render: it stops at once (a part-drawn segment is thrown away, finished
-// ones stay in the cache for the export to reuse) and the export renders the rest on every lane the machine has.
-// Returns whether a background render was running.
 export const takeOverMotionSegmentPrerender = async (id: string | undefined): Promise<boolean> => {
   const run = id ? runs.get(id) : undefined;
   if (!run) return false;

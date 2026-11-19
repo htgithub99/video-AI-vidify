@@ -8,11 +8,8 @@ import { motionSceneInteractPairs } from "./motionSceneBlueprint.js";
 import { motionIsSpecPage, motionSceneSpecOf } from "./motionSceneSpec.js";
 import { MOTION_SCENE_ENGINE } from "../constants/motionSceneEngine.js";
 import { MOTION_SCENE_SPEC as S } from "../constants/motionSceneSpec.js";
-// How a scene is shown or exported: the engine draws its spec with the kit in the chosen drawing style, and the layout's
-// camera frames the scene's subject.
 export type MotionFigureScene = { shot?: string; kind?: string; sceneTemplate?: string };
 export type MotionFigureRender = { profile?: string; proportion?: string; layout?: string; movement?: string; year?: number; scene?: MotionFigureScene };
-// The renderer a compiled video or scene preview asks for, for one scene.
 export const motionFigureRenderOf = (spec: { profileId?: string; proportion?: string; layout?: string; movement?: string; eraYear?: number } | undefined, scene?: MotionFigureScene): MotionFigureRender => ({
   year: spec?.eraYear,
   profile: spec?.profileId,
@@ -21,32 +18,15 @@ export const motionFigureRenderOf = (spec: { profileId?: string; proportion?: st
   layout: motionLayoutOf({ layout: spec?.layout }),
   scene: scene && { shot: scene.shot, kind: scene.kind, sceneTemplate: scene.sceneTemplate },
 });
-// Names one way of showing the figures, so a picture captured another way is known to be out of date.
 export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `kit:${render?.profile || ""}:${render?.proportion || ""}|${motionLayoutOf({ layout: render?.layout })}|${motionMovementOf({ profileId: render?.profile, movement: render?.movement })}|r${F.RENDER_REVISION}e${S.ENGINE}`;
-// The view the page applies over the scene: the style layer, the layout the camera frames by (with the scene's planned
-// shot and kind, which "Tự động" reads), the scene's subject (its spec's focal item) and who acts on whom (the plan's
-// INTERACT pairs: they may stand close and are framed together), how figures move, and the story's year.
 export const motionFigureView = (render: MotionFigureRender | undefined, focus?: string) => {
   const style = render?.profile ? F.STYLES[motionDrawStyle(render.profile).kitLook] || null : null;
-  // How figures move ("Chuyển động"): the one chosen, else the drawing style's own ("Cắt dán kể chuyện": held poses, hops, the cut-out camera).
   const movement = motionMovementOf({ profileId: render?.profile, movement: render?.movement });
   const pairs = motionSceneInteractPairs(render?.scene?.sceneTemplate);
-  return {
-    style,
-    layout: motionLayoutOf({ layout: render?.layout }),
-    scene: { shot: render?.scene?.shot, kind: render?.scene?.kind },
-    // The drawing style by name (the master frame leans by it: a horror scene keeps its figure small).
-    profile: render?.profile,
-    focus: focus ? [focus] : [],
-    ...(pairs.length ? { pairs } : {}),
-    movement,
-    ...(Number.isFinite(render?.year) ? { year: render!.year } : {}),
-  };
+  return { style, layout: motionLayoutOf({ layout: render?.layout }), scene: { shot: render?.scene?.shot, kind: render?.scene?.kind }, profile: render?.profile, focus: focus ? [focus] : [], ...(pairs.length ? { pairs } : {}), movement, ...(Number.isFinite(render?.year) ? { year: render!.year } : {}) };
 };
-// Adds the figure table, the kit and the scene engine (with the view) to a scene page.
 const CATALOG_JSON = JSON.stringify(MOTION_CATALOG_RUNTIME).replace(/</g, "\\u003c");
 const VOCAB_JSON = JSON.stringify(MOTION_FIGURE_VOCAB_RUNTIME).replace(/</g, "\\u003c");
-// The kit, the figure table and the view, put at the top of a page (the engine's page, or a test page drawing through the table).
 export const motionFigureKitPage = (html: string, render?: MotionFigureRender, focus?: string): string => {
   const view = JSON.stringify(motionFigureView(render, focus)).replace(/</g, "\\u003c");
   const kit = K.SCRIPT_TAG + K.SCRIPT + K.SET_STYLE(motionDrawStyle(render?.profile).kitLook) + K.SET_PROPORTION(render?.proportion || "") + F.KIT_HOOK + K.SCRIPT_CLOSE;

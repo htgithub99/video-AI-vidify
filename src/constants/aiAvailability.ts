@@ -24,18 +24,8 @@ export const AI_AVAILABILITY = {
   KIND: { QUOTA: "quota", BLOCKED: "blocked", LOGIN: "login", PLAN: "plan", ERROR: "error" },
   ERROR_STREAK: 3,
   WAIT_POLICY: { WAIT: "wait", STOP: "stop" },
-  DEFAULT_MS: {
-    quota: 3 * 60 * 60 * 1000,
-    blocked: 30 * 60 * 1000,
-    login: 30 * 60 * 1000,
-    plan: 12 * 60 * 60 * 1000,
-    error: 20 * 60 * 1000,
-  } as Record<string, number>,
-  PROVIDER_QUOTA_MS: {
-    "claude-chat": 5 * 60 * 60 * 1000,
-    "deepseek-chat": 30 * 60 * 1000,
-    "grok-chat": 2 * 60 * 60 * 1000,
-  } as Record<string, number>,
+  DEFAULT_MS: { quota: 3 * 60 * 60 * 1000, blocked: 30 * 60 * 1000, login: 30 * 60 * 1000, plan: 12 * 60 * 60 * 1000, error: 20 * 60 * 1000 } as Record<string, number>,
+  PROVIDER_QUOTA_MS: { "claude-chat": 5 * 60 * 60 * 1000, "deepseek-chat": 30 * 60 * 1000, "grok-chat": 2 * 60 * 60 * 1000 } as Record<string, number>,
   MIN_MS: 60 * 1000,
   MAX_MS: 26 * 60 * 60 * 1000,
   RESET_PAD_MS: 2 * 60 * 1000,
@@ -44,8 +34,7 @@ export const AI_AVAILABILITY = {
   NOTICE_MAX: 400,
   NOTICE_ITEMS: 40,
   NOTICE_TIMEOUT_MS: 1500,
-  NOTICE_SELECTOR:
-    '[role="alert"], [role="status"], [role="alertdialog"], [role="dialog"], [aria-live="polite"], [aria-live="assertive"], aside[role="status"], [data-testid="usage-limit-banner"], [data-testid*="limit" i], [class*="limit" i], [class*="quota" i], [class*="banner" i], mat-snack-bar-container, bard-simple-snack-bar, .ds-toast, .cf-error-details, #challenge-running, #challenge-stage',
+  NOTICE_SELECTOR: '[role="alert"], [role="status"], [role="alertdialog"], [role="dialog"], [aria-live="polite"], [aria-live="assertive"], aside[role="status"], [data-testid="usage-limit-banner"], [data-testid*="limit" i], [class*="limit" i], [class*="quota" i], [class*="banner" i], mat-snack-bar-container, bard-simple-snack-bar, .ds-toast, .cf-error-details, #challenge-running, #challenge-stage',
   CODES: {
     quota: ["chatgpt_rate_limited", "deepseek_rate_limited", "gemini_flash_quota_exhausted", "gemini_quota_exhausted", "META_AI_RATE_LIMITED", "Claude đã hết lượt sử dụng", "Grok đã hết lượt sử dụng"],
     blocked: ["deepseek_account_unavailable", "chưa được xác minh sau", "title=Chờ một chút", "title=Just a moment"],
@@ -80,13 +69,7 @@ export const AI_AVAILABILITY = {
     RESUME: (provider: string) => `Hết thời gian chờ – thử lại ${provider}.`,
     SKIP: (provider: string, until: string) => `Bỏ qua ${provider}: đang hết lượt hoặc bị chặn đến ${until}.`,
   },
-  KIND_LABEL: {
-    quota: "hết hạn mức",
-    blocked: "bị chặn hoặc cần xác minh",
-    login: "mất đăng nhập",
-    plan: "gói tài khoản không có model này",
-    error: "lỗi liên tục",
-  } as Record<string, string>,
+  KIND_LABEL: { quota: "hết hạn mức", blocked: "bị chặn hoặc cần xác minh", login: "mất đăng nhập", plan: "gói tài khoản không có model này", error: "lỗi liên tục" } as Record<string, string>,
   TIME_LOCALE: "vi-VN",
   TIME_OPTIONS: { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" } as Intl.DateTimeFormatOptions,
 } as const;

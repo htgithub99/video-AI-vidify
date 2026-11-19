@@ -1,6 +1,5 @@
 export const MOTION_THUMBNAIL = {
   DRAW_ATTEMPTS: 3,
-  // Times one accepted spec is shown when the browser itself fails.
   RENDER_TRIES: 2,
   OUTPUT_WIDTH: 1280,
   OUTPUT_HEIGHT: 720,
@@ -20,8 +19,7 @@ export const MOTION_THUMBNAIL = {
   LOG_PROFILE: "Ảnh bìa: chưa có hình cảnh phù hợp; dùng phong cách của cách dựng/gói đã chọn để vẽ mới.",
   SPEC_TASK: (width: number, height: number): string =>
     `THUMBNAIL TASK: you are the art director of this video's YouTube thumbnail. Compose a NEW finished thumbnail as a SCENE SPEC (JSON, rules below) for a ${width} x ${height} still picture: no keys are needed (it is one frame), and it carries the "headline" field below. A drawing engine draws every item from its library in the video's art style and renders the PNG.`,
-  SPEC_HEADLINE:
-    'HEADLINE: the only text. "headline": { "lines": [1-3 short lines in the video language, 2-5 words in all], "x": px, "y": px (baseline of the first line), "size": letter height px (the LAYOUT says how big), "align": "left"|"center"|"right", "accent": one word of the lines in the accent colour, "tilt": degrees (about -4) }. Keep it clear of the main face and the key object.',
+  SPEC_HEADLINE: 'HEADLINE: the only text. "headline": { "lines": [1-3 short lines in the video language, 2-5 words in all], "x": px, "y": px (baseline of the first line), "size": letter height px (the LAYOUT says how big), "align": "left"|"center"|"right", "accent": one word of the lines in the accent colour, "tilt": degrees (about -4) }. Keep it clear of the main face and the key object.',
   SPEC_ERROR: (reason: string): string => `Chưa tạo được ảnh bìa: ${reason}`,
   LOG_SPEC: "Ảnh bìa: AI trả bản mô tả ảnh bìa, app vẽ bằng bộ vẽ chuẩn theo kiểu vẽ đã chọn rồi chụp lại thành PNG.",
   LOG_SPEC_RETRY: (attempt: number, reason: string): string => `Ảnh bìa: lượt ${attempt} chưa dùng được (${reason}) – yêu cầu AI trả lại.`,

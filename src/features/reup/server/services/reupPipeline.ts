@@ -25,7 +25,6 @@ import { isReupAbort } from "./reupFfmpeg.js";
 import { getReupJob, listReupJobs, reupController, reupEmptySteps, reupFileUrl, reupJobDir, reupLog, reupStep, saveReupJob, setReupController } from "./reupJobStore.js";
 import { inspectReupSource, makeReupProxy, reupFingerprint, makeReupSheets, measureReupQuality, reupFrame, transcribeReupSource } from "./reupMediaService.js";
 import { voiceReupJob } from "./reupVoiceService.js";
-/** What each step produces; re-running a step drops its results and everything after it. */
 const clearFrom = (job: ReupJob, step: ReupStepId): void => {
   const at = REUP_STEPS.indexOf(step);
   if (at <= 0) {
@@ -42,7 +41,6 @@ const clearFrom = (job: ReupJob, step: ReupStepId): void => {
   job.warnings = [];
   for (const id of REUP_STEPS.slice(at)) job.steps[id] = { status: "idle", progress: 0, message: "" };
 };
-/** This channel's earlier runs, newest first (styles, sources, scripts and titles are compared against them). */
 const pastRuns = (job: ReupJob): ReupJob[] => listReupJobs(REUP_COMMENTARY.HISTORY * 6).filter((p) => p.id !== job.id && p.createdAt < job.createdAt);
 const checkPolicy = (job: ReupJob): void => {
   job.report = reupReport(job, pastRuns(job));
@@ -53,7 +51,6 @@ const checkClaims = (job: ReupJob, text: string): void => {
   const claims = reupUnbackedClaims(text, job.sceneMap!);
   if (claims.length) reupLog(job, REUP_LOG.CLAIM(claims.join(", ")), "warn");
 };
-/** Words the AI wrote (a speaker's own words are theirs, not checked). */
 const scriptClaimText = (script: ReupScript): string => script.outputs.flatMap((o) => [...o.title, o.cta || "", ...o.sections.flatMap((s) => (o.speech ? [s.callout || ""] : [s.text]))]).join("\n");
 const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promise<"next" | "stop">> = {
   source: async (job, signal) => {
@@ -80,21 +77,36 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     job.bad = quality.bad;
     reupLog(job, REUP_LOG.SHEETS(sheets.length, sheets[0]?.interval || job.settings.sheetInterval));
     if (!quality.blurMeasured && job.settings.blurLevel > 0) reupLog(job, REUP_LOG.QUALITY_NO_BLUR);
-    reupLog(job, REUP_LOG.QUALITY(quality.bad.length, _.sumBy(quality.bad, (b) => b.end - b.start)));
+    reupLog(
+      job,
+      REUP_LOG.QUALITY(
+        quality.bad.length,
+        _.sumBy(quality.bad, (b) => b.end - b.start),
+      ),
+    );
     await speech;
     return "next";
   },
   scenes: async (job, signal) => {
-    job.sceneMap = await withReupAi(job, () => buildReupSceneMap(job, (t, l) => reupLog(job, t, l), signal), (t) => reupLog(job, t), signal);
+    job.sceneMap = await withReupAi(
+      job,
+      () => buildReupSceneMap(job, (t, l) => reupLog(job, t, l), signal),
+      (t) => reupLog(job, t),
+      signal,
+    );
     return "next";
   },
   script: async (job, signal) => {
-    // The commentary style is picked once per run, away from what recent videos used; re-running the script keeps it.
     if (!job.style) {
       job.style = pickReupStyle(job.settings, _.compact(pastRuns(job).map((p) => p.style)).slice(0, REUP_COMMENTARY.HISTORY), job.id);
       reupLog(job, REUP_LOG.STYLE(REUP_STYLE_NAME[job.style.voice], job.style.hook ? REUP_STYLE_NAME[job.style.hook] : "", REUP_STYLE_NAME[job.style.ending]));
     }
-    job.script = await withReupAi(job, () => writeReupScript(job, (t, l) => reupLog(job, t, l), signal), (t) => reupLog(job, t), signal);
+    job.script = await withReupAi(
+      job,
+      () => writeReupScript(job, (t, l) => reupLog(job, t, l), signal),
+      (t) => reupLog(job, t),
+      signal,
+    );
     reupLog(job, REUP_LOG.SCRIPT(job.script.outputs.length, scriptWords(job.script)));
     checkClaims(job, scriptClaimText(job.script));
     if (!job.settings.stopScript) return "next";
@@ -107,10 +119,16 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       reupLog(job, REUP_LOG.SPEECH_ONLY);
       return "next";
     }
-    const { voices, credits } = await voiceReupJob(job, (t, l) => reupLog(job, t, l), (p) => reupStep(job, "voice", { progress: p }), signal, (id, voice) => {
-      job.voices = { ...job.voices, [id]: voice };
-      saveReupJob(job);
-    });
+    const { voices, credits } = await voiceReupJob(
+      job,
+      (t, l) => reupLog(job, t, l),
+      (p) => reupStep(job, "voice", { progress: p }),
+      signal,
+      (id, voice) => {
+        job.voices = { ...job.voices, [id]: voice };
+        saveReupJob(job);
+      },
+    );
     job.voices = voices;
     job.credits = (job.credits || 0) + credits;
     reupLog(job, REUP_LOG.VOICE_DONE(_.sumBy(Object.values(voices), "seconds")));
@@ -118,16 +136,25 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     return "next";
   },
   build: async (job, signal) => {
-    // The background track: one of the library's tracks for this type, the one this channel used longest ago.
     if (job.settings.music === "library") {
       const tracks = reupTracks(job.preset);
-      const track = tracks.some((t) => t.name === job.style?.track) ? job.style!.track : reupPickTrack(tracks.map((t) => t.name), _.compact(pastRuns(job).map((p) => p.style)).slice(0, REUP_COMMENTARY.HISTORY), job.id);
+      const track = tracks.some((t) => t.name === job.style?.track)
+        ? job.style!.track
+        : reupPickTrack(
+            tracks.map((t) => t.name),
+            _.compact(pastRuns(job).map((p) => p.style)).slice(0, REUP_COMMENTARY.HISTORY),
+            job.id,
+          );
       job.style = { ...job.style!, track };
       reupLog(job, track ? REUP_LOG.MUSIC_TRACK(track) : REUP_LOG.MUSIC_EMPTY(job.preset, reupMusicDir()), track ? "info" : "warn");
     }
-    job.outputs = await buildReupJob(job, (t, l) => reupLog(job, t, l), (p) => reupStep(job, "build", { progress: p }), signal);
+    job.outputs = await buildReupJob(
+      job,
+      (t, l) => reupLog(job, t, l),
+      (p) => reupStep(job, "build", { progress: p }),
+      signal,
+    );
     checkPolicy(job);
-    // A re-export keeps the SEO package; its files list the new videos.
     if (job.package) writePackage(job, job.package);
     return "next";
   },
@@ -141,7 +168,12 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     );
     const past = pastRuns(job);
     const recent = { titles: past.flatMap((p) => (p.package?.options || []).map((o) => o.title)).slice(0, 20), layouts: _.compact(past.slice(0, 3).map((p) => p.package?.thumbs[0]?.layout)) };
-    job.package = await withReupAi(job, () => writeReupPackage(job, frames, recent, (t, l) => reupLog(job, t, l), signal), (t) => reupLog(job, t), signal);
+    job.package = await withReupAi(
+      job,
+      () => writeReupPackage(job, frames, recent, (t, l) => reupLog(job, t, l), signal),
+      (t) => reupLog(job, t),
+      signal,
+    );
     reupLog(job, REUP_LOG.PACKAGE(job.package.options.length, job.package.thumbs.length));
     checkClaims(job, [...job.package.options.map((o) => o.title), ...job.package.thumbs.flatMap((t) => t.lines)].join("\n"));
     checkPolicy(job);
@@ -202,7 +234,6 @@ export const startReup = async (input: { path: string; preset: ReupPresetId; set
   const now = Date.now();
   const settings = reupJobSettings(preset.id, cleanReupSettings(input.settings, preset.id));
   if (rights === "licensed" && !settings.sourceLink.trim()) throw new Error(REUP_ERROR.LICENSE_LINK);
-  // The channel's own knowledge or view is what makes a narrated video ours (YouTube's reused-content rule): required.
   if (!preset.speech && settings.angle.trim().length < REUP_LIMITS.ANGLE_MIN) throw new Error(REUP_ERROR.NO_ANGLE);
   const job: ReupJob = { id: randomUUID(), createdAt: now, updatedAt: now, preset: preset.id, settings, rights, source, status: "running", steps: reupEmptySteps(), logs: [], sheets: [], bad: [], warnings: [], outputs: [] };
   saveReupJob(job, true);
@@ -222,12 +253,7 @@ export const rerunReup = (id: string, step: ReupStepId, settings?: unknown): Reu
   launch(job, step);
   return job;
 };
-/** Export fields the screen may change on a finished run: the picture format and the sound mix (not the words). */
 const EXPORT_KEYS = ["aspect", "quality", "fps", "subtitles", "music", "natural", "logo", "logoCorner"] as const;
-/**
- * "Export video" on a run whose voice is ready: the videos are built again with the screen's export format and mix
- * (Video Motion's export button). Scenes, script, voice and the SEO package stay.
- */
 export const exportReup = (id: string, settings: unknown): ReupJob => {
   const job = getReupJob(id);
   if (!job) throw new Error(REUP_ERROR.NO_JOB);
@@ -242,7 +268,6 @@ export const exportReup = (id: string, settings: unknown): ReupJob => {
   launch(job, "build", "build");
   return job;
 };
-/** Stop 1 passed: keep the server's shots, take the edited titles, narration (or cue lines), callouts and call to action. */
 export const approveReupScript = (id: string, edited: unknown): ReupJob => {
   const job = getReupJob(id);
   if (!job?.script) throw new Error(REUP_ERROR.NO_JOB);
@@ -257,7 +282,10 @@ export const approveReupScript = (id: string, edited: unknown): ReupJob => {
       const secs = new Map<string, any>(_.castArray(e?.sections || []).map((x: any) => [String(x?.id), x]));
       return {
         ...o,
-        title: _.castArray(e?.title ?? o.title).map((l) => clip(l, 40)).filter(Boolean).slice(0, 2),
+        title: _.castArray(e?.title ?? o.title)
+          .map((l) => clip(l, 40))
+          .filter(Boolean)
+          .slice(0, 2),
         ...(o.cta !== undefined ? { cta: clip(e?.cta ?? o.cta, 80) } : {}),
         sections: o.sections
           .map((sec) => {
@@ -281,7 +309,6 @@ export const approveReupScript = (id: string, edited: unknown): ReupJob => {
   launch(job, "voice");
   return job;
 };
-/** SEO options written next to the videos the way Video Motion exports them (one text file), plus the pinned comment. */
 const writePackage = (job: ReupJob, pack: ReupPackage): void => {
   const dir = reupJobDir(job.id, REUP_DIR.PACKAGE);
   const seo = { chapters: reupSeoChapters(job.outputs[0]) };

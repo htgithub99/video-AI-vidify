@@ -1,6 +1,4 @@
-// Work of farm, market and workshop: farm gear and pens, market goods and counters, craft tools and machines.
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "harrow", names: ["rake"] },
   { id: "yoke", names: ["oxYoke"] },
@@ -43,11 +41,9 @@ const items = [
   { id: "shipHull", names: ["boatUnderConstruction"] },
   { id: "steamEngine", from: 1770, to: 1950, names: ["beamEngine"] },
 ];
-
 const helpers = `const sack = (x, y, s, col) => { fl(S([[x - 0.35 * s, y], [x - 0.4 * s, y - 0.55 * s], [x - 0.22 * s, y - 0.8 * s], [x + 0.22 * s, y - 0.8 * s], [x + 0.4 * s, y - 0.55 * s], [x + 0.35 * s, y]]), col || T("#c9b48a")); ln([[x - 0.15 * s, y - 0.75 * s], [x + 0.15 * s, y - 0.75 * s]], 0.8, rope); };
   const pot = (x, y, s, col) => fl(S([[x - 0.25 * s, y], [x - 0.45 * s, y - 0.4 * s], [x - 0.3 * s, y - 0.8 * s], [x + 0.3 * s, y - 0.8 * s], [x + 0.45 * s, y - 0.4 * s], [x + 0.25 * s, y]]), col || T(night ? "#7a4a3a" : "#b8643e"));
   const fenceRow = (x0, x1, h) => { for (let x = x0; x <= x1 + 0.01; x += 0.5) beam([[x, 0], [x, -h]], 0.07); beam([[x0, -h * 0.4], [x1, -h * 0.4]], 0.06); beam([[x0, -h * 0.85], [x1, -h * 0.85]], 0.06); };`;
-
 const body = `
     case "harrow": fl(P([[-1.2, -0.5], [1.2, -0.5], [1.2, -0.3], [-1.2, -0.3]]), wood); for (let i = 0; i < 8; i++) fl(P([[-1.1 + i * 0.31, -0.3], [-1.05 + i * 0.31, 0], [-1.0 + i * 0.31, -0.3]]), iron); beam([[1.2, -0.4], [2.2, -0.8]], 0.06); break;
     case "yoke": { const p = new Path2D(); p.moveTo(-1.4 * R, -0.9 * R); p.quadraticCurveTo(0, -1.25 * R, 1.4 * R, -0.9 * R); c.lineWidth = 0.18 * R + w * 2; c.strokeStyle = ol; c.stroke(p); c.lineWidth = 0.18 * R; c.strokeStyle = wood; c.stroke(p); } [-0.9, -0.5, 0.5, 0.9].forEach((x) => beam([[x, -0.95], [x, -0.4]], 0.05)); break;
@@ -89,5 +85,4 @@ const body = `
     case "tanningRack": [-1.0, 1.0].forEach((x) => beam([[x, 0], [x, -2.0]], 0.08)); beam([[-1.1, -1.9], [1.1, -1.9]], 0.07); fl(S([[-0.8, -1.8], [0.8, -1.8], [0.9, -1.2], [0.7, -0.4], [-0.7, -0.4], [-0.9, -1.2]]), leather); for (let i = 0; i < 5; i++) ln([[-0.8 + i * 0.4, -1.85], [-0.75 + i * 0.4, -1.75]], 0.6, rope); break;
     case "shipHull": fl(S([[-2.6, -1.6], [-2.2, -0.4], [-1.0, 0], [1.6, 0], [2.6, -1.4]]), K.shade(wood, 1.1)); for (let i = 0; i < 9; i++) { const x = -2.0 + i * 0.5; ln([[x, -1.55 + Math.abs(x) * 0.05], [x, -0.05]], 0.9, dark); } [-1.8, 0, 1.8].forEach((x) => beam([[x, 0], [x + 0.5, -2.0]], 0.07)); beam([[-2.8, 0.1], [2.8, 0.1]], 0.1); break;
     case "steamEngine": fl(rect(-2.0, -0.3, 2.0, 0), stone); fl(rect(-1.6, -1.8, -0.8, -0.3), iron); beam([[-1.2, -1.8], [0.6, -2.3]], 0.12, iron); beam([[-0.2, -2.3], [-0.2, -0.3]], 0.12, iron); ring(1.2, -1.2, 0.9, iron); ring(1.2, -1.2, 0.7, K.shade(iron, 1.2)); for (let i = 0; i < 6; i++) { const a = spin * 0.3 + i * Math.PI / 3; ln([[1.2, -1.2], [1.2 + Math.cos(a) * 0.7, -1.2 + Math.sin(a) * 0.7]], 0.8); } if (o.smoking) smoke(-1.2, -2.6, 0.4); break;`;
-
 export const MOTION_LIBRARY_WORK: MotionLibraryPart = { part: "lib_work", fn: "prop", items, js: motionLibraryPart(items, body, 1, helpers) };

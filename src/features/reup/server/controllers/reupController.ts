@@ -5,14 +5,11 @@ import _ from "lodash";
 import { pickMotionSaveFile } from "../../../motion/server/controllers/motionVideoController.js";
 import { pickVideoExportFolder } from "../../../video-export/server/services/videoExportScanService.js";
 import { REUP_ERROR } from "../../constants/reupServerText.js";
-import type { ReupJob, ReupPresetId, ReupStepId } from "../../types/reup.js";
-import { REUP_PRESETS } from "../../constants/reupPresets.js";
-import { reupMusicDir, reupTracks } from "../services/reupMusicService.js";
+import type { ReupJob, ReupStepId } from "../../types/reup.js";
 import { deleteReupJobs, getReupJob, listReupJobs } from "../services/reupJobStore.js";
 import { inspectReupSource, reupFrame } from "../services/reupMediaService.js";
 import { approveReupScript, cancelReup, exportReup, rerunReup, startReup } from "../services/reupPipeline.js";
 const fail = (res: Response, status: number, error: unknown): void => void res.status(status).json({ success: false, error: String((error as Error)?.message || error) });
-/** The client needs everything except local file paths of intermediate files. */
 const view = (job: ReupJob) => ({ ...job, sheets: job.sheets.map(({ file: _file, ...sheet }) => sheet), voices: undefined, transcript: job.transcript ? { text: job.transcript.text, words: [], phrases: [] } : undefined });
 export const inspectReupSourceController = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -27,17 +24,6 @@ export const startReupController = async (req: Request, res: Response): Promise<
   } catch (error) {
     fail(res, 400, error);
   }
-};
-/** The music library: its folder and the tracks of one video type (names only; files play through reupTrackFileController). */
-export const reupTracksController = (req: Request, res: Response): void => {
-  const preset = String(req.query.preset || "");
-  res.json({ success: true, dir: reupMusicDir(), tracks: reupTracks(REUP_PRESETS.some((p) => p.id === preset) ? (preset as ReupPresetId) : undefined).map((t) => ({ name: t.name, preset: t.preset })) });
-};
-/** Play one library track (only names the library lists). */
-export const reupTrackFileController = (req: Request, res: Response): void => {
-  const track = reupTracks().find((t) => t.name === String(req.query.name || ""));
-  if (!track) return fail(res, 404, REUP_ERROR.NO_TRACK);
-  res.sendFile(track.file);
 };
 export const reupStatusController = (req: Request, res: Response): void => {
   const job = getReupJob(String(req.params.jobId || ""));
@@ -89,7 +75,6 @@ export const pickReupFolderController = async (_req: Request, res: Response): Pr
 export const listReupJobsController = (_req: Request, res: Response): void => {
   res.json({ success: true, jobs: listReupJobs().map((job) => ({ id: job.id, name: job.source.name, preset: job.preset, status: job.status, updatedAt: job.updatedAt, outputs: job.outputs.map(({ id, url, duration, width, height }) => ({ id, url, duration, width, height })), packageDir: job.packageDir })) });
 };
-/** Delete runs and their files (Results tab). */
 export const deleteReupJobsController = async (req: Request, res: Response): Promise<void> => {
   try {
     res.json({ success: true, ...(await deleteReupJobs(req.body?.ids)) });
@@ -97,7 +82,6 @@ export const deleteReupJobsController = async (req: Request, res: Response): Pro
     fail(res, 400, error);
   }
 };
-/** Save an edited video where the user picks, through Video Motion's "Save as" dialog. */
 export const saveReupVideoController = async (req: Request, res: Response): Promise<void> => {
   try {
     const job = getReupJob(String(req.body?.jobId || ""));

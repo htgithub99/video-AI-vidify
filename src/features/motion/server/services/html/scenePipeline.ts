@@ -257,14 +257,15 @@ const motionHtmlVarietyNote = (siblings: MotionRemotionScene[], scene: MotionRem
   const index = siblings.findIndex((entry) => entry.id === scene.id);
   const prev = (index > 0 ? siblings[index - 1] : undefined) as { shot?: unknown; setting?: unknown } | undefined;
   const current = scene as { shot?: unknown; setting?: unknown };
-  const norm = (value: unknown) => String(value ?? "").trim().toLowerCase();
+  const norm = (value: unknown) =>
+    String(value ?? "")
+      .trim()
+      .toLowerCase();
   return prev && norm(prev.shot) && norm(prev.shot) === norm(current.shot) && norm(prev.setting) === norm(current.setting) ? MOTION_HTML_QUALITY.VARIETY(norm(current.shot), String(current.setting)) : undefined;
 };
 const reviewMotionHtmlScene = async (scene: MotionRemotionScene, image: string, target: MotionAiExecution | undefined, dir: string, attempt: number, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log">): Promise<string[]> => {
   const match = /^data:([^;]+);base64,(.+)$/.exec(image || "");
   if (!match || !target?.provider) return [];
-  // Chat uploads go through the browser file picker, which cannot open Windows paths over 260 characters;
-  // the scene store path is already near that limit, so upload from a short work folder and keep a copy beside the scene.
   const work = getMotionWorkDirectory(`${MOTION_HTML_QUALITY.REVIEW_ARTIFACT}-${randomUUID()}`);
   try {
     const name = `${MOTION_HTML_QUALITY.REVIEW_FILE}${attempt}.${match[1].split("/")[1] || "jpg"}`;
@@ -281,7 +282,10 @@ const reviewMotionHtmlScene = async (scene: MotionRemotionScene, image: string, 
     const raw = await (opts.ai ? opts.ai(prompt, MOTION_HTML_QUALITY.REVIEW_ARTIFACT, exec, opts.signal, opts.log, images) : runMotionAi(prompt, MOTION_HTML_QUALITY.REVIEW_ARTIFACT, exec, opts.signal, opts.log, images));
     const json = typeof raw === "string" ? extractJson(raw) : raw;
     if (!json || json.ok !== false) return [];
-    return (Array.isArray(json.problems) ? json.problems : []).map((item: unknown) => String(item).trim()).filter(Boolean).slice(0, 5);
+    return (Array.isArray(json.problems) ? json.problems : [])
+      .map((item: unknown) => String(item).trim())
+      .filter(Boolean)
+      .slice(0, 5);
   } catch (error) {
     opts.signal?.throwIfAborted();
     opts.log(MOTION_HTML_QUALITY.REVIEW_SKIP_LOG(scene.id, String((error as Error)?.message || error).slice(0, 160)));
@@ -296,17 +300,23 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
   const route = routes[Math.min(Math.floor(missed / MOTION_HTML.SWITCH_AFTER), routes.length - 1)];
   return route.provider === exec.provider ? exec : { ...exec, provider: route.provider, model: route.model, mode: route.mode };
 };
-export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; movement?: string; scope?: string; language?: string; cast?: string; continuity?: string; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string; year?: number; genre?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
-  // One request per scene: the AI returns the scene as a spec (what is where, how it changes); code puts right what is not
-  // reasonable and the engine draws every scene with the kit in the chosen style, so the drawing style and the layout's
-  // camera are applied when the scene is shown and never need a new request.
+export const generateMotionHtmlScene = async (
+  scene: MotionRemotionScene,
+  settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; movement?: string; scope?: string; language?: string; cast?: string; continuity?: string; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string; year?: number; genre?: string },
+  opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number },
+  save: () => void = () => undefined,
+): Promise<void> => {
   const isMap = settings.kind === MOTION_HTML_WRITING.MAP_KIND;
   const render = { profile: settings.profile, proportion: motionProportionOf({ profileId: settings.profile, proportion: settings.proportion }), layout: MOTION_LAYOUT_WIDE, year: settings.year, scene: { shot: settings.shot, kind: settings.kind, sceneTemplate: scene.sceneTemplate } };
   const required = motionHtmlRequired(scene.sceneTemplate);
-  const looks = isMap ? undefined : motionSceneCastPrompt(settings.castLooks, required.map((item) => item.id));
+  const looks = isMap
+    ? undefined
+    : motionSceneCastPrompt(
+        settings.castLooks,
+        required.map((item) => item.id),
+      );
   const context = [settings.cast, looks, settings.continuity, settings.variety].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR) || undefined;
   const frame: [number, number] = [settings.width, settings.height];
-  // The master frame by the film shot scale for this scene (its shot, the frame, the genre and drawing style).
   const master = motionMasterTarget({ frame, shot: settings.shot ?? scene.shot, kind: settings.kind ?? scene.kind, genre: settings.genre, profile: settings.profile });
   let prompt = motionSceneSpecPrompt({ ...scene, shot: settings.shot ?? scene.shot, kind: settings.kind ?? scene.kind }, { year: settings.year, map: isMap, cast: context, frame, language: settings.language, genre: settings.genre, profile: settings.profile });
   const key = motionInputKey([MOTION_SCENE_SPEC.VERSION, prompt, settings.width, settings.height, settings.language]);
@@ -323,7 +333,6 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   };
   const gaps: MotionCatalogGap[] = [];
   const ctx = { year: settings.year, template: scene.sceneTemplate, map: isMap, castLooks: settings.castLooks, header: scene.timeLabel || undefined, gaps, master: master.target };
-  // The still of the key moment, captured with the kit in the base style.
   const capture = (html: string) =>
     withMotionThumbnailBrowser(isLowSpecMode() ? AI_LOAD.THUMBNAIL_IDLE_MS : MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
       const runtime = await openMotionHtmlRuntime(html, opts.signal, true, browser, render);
@@ -366,7 +375,6 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     motionCompactScene(scene);
     persist();
   };
-  // A scene the AI gave no usable spec for: laid out by code from the plan, so one stubborn scene never blocks the video.
   const acceptFallback = async (tries: number): Promise<boolean> => {
     const spec = motionSceneSpecFallback(scene.sceneTemplate, { shot: settings.shot, kind: settings.kind, frame });
     if (!spec) return false;
@@ -463,7 +471,6 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       try {
         spec = motionSceneSpecRead(parsed, frame);
       } catch (error) {
-        // Not a spec (code could not repair it): one new answer, then the plan's own layout.
         feedback = MOTION_SCENE_SPEC_PROMPT.REDO(String((error as Error).message));
         throw Object.assign(new Error(String((error as Error).message)), { motionHtmlExecution: true });
       }
@@ -472,7 +479,6 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       const html = motionSceneSpecPage(spec);
       const image = await capture(html);
       if (opts.review && qualityTries < MOTION_HTML_QUALITY.QUALITY_RETRIES) {
-        // The AI looks at the picture; a finding asks for one corrected spec, and if that one fails this scene is kept.
         finalize(html, image, warnings, attempt.attempt, false);
         const problems = await reviewMotionHtmlScene(scene, image, target, path.dirname(store.manifest), attempt.attempt, opts);
         if (problems.length) {
@@ -499,11 +505,9 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       const reason = String((error as Error).message);
       attempt.error = reason;
       const failed = error as { motionHtmlExecution?: boolean };
-      // An answer that came but could not be stored or shown (disk, browser) is kept and used again: no new AI request.
       const keepAnswer = !!attempt.raw && !failed?.motionHtmlExecution;
       if (keepAnswer ? ++localFails >= MOTION_SCENE_BLUEPRINT.TRANSPORT_LIMIT : !attempt.raw && ++transportFails >= MOTION_SCENE_BLUEPRINT.TRANSPORT_LIMIT) throw new Error(MOTION_SCENE_BLUEPRINT.TRANSPORT_ERROR(scene.id, keepAnswer ? localFails : transportFails, reason.slice(0, 160)));
       if (attempt.raw) transportFails = 0;
-      // The corrected spec after a review did not come: the reviewed scene stays.
       if (kept && failed?.motionHtmlExecution) {
         scene.html = kept;
         delete scene.htmlRequest;
@@ -539,7 +543,20 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     }
   }
 };
-const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; seconds: number; lineCount: number }, groupIndex: number, state: MotionRemotionState, analysis: MotionStoryAnalysis, settings: Extract<MotionVisualSettings, { mode: "remotion" }>, language: string, aspect: string, opts: RemotionSceneOptions, slots: MotionPriorityPool, save: () => void, priority = 0, before: string[] = []): Promise<void> => {
+const planHtmlBeatGroup = async (
+  group: { id: string; beats: MotionBeat[]; seconds: number; lineCount: number },
+  groupIndex: number,
+  state: MotionRemotionState,
+  analysis: MotionStoryAnalysis,
+  settings: Extract<MotionVisualSettings, { mode: "remotion" }>,
+  language: string,
+  aspect: string,
+  opts: RemotionSceneOptions,
+  slots: MotionPriorityPool,
+  save: () => void,
+  priority = 0,
+  before: string[] = [],
+): Promise<void> => {
   const lines = group.beats.flatMap((beat) => motionBeatLines(beat, motionNarratorCastKey(analysis)));
   const note = (opts.note ?? state.notes?.[group.id]) || undefined;
   const source = motionHtmlPlanSource(group.beats, analysis, settings, note, opts.sfx !== false);
@@ -558,16 +575,16 @@ const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; secon
       MOTION_HTML_WRITING.PLAN_LINES,
       MOTION_HTML_WRITING.READABILITY,
       analysis.era ? MOTION_HTML_WRITING.PERIOD(analysis.era) : undefined,
-      // The scenes just before these lines, as far as they are planned (groups plan side by side): kept out of the plan's
-      // key so a neighbour's replan never replans this group.
       (() => {
         const previous = before.flatMap((id) => state.scenes[id] || []).slice(-MOTION_HTML.PREVIOUS_SCENES);
         return previous.length ? MOTION_HTML_WRITING.PREVIOUS(previous.map(({ setting, shot, kind, message }) => ({ setting, shot, kind, message }))) : undefined;
       })(),
-      stringifyJson((() => {
-        const context = motionHtmlPlanContext(group.beats, analysis, settings, note, opts.sfx !== false);
-        return { ...context, beats: context.beats.map(({ narration: _narration, utterances: _utterances, sceneTemplateDraft: _draft, ...beat }) => beat), lines: lines.map((line, index) => ({ id: MOTION_HTML_WRITING.LINE_ID(index), beat: line.beatId, text: line.text, utterance: line.utterance })) };
-      })()),
+      stringifyJson(
+        (() => {
+          const context = motionHtmlPlanContext(group.beats, analysis, settings, note, opts.sfx !== false);
+          return { ...context, beats: context.beats.map(({ narration: _narration, utterances: _utterances, sceneTemplateDraft: _draft, ...beat }) => beat), lines: lines.map((line, index) => ({ id: MOTION_HTML_WRITING.LINE_ID(index), beat: line.beatId, text: line.text, utterance: line.utterance })) };
+        })(),
+      ),
     ]
       .filter(Boolean)
       .join(RT_MAINTENANCE.NEWLINE);
@@ -576,10 +593,13 @@ const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; secon
       if (!Array.isArray(raw?.scenes) || !raw.scenes.length) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_PHAN_CANH_HTML);
       const lineKey = (id: unknown) => {
         const match = MOTION_HTML_WRITING.LINE_ID_PATTERN.exec(String(id ?? "").trim());
-        return match ? lines[Number(match[1]) - 1]?.key ?? id : id;
+        return match ? (lines[Number(match[1]) - 1]?.key ?? id) : id;
       };
       raw.scenes = raw.scenes.map((row: any) => (row && typeof row === "object" ? { ...row, fromLineId: lineKey(row.fromLineId), toLineId: lineKey(row.toLineId) } : row));
-      raw.scenes = motionRepairPlanRows(raw.scenes, lines.map((line) => line.key)).rows;
+      raw.scenes = motionRepairPlanRows(
+        raw.scenes,
+        lines.map((line) => line.key),
+      ).rows;
       if (!raw.scenes.length) throw new Error(RT_MAINTENANCE.KHONG_ANH_XA_DUOC_PHAN_CANH_VAO_CAC_DONG_LOI);
       let cursor = 0;
       for (const row of raw.scenes) {
@@ -592,13 +612,29 @@ const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; secon
     };
     const raw = planStore.read() || (await requestPlan(prompt, key, opts, slots, readPlan, groupIndex, priority));
     readPlan(raw);
-    // The picture fields are plain text: message and keyVisual a sentence each, devices at most DEVICES_MAX short lines.
     const text = (value: unknown) => (typeof value === "string" && value.trim() ? motionRenameText(value.trim(), analysis) : undefined);
-    const normalizedScenes = normalizePlannedHtmlScenes(raw.scenes.map((row: any) => ({ ...row, message: text(row.message), keyVisual: text(row.keyVisual), devices: (Array.isArray(row.devices) ? row.devices : []).map(text).filter(Boolean).slice(0, MOTION_HTML.DEVICES_MAX) })), lines, group.beats, group.seconds, settings.pacing).map((row: any) => (typeof row.sceneTemplate === "string" ? { ...row, sceneTemplate: motionRenameText(row.sceneTemplate, analysis) } : row));
+    const normalizedScenes = normalizePlannedHtmlScenes(
+      raw.scenes.map((row: any) => ({ ...row, message: text(row.message), keyVisual: text(row.keyVisual), devices: (Array.isArray(row.devices) ? row.devices : []).map(text).filter(Boolean).slice(0, MOTION_HTML.DEVICES_MAX) })),
+      lines,
+      group.beats,
+      group.seconds,
+      settings.pacing,
+    ).map((row: any) => (typeof row.sceneTemplate === "string" ? { ...row, sceneTemplate: motionRenameText(row.sceneTemplate, analysis) } : row));
     planStore.save({ ...raw, scenes: normalizedScenes });
     const varietyIssues = motionPlanVarietyIssues(
       normalizedScenes,
-      normalizedScenes.map((row: any) => lines.slice(Math.max(0, lines.findIndex((line) => line.key === row.fromLineId)), lines.findIndex((line) => line.key === row.toLineId) + 1).map((line) => line.text).join(MOTION_PLAN_VARIETY.SPACE_ONE)),
+      normalizedScenes.map((row: any) =>
+        lines
+          .slice(
+            Math.max(
+              0,
+              lines.findIndex((line) => line.key === row.fromLineId),
+            ),
+            lines.findIndex((line) => line.key === row.toLineId) + 1,
+          )
+          .map((line) => line.text)
+          .join(MOTION_PLAN_VARIETY.SPACE_ONE),
+      ),
     );
     if (varietyIssues.length) opts.log?.(MOTION_PLAN_VARIETY.LOG(group.id, varietyIssues));
     const existingById = new Map((state.scenes[group.id] || []).map((scene) => [scene.id, scene]));
@@ -683,7 +719,20 @@ export const createMotionHtmlSceneStreamer = (initialAnalysis: MotionStoryAnalys
       if (!sealed) return;
       const groupTaskKey = `${group.id}${RT_MAINTENANCE.COLON}${group.beats.map((beat) => beat.id).join(RT_MAINTENANCE.COMMA)}`;
       if (groupPromises.has(groupTaskKey)) return;
-      const groupTask = planHtmlBeatGroup(group, groupIndex, state, analysis, settings, language, aspect, opts, slots, save, groupIndex * 2, groups.slice(Math.max(0, groupIndex - 2), groupIndex).map((g) => g.id));
+      const groupTask = planHtmlBeatGroup(
+        group,
+        groupIndex,
+        state,
+        analysis,
+        settings,
+        language,
+        aspect,
+        opts,
+        slots,
+        save,
+        groupIndex * 2,
+        groups.slice(Math.max(0, groupIndex - 2), groupIndex).map((g) => g.id),
+      );
       groupTask.catch(() => undefined);
       groupPromises.set(groupTaskKey, groupTask);
       if (chapterId) {
@@ -750,7 +799,20 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
   let done = 0;
   await Promise.all(
     groups.map(async (group, groupIndex) => {
-      await planHtmlBeatGroup(group, groupIndex, state, analysis, settings, script.language, aspect, opts, slots, save, groupIndex * 2, groups.slice(Math.max(0, groupIndex - 2), groupIndex).map((g) => g.id));
+      await planHtmlBeatGroup(
+        group,
+        groupIndex,
+        state,
+        analysis,
+        settings,
+        script.language,
+        aspect,
+        opts,
+        slots,
+        save,
+        groupIndex * 2,
+        groups.slice(Math.max(0, groupIndex - 2), groupIndex).map((g) => g.id),
+      );
       done++;
       opts.progress?.(done / groups.length, `${RT_MAINTENANCE.DA_CHIA}${done}${RT_MAINTENANCE.SLASH}${groups.length}${RT_MAINTENANCE.NHOM_LOI_DAN_THANH}${Object.values(state.scenes).flat().length}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);
       save();
@@ -773,10 +835,8 @@ export const enqueueMotionHtmlScenes = (scope: string | undefined, script: Motio
   const enqueue = activeHtmlBuilders.get(scope);
   return enqueue ? enqueue(script) : false;
 };
-/** A scene action taken while the scenes are still being built: redraw now, or delete (redrawn once the others are done). */
 export type MotionHtmlSceneAction = { kind: "redo" | "delete"; ids: string[]; note?: string; reason: string };
 const activeHtmlControls = new Map<string, (action: MotionHtmlSceneAction) => number>();
-/** Hands the action to the scene builder running for this production; 0 when no builder is running (or no scene matched). */
 export const controlMotionHtmlScenes = (scope: string | undefined, action: MotionHtmlSceneAction): number => (scope && activeHtmlControls.get(scope)?.(action)) || 0;
 export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions): Promise<MotionStoryScript> => {
   if (!motionHtmlPlanCurrent(script, analysis)) throw new Error(RT_MAINTENANCE.PHAN_CANH_CHUA_DUOC_CHIA_DAY_DU_HOAC_DA_DOI);
@@ -803,7 +863,10 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   const scheduleFrom = (sourceScript: MotionStoryScript) => {
     if (opts.signal?.aborted) return;
     const groups = motionVisualBeatGroups(sourceScript, 1001, settings.pacing);
-    motionSceneOnScreen(groups.flatMap((group) => (state.scenes[group.id] || []).map((scene) => ({ scene, beats: group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id)) }))), analysis);
+    motionSceneOnScreen(
+      groups.flatMap((group) => (state.scenes[group.id] || []).map((scene) => ({ scene, beats: group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id)) }))),
+      analysis,
+    );
     const tasks = groups
       .flatMap((group, groupIndex) => (state.scenes[group.id] || []).map((scene) => ({ group, groupIndex, scene })))
       .filter(({ group, scene }) => (!opts.onlyBeats?.length || group.beats.some((beat) => opts.onlyBeats!.includes(beat.id))) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && (!opts.onlyLocations?.length || group.beats.some((beat) => opts.onlyLocations!.includes(beat.place || ""))));
@@ -820,7 +883,6 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
           scene.htmlRebuildKey = rebuildKey;
           save();
         }
-        // A scene drawn before the figure table is redrawn: only scenes on the figure table follow "Cách dựng".
         if (scene.html && !motionSceneCurrent(scene.html)) {
           delete scene.html;
           delete scene.htmlRequest;
@@ -842,15 +904,34 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
     const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
     const cast = scene.kind === MOTION_HTML_WRITING.MAP_KIND ? undefined : motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
     motionSceneCastSeed((state.castLooks ||= {}), analysis.cast);
-    await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), movement: motionMovementOf(settings), scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), kind: scene.kind, shot: scene.shot, year: state.eraYear, genre: [analysis.videoGenre, analysis.genre, analysis.genre2, analysis.storytelling].filter(Boolean).join(" ") || undefined, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority }, save);
+    await generateMotionHtmlScene(
+      scene,
+      {
+        width,
+        height,
+        seconds,
+        profile: settings.profileId,
+        proportion: motionProportionOf(settings),
+        movement: motionMovementOf(settings),
+        scope: opts.scope,
+        language: result.language,
+        cast,
+        continuity: motionHtmlContinuity(scene.continuityIn) || undefined,
+        castLooks: (state.castLooks ||= {}),
+        kind: scene.kind,
+        shot: scene.shot,
+        year: state.eraYear,
+        genre: [analysis.videoGenre, analysis.genre, analysis.genre2, analysis.storytelling].filter(Boolean).join(" ") || undefined,
+        variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene),
+      },
+      { ...opts, pool: slots, priority },
+      save,
+    );
     delete state.failures[scene.id];
     done++;
     opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);
     save();
   };
-  // A scene the user redraws or deletes mid-run is drawn again at once, ahead of the scenes not started yet (as a failed
-  // scene is): a deleted scene loses its drawing now, a redrawn one keeps it until its new draw begins; either waits for a
-  // draw already running for that scene, whose result is then replaced.
   const sceneTasks = new Map<string, Promise<void>>();
   let controlRound = 0;
   const control = (action: MotionHtmlSceneAction): number => {
@@ -930,7 +1011,9 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
       if (startedScenes.size === current.length) break;
     }
     opts.signal?.throwIfAborted();
-    const built = Object.values(state.scenes).flat().filter((scene) => scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED);
+    const built = Object.values(state.scenes)
+      .flat()
+      .filter((scene) => scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED);
     if (built.length) {
       state.scorecard = motionSceneScorecard(built);
       opts.log(MOTION_SCENE_BLUEPRINT.SUMMARY_LOG({ ...state.scorecard, model: [opts.exec?.provider, opts.exec?.model].filter(Boolean).join("/") || "-" }));
@@ -938,7 +1021,6 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
     }
     return result;
   } finally {
-    // Only this run's own entries: an earlier run of the same production finishing must not unregister a later one.
     if (canRegister && opts.scope) {
       if (activeHtmlBuilders.get(opts.scope) === boundBuilder) activeHtmlBuilders.delete(opts.scope);
       if (activeHtmlControls.get(opts.scope) === boundControl) activeHtmlControls.delete(opts.scope);

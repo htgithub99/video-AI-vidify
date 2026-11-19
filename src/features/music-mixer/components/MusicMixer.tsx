@@ -1,5 +1,5 @@
 import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
-import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioInput } from "../../../components/ui/Studio.js";
+import { StudioEmptyState, StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioInput } from "../../../components/ui/Studio.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_86,
   SOURCE_TEMPLATE_SYMBOL_126,
@@ -100,11 +100,6 @@ import {
   SOURCE_TEXT_SPACE_Y_1,
   SOURCE_TEXT_TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_200,
   SOURCE_TEXT_TEXT_XS_TEXT_SLATE_400_FONT_MONO_2,
-  SOURCE_TEXT_PY_14_FLEX_FLEX_COL_ITEMS_CENTER,
-  SOURCE_TEXT_W_14_H_14_ROUNDED_2XL_BG,
-  SOURCE_TEXT_W_7_H_7_TEXT_PURPLE_400_2,
-  SOURCE_TEXT_SPACE_Y_1_MAX_W_SM,
-  SOURCE_TEXT_TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_2,
   SOURCE_TEXT_GRID_GRID_COLS_1_MD_GRID_COLS,
   SOURCE_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_800_90,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_5,
@@ -635,7 +630,6 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     if (abortRef.current || !uniqueTracks.length || songsPerResult < 1 || resultCount < 1) {
       return;
     }
-    // A mix never repeats a song (two files with one title count once).
     if (songsPerResult > countMusicMixerSongs(uniqueTracks)) {
       setError(text.INSUFFICIENT);
       return;
@@ -643,8 +637,6 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     setBusy(true);
     const abortController = new AbortController();
     abortRef.current = abortController;
-    // Only "Tuyển chọn" asks the AI (it ranks the tracks and writes the playlist SEO); "Ngẫu nhiên" and "Theo tên" mix
-    // locally and never open the AI.
     const useAi = trackOrder === SOURCE_TEXT_FEATURED;
     projectIdRef.current = useAi ? SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX}`, `${crypto.randomUUID()}`) : null;
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerStart, tracks.length, MUSIC_MIXER_SERVER.LOG_MIX_START(resultCount, songsPerResult));
@@ -1145,15 +1137,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               </div>
             </div>
           ) : _.isEmpty(results) ? (
-            <div className={cn(SOURCE_TEXT_PY_14_FLEX_FLEX_COL_ITEMS_CENTER)}>
-              <div className={cn(SOURCE_TEXT_W_14_H_14_ROUNDED_2XL_BG)}>
-                <Music2 className={cn(SOURCE_TEXT_W_7_H_7_TEXT_PURPLE_400_2)} />
-              </div>
-              <div className={cn(SOURCE_TEXT_SPACE_Y_1_MAX_W_SM)}>
-                <h3 className={cn(SOURCE_TEXT_TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_200)}>{text.RESULTS_EMPTY_TITLE}</h3>
-                <p className={cn(SOURCE_TEXT_TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_2)}>{text.RESULTS_EMPTY_DESC}</p>
-              </div>
-            </div>
+            <StudioEmptyState icon={Music2} title={text.RESULTS_EMPTY_TITLE} description={text.RESULTS_EMPTY_DESC} />
           ) : (
             <div className={cn(SOURCE_TEXT_GRID_GRID_COLS_1_MD_GRID_COLS)}>
               {_.map(results, (folder) => (

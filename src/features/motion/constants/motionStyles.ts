@@ -7,7 +7,6 @@ export const MOTION_STYLES = {
   PRODUCTION_ACTION_BUTTON: "min-w-0 max-w-full flex-1 sm:flex-none sm:max-w-[calc(100%-7rem)]",
   ACTION_TEXT: "block min-w-0 truncate",
   ACTION_BUSY: "!opacity-100 !animate-none",
-  // The wrap is scaled, so it is its own stacking context: it needs a z-index itself or the fields below paint over its panel.
   HINT_WRAP: "group/hint relative z-30 hover:z-50 focus-within:z-50 inline-flex shrink-0 items-center align-middle normal-case tracking-normal font-sans transition-[opacity,transform,width,margin] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
   HINT_ON: "w-5 opacity-100 scale-100 ml-1.5",
   HINT_OFF: "w-0 opacity-0 scale-50 ml-0 pointer-events-none",
@@ -16,7 +15,8 @@ export const MOTION_STYLES = {
   HINT_BUTTON_WARN: "text-amber-300",
   HINT_BUTTON_INFO: "text-sky-300",
   HINT_ICON: "relative h-4 w-4 shrink-0",
-  HINT_PANEL: "invisible absolute left-0 top-full z-50 mt-2 flex w-[min(20rem,calc(100vw-2rem))] -translate-x-2 translate-y-1 flex-col gap-2 rounded-xl border border-slate-700/80 bg-slate-900 p-3 text-[11.5px] font-normal leading-relaxed text-slate-200 opacity-0 shadow-2xl shadow-black/40 transition-[opacity,transform,visibility] duration-200 group-hover/hint:visible group-hover/hint:translate-y-0 group-hover/hint:opacity-100 group-focus-within/hint:visible group-focus-within/hint:translate-y-0 group-focus-within/hint:opacity-100",
+  HINT_PANEL:
+    "invisible absolute left-0 top-full z-50 mt-2 flex w-[min(20rem,calc(100vw-2rem))] -translate-x-2 translate-y-1 flex-col gap-2 rounded-xl border border-slate-700/80 bg-slate-900 p-3 text-[11.5px] font-normal leading-relaxed text-slate-200 opacity-0 shadow-2xl shadow-black/40 transition-[opacity,transform,visibility] duration-200 group-hover/hint:visible group-hover/hint:translate-y-0 group-hover/hint:opacity-100 group-focus-within/hint:visible group-focus-within/hint:translate-y-0 group-focus-within/hint:opacity-100",
   HINT_ROW: "flex items-start gap-2",
   HINT_ROW_ICON: "mt-0.5 h-3.5 w-3.5 shrink-0",
   HINT_ROW_WARN: "text-amber-300",
@@ -96,7 +96,6 @@ export const MOTION_STYLES = {
   MEDIA_THUMB: "relative w-full overflow-hidden bg-slate-900",
   MEDIA_FILL: "absolute inset-0 w-full h-full block bg-black transition-opacity duration-300",
   MEDIA_THUMB_FILL: "block w-full transition-opacity duration-300",
-  // The stored picture under a scene still being drawn again (same box, behind the drawing).
   MEDIA_THUMB_UNDER: "absolute inset-0 h-full",
   MEDIA_HIDDEN: "opacity-0",
   MEDIA_SHOWN: "opacity-100",
@@ -142,9 +141,6 @@ export const MOTION_STYLES = {
   FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP: "flex justify-end pt-2 gap-2 flex-wrap",
   W_7_H_7_TEXT_PURPLE_400_ANIMATE_PULSE: "w-7 h-7 text-purple-400 animate-pulse",
   SPACE_Y_4_MAX_H_620PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1: "space-y-4 max-h-[620px] overflow-y-auto custom-scrollbar pr-1",
-  // Chapter bar that stays on top while the beats scroll: solid, like the Video DNA header.
-  // The chapter bar stays on top while its beats scroll; the band under it (card colour, small gap) hides the
-  // beats as they pass, like the Video DNA header.
   CHAPTER_STICKY_BAND: "motion-chapter-band sticky top-0 z-10 pb-3",
   CHAPTER_STICKY_HEADER: "flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-purple-500/25 bg-slate-900 shadow-lg shadow-black/20",
   TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDE_FLEX_ITEMS_CENTER_GAP_2: "text-xs font-black uppercase tracking-wide flex items-center gap-2",
@@ -398,12 +394,7 @@ export const MOTION_REMOTION_STYLES = {
   SCORECARD: "text-[11px] leading-4 text-slate-400 truncate",
 } as const;
 export const MOTION_RULE_STYLES = {
-  mustPreserve: {
-    card: "p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5 shadow-2xs",
-    heading: "flex items-center gap-1.5 font-bold text-xs uppercase text-emerald-400",
-    content: "text-[11px] text-slate-200 leading-relaxed font-normal",
-    empty: "text-xs italic text-emerald-400",
-  },
+  mustPreserve: { card: "p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5 shadow-2xs", heading: "flex items-center gap-1.5 font-bold text-xs uppercase text-emerald-400", content: "text-[11px] text-slate-200 leading-relaxed font-normal", empty: "text-xs italic text-emerald-400" },
   mustVary: { card: "p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-1.5 shadow-2xs", heading: "flex items-center gap-1.5 font-bold text-xs uppercase text-amber-400", content: "text-[11px] text-slate-200 leading-relaxed font-normal", empty: "text-xs italic text-amber-400" },
   mustNotCopy: { card: "p-3.5 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-1.5 shadow-2xs", heading: "flex items-center gap-1.5 font-bold text-xs uppercase text-rose-400", content: "text-[11px] text-slate-200 leading-relaxed font-normal", empty: "text-xs italic text-rose-400" },
 } as const;

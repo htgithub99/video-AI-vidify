@@ -13,7 +13,6 @@ import type { ReupBadRange, ReupMediaItem, ReupSheet, ReupSource, ReupTranscript
 import { reupFfmpeg, reupFilterValue, reupFont, reupHasFilter, reupProbe } from "./reupFfmpeg.js";
 import { reupFileUrl, reupJobDir } from "./reupJobStore.js";
 const natural = (a: string, b: string): number => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
-/** A folder of photos and short clips, in name order, laid end to end (photos PHOTO_SECONDS each). */
 const inspectReupFolder = async (folder: string): Promise<ReupSource> => {
   const files: string[] = [];
   const walk = (dir: string, depth: number) => {
@@ -48,9 +47,7 @@ export const inspectReupSource = async (file: string): Promise<ReupSource> => {
   if (!meta.width || !meta.height || !meta.duration) throw new Error(REUP_ERROR.NO_VIDEO);
   return { path: file, kind: "video", name: path.basename(file), duration: meta.duration, width: meta.width, height: meta.height, fps: meta.fps || 30, hasAudio, sizeBytes: meta.fileSizeBytes || fs.statSync(file).size };
 };
-/** The file sheets, quality and review frames read: the source video, or a folder's proxy. */
 export const reupMediaFile = (source: ReupSource): string => source.proxy || source.path;
-/** Low-resolution video of a folder's timeline (photos held, clips as they are), so a folder reads like one video. */
 export const makeReupProxy = async (jobId: string, source: ReupSource, signal?: AbortSignal): Promise<string> => {
   const dir = reupJobDir(jobId, "proxy");
   const h = REUP_FOLDER.PROXY_HEIGHT;
@@ -69,7 +66,6 @@ export const makeReupProxy = async (jobId: string, source: ReupSource, signal?: 
   await reupFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", proxy], { signal });
   return proxy;
 };
-/** The source's own speech as words with times (local recogniser), grouped into phrases a script can pick. */
 export const transcribeReupSource = async (jobId: string, source: ReupSource, language: string, signal?: AbortSignal, log?: (line: string) => void): Promise<ReupTranscript> => {
   const wav = reupJobDir(jobId, "speech.wav");
   await reupFfmpeg(["-y", "-i", source.path, "-vn", "-ac", "1", "-ar", "16000", wav], { signal });
@@ -77,16 +73,11 @@ export const transcribeReupSource = async (jobId: string, source: ReupSource, la
   const words = (result.words || []).filter((w) => w && w.w && Number.isFinite(w.s) && Number.isFinite(w.e) && w.e >= w.s);
   return { text: result.text || words.map((w) => w.w).join(" "), words, phrases: reupPhrases(words, REUP_OVERLAY.PHRASE_GAP, REUP_OVERLAY.PHRASE_MAX) };
 };
-/** Seconds between sheet frames: the chosen interval, tightened for short sources so one sheet still covers them well. */
 export const reupSheetInterval = (duration: number, wanted: number): number => {
   const per = REUP_SHEET.COLS * REUP_SHEET.ROWS;
   if (duration >= REUP_SHEET.SHORT_SOURCE) return wanted;
   return _.clamp(Math.ceil(duration / per), REUP_SHEET.MIN_INTERVAL, wanted);
 };
-/**
- * Contact sheets: one keyframe every `interval` seconds, 6×5 tiles per image with the time printed on each
- * tile. Only keyframes are decoded, so a 45-minute source takes about a minute.
- */
 export const makeReupSheets = async (jobId: string, source: ReupSource, wanted: number, signal?: AbortSignal, onFontMissing?: () => void): Promise<ReupSheet[]> => {
   const interval = reupSheetInterval(source.duration, wanted);
   const dir = reupJobDir(jobId, REUP_DIR.SHEETS);
@@ -98,13 +89,12 @@ export const makeReupSheets = async (jobId: string, source: ReupSource, wanted: 
   const per = REUP_SHEET.COLS * REUP_SHEET.ROWS;
   await reupFfmpeg(["-y", ...keyOnly, "-i", reupMediaFile(source), "-an", "-sn", "-vf", `fps=1/${interval}:start_time=0,scale=${REUP_SHEET.TILE_WIDTH}:-2${stamp},tile=${REUP_SHEET.COLS}x${REUP_SHEET.ROWS}:padding=4:margin=4`, "-q:v", String(REUP_SHEET.JPEG_Q), "-start_number", "0", path.join(dir, "sheet_%03d.jpg")], { signal });
   const tiles = Math.max(1, Math.ceil(source.duration / interval));
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".jpg")).sort();
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".jpg"))
+    .sort();
   return files.map((file, index) => ({ index, file: path.join(dir, file), url: reupFileUrl(path.join(dir, file)), start: index * per * interval, interval, count: Math.max(1, Math.min(per, tiles - index * per)), cols: REUP_SHEET.COLS, rows: REUP_SHEET.ROWS }));
 };
-/**
- * A strip of whole tile rows cut out of a contact sheet (grid margin = padding = 4 px, so a row step is (ih-4)/rows),
- * covering exactly those rows' moments. Undefined when the rows hold no tile.
- */
 export const cropReupSheet = async (jobId: string, sheet: ReupSheet, fromRow: number, rows: number, signal?: AbortSignal): Promise<ReupSheet | undefined> => {
   const count = Math.min(rows * sheet.cols, sheet.count - fromRow * sheet.cols);
   if (count <= 0) return undefined;
@@ -112,7 +102,6 @@ export const cropReupSheet = async (jobId: string, sheet: ReupSheet, fromRow: nu
   await reupFfmpeg(["-y", "-i", sheet.file, "-vf", `crop=iw:(ih-4)*${rows}/${sheet.rows}+4:0:(ih-4)*${fromRow}/${sheet.rows}`, "-q:v", String(REUP_SHEET.JPEG_Q), file], { signal });
   return { ...sheet, file, url: reupFileUrl(file), start: sheet.start + fromRow * sheet.cols * sheet.interval, count, rows };
 };
-/** Brightness (and blur when the ffmpeg build can measure it) of every keyframe → ranges to keep off screen. */
 export const measureReupQuality = async (source: ReupSource, darkLevel: number, blurLevel: number, signal?: AbortSignal): Promise<{ bad: ReupBadRange[]; blurMeasured: boolean }> => {
   const blur = blurLevel > 0 && (await reupHasFilter("blurdetect"));
   const keyOnly = source.duration >= REUP_SHEET.SHORT_SOURCE ? ["-skip_frame", "nokey"] : [];
@@ -133,7 +122,6 @@ export const measureReupQuality = async (source: ReupSource, darkLevel: number, 
   }
   return { bad: reupBadRanges(samples, darkLevel, blur ? blurLevel : 0, REUP_QUALITY.MERGE_GAP, REUP_QUALITY.MIN_BAD), blurMeasured: blur };
 };
-/** One frame as JPEG (cached per tenth of a second); for a folder, the original photo or clip at that moment. */
 export const reupFrame = async (jobId: string, source: ReupSource, time: number, width = 640, signal?: AbortSignal): Promise<string> => {
   const file = reupJobDir(jobId, REUP_DIR.FRAMES, `${Math.round(time * 10)}_${width}.jpg`);
   if (fs.existsSync(file)) return file;
@@ -143,8 +131,6 @@ export const reupFrame = async (jobId: string, source: ReupSource, time: number,
   await reupFfmpeg(["-y", ...(seek > 0 ? ["-ss", seek.toFixed(2)] : []), "-i", input, "-frames:v", "1", "-vf", `scale=${width}:-2`, "-q:v", "3", file], { signal });
   return file;
 };
-
-/** A source's fingerprint: size plus its first and last few MB (a folder: its items' names and sizes), to spot footage reused across runs. */
 export const reupFingerprint = async (source: ReupSource): Promise<string> => {
   const hash = createHash("sha1");
   if (source.kind === "folder") {

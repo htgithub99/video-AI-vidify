@@ -34,8 +34,7 @@ export const rankMotionThumbnailScenes = <T extends { text: string }>(items: T[]
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map(({ item }) => item);
 };
-const htmlReady = (scene: MotionRemotionScene): boolean =>
-  !!scene.html && (scene.html.status === RT_MAINTENANCE.READY || scene.html.status === RT_MAINTENANCE.RENDERED) && motionSceneCurrent(scene.html) && !!(scene.html.thumbnail || scene.html.html || scene.html.file);
+const htmlReady = (scene: MotionRemotionScene): boolean => !!scene.html && (scene.html.status === RT_MAINTENANCE.READY || scene.html.status === RT_MAINTENANCE.RENDERED) && motionSceneCurrent(scene.html) && !!(scene.html.thumbnail || scene.html.html || scene.html.file);
 const htmlSource = (scene: MotionRemotionScene): string => scene.html?.html || (scene.html?.file && fs.existsSync(scene.html.file) ? fs.readFileSync(scene.html.file, RT_MAINTENANCE.UTF8) : "");
 const renderHtmlReference = async (scene: MotionRemotionScene, signal: AbortSignal | undefined, open: typeof openMotionHtmlRuntime, render: MotionFigureRender): Promise<string | undefined> => {
   const html = htmlSource(scene);
@@ -43,7 +42,20 @@ const renderHtmlReference = async (scene: MotionRemotionScene, signal: AbortSign
   const runtime = await open(html, signal, true, undefined, render);
   try {
     const frame = Math.round(T.REFERENCE_PROGRESS * T.REFERENCE_SECONDS * T.REFERENCE_FPS);
-    const image = await runtime.render({ time: T.REFERENCE_PROGRESS * T.REFERENCE_SECONDS, progress: T.REFERENCE_PROGRESS, frame, fps: T.REFERENCE_FPS, duration: T.REFERENCE_SECONDS, width: scene.aspect === MR.MOTION_TEXT_9_16 ? T.OUTPUT_HEIGHT : T.OUTPUT_WIDTH, height: scene.aspect === MR.MOTION_TEXT_9_16 ? T.OUTPUT_WIDTH : T.OUTPUT_HEIGHT, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, sceneEffectsEnabled: true, seed: scene.html?.seed || scene.id, speaking: [] } as Parameters<typeof runtime.render>[0]);
+    const image = await runtime.render({
+      time: T.REFERENCE_PROGRESS * T.REFERENCE_SECONDS,
+      progress: T.REFERENCE_PROGRESS,
+      frame,
+      fps: T.REFERENCE_FPS,
+      duration: T.REFERENCE_SECONDS,
+      width: scene.aspect === MR.MOTION_TEXT_9_16 ? T.OUTPUT_HEIGHT : T.OUTPUT_WIDTH,
+      height: scene.aspect === MR.MOTION_TEXT_9_16 ? T.OUTPUT_WIDTH : T.OUTPUT_HEIGHT,
+      mode: RT_MAINTENANCE.PREVIEW,
+      motionEnabled: true,
+      sceneEffectsEnabled: true,
+      seed: scene.html?.seed || scene.id,
+      speaking: [],
+    } as Parameters<typeof runtime.render>[0]);
     return `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`;
   } catch {
     return scene.html?.thumbnail;

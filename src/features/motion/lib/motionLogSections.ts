@@ -82,7 +82,6 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     const substage = key === RT_SHARED.SCENES ? scopes.filter((scope) => Object.values(P.STAGE).includes(scope as typeof P.STAGE.PLAN)).at(-1) : undefined;
     const shown = substage ? `${substage}${RT_SHARED.SYMBOL_588DA4}${display}` : display;
     const visible = failure || !technical || display !== message;
-    // A step that runs as its own job (SEO) is logged by that job and echoed by the production log: keep one copy.
     const echo = `${time}|${shown}`;
     const echoed = echoes.get(key + echo);
     if (echoed && echoed !== id) continue;
@@ -116,8 +115,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     completed(RT_MOTION.SEO, result?.seo?.options?.length);
     if (result?.seoJobId && !([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(job.status)) sections.get(RT_MOTION.SEO)!.state = RT_MOTION.ACTIVE;
     completed(RT_SHARED.VOICE, result?.voice?.audioId);
-    const scenesComplete =
-      (result?.script?.gen?.remotion && Object.values(result.script.gen.remotion.scenes || {}).flat().length > 0 && remotionStateMissingScenes(result.script.gen.remotion).length === 0 && (!result.analysis || !usesMotionHtml(result.script) || motionHtmlPlanCurrent(result.script, result.analysis)));
+    const scenesComplete = result?.script?.gen?.remotion && Object.values(result.script.gen.remotion.scenes || {}).flat().length > 0 && remotionStateMissingScenes(result.script.gen.remotion).length === 0 && (!result.analysis || !usesMotionHtml(result.script) || motionHtmlPlanCurrent(result.script, result.analysis));
     completed(RT_SHARED.SCENES, scenesComplete);
     completed(RT_MOTION.RENDER, result?.rendered);
   }

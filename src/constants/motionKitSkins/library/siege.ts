@@ -1,7 +1,4 @@
-// Siege engines, guns on carriages and the war machines of land, sea and air not in the base kit (side view, front
-// toward +x, wheels and tracks turning when moving).
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "siegeTower", from: -400, to: 1500, names: ["belfry", "assaultTower"] },
   { id: "ballista", from: -400, to: 1400, names: ["scorpio", "boltThrower"] },
@@ -25,13 +22,11 @@ const items = [
   { id: "attackHelicopter", from: 1965, names: ["gunship", "apache", "huey"] },
   { id: "drone", from: 2000, names: ["uav", "quadcopter"] },
 ];
-
 const helpers = `const water = (hw) => { for (let i = 0; i < 4; i++) { const x = -hw + 0.3 + i * (2 * hw - 0.6) / 3 + Math.sin(t + i) * 0.1; ln([[x, 0.15], [x + 0.35, 0.12], [x + 0.6, 0.15]], 0.45, T("#5a7a8a")); } };
   const hull = (pts, col) => { const p = S(pts); fl(p, col || wood); clip(p, () => { for (let y = -3; y < 1; y += 0.22) ln([[-6, y], [6, y - 0.02]], 0.35); }); return p; };
   const carriage = (x, r) => { fl(P([[x - 1.6, -0.25], [x - 1.6, -0.45], [x + 0.6, -r * 1.25], [x + 0.6, -r * 0.8]]), wood); woodWheel(x, r); };
   const prop = (x, y, s) => { const a = t * 30; ln([[x, y - s * Math.cos(a)], [x, y + s * Math.cos(a)]], 0.9, T("#5a5a5a")); };
   const sail = (x, top, bot, wd, col) => { const p = S([[x - wd / 2, top], [x + wd / 2, top], [x + wd / 2 + 0.06, (top + bot) / 2], [x + wd / 2, bot], [x - wd / 2, bot], [x - wd / 2 + 0.06, (top + bot) / 2]]); fl(p, col || cloth, { hatch: false }); };`;
-
 const body = `
     case "siegeTower": { const p = P([[-1.3, -0.4], [-1.0, -6.0], [1.0, -6.0], [1.3, -0.4]]); fl(p, wood); clip(p, () => { for (let y = -5.8; y < 0; y += 0.45) ln([[-1.4, y], [1.4, y]], 0.4); }); fl(P([[-1.0, -6.0], [1.0, -6.0], [1.1, -6.4], [-1.1, -6.4]]), leather); fl(rect(0.4, -5.6, 1.0, -4.6), black, { hatch: false }); [-0.8, 0.8].forEach((x) => woodWheel(x, 0.45)); break; }
     case "ballista": beam([[-1.4, -0.9], [1.0, -1.1]], 0.16); beam([[-0.2, -1.0], [-0.4, 0]], 0.1); beam([[-0.2, -1.0], [0.4, 0]], 0.1); { const p = new Path2D(); p.moveTo(0.7 * R, -2.0 * R); p.quadraticCurveTo(0.2 * R, -1.1 * R, 0.7 * R, -0.2 * R); c.lineWidth = 0.12 * R + w * 2; c.strokeStyle = ol; c.stroke(p); c.lineWidth = 0.12 * R; c.strokeStyle = wood; c.stroke(p); } ln([[0.7, -2.0], [-1.1, -1.0], [0.7, -0.2]], 0.5, white); beam([[-1.1, -1.0], [1.5, -1.12]], 0.05, iron); break;
@@ -54,5 +49,4 @@ const body = `
     case "transportPlane": fl(S([[-2.8, -1.25], [-2.2, -1.45], [2.0, -1.4], [2.7, -1.15], [2.0, -0.85], [-2.2, -0.95]]), T("#8a9478")); fl(P([[-2.4, -1.35], [-2.9, -2.2], [-2.5, -2.2], [-1.9, -1.4]]), T("#7a8468")); fl(P([[-0.3, -1.15], [0.6, -1.15], [0.2, 0.0], [-0.4, 0.0]]), T("#7a8468")); [0.6, -0.6].forEach((x) => { fl(E(x, -1.15, 0.25, 0.14), T("#5a6450")); prop(x + 0.28, -1.15, 0.5); }); for (let i = 0; i < 6; i++) ring(-1.6 + i * 0.5, -1.2, 0.07, glass); break;
     case "attackHelicopter": { fl(S([[-0.9, -0.9], [-0.6, -1.4], [0.9, -1.4], [1.5, -1.05], [1.0, -0.75], [-0.6, -0.75]]), olive); fl(P([[0.6, -1.38], [1.2, -1.2], [0.9, -1.0], [0.5, -1.0]]), glass); beam([[-0.9, -1.1], [-2.7, -1.3]], 0.14, olive); fl(P([[-2.6, -1.3], [-2.9, -1.9], [-2.7, -1.9], [-2.4, -1.35]]), olive); beam([[-0.5, -0.75], [-0.5, -0.4]], 0.04, iron); beam([[0.6, -0.75], [0.6, -0.4]], 0.04, iron); beam([[-0.9, -0.4], [1.0, -0.4]], 0.05, iron); fl(rect(-0.3, -0.95, 0.5, -0.8), iron); const a = Math.cos(t * 40) * 2.4; ln([[0.1 - a, -1.6], [0.1 + a, -1.6]], 0.9); beam([[0.1, -1.4], [0.1, -1.6]], 0.05, iron); break; }
     case "drone": fl(rect(-0.35, -0.6, 0.35, -0.38), T("#3a3a40")); [-0.8, 0.8].forEach((x) => { beam([[0, -0.5], [x, -0.65]], 0.05, T("#3a3a40")); const a = Math.cos(t * 50) * 0.35; ln([[x - a, -0.72], [x + a, -0.72]], 0.8); }); ring(0, -0.3, 0.1, black); beam([[-0.3, -0.38], [-0.35, -0.1]], 0.03, T("#3a3a40")); beam([[0.3, -0.38], [0.35, -0.1]], 0.03, T("#3a3a40")); break;`;
-
 export const MOTION_LIBRARY_SIEGE: MotionLibraryPart = { part: "lib_siege", fn: "vehicle", items, js: motionLibraryPart(items, body, 1.8, helpers) };

@@ -1,7 +1,3 @@
-// What the standard kit adds on top of every skin through its public API: a wagon fort (wagons of the shared drawing
-// linked by chains), walls and bridges drawn to the width asked for, and animals always side-on. Every thing itself is
-// drawn by the shared skin parts (motionKitSkins/parts, motionKitLibrary.ts). MotionKit.knows(fn, kind) tells the
-// figure table which kinds the kit can draw; nothing here moves, resizes or adds anything in a scene.
 export const MOTION_KIT_EXTRAS = `(function (K) {
     if (!K || K.__extras) return;
     K.__extras = true;

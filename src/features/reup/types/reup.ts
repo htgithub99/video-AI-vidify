@@ -16,29 +16,22 @@ export type ReupStepId = "source" | "scenes" | "script" | "voice" | "build" | "p
 export type ReupStepStatus = "idle" | "running" | "done" | "error" | "waiting";
 export type ReupJobStatus = "running" | "waiting-script" | "done" | "error" | "cancelled";
 export type ReupThumbLayout = "hero" | "split" | "circle";
-/** Who owns the footage: the user, or someone who licensed it to them (a link or licence note is then required). */
 export type ReupRights = "own" | "licensed";
 export type ReupCommentaryVoice = "expert" | "storyteller" | "analyst" | "curious" | "wry" | "coach";
 export type ReupCommentaryHook = "result" | "question" | "contrast" | "stakes" | "tease";
 export type ReupCommentaryEnding = "question" | "lesson" | "reflection" | "next";
-/** The commentary of one run: who narrates, how it opens and ends, and the background track. Rotated across runs so videos do not share one template. */
 export interface ReupStyle {
   voice: ReupCommentaryVoice;
   hook?: ReupCommentaryHook;
   ending: ReupCommentaryEnding;
-  /** File name of the library track under the video (none when music is off or the type has no track). */
   track?: string;
 }
-/** Background music: none, or a track from the music library made for this video type. */
 export type ReupMusicChoice = "off" | "library";
 export type ReupReportLevel = "ok" | "review" | "risk";
 export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual" | "naturalOff";
-/** Upload check against YouTube's reused / inauthentic content rules: measured on the edited video and the run history. */
 export interface ReupReport {
   level: ReupReportLevel;
-  /** Share of the video carrying the channel's own narration (or the speaker's own words). */
   narrated: number;
-  /** Longest stretch of footage with no words of ours (seconds). */
   silentMax: number;
   notes: { code: ReupReportCode; level: ReupReportLevel; value?: string }[];
 }
@@ -50,28 +43,21 @@ export interface ReupAiChoice {
   allowFallback: boolean;
   multiRoom: boolean;
 }
-/** Choices the screen shows. Everything else follows the video type (ReupPresetRules). */
 export interface ReupSettings {
   language: ReupLanguage;
-  /** Second narration language (bilingual test, type C). */
   languageAlt: ReupLanguage;
   targetSeconds: number;
   shortsCount: number;
   aspect: ReupAspect;
-  /** Voice channels of the Voices tab (shared with Video Motion). */
   voiceChannel: string;
   voiceChannelAlt: string;
-  /** Background music: off, or the music library's tracks for this video type. */
   music: ReupMusicChoice;
   natural: ReupNatural;
-  /** Burned-in subtitles: the narration line by line, or the speaker's words lighting up (real-talk clips). */
   subtitles: boolean;
   logo: ReupLogo;
   logoCorner: ReupCorner;
   stopScript: boolean;
-  /** The channel's own knowledge or viewpoint, woven into every script (the human input that makes the video ours). */
   angle: string;
-  /** Original source link, or licence note for licensed footage (credited in the description). */
   sourceLink: string;
   brandName: string;
   hotline: string;
@@ -82,13 +68,9 @@ export interface ReupSettings {
   visionAi: ReupAiChoice;
   scriptAi: ReupAiChoice;
 }
-/** Editing rules fixed by the video type (not shown on screen). */
 export interface ReupPresetRules {
-  /** How a landscape source fills a vertical frame. */
   vertical: ReupVertical;
-  /** Accent of titles, callouts and karaoke words. */
   brandColor: string;
-  /** Narration words per second of the target length (min, max): the narration fills the video instead of silent footage. */
   wordsPerSecond: [number, number];
   hook: boolean;
   teasers: boolean;
@@ -105,23 +87,18 @@ export interface ReupPresetRules {
   fillUnused: boolean;
   hookCutSeconds: number;
   sheetInterval: number;
-  /** SEO options the AI writes (title, description, hashtags, tags, score). */
   seoOptions: number;
-  /** Draw a thumbnail for each option (long videos and TikTok covers; not Shorts). */
   thumbnail: boolean;
-  /** Commentary styles this type may use (all when empty). */
   voices: ReupCommentaryVoice[];
   hooks: ReupCommentaryHook[];
   endings: ReupCommentaryEnding[];
 }
-/** What the pipeline reads: the screen's choices plus the type's rules. */
 export type ReupJobSettings = ReupSettings & ReupPresetRules;
 export interface ReupMediaItem {
   id: string;
   path: string;
   name: string;
   type: ReupMediaType;
-  /** Place on the folder's virtual timeline (photos last PHOTO_SECONDS, clips their own length). */
   start: number;
   end: number;
   width: number;
@@ -130,10 +107,8 @@ export interface ReupMediaItem {
 }
 export interface ReupSource {
   path: string;
-  /** A video file, or a folder of photos and short clips laid end to end on a virtual timeline. */
   kind: "video" | "folder";
   items?: ReupMediaItem[];
-  /** Low-resolution video of the folder's timeline, used for contact sheets, quality and review frames. */
   proxy?: string;
   name: string;
   duration: number;
@@ -158,7 +133,6 @@ export interface ReupBadRange {
   end: number;
   reason: "dark" | "blur";
 }
-/** A moment inside a scene the narration can point at: a contact-sheet tile's time, what happens, how strong it is on screen. */
 export interface ReupMoment {
   id: string;
   t: number;
@@ -172,11 +146,8 @@ export interface ReupSegment {
   what: string;
   tags: string[];
   value: number;
-  /** Horizontal place of the main subject, 0 (left) … 1 (right), for subject-aware vertical crops. */
   focusX?: number;
-  /** Short factual caption (photo reports). */
   caption?: string;
-  /** Moments to talk over, in time order (maps from before moments existed get them spread evenly, see reupMoments). */
   moments?: ReupMoment[];
 }
 export interface ReupSceneMap {
@@ -191,12 +162,9 @@ export interface ReupShot {
   end: number;
 }
 export interface ReupCue {
-  /** Scene the cue's words are spoken over. */
   segment: string;
-  /** Moment of that scene the picture starts at (narrated videos); photo reports show the whole item. */
   moment?: string;
   text: string;
-  /** The same words in the second language (bilingual tests). */
   textAlt?: string;
 }
 export interface ReupSection {
@@ -204,11 +172,8 @@ export interface ReupSection {
   role: ReupSectionRole;
   text: string;
   shots: ReupShot[];
-  /** Photo reports: the narration split by the picture it plays over (timed by the voice's own words). */
   cues?: ReupCue[];
-  /** Photo reports: a chapter card shown before this section. */
   chapter?: string;
-  /** Real-talk clips: a short boxed line shown as this phrase starts. */
   callout?: string;
 }
 export interface ReupOutputScript {
@@ -216,30 +181,24 @@ export interface ReupOutputScript {
   kind: ReupOutputKind;
   title: string[];
   sections: ReupSection[];
-  /** Narration language of this output (bilingual tests have one output per language). */
   lang?: ReupLanguage;
-  /** Real-talk clips: kept speech pieces cut by words; the source's own voice is the narration. */
   speech?: boolean;
   cta?: string;
 }
 export interface ReupScript {
   outputs: ReupOutputScript[];
 }
-/** A track of the background music library. */
 export interface ReupTrack {
   name: string;
   file: string;
-  /** Video type it was made for. */
   preset: ReupPresetId;
 }
 export interface ReupOutputResult {
   id: string;
-  /** Seconds carrying our narration (or the speaker's own words), longest silent stretch, silent filler added, footage repeated. */
   narrated?: number;
   silentMax?: number;
   padding?: number;
   repeated?: boolean;
-  /** Where each chapter starts on this output (photo reports), for YouTube chapter lines. */
   chapters?: { t: number; title: string }[];
   file: string;
   url: string;
@@ -256,10 +215,8 @@ export interface ReupThumbIdea {
   frames: number[];
   lines: string[];
 }
-/** Upload package in Video Motion's SEO shape: a few options, each with its own thumbnail drawn from real frames. */
 export interface ReupPackage {
   options: MotionSeoOption[];
-  /** One thumbnail idea per option (none for Shorts). */
   thumbs: ReupThumbIdea[];
   frames: ReupFrame[];
   pinned: string;
@@ -280,11 +237,8 @@ export interface ReupVoice {
   file: string;
   seconds: number;
   voice: string;
-  /** Where each cue starts inside this voice (seconds): its picture changes there. */
   cues?: number[];
-  /** Seconds of pause between cues inside this voice (footage and its own sound play there). */
   gaps?: number;
-  /** Subtitle lines of this narration, timed inside the voice by its own spoken words. */
   subs?: ReupSubLine[];
 }
 export interface ReupSubLine {
@@ -300,7 +254,6 @@ export interface ReupWord {
 export interface ReupTranscript {
   text: string;
   words: ReupWord[];
-  /** Phrases (ids p1…) the script picks from: a few seconds each, cut at pauses and sentence ends. */
   phrases: { id: string; from: number; to: number; start: number; end: number; text: string }[];
 }
 export interface ReupJob {
@@ -310,7 +263,6 @@ export interface ReupJob {
   preset: ReupPresetId;
   settings: ReupJobSettings;
   rights: ReupRights;
-  /** Fingerprint of the source file (or folder) to spot footage reused across runs. */
   fingerprint?: string;
   style?: ReupStyle;
   report?: ReupReport;
@@ -324,9 +276,7 @@ export interface ReupJob {
   script?: ReupScript;
   warnings: string[];
   voices?: Record<string, ReupVoice>;
-  /** Words of the source's own speech (real-talk clips), from the local speech recogniser. */
   transcript?: ReupTranscript;
-  /** ai33 usage estimate (characters sent ≈ credits). */
   credits?: number;
   outputs: ReupOutputResult[];
   package?: ReupPackage;

@@ -28,22 +28,7 @@ import { toast } from "sonner";
 import { loadMotionEngineClient, motionJobStatusUrl, motionRequest, pollMotionJob, type MotionEngineGlobal } from "../components/motionApi.js";
 import { MOTION_JOB_POLLING } from "../constants/motionJobPolling.js";
 import { API_ROUTES } from "../../../constants/apiRoutes.js";
-import {
-  MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP,
-  MOTION_TEMPLATE_NAME_DEMO,
-  MOTION_TEMPLATE_S,
-  MOTION_TEMPLATE_SYMBOL_4,
-  MOTION_TEXT_AI_ERROR,
-  MOTION_TEXT_BEATS,
-  MOTION_TEXT_CANCELLED,
-  MOTION_TEXT_DARK,
-  MOTION_TEXT_DA_DUNG_STOPPED,
-  MOTION_TEXT_DELETE,
-  MOTION_TEXT_ENGINE,
-  MOTION_TEXT_MOTION,
-  MOTION_TEXT_OK_2,
-  MOTION_TEXT_SYMBOL_27,
-} from "../../../constants/motionRuntime.js";
+import { MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP, MOTION_TEMPLATE_NAME_DEMO, MOTION_TEMPLATE_S, MOTION_TEMPLATE_SYMBOL_4, MOTION_TEXT_AI_ERROR, MOTION_TEXT_BEATS, MOTION_TEXT_CANCELLED, MOTION_TEXT_DARK, MOTION_TEXT_DA_DUNG_STOPPED, MOTION_TEXT_DELETE, MOTION_TEXT_ENGINE, MOTION_TEXT_MOTION, MOTION_TEXT_OK_2, MOTION_TEXT_SYMBOL_27 } from "../../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_VIDEO_CONSTANTS } from "../../../constants/motionVideo.js";
 import { jsonUtils } from "../../../lib/json.js";
 import { isMotionJobTerminal, isMotionStageBusy } from "../lib/motionJob.js";
@@ -161,8 +146,6 @@ interface PersistedState extends MotionSceneAiChoice, MotionAiChoice, MotionPlan
   thumbnails?: Record<number, MotionThumbnail>;
 }
 const DEFAULTS: PersistedState = {
-  // Defaults the user set for new projects (15/11): cartoon style with the standard kit, sparse picture pacing, POV in
-  // English at ~10 minutes, one narrator, no music, SFX, subtitles, voice check or AI image review, automatic export.
   visualSettings: normalizeMotionVisualSettings({ version: 1, mode: RT_SHARED.REMOTION, profileId: "sketch", pacing: "few" }),
   renderBehavior: normalizeMotionRenderBehavior(),
   remotionProfile: "sketch",
@@ -446,13 +429,16 @@ export function useMotionStudio() {
       renderPollAbort.current?.abort();
     };
   }, []);
-  // Saving is debounced and the snapshot is built only when the save actually runs, not on every keystroke.
   const persist = useMemo(() => {
     const write = createMotionStoryWriter();
-    return _.debounce((override?: object) => {
-      const now = stateRef.current;
-      write(override ?? { ...now, logHistory: logHistoryRef.current, visualDrafts: { ...now.visualDrafts, [motionVisualDraftKey(now.visualSettings)]: captureMotionVisualDraft(now, visualRuntime.current) } });
-    }, 600, { maxWait: 4000 });
+    return _.debounce(
+      (override?: object) => {
+        const now = stateRef.current;
+        write(override ?? { ...now, logHistory: logHistoryRef.current, visualDrafts: { ...now.visualDrafts, [motionVisualDraftKey(now.visualSettings)]: captureMotionVisualDraft(now, visualRuntime.current) } });
+      },
+      600,
+      { maxWait: 4000 },
+    );
   }, []);
   useEffect(() => {
     if (hydrated) persist();
@@ -998,10 +984,8 @@ export function useMotionStudio() {
           )) as MotionStoryScript;
           if (!flowCancelled.current && !stateRef.current.automationPaused && !missingMotionChapters(result, analysis).length) requestVoice(result, analysis);
           patch({ script: result });
-          // Scenes rebuilt here while the production is stopped go back into it, or a reload or a resume would bring the old ones back.
           const owner = stateRef.current;
-          if (owner.productionId && owner.activeStoryJobId !== owner.productionId && result.gen?.remotion?.scenes)
-            void motionRequest(API_ROUTES.MOTION_PRODUCTION_SYNC_SCENES, { productionId: owner.productionId, scenes: result.gen.remotion.scenes }).catch((error) => toast.error(MOTION_VISUAL.SYNC_SCENES_FAILED + _.toString((error as Error)?.message)));
+          if (owner.productionId && owner.activeStoryJobId !== owner.productionId && result.gen?.remotion?.scenes) void motionRequest(API_ROUTES.MOTION_PRODUCTION_SYNC_SCENES, { productionId: owner.productionId, scenes: result.gen.remotion.scenes }).catch((error) => toast.error(MOTION_VISUAL.SYNC_SCENES_FAILED + _.toString((error as Error)?.message)));
           setCompiled(null);
           failed = new Set([
             ...(result.gen?.failed || []),
@@ -1022,10 +1006,46 @@ export function useMotionStudio() {
       if (result && !failed && automaticExport && exportOn(stateRef.current) && !flowCancelled.current && !missingMotionChapters(result, analysis).length) await exportBuiltScenes.current?.();
       return result;
     },
-    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.sceneAiMultiRoom, state.planAiProvider, state.planAiModel, state.planAiHeadless, state.planAiFallback, state.planAiMultiRoom, state.scriptAiProvider, state.scriptAiModel, state.scriptAiHeadless, state.scriptAiFallback, state.scriptAiMultiRoom, state.aiMultiRoom, state.lightAiMultiRoom, state.lightAiProvider, state.lightAiModel, state.lightAiHeadless, state.lightAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
+    [
+      inFlow,
+      state.script,
+      state.analysis,
+      state.aspect,
+      state.aiProvider,
+      state.aiModel,
+      state.aiMode,
+      state.aiHeadless,
+      state.aiFallback,
+      state.sceneAiProvider,
+      state.sceneAiModel,
+      state.sceneAiHeadless,
+      state.sceneAiFallback,
+      state.sceneAiMultiRoom,
+      state.planAiProvider,
+      state.planAiModel,
+      state.planAiHeadless,
+      state.planAiFallback,
+      state.planAiMultiRoom,
+      state.scriptAiProvider,
+      state.scriptAiModel,
+      state.scriptAiHeadless,
+      state.scriptAiFallback,
+      state.scriptAiMultiRoom,
+      state.aiMultiRoom,
+      state.lightAiMultiRoom,
+      state.lightAiProvider,
+      state.lightAiModel,
+      state.lightAiHeadless,
+      state.lightAiFallback,
+      state.aiReview,
+      state.styleReferences,
+      state.characterMotion,
+      runStoryJob,
+      patch,
+      resumeAutomation,
+      requestVoice,
+    ],
   );
-  // While a one-click production runs, a scene redraw or deletion goes to the run itself (which draws the new scene and
-  // exports with it). False when no production is running, so the caller does it the usual way.
   const productionSceneAction = useCallback(async (action: "redo" | "delete", ids: string[], note?: string): Promise<boolean> => {
     const now = stateRef.current;
     if (!ids.length || !now.productionId || now.activeStoryJobId !== now.productionId) return false;
@@ -1207,13 +1227,7 @@ export function useMotionStudio() {
         uploadedAudioSeconds: !voiceMatches && snapshot.uploadedAudio ? snapshot.uploadedAudio.durationSeconds : undefined,
       });
       if (revision !== compileRevision.current || compileStateKey(stateRef.current) !== currentKey) return null;
-      const value = {
-        ...r,
-        compilationKey: currentKey,
-        spec: isRemotionSpec(r.spec) ? r.spec : { ...r.spec, gen: r.spec.gen ? { ...r.spec.gen, characterMotion: snapshot.characterMotion } : undefined, fps: snapshot.fps, ...(snapshot.subtitles === false ? { subtitles: [] } : {}) },
-        sfxCues: r.sfxCues,
-        missing: r.missing || [],
-      };
+      const value = { ...r, compilationKey: currentKey, spec: isRemotionSpec(r.spec) ? r.spec : { ...r.spec, gen: r.spec.gen ? { ...r.spec.gen, characterMotion: snapshot.characterMotion } : undefined, fps: snapshot.fps, ...(snapshot.subtitles === false ? { subtitles: [] } : {}) }, sfxCues: r.sfxCues, missing: r.missing || [] };
       compiledSig.current = currentKey;
       setCompiled(value);
       return value;
@@ -1227,9 +1241,6 @@ export function useMotionStudio() {
       compiledSig.current = MR.MOTION_TEXT_EMPTY;
       return;
     }
-    // The preview is compiled as soon as every scene is built, also while a one-click production or another flow is still
-    // running (voice, SEO, export), so the scenes can be watched before the voice and the export are ready. Other visual
-    // modes have no per-scene readiness to wait for, so they wait for the flow to end.
     const running = flowCount > 0 || (!!state.activeStoryJobId && state.activeStoryJobId === state.productionId);
     if (!hydrated || sceneBuildPending.current || state.visualSettingsError || (running && state.visualSettings.mode !== RT_SHARED.REMOTION)) return;
     if (
@@ -1469,7 +1480,6 @@ export function useMotionStudio() {
   const seoBusy = seoRequestBusy || isMotionStageBusy(storyJob, MotionStoryJobKind.SEO, MOTION_PRODUCTION.STAGES.SEO) || (!!state.seoJobId && !settledSeoJobs.current.has(state.seoJobId) && (!seoStep || (seoStep.id === state.seoJobId && !isMotionJobTerminal(seoStep.status))));
   const busy = storyBusy || renderBusy;
   const voiceAttempt = useRef<{ signature: string; count: number }>({ signature: MR.MOTION_TEXT_EMPTY, count: 0 });
-
   useEffect(() => {
     if (voiceValid) voiceRequested.current = MR.MOTION_TEXT_EMPTY;
   }, [voiceValid]);

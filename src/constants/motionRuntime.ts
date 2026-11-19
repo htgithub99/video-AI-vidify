@@ -553,8 +553,7 @@ export const MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_PT_3_BORDER_T_B
 export const MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX =
   "h-9 min-h-[36px] px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 shadow-md shadow-purple-600/20 active:scale-98 transition-all cursor-pointer font-sans select-none" as const;
 export const MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_2 = "h-9 min-h-[36px] px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 border border-purple-500/40 bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 active:scale-98 transition-all cursor-pointer font-sans select-none" as const;
-export const MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_3 =
-  "h-9 min-h-[36px] px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 border border-slate-700 bg-slate-800/90 text-slate-200 hover:bg-slate-700 hover:text-white active:scale-98 transition-all cursor-pointer font-sans select-none" as const;
+export const MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_3 = "h-9 min-h-[36px] px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 border border-slate-700 bg-slate-800/90 text-slate-200 hover:bg-slate-700 hover:text-white active:scale-98 transition-all cursor-pointer font-sans select-none" as const;
 export const P_4_SPACE_Y_3_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_80_3FC799 = "p-4 space-y-3 bg-slate-900/80 border border-slate-800/80 shadow-md rounded-2xl group transition-all" as const;
 export const MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD = "relative rounded-xl overflow-hidden bg-black shadow-md" as const;
 export const MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_MAX_H_380PX_SHADOW_MD_BLOCK = "w-full rounded-xl bg-black max-h-[380px] shadow-md block" as const;
@@ -904,14 +903,12 @@ export const MOTION_TEMPLATE_TOWARD = (value0: unknown): string => `toward "${va
 export const MOTION_TEXT_THE_ENDING = "the ending" as const;
 export const MOTION_TEXT_USE_THE_VOICE_APPROPRIATE_TO_THIS_INPUT = "Use the voice appropriate to this input" as const;
 export const MOTION_TEMPLATE_BO_GHI_TEN_CAU_TRICH_KHONG_CO_TRONG_NGUON = (value0: unknown): string => `, bỏ ghi tên ${value0} câu trích không có trong nguồn`;
-export const MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_ROUNDED_LG_TEXT_XS_FONT =
-  "h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all cursor-pointer shadow-2xs leading-none" as const;
+export const MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_ROUNDED_LG_TEXT_XS_FONT = "h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-bold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all cursor-pointer shadow-2xs leading-none" as const;
 export const MOTION_TEXT_W_3_5_H_3_5_TEXT_AMBER_500 = "w-3.5 h-3.5 text-amber-500" as const;
 export const TEXT_XS_SM_TEXT_SM_FONT_BLACK_TEXT_SLATE_100_TRUNCATE_TR = "text-xs sm:text-sm font-black !text-slate-100 truncate tracking-tight" as const;
 export const TEXT_11PX_FONT_MONO_FONT_MEDIUM_TEXT_SLATE_300_LEADING_S = "text-[11px] font-mono font-medium !text-slate-300 leading-snug" as const;
 export const MOTION_TEMPLATE_SEO_FULL = (value0: unknown): string => `seo_full_${value0}`;
-export const MOTION_TEXT_BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX =
-  "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none" as const;
+export const MOTION_TEXT_BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX = "btn-icon-tiny w-6 h-6 min-w-[24px] max-w-[24px] min-h-[24px] max-h-[24px] !p-0 aspect-square rounded-md flex items-center justify-center text-purple-400 hover:text-purple-200 transition-colors bg-transparent border-none shadow-none cursor-pointer shrink-0 select-none" as const;
 export const W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0 = "w-3.5 h-3.5 text-emerald-400 shrink-0" as const;
 export const MOTION_TEXT_W_3_5_H_3_5_SHRINK_0 = "w-3.5 h-3.5 shrink-0" as const;
 export const ROUNDED_2XL_BORDER_BORDER_SLATE_800_80_BG_SLATE_900_60_P = "rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 sm:p-5 shadow-lg space-y-4 hover:border-fuchsia-500/40 transition-all text-left backdrop-blur-md" as const;

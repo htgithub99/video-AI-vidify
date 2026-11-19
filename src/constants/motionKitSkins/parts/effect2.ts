@@ -1,6 +1,3 @@
-// The remaining effects for every skin: steam, incense, embers and sparks, muzzle flash, splash,
-// ripples and waves, shockwave, crater, lightning, light rays, glow, wisp and magic, fireflies, falling leaves and
-// petals, sandstorm and heat haze. Same options as the core kit; tint kinds (night, dusk, fog…) stay with the core.
 export const SKIN_PART_EFFECT2 = `(c, o, K) => {
   const kind = o.kind;
   const st = K.S(), R = K.num(o.r, 40), t = K.num(o.t, K.num(window.__motionKitTime, 0)), x = K.num(o.x, 0), y = K.num(o.y, 0), w = K.LW(R) * 0.8, ol = st.ol, night = K.NIGHT();

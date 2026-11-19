@@ -1,8 +1,5 @@
-// The scene spec: what the AI is asked for (one JSON object per scene), the words the engine knows, the real sizes code
-// checks the AI's sizes against, and the warnings code writes when it repairs or leaves out something.
 export const MOTION_SCENE_SPEC = {
   VERSION: 1,
-  // Bumped whenever the engine draws differently: pictures captured with an older engine are captured again (no AI).
   ENGINE: 3,
   WIDTH: 1280,
   HEIGHT: 720,
@@ -15,36 +12,54 @@ export const MOTION_SCENE_SPEC = {
   SIGNS: ["alarm", "question", "sweat", "sleep", "shiver", "anger"] as const,
   TIMES: ["day", "dawn", "dusk", "night"] as const,
   GROUNDS: ["dirt", "grass", "sand", "snow", "mud", "stone"] as const,
-  // Width of one drawing for its height (the engine uses the same numbers to keep things apart).
   ASPECT: { person: 0.42, animal: 1.35, vehicle: 1.7, building: 1.1, prop: 1, tree: 0.7, wall: 1, bridge: 4, sticker: 1, rider: 1.35 } as Record<string, number>,
-  // A rider on a horse against a standing person (hooves to the rider's head).
   RIDER: 1.35,
-  // A map name's kind: a town is a dot with a boxed name; a river or sea is written along the water.
   PLACE_TYPES: ["city", "river", "sea", "region", "mountain"] as readonly string[],
-  // How far a thing in the air is (its size follows, see MOTION_AIR_DISTANCE).
   DISTANCES: ["near", "mid", "far"] as readonly string[],
-  // How far a thing's size may be off the real size table (against a person at its depth) before it is set to it.
   SIZE_TOLERANCE: 1.6,
   SIZE_TOLERANCE_SMALL: 1.4,
   SIZE_TOLERANCE_LOOSE: 2.5,
   LOOSE: ["rock", "boulder", "log", "stump", "bush", "oak", "pine", "birch", "willow", "palm", "bamboo", "dead", "cypress", "fruit", "cherry", "banana", "banyan", "haystack", "woodpile", "campfire", "bonfirePit"] as readonly string[],
-  // A thing's size is checked against people within this share of their distance below the horizon.
   DEPTH_BAND: 0.25,
-  // A sticker under this size (px) cannot be seen in the video and is left out.
   STICKER_MIN: 40,
   HAZE_MAX: 0.35,
-  // How far the focal box may be covered by a thing drawn in front of it before that thing is moved.
   COVER_MAX: 0.2,
   SAMPLES: [0, 0.25, 0.5, 0.75, 1],
   HORIZON: [120, 560] as [number, number],
-  // Things the plan names that the library has under another word of the same period (the catalogue's own names are
-  // checked first). A word with no entry here and no catalogue entry is left out of the scene.
   NEAR: {
-    pony: "horse", steed: "horse", charger: "warHorse", destrier: "warHorse", cattle: "ox", bullock: "ox", oxen: "ox", calf: "cow",
-    ferryboat: "ferry", barge: "ferry", skiff: "rowboat", dinghy: "rowboat",
-    cookfire: "campfire", firepit: "campfire", fire: "campfire", lance: "spear", standard: "banner", flag: "banner", pennant: "banner",
-    canopy: "campTent", shelter: "campTent", pavilion: "tent", bush: "bush", shrub: "bush", stone: "rock", rocks: "rock", stones: "rock",
-    palisades: "palisade", stockade: "palisade", rampart: "earthwork", ramparts: "earthwork", embankment: "earthwork", parapet: "wall",
+    pony: "horse",
+    steed: "horse",
+    charger: "warHorse",
+    destrier: "warHorse",
+    cattle: "ox",
+    bullock: "ox",
+    oxen: "ox",
+    calf: "cow",
+    ferryboat: "ferry",
+    barge: "ferry",
+    skiff: "rowboat",
+    dinghy: "rowboat",
+    cookfire: "campfire",
+    firepit: "campfire",
+    fire: "campfire",
+    lance: "spear",
+    standard: "banner",
+    flag: "banner",
+    pennant: "banner",
+    canopy: "campTent",
+    shelter: "campTent",
+    pavilion: "tent",
+    bush: "bush",
+    shrub: "bush",
+    stone: "rock",
+    rocks: "rock",
+    stones: "rock",
+    palisades: "palisade",
+    stockade: "palisade",
+    rampart: "earthwork",
+    ramparts: "earthwork",
+    embankment: "earthwork",
+    parapet: "wall",
   } as Record<string, string>,
   WARN: {
     DROPPED_KIND: (id: string, kind: string): string => `Bỏ "${id}": kho không có "${kind}" (cũng không có đồ gần đúng cùng thời đại)`,
@@ -64,20 +79,17 @@ export const MOTION_SCENE_SPEC = {
     FALLBACK: "Cảnh dựng bằng code từ phân cảnh (AI không trả bản mô tả dùng được)",
     PARSE: "Bản mô tả của AI hỏng JSON – đã tự sửa",
   },
-  // The WARN lines that tell of something the scene lacks (DROPPED_KIND, DROPPED_COVER, MISSING, FALLBACK); every other
-  // line is a repair code made on its own.
   ISSUE: /^Bỏ "[^"]*": (?:kho không có|che )|^Cảnh thiếu:|^Cảnh dựng bằng code/,
   FALLBACK_LOG: (id: string, tries: number): string => `Cảnh ${id}: AI không trả bản mô tả dùng được sau ${tries} lượt – dựng cảnh từ phân cảnh bằng code.`,
   PARSE_ERROR: "Bản mô tả cảnh không đọc được (không phải JSON hoặc thiếu items)",
-  // The page every scene is: the spec, read by the engine the figure table adds when the scene is shown.
   PAGE: (data: string): string =>
     `<!DOCTYPE html>\n<html data-artifact="motion-html-scene" data-motion-spec="1"><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111;overflow:hidden}#motion-canvas{display:block;width:100vw;height:100vh}</style></head>\n<body><canvas id="motion-canvas"></canvas><script>window.__motionSpec=${data};</script></body></html>`,
   PAGE_MARK: /data-motion-spec="1"/,
   SPEC_DATA: /window\.__motionSpec=(\{[\s\S]*?\});<\/script>/,
 } as const;
-
-// The request for one scene: everything the AI needs to lay the scene out, nothing about how to draw it.
 export const MOTION_SCENE_SPEC_PROMPT = {
+  SIZES: "person 1×0.6, rider on a horse 1.35×1.4; the size of each animal, vehicle, building and wall is next to its name in the LIBRARY",
+  SIZE_OF: (id: string, h: string, l: string): string => `${id}(${h}×${l})`,
   ROLE: `You are the scene director of an animated history video. You compose ONE scene as a precise SCENE SPEC (JSON) — with the same care and detail you would put into writing the scene's canvas code: exact pixel positions, sizes, timing and changes. A drawing engine draws every item from its library in the art style the user chose, so you never draw people, animals, vehicles, buildings or scenery yourself.
 
 WHAT MATTERS MOST, in this order:

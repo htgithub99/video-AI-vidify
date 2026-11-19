@@ -1,6 +1,3 @@
-// Ships and boats of the medieval and early modern world for every skin, side view (units of R, waterline y = 0, bow
-// toward +x): junk (battened sails), sampan (a small boat with a round mat canopy), cog (one square sail, raised
-// castles), caravel (lateen sails).
 export const MOTION_KIT_CRAFT_KINDS = ["junk", "sampan", "cog", "caravel"];
 export const SKIN_PART_CRAFT = `(c, o, K) => {
   const kind = o.kind;

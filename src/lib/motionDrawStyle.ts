@@ -11,7 +11,6 @@ export const motionProportionFigure = (settings?: { profileId?: unknown; proport
   const proportion = motionProportionOf(settings);
   return proportion === P.NATIVE ? "" : P.SPECS[proportion].figure;
 };
-// How figures move when the video is shown ("Chuyển động"): the one chosen, else the drawing style's own.
 export const MOTION_MOVEMENTS: readonly MotionMovement[] = ["smooth", "cutout"];
 export const motionIsMovement = (id: unknown): id is MotionMovement => typeof id === "string" && (MOTION_MOVEMENTS as readonly string[]).includes(id);
 export const motionMovementOf = (settings?: { profileId?: unknown; movement?: unknown }): MotionMovement => (motionIsMovement(settings?.movement) ? settings.movement : motionDrawStyle(settings?.profileId).movement || "smooth");

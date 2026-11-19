@@ -1207,30 +1207,8 @@ export const IMAGE_FOCUS_OPTION_GROUPS = {
   ],
 } as const;
 export const UI_COMMON_TEXTS = {
-  vi: {
-    DASHBOARD_BADGE: "Next-Gen Video AI Studio",
-    DASHBOARD_HERO_SUBTITLE: "Tạo video AI từ kịch bản: phân cảnh, hình ảnh và giọng đọc.",
-    PROJECTS_CREATED_COUNT: (count: number) => `${count} dự án đã tạo`,
-    VIEW_ALL: "Xem tất cả",
-    PRO_VERSION: "Pro v2.4",
-    LIVE_SYNC: "Live Sync",
-    PRO_STUDIO: "Pro Studio",
-    CINEMATIC_ENGINE: "Cinematic Engine",
-    ACTIVE_STATUS: "Active",
-    KEY_PREFIX: "Key: ",
-  },
-  en: {
-    DASHBOARD_BADGE: "Next-Gen Video AI Studio",
-    DASHBOARD_HERO_SUBTITLE: "Auto-make AI videos with script, images and narration.",
-    PROJECTS_CREATED_COUNT: (count: number) => `${count} projects created`,
-    VIEW_ALL: "View All",
-    PRO_VERSION: "Pro v2.4",
-    LIVE_SYNC: "Live Sync",
-    PRO_STUDIO: "Pro Studio",
-    CINEMATIC_ENGINE: "Cinematic Engine",
-    ACTIVE_STATUS: "Active",
-    KEY_PREFIX: "Key: ",
-  },
+  vi: { DASHBOARD_BADGE: "Next-Gen Video AI Studio", DASHBOARD_HERO_SUBTITLE: "Tạo video AI từ kịch bản: phân cảnh, hình ảnh và giọng đọc.", PROJECTS_CREATED_COUNT: (count: number) => `${count} dự án đã tạo`, VIEW_ALL: "Xem tất cả", PRO_VERSION: "Pro v2.4", LIVE_SYNC: "Live Sync", PRO_STUDIO: "Pro Studio", CINEMATIC_ENGINE: "Cinematic Engine", ACTIVE_STATUS: "Active", KEY_PREFIX: "Key: " },
+  en: { DASHBOARD_BADGE: "Next-Gen Video AI Studio", DASHBOARD_HERO_SUBTITLE: "Auto-make AI videos with script, images and narration.", PROJECTS_CREATED_COUNT: (count: number) => `${count} projects created`, VIEW_ALL: "View All", PRO_VERSION: "Pro v2.4", LIVE_SYNC: "Live Sync", PRO_STUDIO: "Pro Studio", CINEMATIC_ENGINE: "Cinematic Engine", ACTIVE_STATUS: "Active", KEY_PREFIX: "Key: " },
 } as const;
 export const CINEMATIC_SETUP_TEXTS = {
   vi: {

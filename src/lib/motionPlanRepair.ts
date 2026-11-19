@@ -5,7 +5,11 @@ interface MotionPlanRow {
   sceneTemplate?: unknown;
 }
 const templateText = (value: unknown): unknown => {
-  if (Array.isArray(value)) return value.map((item) => String(item ?? "").trim()).filter(Boolean).join(W.TEMPLATE_JOIN);
+  if (Array.isArray(value))
+    return value
+      .map((item) => String(item ?? "").trim())
+      .filter(Boolean)
+      .join(W.TEMPLATE_JOIN);
   if (value && typeof value === "object")
     return Object.entries(value as Record<string, unknown>)
       .map(([key, item]) => (W.TEMPLATE_KEY.test(key) && !W.TEMPLATE_NUMBERED.test(String(item ?? "")) ? W.TEMPLATE_SECTION(key, String(item ?? "").trim()) : String(item ?? "").trim()))

@@ -1,5 +1,185 @@
-import { SOURCE_TEXT_SYMBOL_22, SOURCE_TEXT_SYMBOL_3, SOURCE_TEXT_SYMBOL_52, SOURCE_TEXT_SYMBOL_42, SOURCE_TEXT_SYMBOL_43, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_SYMBOL_44, SOURCE_TEXT_SYMBOL_45, SOURCE_TEXT_NFD, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_SYMBOL_54, SOURCE_TEXT_CENTER, SOURCE_TEXT_LEFT, SOURCE_TEXT_RIGHT, SOURCE_TEXT_TOP, SOURCE_TEXT_BOTTOM, SOURCE_TEXT_SCROLL, SOURCE_TEXT_SPEED, SOURCE_TEXT_START, SOURCE_TEXT_END, SOURCE_TEXT_FROM, SOURCE_TEXT_TO, SOURCE_TEXT_SYMBOL_16, SOURCE_TEXT_MEDIUM, SOURCE_TEXT_SYMBOL_12, SOURCE_TEXT_FLOW, SOURCE_TEXT_REVEAL, SOURCE_TEXT_1, SOURCE_TEXT_SYMBOL_53, SOURCE_TEXT_SYMBOL_10, SOURCE_TEXT_SYMBOL_6, SOURCE_TEXT_ACTION, SOURCE_TEXT_VI, SOURCE_TEXT_EN, SOURCE_TEXT_STYLE, SOURCE_BROWSER_TEXT_SOURCE, SOURCE_TEXT_LABEL, SOURCE_TEXT_SYMBOL_56, SOURCE_TEXT_FIXED, SOURCE_TEXT_OFF, SOURCE_TEXT_1_4, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_PLANNING, SOURCE_TEXT_I_2, SOURCE_TEXT_16_9, SOURCE_TEXT_READY, SOURCE_TEXT_SHA256, SOURCE_TEXT_HEX, SOURCE_TEXT_TITLE, SOURCE_TEXT_LOGLINE, SOURCE_TEXT_CLOSE_2, SOURCE_TEXT_X, SOURCE_TEXT_REQUIRED, SOURCE_TEXT_ID, SOURCE_TEXT_U_2, SOURCE_TEXT_SVG, SOURCE_TEXT_HREF, SOURCE_TEXT_ARIA_DESCRIBEDBY_2, SOURCE_TEXT_SYMBOL_33, SOURCE_TEXT_LENGTH, SOURCE_TEXT_SYMBOL_21, SOURCE_TEXT_0, SOURCE_TEXT_A_2, SOURCE_TEXT_IMAGE, SOURCE_TEXT_USE, SOURCE_TEXT_R, SOURCE_TEXT_PATH, SOURCE_TEXT_D, SOURCE_TEXT_GI, SOURCE_TEXT_UNAVAILABLE, SOURCE_TEXT_AND, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_DOMCONTENTLOADED, SOURCE_TEXT_DIALOG, SOURCE_TEXT_HEADING, SOURCE_TEXT_DELETE_2, SOURCE_TEXT_POST, SOURCE_TEXT_VISIBLE, SOURCE_TEXT_BUTTON, SOURCE_TEXT_HIDDEN, SOURCE_TEXT_MENUITEM, SOURCE_TEXT_TRUE, SOURCE_TEXT_ABOUT_BLANK, SOURCE_TEXT_SCENES, SOURCE_TEXT_ABORT, SOURCE_TEXT_SELECTED, SOURCE_BROWSER_TEXT_ARIA_CHECKED, SOURCE_TEXT_ARIA_SELECTED, SOURCE_BROWSER_TEXT_SYMBOL, SOURCE_TEXT_MESSAGE, SOURCE_TEXT_RELATIVE, SOURCE_TEXT_SYMBOL, SOURCE_TEXT_WHITE, SOURCE_TEXT_NONE, SOURCE_TEXT_RANGE, SOURCE_TEXT_SYMBOL_2, SOURCE_TEXT_ALERT, SOURCE_TEXT_SYMBOL_7, SOURCE_TEXT_M, SOURCE_TEXT_W_4_H_4, SOURCE_TEXT_W_4_H_4_TEXT_ROSE_500, SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W, SOURCE_TEXT_TEXT_BLUE_400, SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_2, SOURCE_TEXT_TEXT_EMERALD_400, SOURCE_TEXT_TEXT_AMBER_400, SOURCE_TEXT_W_3_5_H_3_5, SOURCE_TEXT_W_3_H_3, SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3, SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2, SOURCE_TEXT_SPACE_Y_4, SOURCE_TEXT_REJECTED, SOURCE_TEXT_CODE, SOURCE_TEXT_BASE64, SOURCE_TEXT_SYMBOL_15, SOURCE_TEXT_SYMBOL_23, SOURCE_TEXT_PNG_2, SOURCE_TEXT_SYMBOL_11, SOURCE_TEXT_9_16, SOURCE_TEXT_1_1, SOURCE_TEXT_UTF8, SOURCE_TEXT_HIDE_BANNER, SOURCE_TEXT_ERROR, SOURCE_TEXT_Y, SOURCE_TEXT_F, SOURCE_TEXT_PNG, SOURCE_TEXT_I, SOURCE_TEXT_AN, SOURCE_TEXT_C_V, SOURCE_TEXT_CRF, SOURCE_TEXT_2, SOURCE_TEXT_MP4, SOURCE_TEXT_PIPE, SOURCE_TEXT_IGNORE, SOURCE_TEXT_DATA_2, SOURCE_TEXT_MP4_2, SOURCE_TEXT_SYMBOL_36, SOURCE_TEXT_LOAD, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_BACKGROUND, SOURCE_TEXT_FAILED } from "../sourceText.js";
-import { MOTION_TEXT_SYMBOL_42, MOTION_TEXT_FOLLOW, MOTION_TEXT_SLOW, MOTION_TEXT_SYMBOL_46, MOTION_TEXT_U003C, MOTION_TEXT_WIDE, MOTION_TEXT_SCALE, MOTION_TEXT_RAIN, MOTION_TEXT_FOG, MOTION_TEXT_HEIGHT, MOTION_TEXT_STORYTELLING, MOTION_TEXT_LINE, MOTION_TEXT_NARRATION, MOTION_TEXT_SYMBOL_11, MOTION_TEXT_S, MOTION_TEXT_SYMBOL_10, MOTION_TEXT_PHUT, MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_, MOTION_TEXT_LIGHT, MOTION_TEXT_MOTION_STORY_EDIT, MOTION_TEXT_SYMBOL_37, MOTION_TEXT_4_5, MOTION_TEXT_LOGLEVEL, MOTION_TEXT_IMAGE2PIPE, MOTION_TEXT_FRAMERATE, MOTION_TEXT_LIBX264, MOTION_TEXT_PIX_FMT, MOTION_TEXT_YUV420P, MOTION_TEXT_DRAIN, MOTION_TEXT_CONCAT, MOTION_TEXT_SAFE, MOTION_TEXT_C, MOTION_TEXT_COPY, MOTION_TEXT_IMAGE_PNG, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE } from "../motionRuntime.js";
+import {
+  SOURCE_TEXT_SYMBOL_22,
+  SOURCE_TEXT_SYMBOL_3,
+  SOURCE_TEXT_SYMBOL_52,
+  SOURCE_TEXT_SYMBOL_42,
+  SOURCE_TEXT_SYMBOL_43,
+  SOURCE_TEXT_SYMBOL_4,
+  SOURCE_TEXT_SYMBOL_44,
+  SOURCE_TEXT_SYMBOL_45,
+  SOURCE_TEXT_NFD,
+  SOURCE_TEXT_SYMBOL_25,
+  SOURCE_TEXT_SYMBOL_54,
+  SOURCE_TEXT_CENTER,
+  SOURCE_TEXT_LEFT,
+  SOURCE_TEXT_RIGHT,
+  SOURCE_TEXT_TOP,
+  SOURCE_TEXT_BOTTOM,
+  SOURCE_TEXT_SCROLL,
+  SOURCE_TEXT_SPEED,
+  SOURCE_TEXT_START,
+  SOURCE_TEXT_END,
+  SOURCE_TEXT_FROM,
+  SOURCE_TEXT_TO,
+  SOURCE_TEXT_SYMBOL_16,
+  SOURCE_TEXT_MEDIUM,
+  SOURCE_TEXT_SYMBOL_12,
+  SOURCE_TEXT_FLOW,
+  SOURCE_TEXT_REVEAL,
+  SOURCE_TEXT_1,
+  SOURCE_TEXT_SYMBOL_53,
+  SOURCE_TEXT_SYMBOL_10,
+  SOURCE_TEXT_SYMBOL_6,
+  SOURCE_TEXT_ACTION,
+  SOURCE_TEXT_VI,
+  SOURCE_TEXT_EN,
+  SOURCE_TEXT_STYLE,
+  SOURCE_BROWSER_TEXT_SOURCE,
+  SOURCE_TEXT_LABEL,
+  SOURCE_TEXT_SYMBOL_56,
+  SOURCE_TEXT_FIXED,
+  SOURCE_TEXT_OFF,
+  SOURCE_TEXT_1_4,
+  SOURCE_TEXT_SYMBOL_9,
+  SOURCE_TEXT_PLANNING,
+  SOURCE_TEXT_I_2,
+  SOURCE_TEXT_16_9,
+  SOURCE_TEXT_READY,
+  SOURCE_TEXT_SHA256,
+  SOURCE_TEXT_HEX,
+  SOURCE_TEXT_TITLE,
+  SOURCE_TEXT_LOGLINE,
+  SOURCE_TEXT_CLOSE_2,
+  SOURCE_TEXT_X,
+  SOURCE_TEXT_REQUIRED,
+  SOURCE_TEXT_ID,
+  SOURCE_TEXT_U_2,
+  SOURCE_TEXT_SVG,
+  SOURCE_TEXT_HREF,
+  SOURCE_TEXT_ARIA_DESCRIBEDBY_2,
+  SOURCE_TEXT_SYMBOL_33,
+  SOURCE_TEXT_LENGTH,
+  SOURCE_TEXT_SYMBOL_21,
+  SOURCE_TEXT_0,
+  SOURCE_TEXT_A_2,
+  SOURCE_TEXT_IMAGE,
+  SOURCE_TEXT_USE,
+  SOURCE_TEXT_R,
+  SOURCE_TEXT_PATH,
+  SOURCE_TEXT_D,
+  SOURCE_TEXT_GI,
+  SOURCE_TEXT_UNAVAILABLE,
+  SOURCE_TEXT_AND,
+  SOURCE_TEXT_SYMBOL_8,
+  SOURCE_TEXT_DOMCONTENTLOADED,
+  SOURCE_TEXT_DIALOG,
+  SOURCE_TEXT_HEADING,
+  SOURCE_TEXT_DELETE_2,
+  SOURCE_TEXT_POST,
+  SOURCE_TEXT_VISIBLE,
+  SOURCE_TEXT_BUTTON,
+  SOURCE_TEXT_HIDDEN,
+  SOURCE_TEXT_MENUITEM,
+  SOURCE_TEXT_TRUE,
+  SOURCE_TEXT_ABOUT_BLANK,
+  SOURCE_TEXT_SCENES,
+  SOURCE_TEXT_ABORT,
+  SOURCE_TEXT_SELECTED,
+  SOURCE_BROWSER_TEXT_ARIA_CHECKED,
+  SOURCE_TEXT_ARIA_SELECTED,
+  SOURCE_BROWSER_TEXT_SYMBOL,
+  SOURCE_TEXT_MESSAGE,
+  SOURCE_TEXT_RELATIVE,
+  SOURCE_TEXT_SYMBOL,
+  SOURCE_TEXT_WHITE,
+  SOURCE_TEXT_NONE,
+  SOURCE_TEXT_RANGE,
+  SOURCE_TEXT_SYMBOL_2,
+  SOURCE_TEXT_ALERT,
+  SOURCE_TEXT_SYMBOL_7,
+  SOURCE_TEXT_M,
+  SOURCE_TEXT_W_4_H_4,
+  SOURCE_TEXT_W_4_H_4_TEXT_ROSE_500,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W,
+  SOURCE_TEXT_TEXT_BLUE_400,
+  SOURCE_TEXT_W_4_H_4_TEXT_EMERALD_400_2,
+  SOURCE_TEXT_TEXT_EMERALD_400,
+  SOURCE_TEXT_TEXT_AMBER_400,
+  SOURCE_TEXT_W_3_5_H_3_5,
+  SOURCE_TEXT_W_3_H_3,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_3,
+  SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2,
+  SOURCE_TEXT_SPACE_Y_4,
+  SOURCE_TEXT_REJECTED,
+  SOURCE_TEXT_CODE,
+  SOURCE_TEXT_BASE64,
+  SOURCE_TEXT_SYMBOL_15,
+  SOURCE_TEXT_SYMBOL_23,
+  SOURCE_TEXT_PNG_2,
+  SOURCE_TEXT_SYMBOL_11,
+  SOURCE_TEXT_9_16,
+  SOURCE_TEXT_1_1,
+  SOURCE_TEXT_UTF8,
+  SOURCE_TEXT_HIDE_BANNER,
+  SOURCE_TEXT_ERROR,
+  SOURCE_TEXT_Y,
+  SOURCE_TEXT_F,
+  SOURCE_TEXT_PNG,
+  SOURCE_TEXT_I,
+  SOURCE_TEXT_AN,
+  SOURCE_TEXT_C_V,
+  SOURCE_TEXT_CRF,
+  SOURCE_TEXT_2,
+  SOURCE_TEXT_MP4,
+  SOURCE_TEXT_PIPE,
+  SOURCE_TEXT_IGNORE,
+  SOURCE_TEXT_DATA_2,
+  SOURCE_TEXT_MP4_2,
+  SOURCE_TEXT_SYMBOL_36,
+  SOURCE_TEXT_LOAD,
+  SOURCE_TEXT_CANVAS,
+  SOURCE_BROWSER_TEXT_2D,
+  SOURCE_TEXT_BACKGROUND,
+  SOURCE_TEXT_FAILED,
+} from "../sourceText.js";
+import {
+  MOTION_TEXT_SYMBOL_42,
+  MOTION_TEXT_FOLLOW,
+  MOTION_TEXT_SLOW,
+  MOTION_TEXT_SYMBOL_46,
+  MOTION_TEXT_U003C,
+  MOTION_TEXT_WIDE,
+  MOTION_TEXT_SCALE,
+  MOTION_TEXT_RAIN,
+  MOTION_TEXT_FOG,
+  MOTION_TEXT_HEIGHT,
+  MOTION_TEXT_STORYTELLING,
+  MOTION_TEXT_LINE,
+  MOTION_TEXT_NARRATION,
+  MOTION_TEXT_SYMBOL_11,
+  MOTION_TEXT_S,
+  MOTION_TEXT_SYMBOL_10,
+  MOTION_TEXT_PHUT,
+  MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_3_BORDER_T_BORDER_SLATE_,
+  MOTION_TEXT_LIGHT,
+  MOTION_TEXT_MOTION_STORY_EDIT,
+  MOTION_TEXT_SYMBOL_37,
+  MOTION_TEXT_4_5,
+  MOTION_TEXT_LOGLEVEL,
+  MOTION_TEXT_IMAGE2PIPE,
+  MOTION_TEXT_FRAMERATE,
+  MOTION_TEXT_LIBX264,
+  MOTION_TEXT_PIX_FMT,
+  MOTION_TEXT_YUV420P,
+  MOTION_TEXT_DRAIN,
+  MOTION_TEXT_CONCAT,
+  MOTION_TEXT_SAFE,
+  MOTION_TEXT_C,
+  MOTION_TEXT_COPY,
+  MOTION_TEXT_IMAGE_PNG,
+  MOTION_TEXT_MAP,
+  MOTION_TEXT_TIMELINE,
+} from "../motionRuntime.js";
 export const BACKSLASH = SOURCE_TEXT_SYMBOL_22;
 export const INVALID_FILE_NAME_PATTERN = '[<>:"/\\\\|?*\\x00-\\x1f]' as const;
 export const SINGLE_QUOTE = MOTION_TEXT_SYMBOL_42;
@@ -125,7 +305,8 @@ export const SCENES_ACROSS_THIS = " scenes) across this " as const;
 export const S_REQUEST_COVER_CONSECUTIVE_SPEECH_LINES_ONCE_ALLOWING_SEVERAL_BEATS = "s request. Cover consecutive speech lines once, allowing several beats/sentences in one Canvas so each scene holds on screen for roughly " as const;
 export const MOTIONHTMLPACINGDIRECTION_TEMPLATE_PART_8 =
   " seconds. Gestures, expression changes, object focus and camera movement belong inside the current scene; they do not automatically require a new picture. Change scenes when the source needs a new setting or a distinct visual demonstration, balancing the selected hold duration. Explain essential timing exceptions in purpose. This is an authoring target, never a score or acceptance gate." as const;
-export const MOTIONHTMLANALYSISPROMPT = "Analyze the supplied source into one coherent production plan. Return JSON with title, logline, factual, era, look, accent, sfxMood, videoDna, chapters, cast, groups, places and writingPlan. era is when and where the story happens and always starts with its year or year range (\"1241, Kingdom of Hungary\", \"44 BC, Rome\", \"1968, Hue, Vietnam\", \"present day, Tokyo\"); videoDna.era.storyPeriod repeats it. Follow the selected genre/storytelling contract and selected visual style supplied alongside this task." as const;
+export const MOTIONHTMLANALYSISPROMPT =
+  'Analyze the supplied source into one coherent production plan. Return JSON with title, logline, factual, era, look, accent, sfxMood, videoDna, chapters, cast, groups, places and writingPlan. era is when and where the story happens and always starts with its year or year range ("1241, Kingdom of Hungary", "44 BC, Rome", "1968, Hue, Vietnam", "present day, Tokyo"); videoDna.era.storyPeriod repeats it. Follow the selected genre/storytelling contract and selected visual style supplied alongside this task.' as const;
 export const TITLE = "Title=" as const;
 export const LANGUAGE = "; language=" as const;
 export const TOTAL_BUDGET = "; TOTAL budget=" as const;
@@ -137,10 +318,8 @@ export const FEW = "few" as const;
 export const MOTIONHTMLANALYSISPROMPT_2 =
   "cast lists only needed identities: {key,name,role,description,look,marks,skin,carries,origin,gender,age,narrator?}. Describe visible clothing, hair and equipment in words appropriate to the source; no body construction templates, drawing code, rig or coordinates. groups optionally describes unnamed participants {key,name,look,origin,skin,outfit,gear,faction}; places describes needed environments {key,name,description,interior,time}. Empty cast/groups is valid for a map or process. Do not invent people, props or events to populate the schema. Use the supplied videoDna data contract, without allowing visual style to override the selected narrative voice or genre. Preserve source uncertainty and factual versus fictional intent." as const;
 export const NEWLINE = SOURCE_TEXT_SYMBOL_56;
-export const PLAIN =
-  "STORYTELLING (keep to the source): tell only what the source states, in an order that builds tension, with active verbs and the source's own concrete details; varied rhythm; every chapter ends on a real unresolved fact that pulls into the next." as const;
-export const GRIPPING =
-  "STORYTELLING: punchy spoken cadence, sharp contrasts, escalating cause and consequence, and one curiosity loop kept alive until it pays off; land a memorable callback." as const;
+export const PLAIN = "STORYTELLING (keep to the source): tell only what the source states, in an order that builds tension, with active verbs and the source's own concrete details; varied rhythm; every chapter ends on a real unresolved fact that pulls into the next." as const;
+export const GRIPPING = "STORYTELLING: punchy spoken cadence, sharp contrasts, escalating cause and consequence, and one curiosity loop kept alive until it pays off; land a memorable callback." as const;
 export const THIN_SOURCE_LOG = (chapter: string, source: number, target: number, needed: number, allowed: number): string => `Chương ${chapter}: nguồn mỏng (~${source} âm tiết, mục tiêu ~${target}) cần kéo ×${needed.toFixed(1)}${needed > allowed ? `, vượt giới hạn kéo giãn ×${allowed.toFixed(1)} của thể loại/chế độ: phần còn lại bù bằng chiều sâu giải thích, không lặp` : ""}`;
 export const THIN_SOURCE_FAITHFUL_LOG = (chapter: string, source: number, target: number, units: number): string => `Chương ${chapter}: Bám sát nguồn, nguồn chỉ có ~${source} âm tiết so với mục tiêu ~${target}; viết ~${units} âm tiết, không giãn, video sẽ ngắn hơn thời lượng đã chọn`;
 export const RETENTION_CRAFT_GRIPPING =
@@ -156,7 +335,8 @@ export const VISUAL_STYLE_WORDS_ONLY = "VISUAL STYLE (words only): " as const;
 export const CANVAS_GUARD_SCRIPT =
   "(function(){const P=CanvasRenderingContext2D.prototype,nBegin=P.beginPath,nMove=P.moveTo,nLine=P.lineTo,nQuad=P.quadraticCurveTo,nBez=P.bezierCurveTo,nClose=P.closePath,nRect=P.rect,nArc=P.arc,nEllipse=P.ellipse,nRoundRect=P.roundRect,nFill=P.fill,nStroke=P.stroke,nFillRect=P.fillRect,S=new WeakMap();const isStage=ctx=>{const t=ctx.getTransform();return Math.abs(t.b)<1e-3&&Math.abs(t.c)<1e-3&&t.a>0.15&&t.d>0.15};P.fillRect=function(x,y,w,h){if(w>=600&&h>=40&&isStage(this)){const cw=Math.max(1280,this.canvas?.width||1280),ch=Math.max(720,this.canvas?.height||720);let nx=x,ny=y,nw=w,nh=h;if(x<=2&&x+w>=Math.min(1278,cw-2)){nx=Math.min(x,-512);nw=Math.max(x+w,cw+512)-nx}if(nx!==x){if(y<=2){ny=Math.min(y,-360);nh+=y-ny}if(y+h>=Math.min(718,ch-2)){nh=Math.max(ny+nh,ch+360)-ny}}return nFillRect.call(this,nx,ny,nw,nh)}return nFillRect.call(this,x,y,w,h)};P.beginPath=function(){S.set(this,{ok:true,cmds:[]});return nBegin.call(this)};P.moveTo=function(x,y){const s=S.get(this);if(s?.ok)s.cmds.push({t:'M',x,y});return nMove.call(this,x,y)};P.lineTo=function(x,y){const s=S.get(this);if(s?.ok)s.cmds.push({t:'L',x,y});return nLine.call(this,x,y)};P.quadraticCurveTo=function(cx,cy,x,y){const s=S.get(this);if(s?.ok)s.cmds.push({t:'Q',cx,cy,x,y});return nQuad.call(this,cx,cy,x,y)};P.bezierCurveTo=function(c1x,c1y,c2x,c2y,x,y){const s=S.get(this);if(s?.ok)s.cmds.push({t:'B',c1x,c1y,c2x,c2y,x,y});return nBez.call(this,c1x,c1y,c2x,c2y,x,y)};P.closePath=function(){const s=S.get(this);if(s?.ok)s.cmds.push({t:'Z'});return nClose.call(this)};for(const [k,fn] of [['rect',nRect],['arc',nArc],['ellipse',nEllipse],['roundRect',nRoundRect]])if(fn)P[k]=function(...a){const s=S.get(this);if(s)s.ok=false;return fn.apply(this,a)};const expandPath=ctx=>{const s=S.get(ctx);if(!s?.ok||s.expanded||s.cmds.length<2||!isStage(ctx))return;const pts=s.cmds.filter(c=>c.x!==undefined);if(pts.length<2)return;let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;for(const p of pts){if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y}const cw=Math.max(1280,ctx.canvas?.width||1280),ch=Math.max(720,ctx.canvas?.height||720);if(minX>2||maxX<Math.min(1278,cw-2))return;s.expanded=true;const L=Math.min(minX,-512),R=Math.max(maxX,cw+512),T=-360,B=ch+360,isL=x=>Math.abs(x-minX)<=2,isR=x=>Math.abs(x-maxX)<=2,mapY=(x,y)=>(isL(x)||isR(x))?(y<=2&&minY<=2&&maxY-minY>=80?Math.min(y,T):y>=Math.min(718,ch-2)&&maxY>=Math.min(718,ch-2)&&maxY-minY>=35?Math.max(y,B):y):y;nBegin.call(ctx);for(let i=0;i<s.cmds.length;i++){const c=s.cmds[i],nx=s.cmds[i+1],nextCurve=nx&&(nx.t==='Q'||nx.t==='B'||(nx.t==='L'&&!isL(nx.x)&&!isR(nx.x)));if(c.t==='M'){const my=mapY(c.x,c.y);if(isL(c.x)){nMove.call(ctx,L,my);if(nextCurve)nLine.call(ctx,c.x,c.y)}else if(isR(c.x)){nMove.call(ctx,R,my);if(nextCurve)nLine.call(ctx,c.x,c.y)}else nMove.call(ctx,c.x,c.y)}else if(c.t==='L'){const my=mapY(c.x,c.y);if(isL(c.x)){nLine.call(ctx,L,my);if(nextCurve)nLine.call(ctx,c.x,c.y)}else if(isR(c.x)){nLine.call(ctx,R,my);if(nextCurve)nLine.call(ctx,c.x,c.y)}else nLine.call(ctx,c.x,c.y)}else if(c.t==='Q'){nQuad.call(ctx,c.cx,c.cy,c.x,c.y);if(isR(c.x))nLine.call(ctx,R,mapY(c.x,c.y));else if(isL(c.x))nLine.call(ctx,L,mapY(c.x,c.y))}else if(c.t==='B'){nBez.call(ctx,c.c1x,c.c1y,c.c2x,c.c2y,c.x,c.y);if(isR(c.x))nLine.call(ctx,R,mapY(c.x,c.y));else if(isL(c.x))nLine.call(ctx,L,mapY(c.x,c.y))}else if(c.t==='Z')nClose.call(ctx)}};P.fill=function(...a){if(a.length===0||typeof a[0]==='string')expandPath(this);return nFill.apply(this,a)};P.stroke=function(...a){if(a.length===0)expandPath(this);return nStroke.apply(this,a)}})();" as const;
 export const SCRIPT = "<script>" as const;
-export const HTML_BRIDGE_PREFIX = "window.__MOTION_HOST__=true;window.__motionErrors=[];window.__motionMarks=[];window.motionMark=function(ctx,id,x,y,w,h){try{const t=ctx.getTransform(),c=ctx.canvas,p=[[x,y],[x+w,y],[x,y+h],[x+w,y+h]].map(q=>[t.a*q[0]+t.c*q[1]+t.e,t.b*q[0]+t.d*q[1]+t.f]),X=p.map(q=>q[0]),Y=p.map(q=>q[1]),l=Math.min(...X),u=Math.min(...Y);window.__motionMarks.push({id:String(id),x:l/c.width,y:u/c.height,w:(Math.max(...X)-l)/c.width,h:(Math.max(...Y)-u)/c.height})}catch(e){}};addEventListener('error',e=>window.__motionErrors.push(e.message));addEventListener('unhandledrejection',e=>window.__motionErrors.push(String(e.reason)));addEventListener('message',async e=>{if(e.source!==parent||e.data?.token!==" as const;
+export const HTML_BRIDGE_PREFIX =
+  "window.__MOTION_HOST__=true;window.__motionErrors=[];window.__motionMarks=[];window.motionMark=function(ctx,id,x,y,w,h){try{const t=ctx.getTransform(),c=ctx.canvas,p=[[x,y],[x+w,y],[x,y+h],[x+w,y+h]].map(q=>[t.a*q[0]+t.c*q[1]+t.e,t.b*q[0]+t.d*q[1]+t.f]),X=p.map(q=>q[0]),Y=p.map(q=>q[1]),l=Math.min(...X),u=Math.min(...Y);window.__motionMarks.push({id:String(id),x:l/c.width,y:u/c.height,w:(Math.max(...X)-l)/c.width,h:(Math.max(...Y)-u)/c.height})}catch(e){}};addEventListener('error',e=>window.__motionErrors.push(e.message));addEventListener('unhandledrejection',e=>window.__motionErrors.push(String(e.reason)));addEventListener('message',async e=>{if(e.source!==parent||e.data?.token!==" as const;
 export const HTML_BRIDGE_SUFFIX =
   ")return;const m=e.data;try{if(window.__motionErrors.length)throw Error(window.__motionErrors.join('\\n'));await window.motionScene.ready;await document.fonts.ready;window.__motionMarks=[];await window.motionScene.renderAt(m.input);if(window.__motionErrors.length)throw Error(window.__motionErrors.join('\\n'));if(m.input&&m.input.titleCard&&window.__motionTitleCard)window.__motionTitleCard(document.getElementById('motion-canvas'),m.input.titleCard);if(m.live==='bitmap'){const bitmap=await createImageBitmap(document.getElementById('motion-canvas'));parent.postMessage({token:m.token,id:m.id,bitmap,marks:window.__motionMarks},'*',[bitmap]);return}if(m.live){parent.postMessage({token:m.token,id:m.id,live:true,marks:window.__motionMarks},'*');return}const canvas=document.getElementById('motion-canvas');if(m.input?.mode==='export'&&!m.allowBlank){const s=document.createElement('canvas');s.width=32;s.height=18;const x=s.getContext('2d');x.drawImage(canvas,0,0,32,18);const d=x.getImageData(0,0,32,18).data;let seen=false;for(let i=3;i<d.length;i+=4)if(d[i]){seen=true;break}if(!seen){parent.postMessage({token:m.token,id:m.id,blank:true},'*');return}}let out=canvas;const sub=m.input&&m.input.subtitle;if(sub&&sub.text){out=document.createElement('canvas');out.width=canvas.width;out.height=canvas.height;const x=out.getContext('2d');x.drawImage(canvas,0,0);const size=Math.max(20,out.height*0.04);x.font='bold '+size+'px '+(sub.font||'sans-serif');x.textAlign='center';x.textBaseline='bottom';const lines=[];let line='';for(const word of String(sub.text).split(/\\s+/)){const next=line?line+' '+word:word;if(line&&x.measureText(next).width>out.width*0.86){lines.push(line);line=word}else line=next}if(line)lines.push(line);x.fillStyle='#ffffff';x.strokeStyle='#000000';x.lineWidth=3;x.lineJoin='round';lines.forEach((entry,i)=>{const y=out.height*0.96-(lines.length-i-1)*size*1.25;x.strokeText(entry,out.width/2,y);x.fillText(entry,out.width/2,y)})}const jpeg=m.input&&m.input.format==='jpeg';parent.postMessage({token:m.token,id:m.id,image:jpeg?out.toDataURL('image/jpeg',m.input.quality||0.95):out.toDataURL('image/png'),marks:window.__motionMarks},'*')}catch(error){parent.postMessage({token:m.token,id:m.id,error:String(error?.message||error)},'*')}});</script>" as const;
 export const U003C = MOTION_TEXT_U003C;
@@ -593,8 +773,7 @@ export const PARTPROMPT =
   "Write the requested chapter part in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,utterances?}]}. Stable IDs identify source events. place is the key of the listed place where the beat physically happens; omit it when no listed place fits instead of reusing an unrelated one. visual is scene/map/diagram/process/timeline/comparison/card as appropriate; map only for routes, positions or movement across a region, while an event at one place (an attack, siege, sack, battle moment or arrival) is a scene." as const;
 export const ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED = "One narrator reads everything exactly once. utterances can be omitted. Do not invent dialogue." as const;
 export const USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR = "Use narrator for narration and the supplied cast keys for source-supported dialogue. Joined utterance text matches narration exactly; no duplicate spoken words." as const;
-export const PARTPROMPT_2 =
-  "Scene descriptions are written later by the scene planner; return only spoken script fields." as const;
+export const PARTPROMPT_2 = "Scene descriptions are written later by the scene planner; return only spoken script fields." as const;
 export const VIET_PHAN_CANH_CHUONG = "Viết phân cảnh chương " as const;
 export const PHAN = " — phần " as const;
 export const APPROXIMATE_PREFIX = " (~" as const;

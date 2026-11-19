@@ -1,11 +1,10 @@
 import { MOTION_OBJECT_SIZE } from "../../motionObjectSize.js";
-// Modern and civilian vehicles for every skin, side view: taxi, police car, bus, bicycle, motorbike,
-// steam train, jet, airliner, helicopter, airship, balloon, submarine, rocket, missile. Flat skin-ink drawing with
-// panel lines, rivets and simple shading; footprints follow the core kit (units of R, ground y = 0, front toward +x).
-// Where each kind is, from the library's size table (one source with the scene checks): flying things draw no ground
-// shadow and bob in the air unless parked; water things float.
-const AIR = Object.entries(MOTION_OBJECT_SIZE).filter(([, z]) => z.place === "air").map(([id]) => id);
-const WATER = Object.entries(MOTION_OBJECT_SIZE).filter(([, z]) => z.place === "water").map(([id]) => id);
+const AIR = Object.entries(MOTION_OBJECT_SIZE)
+  .filter(([, z]) => z.place === "air")
+  .map(([id]) => id);
+const WATER = Object.entries(MOTION_OBJECT_SIZE)
+  .filter(([, z]) => z.place === "water")
+  .map(([id]) => id);
 export const SKIN_PART_VEHICLE2 = `(c, o0, K) => {
   const o = Object.assign({}, o0 || {});
   const kind = o.kind;

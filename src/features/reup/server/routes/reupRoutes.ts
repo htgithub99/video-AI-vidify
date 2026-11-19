@@ -1,6 +1,6 @@
 import express from "express";
 import { REUP_API } from "../../constants/reupConfig.js";
-import { approveReupScriptController, cancelReupController, deleteReupJobsController, exportReupController, reupTrackFileController, reupTracksController, inspectReupSourceController, pickReupFolderController, listReupJobsController, reupFrameController, reupStatusController, rerunReupController, saveReupVideoController, startReupController } from "../controllers/reupController.js";
+import { approveReupScriptController, cancelReupController, deleteReupJobsController, exportReupController, inspectReupSourceController, pickReupFolderController, listReupJobsController, reupFrameController, reupStatusController, rerunReupController, saveReupVideoController, startReupController } from "../controllers/reupController.js";
 const router = express.Router();
 router.post(REUP_API.SOURCE, inspectReupSourceController);
 router.post(REUP_API.START, startReupController);
@@ -14,6 +14,4 @@ router.get(REUP_API.FRAME, reupFrameController);
 router.post(REUP_API.PICK_FOLDER, pickReupFolderController);
 router.get(REUP_API.JOBS, listReupJobsController);
 router.post(REUP_API.DELETE, deleteReupJobsController);
-router.get(REUP_API.MUSIC, reupTracksController);
-router.get(REUP_API.MUSIC_FILE, reupTrackFileController);
 export default router;

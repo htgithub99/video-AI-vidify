@@ -14,12 +14,11 @@ import { REUP_PRESETS, reupPreset } from "../constants/reupPresets.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { REUP_LANGUAGES } from "../lib/reupSettings.js";
-import { REUP_LIMITS, REUP_URL } from "../constants/reupConfig.js";
+import { REUP_LIMITS } from "../constants/reupConfig.js";
 import type { ReupCorner, ReupLanguage, ReupMusicChoice, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
 import { ReupSelect, ReupTextArea, ReupTextField, ReupToggle, reupClock, type ReupOption } from "./ReupControls.js";
 const CORNERS: ReupCorner[] = ["tl", "tr", "bl", "br"];
 const SHORTS = [1, 2, 3, 4, 5];
-/** Step 01: the footage, the rights check and the few choices that are not fixed by the video type. */
 export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionText: MotionVideoTexts }> = ({ studio, ui, motionText }) => {
   const { text, settings, patch, source, job, running } = studio;
   const def = reupPreset(studio.preset);
@@ -47,15 +46,7 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
         }
       />
       <div className={S.BODY}>
-        <StudioInput
-          className={S.INPUT}
-          value={studio.sourcePath}
-          placeholder={text.PATH_PLACEHOLDER}
-          disabled={locked}
-          onChange={(e) => studio.setSourcePath(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && void studio.loadSource(e.currentTarget.value)}
-          onBlur={(e) => e.target.value.trim() !== source?.path && void studio.loadSource(e.target.value)}
-        />
+        <StudioInput className={S.INPUT} value={studio.sourcePath} placeholder={text.PATH_PLACEHOLDER} disabled={locked} onChange={(e) => studio.setSourcePath(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void studio.loadSource(e.currentTarget.value)} onBlur={(e) => e.target.value.trim() !== source?.path && void studio.loadSource(e.target.value)} />
         {source ? (
           <div className={S.STATS}>
             <MotionStatCard icon={Clock} iconClassName={S.STAT_ICON_A} label={text.STAT_LENGTH}>
@@ -104,20 +95,6 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
               ]}
               onChange={(music) => patch({ music })}
             />
-            {settings.music === "library" && (
-              <div className={S.MUSIC_LIST}>
-                {studio.music.tracks.length ? (
-                  studio.music.tracks.map((track) => (
-                    <div key={track.name} className={S.MUSIC_TRACK}>
-                      <span className={S.MUSIC_NAME}>{track.name.replace(/\.[^.]+$/, "")}</span>
-                      <audio className={S.MUSIC_PLAYER} controls preload="none" src={REUP_URL.MUSIC_FILE(track.name)} />
-                    </div>
-                  ))
-                ) : (
-                  <p className={S.HINT_WARN}>{text.MUSIC_EMPTY(studio.music.dir)}</p>
-                )}
-              </div>
-            )}
             {!def.speech && source?.hasAudio !== false && (
               <ReupSelect<ReupNatural>
                 label={text.NATURAL}

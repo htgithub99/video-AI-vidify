@@ -1,40 +1,9 @@
 import { RUNTIME_TEXT as RT_MUSIC } from "../constants/runtimeText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
-import { parseJson } from "../../../lib/jsonStringify.js";
+import { readNdjsonResponse } from "../../../lib/ndjsonStream.js";
 import type { SunoCreationProgress } from "../../../types/sunoCreationProgress.js";
-import { MUSIC_PLANNING as P } from "../../../constants/musicPlanning.js";
 const interrupted = RT_MUSIC.MAT_KET_NOI_KHI_TAO_NHAC_SUNO_TIEN_DO_DA;
-export const readSunoCreationResponse = async (response: Response, onProgress: (progress: SunoCreationProgress) => void): Promise<any> => {
-  if (!response.headers.get(P.STREAM_HEADER)?.includes(P.STREAM_TYPE) || !response.body) return response.json();
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let pending = "";
-  let result: any;
-  const consume = (line: string) => {
-    if (!line.trim()) return;
-    const event = parseJson(line);
-    if (event.type === RT_SHARED.PROGRESS) onProgress(event.progress);
-    else if (event.type === RT_SHARED.RESULT) result = event.result;
-  };
-  try {
-    for (;;) {
-      const { value, done } = await reader.read();
-      pending += decoder.decode(value, { stream: !done });
-      const lines = pending.split(RT_SHARED.SYMBOL_01BA47);
-      pending = lines.pop() || "";
-      lines.forEach(consume);
-      if (done) break;
-    }
-    consume(pending);
-  } catch (error: any) {
-    if (error?.name === RT_MUSIC.ABORTERROR) throw error;
-    throw new Error(interrupted, { cause: error });
-  } finally {
-    reader.releaseLock();
-  }
-  if (!result) throw new Error(interrupted);
-  return result;
-};
+export const readSunoCreationResponse = (response: Response, onProgress: (progress: SunoCreationProgress) => void): Promise<any> => readNdjsonResponse<any>(response, (event) => onProgress(event.progress), interrupted, RT_MUSIC.ABORTERROR);
 export const formatSunoCreationProgress = (p: SunoCreationProgress, language: string): string => {
   const vi = language !== RT_SHARED.EN;
   const counts = vi

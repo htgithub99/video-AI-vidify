@@ -30,7 +30,12 @@ const waitUntil = async (page: Page, test: () => Promise<boolean>, signal?: Abor
   }
   return false;
 };
-const menuOpen = async (page: Page): Promise<boolean> => (await page.locator(UI.OPEN_MENU_SELECTOR).filter({ visible: true }).count().catch(() => 0)) > 0;
+const menuOpen = async (page: Page): Promise<boolean> =>
+  (await page
+    .locator(UI.OPEN_MENU_SELECTOR)
+    .filter({ visible: true })
+    .count()
+    .catch(() => 0)) > 0;
 export const closeGeminiMenus = async (page: Page): Promise<void> => {
   for (let attempt = 0; attempt < UI.CLOSE_TRIES; attempt++) {
     if (!(await menuOpen(page))) return;
@@ -75,7 +80,9 @@ export const assertGeminiFlashQuota = async (page: Page, model?: AiPlanningChatM
   const selection = parseGeminiChatModel(model);
   const label = selection && GEMINI_CHAT_BASE_MODEL_LABELS[selection.model];
   if (!label) return;
-  const text = await optionFor(page, label).innerText({ timeout: UI.POLL_MS }).catch(() => AI_AVAILABILITY.EMPTY);
+  const text = await optionFor(page, label)
+    .innerText({ timeout: UI.POLL_MS })
+    .catch(() => AI_AVAILABILITY.EMPTY);
   if (BACKUP.RESET_PATTERN.test(text)) throw quotaError(model, text);
 };
 const unavailableFor = async (option: Locator, model: AiPlanningChatModel): Promise<Error> => {

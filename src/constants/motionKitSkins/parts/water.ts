@@ -1,8 +1,3 @@
-// Shared water for every skin (outline, sketch, comic, horror): one geometry for river, sea, lake, pond, swamp,
-// stream and puddle, painted with the active skin's ink, fill and its own water look (params.waterLook: day and
-// night colours plus a ripple style: soft, hatch, highlight or faint). Geometry follows the kit doc:
-// river and sea: y = far bank or horizon, a band from y down to y + height; lake, pond, swamp, puddle: a shore
-// shape centred on y; stream: points (width = water thickness) or a winding band across width (height = thickness).
 export const SKIN_PART_WATER = `(c, o, K) => {
   const kind = o.kind;
   const st = K.S(), look = st.waterLook || {}, R = K.num(o.r, 40), t = K.num(o.t, K.num(window.__motionKitTime, 0)), w = K.LW(R), ol = st.ol, night = K.NIGHT();

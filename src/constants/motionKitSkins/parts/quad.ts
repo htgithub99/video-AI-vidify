@@ -1,7 +1,3 @@
-// General quadruped for every skin: every kit animal except horse, mule and donkey (those use horse.ts).
-// Sizes follow the core ANIMALS table (units of R, ground y=0, head toward +x), so scenes keep their scale.
-// Build: far legs (darker), tail, then body + neck + head + near legs stroked as one merged outline, then details.
-// Legs are tapered and jointed (knee in front, hock behind), with hooves or paws. Gait is locked to distance like the horse.
 export const SKIN_PART_QUAD = `(c, o, K) => {
   const SP = {
     ox: { L: 3.2, D: 1.35, back: 2.35, legW: 0.4, neck: [0.75, -0.35, 0.8], head: [1.0, 0.55, 0.8], col: "#8a6440", tail: "tuft", ears: "side", horns: "curve", muzzle: "#cdbfa8", hoof: 1, dew: 1 },

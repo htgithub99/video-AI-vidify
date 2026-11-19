@@ -1,4 +1,3 @@
-
 import { SOURCE_TEMPLATE_SYMBOL_75, SOURCE_TEMPLATE_SYMBOL_86, SOURCE_TEMPLATE_SYMBOL_170, SOURCE_TEMPLATE_SYMBOL_45, SOURCE_TEMPLATE_SYMBOL_46, SOURCE_TEXT_SIGKILL } from "../../constants/sourceText.js";
 import { createHash } from "crypto";
 import { NextFunction, Request, Response } from "express";
@@ -144,5 +143,4 @@ export const persistRecoveredFlowScene = async (project: any, scene: StoryboardS
   project.generationCheckpoint = { ...project.generationCheckpoint, phase: _.isEmpty(pendingSceneIds) ? PIPELINE_COMPLETION_CONFIG.MEDIA_COMPLETED_PHASE : PIPELINE_COMPLETION_CONFIG.MEDIA_REPAIR_PHASE, completedSceneIds, pendingSceneIds, failedSceneIds, updatedAt: new Date().toISOString() };
   await saveProjectDetailToDb(project);
 };
-// Projects with a video batch running (Flow batches and single image/video generation share it).
 export const activeVideoProjectKeys = new Set<string>();

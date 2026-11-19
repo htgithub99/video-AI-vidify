@@ -9,7 +9,6 @@ export interface ReupOption<T extends string | number> {
   value: T;
   label: string;
 }
-/** A Video Motion select field fed by a list of options. */
 export const ReupSelect = <T extends string | number>({ label, value, options, onChange, disabled, title }: { label: ReactNode; value: T; options: ReupOption<T>[]; onChange: (value: T) => void; disabled?: boolean; title?: string }) => (
   <MotionSelectField label={label} value={String(value)} title={title} disabled={disabled} className={S.SELECT} onChange={(e) => onChange(options.find((o) => String(o.value) === e.target.value)?.value ?? value)}>
     {options.map((o) => (
@@ -19,21 +18,18 @@ export const ReupSelect = <T extends string | number>({ label, value, options, o
     ))}
   </MotionSelectField>
 );
-/** A Video Motion on/off card with its small caption above. */
 export const ReupToggle: FC<{ label: string; checked: boolean; on: string; off: string; icon: LucideIcon; hint?: string; disabled?: boolean; onChange: (checked: boolean) => void }> = ({ label, checked, on, off, icon, hint, disabled, onChange }) => (
   <div className={S.FIELD}>
     <span className={S.FIELD_LABEL}>{label}</span>
     <MotionToggle checked={checked} label={label} icon={icon} text={checked ? on : off} title={hint || label} disabled={disabled} onClick={() => onChange(!checked)} />
   </div>
 );
-/** A labelled text input in the same look as the selects; it reports its value when the field is left. */
 export const ReupTextField: FC<{ label: string; value: string; onChange: (value: string) => void; placeholder?: string; maxLength?: number; disabled?: boolean }> = ({ label, value, onChange, placeholder, maxLength, disabled }) => (
   <label className={S.FIELD}>
     <span className={S.FIELD_LABEL}>{label}</span>
     <StudioInput deferred className={S.INPUT} value={value} placeholder={placeholder} maxLength={maxLength} disabled={disabled} onChange={(e) => onChange(e.target.value)} />
   </label>
 );
-/** A labelled multi-line text field spanning the whole settings row. */
 export const ReupTextArea: FC<{ label: string; value: string; onChange: (value: string) => void; placeholder?: string; maxLength?: number; disabled?: boolean }> = ({ label, value, onChange, placeholder, maxLength, disabled }) => (
   <label className={cn(S.FIELD, S.FIELD_WIDE)}>
     <span className={S.FIELD_LABEL}>{label}</span>

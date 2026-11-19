@@ -15,16 +15,27 @@ import { MotionRemotionStill } from "./MotionRemotionStill.js";
 import { ConfirmDeleteModal } from "../../../components/common/ConfirmDeleteModal";
 import type { MotionRemotionSpec, MotionRemotionScene, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { MotionStoryScript } from "../../../types/motionVideo.js";
-export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; figures?: { profileId?: unknown; proportion?: unknown; layout?: unknown; movement?: unknown }; busy?: boolean; /** A one-click production is running: single-scene redo/delete go to it, whole-set actions wait. */ production?: boolean; writing?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void; onRedo?: (scene: MotionRemotionScene) => void; onRetryFailed?: () => void; onDelete?: (scene: MotionRemotionScene) => void; onDeleteAll?: () => void }> = ({ script, language, renderBehavior, figures, busy = false, production = false, writing = false, onOpen, onRedo, onRetryFailed, onDelete, onDeleteAll }) => {
+export const MotionRemotionScenes: FC<{
+  script: MotionStoryScript;
+  language: string;
+  renderBehavior?: MotionRenderBehavior;
+  figures?: { profileId?: unknown; proportion?: unknown; layout?: unknown; movement?: unknown };
+  busy?: boolean;
+  production?: boolean;
+  writing?: boolean;
+  onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void;
+  onRedo?: (scene: MotionRemotionScene) => void;
+  onRetryFailed?: () => void;
+  onDelete?: (scene: MotionRemotionScene) => void;
+  onDeleteAll?: () => void;
+}> = ({ script, language, renderBehavior, figures, busy = false, production = false, writing = false, onOpen, onRedo, onRetryFailed, onDelete, onDeleteAll }) => {
   const [page, setPage] = useState<number>(STUDIO_PAGINATION.FIRST_PAGE);
   const progress = remotionSceneProgress(renderBehavior && script.gen?.remotion ? { ...script, gen: { ...script.gen, remotion: { ...script.gen.remotion, renderBehavior } } } : script, busy, language, figures);
   const pagination = getPagination(progress.total, page, V.SCENES_PER_PAGE);
-  // Cards appear only once a real scene plan exists; before that the narration-line placeholders are hidden.
   const showCards = progress.planned;
   const lang = language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI;
   const text = V.TEXT[lang];
   const scorecard = !busy ? script.gen?.remotion?.scorecard : undefined;
-  // Scenes that passed at once: drawn on the first try and lacking nothing (a repair code made on its own is not a miss).
   const builtScenes = scorecard ? (Object.values(script.gen?.remotion?.scenes || {}) as MotionRemotionScene[][]).flat().filter((scene) => scene.html) : [];
   const firstPassed = scorecard && builtScenes.length === scorecard.total ? builtScenes.filter((scene) => (scene.html?.attempts || 1) <= 1 && !(scene.html?.warnings || []).some((line) => MOTION_SCENE_SPEC.ISSUE.test(line))).length : undefined;
   const [pendingDelete, setPendingDelete] = useState<{ scene?: MotionRemotionScene; title: string } | null>(null);
@@ -55,114 +66,116 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
           {text.retryFailedScenes(progress.failed)}
         </Button>
       )}
-      {showCards && (<>
-      <div className={S.GRID}>
-        {progress.entries.slice(pagination.start, pagination.end).map((entry, offset) => {
-          const index = pagination.start + offset;
-          const title = text.scene(index + 1);
-          const htmlStatus = entry.scene?.htmlRequest?.status;
-          const htmlLabel =
-            htmlStatus === RT_MAINTENANCE.WAITING_EXTERNAL
-              ? lang === RT_MAINTENANCE.EN
-                ? RT_MAINTENANCE.WAITING_FOR_PROVIDER_PREVIOUS_REQUEST
-                : RT_MAINTENANCE.CHO_PROVIDER_PHAN_HOI_YEU_CAU_CU
-              : htmlStatus === RT_MAINTENANCE.RETRY_WAIT
-                ? lang === RT_MAINTENANCE.EN
-                  ? RT_MAINTENANCE.WAITING_TO_RETRY
-                  : RT_MAINTENANCE.DANG_CHO_THU_LAI
-                : lang === RT_MAINTENANCE.EN
-                  ? RT_MAINTENANCE.GENERATING_HTML
-                  : RT_MAINTENANCE.DANG_TAO_HTML;
-          const status = entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && busy ? htmlLabel : entry.status === RT_SHARED.FAILED ? text.sceneFailed : busy ? text.sceneWaiting : text.sceneStopped;
-          return (
-            <div key={entry.key} className={S.CARD}>
-              {entry.preview && entry.scene ? (
-                <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.OPEN} aria-label={title} onClick={() => onOpen?.(entry.scene!, entry.preview!, index)}>
-                  <MotionRemotionStill document={entry.preview} />
-                </Button>
-              ) : (
-                <div className={S.PENDING}>
-                  <div className={S.PENDING_CONTENT}>
-                    <p className={S.STATUS} title={status}>
-                      {status}
-                    </p>
-                    <p className={S.REASON} title={entry.reason}>
+      {showCards && (
+        <>
+          <div className={S.GRID}>
+            {progress.entries.slice(pagination.start, pagination.end).map((entry, offset) => {
+              const index = pagination.start + offset;
+              const title = text.scene(index + 1);
+              const htmlStatus = entry.scene?.htmlRequest?.status;
+              const htmlLabel =
+                htmlStatus === RT_MAINTENANCE.WAITING_EXTERNAL
+                  ? lang === RT_MAINTENANCE.EN
+                    ? RT_MAINTENANCE.WAITING_FOR_PROVIDER_PREVIOUS_REQUEST
+                    : RT_MAINTENANCE.CHO_PROVIDER_PHAN_HOI_YEU_CAU_CU
+                  : htmlStatus === RT_MAINTENANCE.RETRY_WAIT
+                    ? lang === RT_MAINTENANCE.EN
+                      ? RT_MAINTENANCE.WAITING_TO_RETRY
+                      : RT_MAINTENANCE.DANG_CHO_THU_LAI
+                    : lang === RT_MAINTENANCE.EN
+                      ? RT_MAINTENANCE.GENERATING_HTML
+                      : RT_MAINTENANCE.DANG_TAO_HTML;
+              const status = entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && busy ? htmlLabel : entry.status === RT_SHARED.FAILED ? text.sceneFailed : busy ? text.sceneWaiting : text.sceneStopped;
+              return (
+                <div key={entry.key} className={S.CARD}>
+                  {entry.preview && entry.scene ? (
+                    <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.OPEN} aria-label={title} onClick={() => onOpen?.(entry.scene!, entry.preview!, index)}>
+                      <MotionRemotionStill document={entry.preview} />
+                    </Button>
+                  ) : (
+                    <div className={S.PENDING}>
+                      <div className={S.PENDING_CONTENT}>
+                        <p className={S.STATUS} title={status}>
+                          {status}
+                        </p>
+                        <p className={S.REASON} title={entry.reason}>
+                          {entry.reason}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {entry.preview && entry.status === RT_SHARED.FAILED && (
+                    <p className={S.FAILURE} title={entry.reason}>
                       {entry.reason}
                     </p>
-                  </div>
-                </div>
-              )}
-              {entry.preview && entry.status === RT_SHARED.FAILED && (
-                <p className={S.FAILURE} title={entry.reason}>
-                  {entry.reason}
-                </p>
-              )}
-              {entry.warnings && entry.score !== undefined && (
-                <p className={S.FAILURE} title={entry.warnings.join(RT_MAINTENANCE.NEWLINE)}>
-                  {text.sceneScore(entry.score)}
-                </p>
-              )}
-              {entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && entry.scene.htmlRequest && (
-                <p className={S.ATTEMPT} title={entry.scene.htmlRequest.error}>
-                  {lang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.ATTEMPT : RT_MAINTENANCE.LUOT_TAO} {entry.scene.htmlRequest.attempt}
-                  {entry.preview ? "" : entry.scene.htmlRequest.error ? `${RT_MAINTENANCE.DOT_SEPARATOR}${entry.scene.htmlRequest.error}` : ""}
-                </p>
-              )}
-              {entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && (() => {
-                // What the scene lacks is a warning; a repair code made on its own is only a note (old scenes stored both
-                // together, so the lines are read again).
-                const lines = [...(entry.scene.html?.warnings || []), ...(entry.scene.html?.notes || [])];
-                const issues = lines.filter((line) => MOTION_SCENE_SPEC.ISSUE.test(line)), notes = lines.filter((line) => !MOTION_SCENE_SPEC.ISSUE.test(line));
-                return (
-                  <>
-                    {!!issues.length && (
-                      <p className={S.FAILURE} title={issues.join(RT_MAINTENANCE.NEWLINE)}>
-                        {text.qualityWarning(issues.join("; "))}
-                      </p>
-                    )}
-                    {!!notes.length && (
-                      <p className={S.ATTEMPT} title={notes.join(RT_MAINTENANCE.NEWLINE)}>
-                        {text.sceneNotes(notes.length)}
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
-              <p className={S.CAPTION} title={entry.narration || entry.scene?.purpose}>
-                {title}
-                {RT_MOTION.CAPTION_SEPARATOR}
-                {entry.narration || entry.scene?.purpose}
-              </p>
-              {entry.scene?.message && (
-                <p className={S.MESSAGE} title={entry.scene.keyVisual || entry.scene.message}>
-                  {text.sceneMessage(entry.scene.message)}
-                </p>
-              )}
-              {!!entry.scene?.offMessage?.length && (
-                <p className={S.FAILURE} title={entry.scene.offMessage.join(RT_MAINTENANCE.NEWLINE)}>
-                  {text.offMessage(entry.scene.offMessage.join("; "))}
-                </p>
-              )}
-              {entry.scene && (onRedo || onDelete) && (
-                <div className={S.ACTIONS}>
-                  {onRedo && (
-                    <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.ACTION} disabled={busy} onClick={() => onRedo(entry.scene!)}>
-                      {text.retryScene}
-                    </Button>
                   )}
-                  {onDelete && (entry.scene.html || entry.scene.build) && (
-                    <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.DELETE} disabled={busy} onClick={() => setPendingDelete({ scene: entry.scene!, title })}>
-                      {text.deleteScene}
-                    </Button>
+                  {entry.warnings && entry.score !== undefined && (
+                    <p className={S.FAILURE} title={entry.warnings.join(RT_MAINTENANCE.NEWLINE)}>
+                      {text.sceneScore(entry.score)}
+                    </p>
+                  )}
+                  {entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && entry.scene.htmlRequest && (
+                    <p className={S.ATTEMPT} title={entry.scene.htmlRequest.error}>
+                      {lang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.ATTEMPT : RT_MAINTENANCE.LUOT_TAO} {entry.scene.htmlRequest.attempt}
+                      {entry.preview ? "" : entry.scene.htmlRequest.error ? `${RT_MAINTENANCE.DOT_SEPARATOR}${entry.scene.htmlRequest.error}` : ""}
+                    </p>
+                  )}
+                  {entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS &&
+                    (() => {
+                      const lines = [...(entry.scene.html?.warnings || []), ...(entry.scene.html?.notes || [])];
+                      const issues = lines.filter((line) => MOTION_SCENE_SPEC.ISSUE.test(line)),
+                        notes = lines.filter((line) => !MOTION_SCENE_SPEC.ISSUE.test(line));
+                      return (
+                        <>
+                          {!!issues.length && (
+                            <p className={S.FAILURE} title={issues.join(RT_MAINTENANCE.NEWLINE)}>
+                              {text.qualityWarning(issues.join("; "))}
+                            </p>
+                          )}
+                          {!!notes.length && (
+                            <p className={S.ATTEMPT} title={notes.join(RT_MAINTENANCE.NEWLINE)}>
+                              {text.sceneNotes(notes.length)}
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
+                  <p className={S.CAPTION} title={entry.narration || entry.scene?.purpose}>
+                    {title}
+                    {RT_MOTION.CAPTION_SEPARATOR}
+                    {entry.narration || entry.scene?.purpose}
+                  </p>
+                  {entry.scene?.message && (
+                    <p className={S.MESSAGE} title={entry.scene.keyVisual || entry.scene.message}>
+                      {text.sceneMessage(entry.scene.message)}
+                    </p>
+                  )}
+                  {!!entry.scene?.offMessage?.length && (
+                    <p className={S.FAILURE} title={entry.scene.offMessage.join(RT_MAINTENANCE.NEWLINE)}>
+                      {text.offMessage(entry.scene.offMessage.join("; "))}
+                    </p>
+                  )}
+                  {entry.scene && (onRedo || onDelete) && (
+                    <div className={S.ACTIONS}>
+                      {onRedo && (
+                        <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.ACTION} disabled={busy} onClick={() => onRedo(entry.scene!)}>
+                          {text.retryScene}
+                        </Button>
+                      )}
+                      {onDelete && (entry.scene.html || entry.scene.build) && (
+                        <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.DELETE} disabled={busy} onClick={() => setPendingDelete({ scene: entry.scene!, title })}>
+                          {text.deleteScene}
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <Pagination page={pagination.page} pageSize={V.SCENES_PER_PAGE} total={progress.total} onChange={setPage} texts={STUDIO_PAGINATION_TEXT[lang]} hideUnavailableNavigation />
-      </>)}
+              );
+            })}
+          </div>
+          <Pagination page={pagination.page} pageSize={V.SCENES_PER_PAGE} total={progress.total} onChange={setPage} texts={STUDIO_PAGINATION_TEXT[lang]} hideUnavailableNavigation />
+        </>
+      )}
       <ConfirmDeleteModal
         isOpen={Boolean(pendingDelete)}
         onClose={() => setPendingDelete(null)}

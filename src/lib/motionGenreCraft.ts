@@ -24,9 +24,14 @@ export const motionGenreCraftFindings = (beats: MotionBeat[], genre: unknown, la
   let listed = 0;
   let hindsight = 0;
   for (const beat of beats) {
-    const spoken = String(beat.narration || T.SPACE).replace(T.QUOTED, T.SPACE).trim();
+    const spoken = String(beat.narration || T.SPACE)
+      .replace(T.QUOTED, T.SPACE)
+      .trim();
     if (!spoken) continue;
-    const sentences = spoken.split(m.sentence).map((line) => line.trim()).filter(Boolean);
+    const sentences = spoken
+      .split(m.sentence)
+      .map((line) => line.trim())
+      .filter(Boolean);
     const voiced = (beat.utterances || []).some((line) => line.role === T.DIALOGUE);
     if (lived) {
       const own = sentences.filter((line) => self.test(line)).length;

@@ -9,7 +9,6 @@ import { ActionBtn } from "../../motion/components/MotionControls.js";
 import { MotionExportedVideo, MotionMediaPlaceholder } from "../../motion/components/MotionMediaFrame.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
-/** Past runs, newest first, laid out like Video Motion's results: the first video of each run, a way back into it, and paged delete one / many / all. */
 export const ReupResultsPanel: FC<{ studio: ReupStudio; ui: "vi" | "en"; onOpen: () => void }> = ({ studio, ui, onOpen }) => {
   const { text, results } = studio;
   if (!results.length)

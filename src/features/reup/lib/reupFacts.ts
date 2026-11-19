@@ -5,10 +5,6 @@ const UNIT = "(?:days?|weeks?|months?|years?|hours?|nights?|kg|kilos?|pounds?|lb
 const DIGIT_CLAIM = new RegExp(`\\b\\d+(?:[.,]\\d+)?\\s*${UNIT}?`, "giu");
 const WORD_CLAIM = new RegExp(`(?<![\\p{L}])(${NUMBER_WORDS.join("|")})\\s+${UNIT}(?![\\p{L}])`, "giu");
 const norm = (text: string): string => text.toLowerCase().normalize("NFC").replace(/\s+/g, " ");
-/**
- * Quantities the script states (numbers, "three days", "200 kg") that nothing in the scene map or the
- * user's own note backs up. These are the details most often invented, so they are flagged for review.
- */
 export const reupUnbackedClaims = (text: string, map: Pick<ReupSceneMap, "summary" | "segments">, note = ""): string[] => {
   const allowed = norm([map.summary, note, ...map.segments.map((s) => s.what)].join(" "));
   const claims = [...(text.match(DIGIT_CLAIM) || []), ...(text.match(WORD_CLAIM) || [])].map((c) => norm(c).trim()).filter((c) => /\p{L}/u.test(c) || /\d{2,}/.test(c));

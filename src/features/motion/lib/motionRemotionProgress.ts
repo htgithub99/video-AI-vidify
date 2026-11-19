@@ -8,7 +8,6 @@ import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { remotionSceneReadiness } from "../../../lib/motionRemotion.js";
 import { motionVisualBeatGroups } from "../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../constants/motionScenePacing.js";
-// figures: the current "Cách dựng", drawing style and layout, so scene previews follow them without new drawings.
 export const remotionSceneProgress = (script: MotionStoryScript, busy = false, language: string = RT_SHARED.VI, figures?: { profileId?: unknown; proportion?: unknown; layout?: unknown; movement?: unknown }) => {
   const text = V.TEXT[language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];
   const state = script.gen?.remotion;

@@ -10,12 +10,7 @@ import { requestJson, VideoExportTexts } from "../components/videoExportUtils.js
 import { VideoExportAiClip, VideoExportAiClipJobState, VideoExportAiClipJobStatus, VideoExportAspectRatio, VideoExportImageItem } from "../types/videoExport.js";
 type AiClipImage = { id: string; name: string; dataUrl: string };
 type GenerateAiClipsOptions = { imageIds?: string[]; restart?: boolean };
-type VideoExportAiClipRuntimeSettings = {
-  provider: AiPlanningFallbackProvider;
-  model: AiPlanningChatModel;
-  executionMode: AiPlanningExecutionMode;
-  chromeHeadless: boolean;
-};
+type VideoExportAiClipRuntimeSettings = { provider: AiPlanningFallbackProvider; model: AiPlanningChatModel; executionMode: AiPlanningExecutionMode; chromeHeadless: boolean };
 type StoredAiClipSettings = { enabled?: boolean; folderPath?: string; note?: string; images?: AiClipImage[]; clips?: VideoExportAiClip[]; jobId?: string; lastJob?: VideoExportAiClipJobState | null };
 const buildSourceImageId = (relativePath: string): string => `${VIDEO_EXPORT_AI_CLIP_CONSTANTS.SOURCE_ID_PREFIX}${relativePath}`;
 const isSourceSyncedImageId = (id: string): boolean => _.startsWith(id, VIDEO_EXPORT_AI_CLIP_CONSTANTS.SOURCE_ID_PREFIX);
@@ -81,8 +76,24 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
   const prevSourceIdsSignatureRef = useRef<string>("");
   const isGenerating = job?.status === VideoExportAiClipJobStatus.RUNNING;
   const activeClipIds = useMemo(() => _.map(clips, (clip) => clip.id), [clips]);
-  const activeClipAudioIds = useMemo(() => _.map(_.filter(clips, (clip) => Boolean(clip.keepAudio)), (clip) => clip.id), [clips]);
-  const completedImageIds = useMemo(() => new Set(_.map(_.filter(images, (image) => _.some(clips, (clip) => clipMatchesImage(clip, image))), (image) => image.id)), [images, clips]);
+  const activeClipAudioIds = useMemo(
+    () =>
+      _.map(
+        _.filter(clips, (clip) => Boolean(clip.keepAudio)),
+        (clip) => clip.id,
+      ),
+    [clips],
+  );
+  const completedImageIds = useMemo(
+    () =>
+      new Set(
+        _.map(
+          _.filter(images, (image) => _.some(clips, (clip) => clipMatchesImage(clip, image))),
+          (image) => image.id,
+        ),
+      ),
+    [images, clips],
+  );
   const missingImages = useMemo(() => _.filter(images, (image) => !completedImageIds.has(image.id)), [images, completedImageIds]);
   const failedErrorByImageId = useMemo(() => {
     const map = new Map<string, string>();
@@ -98,10 +109,7 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
     }
     return map;
   }, [job, images, completedImageIds, missingImages, text.AI_CLIP_ERR_FAILED]);
-  const hasRecoverableError = useMemo(
-    () => Boolean(job && !isGenerating && (job.status === VideoExportAiClipJobStatus.ERROR || !_.isEmpty(job.errors) || (job.status === VideoExportAiClipJobStatus.CANCELLED && !_.isEmpty(missingImages)))),
-    [job, isGenerating, missingImages],
-  );
+  const hasRecoverableError = useMemo(() => Boolean(job && !isGenerating && (job.status === VideoExportAiClipJobStatus.ERROR || !_.isEmpty(job.errors) || (job.status === VideoExportAiClipJobStatus.CANCELLED && !_.isEmpty(missingImages)))), [job, isGenerating, missingImages]);
   useEffect(() => {
     isMountedRef.current = true;
     void jsonUtils
@@ -155,7 +163,10 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
       setJob(null);
       setImages([]);
     }
-    const currentSignature = _.join(_.map(sourceImages, (item) => item.relativePath), "|");
+    const currentSignature = _.join(
+      _.map(sourceImages, (item) => item.relativePath),
+      "|",
+    );
     if (prevSourceIdsSignatureRef.current && prevSourceIdsSignatureRef.current !== currentSignature) {
       dismissedSourceKeysRef.current.clear();
     }
@@ -272,15 +283,7 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
       const targetImages = requestedIdSet ? _.filter(images, (image) => requestedIdSet.has(image.id)) : shouldRestart ? images : !_.isEmpty(missingImages) ? missingImages : images;
       if (_.isEmpty(targetImages)) return;
       try {
-        const data = await requestJson<{ jobId?: string }>(API_ROUTES.VIDEO_EXPORT_AI_CLIPS_START, {
-          images: _.map(targetImages, (image) => ({ id: image.id, name: image.name, dataUrl: image.dataUrl })),
-          note,
-          aspectRatio,
-          provider,
-          model,
-          executionMode,
-          chromeHeadless,
-        });
+        const data = await requestJson<{ jobId?: string }>(API_ROUTES.VIDEO_EXPORT_AI_CLIPS_START, { images: _.map(targetImages, (image) => ({ id: image.id, name: image.name, dataUrl: image.dataUrl })), note, aspectRatio, provider, model, executionMode, chromeHeadless });
         if (!data.jobId) return;
         if (shouldRestart) {
           seenClipIdsRef.current.clear();
@@ -291,16 +294,7 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
         setJobId(data.jobId);
       } catch (error) {
         const errMsg = _.toString(_.get(error, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_MESSAGE)) || text.AI_CLIP_ERR_FAILED;
-        setJob({
-          jobId: "",
-          status: VideoExportAiClipJobStatus.ERROR,
-          done: 0,
-          total: targetImages.length,
-          message: errMsg,
-          clips: [],
-          errors: [errMsg],
-          itemErrors: _.map(targetImages, (image) => ({ imageId: image.id, name: image.name, reason: errMsg })),
-        });
+        setJob({ jobId: "", status: VideoExportAiClipJobStatus.ERROR, done: 0, total: targetImages.length, message: errMsg, clips: [], errors: [errMsg], itemErrors: _.map(targetImages, (image) => ({ imageId: image.id, name: image.name, reason: errMsg })) });
         toast.error(errMsg);
       }
     },
@@ -330,32 +324,6 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
     if (data?.job) setJob(data.job);
     toast.info(data?.job?.message || text.AI_CLIP_CANCELLED);
   }, [jobId, job?.jobId, text]);
-  return {
-    enabled,
-    setEnabled,
-    note,
-    setNote,
-    images,
-    addFiles,
-    removeImage,
-    clips,
-    removeClip,
-    toggleClipAudio,
-    clearClips,
-    job,
-    isGenerating,
-    generate,
-    retryFailed,
-    retryImage,
-    canRedoClip,
-    redoClip,
-    stop,
-    activeClipIds,
-    activeClipAudioIds,
-    completedImageIds,
-    missingImages,
-    failedErrorByImageId,
-    hasRecoverableError,
-  };
+  return { enabled, setEnabled, note, setNote, images, addFiles, removeImage, clips, removeClip, toggleClipAudio, clearClips, job, isGenerating, generate, retryFailed, retryImage, canRedoClip, redoClip, stop, activeClipIds, activeClipAudioIds, completedImageIds, missingImages, failedErrorByImageId, hasRecoverableError };
 }
 export type VideoExportAiClipsState = ReturnType<typeof useVideoExportAiClips>;

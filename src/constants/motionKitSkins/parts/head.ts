@@ -1,9 +1,3 @@
-// Helmets drawn by the skins: Roman / Greek (below) and modern steel helmets.
-// Hook: skinPart('headwear', kind, c, {o, hx, hy, r}) draws and returns true.
-// Roman / Greek helmet (reference: marching hoplites): a bronze bowl down to just above the brows with a raised brow band and
-// rivets, a cheek guard over the cheek in front of the ear, a flared neck guard, and a tall curved fin crest along the top
-// (bronze unless the scene gives crest a colour; crest: false leaves it off). Seen from the front or back the crest is a
-// narrow ridge and both cheek guards show.
 export const SKIN_PART_HELMET_ROMAN = `(c, a, K) => {
   const { o, hx, hy, r } = a;
   const w = K.LW(r);

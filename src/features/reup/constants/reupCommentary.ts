@@ -1,8 +1,4 @@
 import type { ReupCommentaryEnding, ReupCommentaryHook, ReupCommentaryVoice } from "../types/reup.js";
-/**
- * Commentary styles a run can take (prompt lines for the script AI). Each run picks the least recently used voice,
- * opening and ending, so a channel's videos do not all follow one template (YouTube's "mass-produced" rule).
- */
 export const REUP_COMMENTARY = {
   VOICES: {
     expert: "Narrator: a seasoned practitioner. Explain what is being done, why it works, and what a beginner would get wrong.",
@@ -19,13 +15,7 @@ export const REUP_COMMENTARY = {
     stakes: "Opening: what could go wrong here (weather, terrain, tools, time) and why it is hard.",
     tease: "Opening: one surprising moment from the middle, not explained yet.",
   } satisfies Record<ReupCommentaryHook, string>,
-  ENDINGS: {
-    question: "Ending: one question to the viewer that invites a comment.",
-    lesson: "Ending: the one practical lesson from this work.",
-    reflection: "Ending: a short reflection on the effort and the result.",
-    next: "Ending: tease what could come next, without promising anything specific.",
-  } satisfies Record<ReupCommentaryEnding, string>,
-  /** Runs looked back on when rotating styles and checking repetition. */
+  ENDINGS: { question: "Ending: one question to the viewer that invites a comment.", lesson: "Ending: the one practical lesson from this work.", reflection: "Ending: a short reflection on the effort and the result.", next: "Ending: tease what could come next, without promising anything specific." } satisfies Record<ReupCommentaryEnding, string>,
   HISTORY: 8,
 } as const;
 export const REUP_COMMENTARY_VOICES = Object.keys(REUP_COMMENTARY.VOICES) as ReupCommentaryVoice[];

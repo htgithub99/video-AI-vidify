@@ -1,30 +1,44 @@
-// Scene blueprint: positions and sizes computed by code from the plan's REQUIRED / INTERACT / MOTION lines, the shot and
-// the selected layout. The same blueprint feeds the draw prompt (so the AI starts from a correct layout), the checks after
-// a draw, and the code-built fallback scene used when the AI's drawings keep failing.
 export type MotionBlueprintFn = "person" | "crowd" | "animal" | "vehicle" | "building" | "prop";
 export const MOTION_SCENE_BLUEPRINT = {
   INTERACT_LINE: /^[ \t]*(?:\d+\.\s*)?INTERACT\s*:\s*(.+)$/im,
   INTERACT_PAIR: /([a-z0-9_ -]+?)\s*->\s*([a-z0-9_ -]+)/gi,
   SETTING_SECTION: /^[ \t]*2\.\s*[^\n]+/im,
   WORLD: { width: 1280, height: 720, centre: 640, left: 110, right: 1170 },
-  SHOTS: {
-    establishing: { groundY: 600, r: 19 },
-    wide: { groundY: 590, r: 36 },
-    medium: { groundY: 610, r: 52 },
-    close: { groundY: 650, r: 76 },
-  } as Record<string, { groundY: number; r: number }>,
+  SHOTS: { establishing: { groundY: 600, r: 19 }, wide: { groundY: 590, r: 36 }, medium: { groundY: 610, r: 52 }, close: { groundY: 650, r: 76 } } as Record<string, { groundY: number; r: number }>,
   SHOT_ALIAS: { overhead: "wide", landscape: "establishing", detail: "close", map: "wide" } as Record<string, string>,
   DEFAULT_SHOT: "wide",
-  // A standing kit person is about 4.1 r tall; the margin covers style proportions and the camera.
   PERSON_HEIGHT: 4.1,
   FOCAL_MARGIN: 1.15,
   MAX_R: 118,
   PROTAGONISTS: ["protagonist", "you", "hero", "narrator"] as readonly string[],
   CAST_PROMPT: (rows: string[]) => `CAST LOOK (already fixed by earlier scenes: use these ids and these look options for these people, and change only what this scene states, such as a bandage, a lost helmet or what they hold): ${rows.join("; ")}`,
-  // Cast looks read from the analysis, so a named person wears the same colours from the first scene on.
   CAST_SEED: {
     FLAG: "_seed",
-    COLOURS: { red: "#b3362e", crimson: "#b3362e", scarlet: "#b3362e", blue: "#2f5d9b", navy: "#22365c", green: "#4b7a45", olive: "#6b7040", khaki: "#b7a57a", brown: "#7a5236", black: "#26262b", white: "#eeeae0", grey: "#8a8d92", gray: "#8a8d92", gold: "#d4a93a", golden: "#d4a93a", yellow: "#d4a93a", purple: "#6d4a8c", orange: "#d07a2c", tan: "#c8a97e", silver: "#b9bec6", pink: "#d98a9d", cream: "#e3d7bb", beige: "#e3d7bb" } as Record<string, string>,
+    COLOURS: {
+      red: "#b3362e",
+      crimson: "#b3362e",
+      scarlet: "#b3362e",
+      blue: "#2f5d9b",
+      navy: "#22365c",
+      green: "#4b7a45",
+      olive: "#6b7040",
+      khaki: "#b7a57a",
+      brown: "#7a5236",
+      black: "#26262b",
+      white: "#eeeae0",
+      grey: "#8a8d92",
+      gray: "#8a8d92",
+      gold: "#d4a93a",
+      golden: "#d4a93a",
+      yellow: "#d4a93a",
+      purple: "#6d4a8c",
+      orange: "#d07a2c",
+      tan: "#c8a97e",
+      silver: "#b9bec6",
+      pink: "#d98a9d",
+      cream: "#e3d7bb",
+      beige: "#e3d7bb",
+    } as Record<string, string>,
     SKIN: { pale: "#f0d5bd", fair: "#ecc9a8", light: "#e8c9a8", tan: "#c99a6b", tanned: "#c99a6b", olive: "#c99a6b", brown: "#9a6a42", dark: "#6b452b", black: "#4a2f1e" } as Record<string, string>,
     PARTS: [
       ["top", "(?:[\\w-]+[ -]){0,2}?(?:coat(?:ed)?|tunic|uniform|jacket|shirt|robes?|dress|toga|vest|armou?r|kimono|gown|blouse|suit|cloth(?:es|ing)?)"],
@@ -35,16 +49,51 @@ export const MOTION_SCENE_BLUEPRINT = {
     NAME_MIN: 4,
   },
   LEAD: "lead",
-  // Width of one item in units of the near-rank figure size r, used to space items so nothing overlaps.
   WIDTH: { person: 2.5, crowd: 7, animal: 3.8, vehicle: 6.2, building: 6, prop: 1.6 } as Record<MotionBlueprintFn, number>,
-  // Standing height and width at rest of one item, in units of its own size (r for people, p otherwise), as the
-  // standard kit draws them: the fallback scene states each box in these units, so both renderers fill the same space.
   BOX: {
-    person: [4.42, 2.06], animal: [5.7, 7.2], vehicle: [7.9, 13.4], building: [11.2, 12.7], prop: [2.3, 1.9],
-    horse: [5.7, 7.22], camel: [7.22, 10.06], cow: [4.62, 8.45], dog: [1.67, 2.69], elephant: [8.23, 8.6], ox: [4.92, 8.95], sheep: [2.59, 4.2], wolf: [2.33, 5.04],
-    barn: [12.19, 16.08], castle: [20.32, 20.67], church: [18.48, 14.32], house: [11.16, 12.71], hut: [8.94, 12.23], ruins: [10.08, 15.16], temple: [16.84, 24.5], tent: [6.54, 8.98], tower: [21.45, 7.18], yurt: [7.57, 11.13],
-    boat: [9, 5.25], cannon: [2.96, 7.4], car: [3.48, 8.4], catapult: [4.44, 7.52], chariot: [3.2, 8.56], plane: [7.35, 23.02], ship: [12, 16], tank: [5.95, 14.1], trebuchet: [17.51, 19.24], truck: [7.71, 20.55], wagon: [7.87, 13.39],
-    arrows: [1.26, 3.1], axe: [0.5, 2.02], bow: [0.3, 1.98], shieldProp: [2.32, 1.94], spear: [0.24, 4.58], sword: [2.6, 0.9], gate: [8.97, 16.38], wall: [7.7, 14.07], bridge: [6.45, 25.89],
+    person: [4.42, 2.06],
+    animal: [5.7, 7.2],
+    vehicle: [7.9, 13.4],
+    building: [11.2, 12.7],
+    prop: [2.3, 1.9],
+    horse: [5.7, 7.22],
+    camel: [7.22, 10.06],
+    cow: [4.62, 8.45],
+    dog: [1.67, 2.69],
+    elephant: [8.23, 8.6],
+    ox: [4.92, 8.95],
+    sheep: [2.59, 4.2],
+    wolf: [2.33, 5.04],
+    barn: [12.19, 16.08],
+    castle: [20.32, 20.67],
+    church: [18.48, 14.32],
+    house: [11.16, 12.71],
+    hut: [8.94, 12.23],
+    ruins: [10.08, 15.16],
+    temple: [16.84, 24.5],
+    tent: [6.54, 8.98],
+    tower: [21.45, 7.18],
+    yurt: [7.57, 11.13],
+    boat: [9, 5.25],
+    cannon: [2.96, 7.4],
+    car: [3.48, 8.4],
+    catapult: [4.44, 7.52],
+    chariot: [3.2, 8.56],
+    plane: [7.35, 23.02],
+    ship: [12, 16],
+    tank: [5.95, 14.1],
+    trebuchet: [17.51, 19.24],
+    truck: [7.71, 20.55],
+    wagon: [7.87, 13.39],
+    arrows: [1.26, 3.1],
+    axe: [0.5, 2.02],
+    bow: [0.3, 1.98],
+    shieldProp: [2.32, 1.94],
+    spear: [0.24, 4.58],
+    sword: [2.6, 0.9],
+    gate: [8.97, 16.38],
+    wall: [7.7, 14.07],
+    bridge: [6.45, 25.89],
   } as Record<string, readonly [number, number]>,
   GAP: 0.7,
   MAX_SPAN: 1000,
@@ -53,7 +102,6 @@ export const MOTION_SCENE_BLUEPRINT = {
   BACK: { rise: 2.3, scale: 0.7 },
   MID: { rise: 1.2, scale: 0.8 },
   TRAVEL: 0.24,
-  // First match wins; ids are tested before descriptions. Groups come before animals so "horsemen" is a crowd, not a horse.
   KINDS: [
     { fn: "vehicle", kind: "trebuchet", re: /\btrebuchets?\b/i },
     { fn: "vehicle", kind: "catapult", re: /\b(catapults?|mangonels?|ballistas?|onagers?|siege engines?)\b/i },
@@ -113,9 +161,9 @@ export const MOTION_SCENE_BLUEPRINT = {
     { fn: "prop", kind: "well", re: /\bwells?\b/i },
     { fn: "prop", kind: "gravestone", re: /\b(graves?|gravestones?|tombs?)\b/i },
   ] as readonly { fn: MotionBlueprintFn; kind: string; re: RegExp; wide?: boolean }[],
-  // Small objects are always carried or lie on the ground beside their owner; they are never the framing subject.
   SMALL: ["shieldProp", "sword", "spear", "bow", "axe", "chain", "scroll", "helmetProp", "bucket", "jar", "torch", "sack"],
-  TRAVEL_RE: /\b(march(?:es|ing)?|walk(?:s|ing)?|run(?:s|ning)?|rid(?:e|es|ing)|advanc(?:e|es|ing)|charg(?:e|es|ing)|fle(?:e|es|eing)|cross(?:es|ing)?|arriv(?:e|es|ing)|enter(?:s|ing)?|stream(?:s|ing)?|approach(?:es|ing)?|retreat(?:s|ing)?|rush(?:es|ing)?|gallop(?:s|ing)?|roll(?:s|ing)?|sail(?:s|ing)?|driv(?:e|es|ing)|surg(?:e|es|ing)|pour(?:s|ing)?|stumbl(?:e|es|ing)|crawl(?:s|ing)?|scrambl(?:e|es|ing))\b/i,
+  TRAVEL_RE:
+    /\b(march(?:es|ing)?|walk(?:s|ing)?|run(?:s|ning)?|rid(?:e|es|ing)|advanc(?:e|es|ing)|charg(?:e|es|ing)|fle(?:e|es|eing)|cross(?:es|ing)?|arriv(?:e|es|ing)|enter(?:s|ing)?|stream(?:s|ing)?|approach(?:es|ing)?|retreat(?:s|ing)?|rush(?:es|ing)?|gallop(?:s|ing)?|roll(?:s|ing)?|sail(?:s|ing)?|driv(?:e|es|ing)|surg(?:e|es|ing)|pour(?:s|ing)?|stumbl(?:e|es|ing)|crawl(?:s|ing)?|scrambl(?:e|es|ing))\b/i,
   TIME: [
     ["night", /\b(night|midnight|pitch dark|moonlit|darkness)\b/i],
     ["dusk", /\b(dusk|sunset|twilight|evening)\b/i],
@@ -133,8 +181,14 @@ export const MOTION_SCENE_BLUEPRINT = {
   EXEC_ERROR: (id: string, tries: number, reason: string) => `Dựng cảnh tạm dừng: cảnh ${id} lỗi ${tries} lần liền và không dựng được cảnh dự phòng (${reason}). Bấm vẽ lại riêng cảnh này hoặc chạy tiếp; các cảnh đã dựng được giữ nguyên.`,
   PLAN_ERROR: (tries: number, reason: string) => `Chia phân cảnh tạm dừng: AI plan cảnh lỗi ${tries} lần liên tiếp (${reason}). Kiểm tra tab AI đã chọn (đăng nhập, giới hạn lượt, mạng) rồi bấm chạy tiếp; phần đã làm được giữ nguyên.`,
   SUMMARY_LOG: (c: { total: number; first: number; redrawn: number; warned: number; offMessage: number; fallback: number; gaps: { fn: string; kind: string; scenes: number }[]; model: string }) =>
-    `Tổng kết dựng cảnh (${c.model}): ${c.total} cảnh · đạt ngay lần đầu ${c.first} (${c.total ? Math.round((c.first / c.total) * 100) : 0}%) · phải vẽ lại ${c.redrawn} · còn cảnh báo ${c.warned} · lần đầu lệch thông điệp ${c.offMessage} · cảnh dự phòng do code dựng ${c.fallback} · đồ vật bộ vẽ chưa có ${c.gaps.length}${c.gaps.length ? ` (${c.gaps.slice(0, 12).map((gap) => `${gap.fn} ${gap.kind}${gap.scenes > 1 ? ` ×${gap.scenes}` : ""}`).join(", ")}${c.gaps.length > 12 ? ", …" : ""})` : ""}.`,
-  // A broken drawing gets exactly one new drawing; when that one breaks too, the scene drawn by code from the plan stands in.
+    `Tổng kết dựng cảnh (${c.model}): ${c.total} cảnh · đạt ngay lần đầu ${c.first} (${c.total ? Math.round((c.first / c.total) * 100) : 0}%) · phải vẽ lại ${c.redrawn} · còn cảnh báo ${c.warned} · lần đầu lệch thông điệp ${c.offMessage} · cảnh dự phòng do code dựng ${c.fallback} · đồ vật bộ vẽ chưa có ${c.gaps.length}${
+      c.gaps.length
+        ? ` (${c.gaps
+            .slice(0, 12)
+            .map((gap) => `${gap.fn} ${gap.kind}${gap.scenes > 1 ? ` ×${gap.scenes}` : ""}`)
+            .join(", ")}${c.gaps.length > 12 ? ", …" : ""})`
+        : ""
+    }.`,
   EXEC_LIMIT: 2,
   FIGURES_LINE: /^[ \t]*(?:\d+\.\s*)?FIGURES\s*:\s*(.+)$/im,
   TRANSPORT_LIMIT: 6,

@@ -1,6 +1,3 @@
-// Extra props shared by every skin (spear, axe, scroll, bow, bucket, stonePile, pyramid, chain): one footprint,
-// drawn with the active skin's ink weight, fill (hatch for sketch) and outline colour. Footprints are in units of
-// p (the head radius of the people beside it); the kit layout layer calls this part directly.
 export const SKIN_PART_PROPX = `(c, o, K) => {
   const kind = o.kind;
   const st = K.S(), p = K.num(o.p, K.num(o.r, 30) / 1.6), w = K.LW(p * 1.4), ol = st.ol, night = K.NIGHT();

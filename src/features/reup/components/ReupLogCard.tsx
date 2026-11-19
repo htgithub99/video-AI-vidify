@@ -9,7 +9,6 @@ import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import type { ReupLog, ReupStepId, ReupStepState, ReupStepStatus } from "../types/reup.js";
 const STEPS: ReupStepId[] = ["source", "scenes", "script", "voice", "build", "package"];
-/** Motion's log badge for each Reup step state. */
 const BADGE: Record<ReupStepStatus, string> = { idle: "waiting", running: "active", done: "done", waiting: "cancelled", error: "error" };
 const time = (at: number): string => new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 const LogSection: FC<{ studio: ReupStudio; id: ReupStepId; index: number; step: ReupStepState; rows: ReupLog[] }> = ({ studio, id, index, step, rows }) => {
@@ -54,7 +53,6 @@ const LogSection: FC<{ studio: ReupStudio; id: ReupStepId; index: number; step: 
     </section>
   );
 };
-/** The run's log in Video Motion's style: one folding section per step, newest lines followed. */
 export const ReupLogCard: FC<{ studio: ReupStudio; motionText: MotionVideoTexts }> = ({ studio, motionText }) => {
   const { job, text } = studio;
   if (!job) return null;

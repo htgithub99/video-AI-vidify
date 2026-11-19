@@ -16,7 +16,13 @@ export interface MotionBeatLine {
   time?: string;
   speakers?: string[];
 }
-const sentenceKey = (text: string): string => _.trim(String(text || P.EMPTY).toLowerCase().normalize(P.NFC).replace(P.NORM_STRIP_RE, P.SPACE));
+const sentenceKey = (text: string): string =>
+  _.trim(
+    String(text || P.EMPTY)
+      .toLowerCase()
+      .normalize(P.NFC)
+      .replace(P.NORM_STRIP_RE, P.SPACE),
+  );
 const sentences = (text: string): string[] => _.compact(_.map(String(text || P.EMPTY).match(P.SENTENCE_RE) || [], _.trim));
 export const motionBeatLines = (beat: MotionBeat, narratorKey?: string): MotionBeatLine[] => {
   const parts = beat.utterances?.length ? motionNarratorLines(beat.utterances, narratorKey, beat.narration).map((u) => ({ text: u.text, speaker: u.role === P.DIALOGUE ? u.speaker : undefined, id: u.id })) : [{ text: beat.narration, speaker: undefined, id: undefined }];

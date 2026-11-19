@@ -16,10 +16,7 @@ const ai = (value: any, fallback: ReupAiChoice): ReupAiChoice => ({
 });
 export const REUP_LANGUAGES = MOTION_LANGUAGE_CODES as readonly ReupLanguage[];
 export const REUP_MUSIC_CHOICES: readonly ReupMusicChoice[] = ["off", "library"];
-/** Music choice from the client or storage; settings saved before the library ("auto" or a mood) meant music on. */
-export const reupMusicChoice = (value: unknown, legacyMood: unknown, fallback: ReupMusicChoice): ReupMusicChoice =>
-  REUP_MUSIC_CHOICES.includes(value as ReupMusicChoice) ? (value as ReupMusicChoice) : typeof legacyMood === "string" && legacyMood ? (legacyMood === "off" ? "off" : "library") : fallback;
-/** Clean the screen's choices from the client or storage; anything missing or not offered falls back to the type's default. */
+export const reupMusicChoice = (value: unknown, legacyMood: unknown, fallback: ReupMusicChoice): ReupMusicChoice => (REUP_MUSIC_CHOICES.includes(value as ReupMusicChoice) ? (value as ReupMusicChoice) : typeof legacyMood === "string" && legacyMood ? (legacyMood === "off" ? "off" : "library") : fallback);
 export const cleanReupSettings = (raw: unknown, preset: ReupPresetId): ReupSettings => {
   const d = reupPresetDefaults(preset);
   const def = reupPreset(preset);
@@ -27,7 +24,11 @@ export const cleanReupSettings = (raw: unknown, preset: ReupPresetId): ReupSetti
   const language = pick(v.language, REUP_LANGUAGES, d.language);
   return {
     language,
-    languageAlt: pick(v.languageAlt, REUP_LANGUAGES.filter((l) => l !== language), d.languageAlt !== language ? d.languageAlt : REUP_LANGUAGES.find((l) => l !== language)!),
+    languageAlt: pick(
+      v.languageAlt,
+      REUP_LANGUAGES.filter((l) => l !== language),
+      d.languageAlt !== language ? d.languageAlt : REUP_LANGUAGES.find((l) => l !== language)!,
+    ),
     targetSeconds: def.lengths.includes(Number(v.targetSeconds)) ? Number(v.targetSeconds) : d.targetSeconds,
     shortsCount: _.clamp(Math.round(Number(v.shortsCount) || d.shortsCount), 1, 5),
     aspect: pick(v.aspect, ["16:9", "9:16"], d.aspect),

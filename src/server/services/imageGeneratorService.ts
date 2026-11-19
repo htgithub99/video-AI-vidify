@@ -315,7 +315,27 @@ import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
 import { CHAT_ROOM_RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
-import { isBackupChromeActive, registerChromeBackupSwitch, registerChromeBackupModeSync, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure, withChromeBackupRecovery, chromeWaitPolicy, activeChromeId, chromeProfilePath, chromeDebugPort, chromeBackupAccountEmail, chromeSessionMismatch, sessionChromeId, providerChromeId, routedChromeIds, onProviderRouted, onProviderExhausted, chromeName } from "./chromeBackupService.js";
+import {
+  isBackupChromeActive,
+  registerChromeBackupSwitch,
+  registerChromeBackupModeSync,
+  saveChromeBackupSettings,
+  readChromeBackupSettings,
+  backupChromeFailure,
+  withChromeBackupRecovery,
+  chromeWaitPolicy,
+  activeChromeId,
+  chromeProfilePath,
+  chromeDebugPort,
+  chromeBackupAccountEmail,
+  chromeSessionMismatch,
+  sessionChromeId,
+  providerChromeId,
+  routedChromeIds,
+  onProviderRouted,
+  onProviderExhausted,
+  chromeName,
+} from "./chromeBackupService.js";
 import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
 import { MOTION_TEXT_ROOMPAGE } from "../../constants/motionRuntime.js";
 import { classifyAiError, classifyAiText, tagAiAvailability, aiAvailabilityOf, isAiExhausted, formatAiUntil, type AiAvailabilityClass } from "./aiAvailabilityService.js";
@@ -1857,15 +1877,8 @@ const getSharedChromeHeadlessMode = async (): Promise<boolean | null> => {
   }
 };
 const isSharedChromeRunning = async (): Promise<boolean> => (await getSharedChromeHeadlessMode()) !== null;
-/**
- * The shared Chrome is running in the other mode (a hidden Chrome left by an earlier run survives app restarts).
- * Closed when idle; a hidden one is also closed when none of this app's work is in it (a run's own browser hold
- * would otherwise block the switch), since no one can be looking at its tabs. Otherwise the mode is kept and said so:
- * the "show browser" setting is never ignored silently.
- */
 const switchSharedChromeMode = async (requestedHeadless: boolean, runningHeadless: boolean): Promise<void> => {
   if (await closeIdleSharedChrome(true).catch(() => false)) return;
-  // This launch itself is in flight (activeBrowserLaunchPromise) and holds the run's browser lease: neither counts as other work.
   const working = !!activeBrowserInstance || sharedChromeTasks.switching || activeFlowVideoGenerationCount > SecurityConstants.ZERO || globalBatchPages.some((page) => !page.isClosed()) || [...routedSharedSessions.values()].some((session) => session.context.browser()?.isConnected());
   if (runningHeadless && !working) {
     appLog(ImageGenMessages.CHROME_MODE_SWITCHED);
@@ -4097,9 +4110,7 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     try {
       await selectGeminiThinkingModel(page, planningModel);
       return true;
-    } catch {
-      // Fall through to base model selection if thinking level UI is unavailable.
-    }
+    } catch {}
   }
   const engine = visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
   let targetModelText = GeminiChatModelName.Pro;
@@ -4138,7 +4149,6 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
   }
   const modelPickerBtn = page.locator(GeminiChatSelector.ModelPickerButton).first();
-  // A freshly launched Chrome renders the Gemini model picker after the prompt box, so wait for it instead of checking once.
   await modelPickerBtn.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: GEMINI_MODEL_SELECTION_CONFIG.PICKER_VISIBLE_TIMEOUT_MS }).catch(() => undefined);
   if (!(await modelPickerBtn.isVisible())) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
@@ -4220,7 +4230,13 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
         _.trim(await selectedModeChip.innerText().catch(() => XRT.EMPTY)),
         _.trim((await selectedModeChip.textContent().catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
         _.trim((await selectedModeChip.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
-        _.trim((await selectedModeChip.locator('button').first().getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+        _.trim(
+          (await selectedModeChip
+            .locator("button")
+            .first()
+            .getAttribute(SOURCE_TEXT_ARIA_LABEL)
+            .catch(() => XRT.EMPTY)) ?? XRT.EMPTY,
+        ),
       ];
       if (_.some(chipTexts, (text) => Boolean(text) && activeModeRegex.test(text))) return true;
     }
@@ -4228,7 +4244,13 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
     const candidateCount = await candidates.count();
     for (let index = SecurityConstants.ZERO; index < candidateCount; index++) {
       const candidate = candidates.nth(index);
-      const isCandidateVisible = (await candidate.isVisible().catch(() => false)) || (await candidate.locator('button').first().isVisible().catch(() => false));
+      const isCandidateVisible =
+        (await candidate.isVisible().catch(() => false)) ||
+        (await candidate
+          .locator("button")
+          .first()
+          .isVisible()
+          .catch(() => false));
       if (!isCandidateVisible) continue;
       const belongsToNavigation = await candidate
         .evaluate(
@@ -4240,11 +4262,7 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
         )
         .catch(() => false);
       if (belongsToNavigation) continue;
-      const candidateTexts = [
-        _.trim(await candidate.innerText().catch(() => XRT.EMPTY)),
-        _.trim((await candidate.textContent().catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
-        _.trim((await candidate.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
-      ];
+      const candidateTexts = [_.trim(await candidate.innerText().catch(() => XRT.EMPTY)), _.trim((await candidate.textContent().catch(() => XRT.EMPTY)) ?? XRT.EMPTY), _.trim((await candidate.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY)];
       if (_.some(candidateTexts, (text) => Boolean(text) && activeModeRegex.test(text))) return true;
     }
     return false;
@@ -4534,13 +4552,16 @@ const waitForGeneratedImageReady = async (media: Locator): Promise<void> => {
     await delayAsync(GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_POLL_MS);
   }
 };
-const GEMINI_VIDEO_IN_PROGRESS_TEXT_REGEX =
-  /(?:tôi đang tạo video|đang tạo video|quá trình này có thể mất vài phút|kiểm tra lại để biết video đã sẵn sàng|i'm generating (?:the |your )?video|generating (?:the |your )?video|this may take a few minutes|check back to see if it's ready|adding .* effects)/i;
+const GEMINI_VIDEO_IN_PROGRESS_TEXT_REGEX = /(?:tôi đang tạo video|đang tạo video|quá trình này có thể mất vài phút|kiểm tra lại để biết video đã sẵn sàng|i'm generating (?:the |your )?video|generating (?:the |your )?video|this may take a few minutes|check back to see if it's ready|adding .* effects)/i;
 const GEMINI_VIDEO_READY_TEXT_REGEX = /(?:video của bạn đã sẵn sàng|your video is ready)/i;
 const GEMINI_SCREEN_READER_PREFIX_REGEX = /^\s*(?:gemini đã nói|gemini said)\s*|\s*(?:gemini đã nói|gemini said)\s*$/gi;
-const GEMINI_RESPONSE_TURN_COMPLETE_SELECTOR =
-  'gem-icon-button[data-test-id="regenerate-button"], [data-test-id="regenerate-button"], gem-icon-button[data-test-id="thumb-up-button"], [data-test-id="thumb-up-button"], gem-icon-button[data-test-id="more-menu-button"], [data-test-id="more-menu-button"]';
-const hasGeminiRoomResponses = async (page: Page): Promise<boolean> => !page.isClosed() && (await page.locator(GeminiChatSelector.Response).count().catch(() => SecurityConstants.ZERO)) > SecurityConstants.ZERO;
+const GEMINI_RESPONSE_TURN_COMPLETE_SELECTOR = 'gem-icon-button[data-test-id="regenerate-button"], [data-test-id="regenerate-button"], gem-icon-button[data-test-id="thumb-up-button"], [data-test-id="thumb-up-button"], gem-icon-button[data-test-id="more-menu-button"], [data-test-id="more-menu-button"]';
+const hasGeminiRoomResponses = async (page: Page): Promise<boolean> =>
+  !page.isClosed() &&
+  (await page
+    .locator(GeminiChatSelector.Response)
+    .count()
+    .catch(() => SecurityConstants.ZERO)) > SecurityConstants.ZERO;
 const isGeminiPageActivelyGenerating = async (page: Page): Promise<boolean> => {
   if (page.isClosed()) return false;
   try {
@@ -4907,7 +4928,13 @@ async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: Gemin
         const retryWaitDeadline = Date.now() + 12_000;
         while (Date.now() < retryWaitDeadline) {
           if (await isGeminiPageActivelyGenerating(page)) break;
-          const currentText = _.trim(await page.locator(GeminiChatSelector.Response).last().innerText().catch(() => XRT.EMPTY));
+          const currentText = _.trim(
+            await page
+              .locator(GeminiChatSelector.Response)
+              .last()
+              .innerText()
+              .catch(() => XRT.EMPTY),
+          );
           if (currentText && currentText !== previousErrorText) break;
           await delayAsync(400);
         }
@@ -4921,7 +4948,13 @@ async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: Gemin
         continue;
       }
       if (retryClick >= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT) throw error;
-      previousErrorText = _.trim(await page.locator(GeminiChatSelector.Response).last().innerText().catch(() => XRT.EMPTY));
+      previousErrorText = _.trim(
+        await page
+          .locator(GeminiChatSelector.Response)
+          .last()
+          .innerText()
+          .catch(() => XRT.EMPTY),
+      );
       if (!(await clickCurrentChatRetry(page).catch(() => false))) throw error;
       appLog(CHAT_ROOM_RECOVERY.CLICK_LOG);
     }
@@ -5022,16 +5055,7 @@ const startBackupChrome = async (id: string, headless: boolean, urls: readonly s
     await fs.promises.mkdir(backupProfilePath(id), { recursive: true });
     spawn(
       findNativeChrome(),
-      [
-        _.replace(REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG, SOURCE_TEXT_0_2, String(chromeDebugPort(id))),
-        SOURCE_TEXT_REMOTE_ALLOW_ORIGINS,
-        SOURCE_TEMPLATE_USER_DATA_DIR(backupProfilePath(id)),
-        REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG,
-        REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG,
-        ...(headless ? [REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG] : []),
-        ...CHAT_SPEED.CHROME_ARGS,
-        ...urls,
-      ],
+      [_.replace(REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG, SOURCE_TEXT_0_2, String(chromeDebugPort(id))), SOURCE_TEXT_REMOTE_ALLOW_ORIGINS, SOURCE_TEMPLATE_USER_DATA_DIR(backupProfilePath(id)), REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG, REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG, ...(headless ? [REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG] : []), ...CHAT_SPEED.CHROME_ARGS, ...urls],
       { windowsHide: headless, detached: true, stdio: SOURCE_TEXT_IGNORE },
     ).unref();
     backupHeadless.set(id, headless);
@@ -5088,7 +5112,14 @@ const backupSignedIn = async (context: BrowserContext): Promise<boolean | undefi
     if (page.isClosed() || !BACKUP.LOGIN_URLS.some((url) => page.url().startsWith(new URL(url).origin))) continue;
     seen = true;
     if (AI_AVAILABILITY.PAGE.loginUrl.test(page.url())) continue;
-    if (await page.locator(BACKUP.COMPOSER_SELECTOR).filter({ visible: true }).count().catch(() => 0)) return true;
+    if (
+      await page
+        .locator(BACKUP.COMPOSER_SELECTOR)
+        .filter({ visible: true })
+        .count()
+        .catch(() => 0)
+    )
+      return true;
   }
   return seen ? false : undefined;
 };
@@ -5286,7 +5317,11 @@ const detectMediaOutage = async (page: Page | null | undefined, error: unknown):
   if (!_.get(probe, MOTION_TEXT_ROOMPAGE)) Object.defineProperty(probe, MOTION_TEXT_ROOMPAGE, { value: page, enumerable: false, configurable: true });
   const found = await classifyAiError(probe, AI_AVAILABILITY.MEDIA_PROVIDER);
   if (found) return found;
-  const reply = await page.locator(AI_AVAILABILITY.MEDIA_RESPONSE_SELECTOR).last().innerText({ timeout: AI_AVAILABILITY.NOTICE_TIMEOUT_MS }).catch(() => SecurityConstants.EMPTY_STRING);
+  const reply = await page
+    .locator(AI_AVAILABILITY.MEDIA_RESPONSE_SELECTOR)
+    .last()
+    .innerText({ timeout: AI_AVAILABILITY.NOTICE_TIMEOUT_MS })
+    .catch(() => SecurityConstants.EMPTY_STRING);
   return classifyAiText(reply.slice(-AI_AVAILABILITY.MEDIA_REPLY_MAX), AI_AVAILABILITY.MEDIA_PROVIDER);
 };
 const mediaWaitTarget = (error: unknown): AiAvailabilityClass | null => {
@@ -5327,7 +5362,19 @@ export const generateBatchImagesWithGeminiChat = async (...args: Parameters<type
   };
   for (;;) {
     try {
-      const results = await withChromeBackupRecovery(() => generateBatchImagesWithGeminiChatTask(_.filter(items, (item) => !done.has(item.sceneId)), visualConfig, style, track, ...rest), undefined, appLog, AI_AVAILABILITY.MEDIA_PROVIDER);
+      const results = await withChromeBackupRecovery(
+        () =>
+          generateBatchImagesWithGeminiChatTask(
+            _.filter(items, (item) => !done.has(item.sceneId)),
+            visualConfig,
+            style,
+            track,
+            ...rest,
+          ),
+        undefined,
+        appLog,
+        AI_AVAILABILITY.MEDIA_PROVIDER,
+      );
       return [...done.values(), ..._.filter(results, (result) => !done.has(result.sceneId))];
     } catch (error) {
       const target = mediaWaitTarget(error);

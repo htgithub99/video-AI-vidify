@@ -12,23 +12,33 @@ export const deduplicateMusicMixerTracks = <T extends MixerTrackIdentity>(tracks
     return true;
   });
 };
-// The song a file holds, by its title: the file name without folder, extension, a leading track number or a trailing copy
-// mark ("(1)", "copy", "v2"), case, accents' composition and punctuation. Two files of one song (the same title exported to two
-// folders, two takes of one generation) share it, so a mix never plays the same song twice.
 const COPY_MARK = /(\s*[([]\s*\d+\s*[)\]]|\s*[-_ ]\s*(copy|bản sao|v\d+|take\s*\d+))+$/i;
 export const getMusicMixerTitleKey = (track: MixerTrackIdentity): string => {
-  const base = track.file.name || track.name || String(track.sourcePath || track.path || "").split(/[\\/]/).filter(Boolean).pop() || "";
-  const stem = base.normalize(SOURCE_TEXT_NFC).replace(/\.[^.]+$/, "").replace(/^\d+[\s._-]*/, "").replace(COPY_MARK, "");
-  const key = stem.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const base =
+    track.file.name ||
+    track.name ||
+    String(track.sourcePath || track.path || "")
+      .split(/[\\/]/)
+      .filter(Boolean)
+      .pop() ||
+    "";
+  const stem = base
+    .normalize(SOURCE_TEXT_NFC)
+    .replace(/\.[^.]+$/, "")
+    .replace(/^\d+[\s._-]*/, "")
+    .replace(COPY_MARK, "");
+  const key = stem
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
   return key || getMusicMixerTrackKey(track);
 };
-// How many different songs the tracks hold (the most a mix can have).
 export const countMusicMixerSongs = (tracks: readonly MixerTrackIdentity[]): number => new Set(deduplicateMusicMixerTracks(tracks).map(getMusicMixerTitleKey)).size;
 export const distributeMusicMixerTracks = <T extends MixerTrackIdentity>(tracks: readonly T[], songsPerFolder: number, folderCount: number): T[][] => {
   const files = deduplicateMusicMixerTracks(tracks);
-  // One file of every song first (in the order given: shuffled, by name or ranked), then the other files of songs already
-  // listed: mixes share no song while there are enough different songs, and a mix never holds one song twice.
-  const firstOfSong = new Set<string>(), first: T[] = [], others: T[] = [];
+  const firstOfSong = new Set<string>(),
+    first: T[] = [],
+    others: T[] = [];
   files.forEach((track) => {
     const title = getMusicMixerTitleKey(track);
     if (firstOfSong.has(title)) others.push(track);

@@ -1,7 +1,4 @@
-// Animals the quadruped and bird parts cannot draw (apes, reptiles, sea life, insects, swarms) and the working animals
-// that carry gear (a barded war horse, a pack horse, a yoked ox team), side view, head toward +x.
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "monkey", names: ["macaque", "ape"] },
   { id: "gorilla", names: ["chimpanzee"] },
@@ -29,12 +26,10 @@ const items = [
   { id: "packHorse", names: ["packMule", "burdenedHorse"] },
   { id: "oxTeam", names: ["oxen", "yokedOxen", "plowTeam"] },
 ];
-
 const helpers = `const fur = (c0) => T(o.color || c0);
   const eye = (x, y, r) => { ring(x, y, r || 0.06, white); ring(x + 0.01, y, (r || 0.06) * 0.55, black); };
   const animal = (kind2, x, s, extra) => { const part = K.part && K.part(kind2 === "horse" || kind2 === "mule" ? "horse" : "quad"); return part ? part(c, Object.assign({ kind: kind2, x: x * R, y: 0, r: R * s, facing: 1, pose: o.pose || "stand", t, seed: K.num(o.seed, 3), color: o.color, mane: o.mane, distance: o.distance, phase: o.phase, rider: o.rider, saddle: o.saddle, blanket: o.blanket, bridle: o.bridle }, extra || {}), K) : null; };
   const flap = Math.sin(t * 14 + K.num(o.seed, 0));`;
-
 const body = `
     case "monkey": { const b = fur("#8a6040"); fl(S([[-0.5, -0.35], [-0.55, -1.0], [0.0, -1.25], [0.45, -1.0], [0.45, -0.4]]), b); ring(0.45, -1.4, 0.32, b); fl(E(0.6, -1.36, 0.18, 0.15), T("#e8c4a0")); eye(0.55, -1.48, 0.05); eye(0.7, -1.48, 0.05); ln([[-0.5, -0.5], [-1.1, -0.6], [-1.3, -1.1], [-1.1, -1.4]], 1.6, b); [[-0.35, -0.4], [0.3, -0.4]].forEach(([x, y]) => beam([[x, y], [x + 0.05, 0]], 0.12, b)); beam([[0.4, -0.95], [0.85, -0.6]], 0.11, b); out = { head: [0.45, -1.4] }; break; }
     case "gorilla": { const b = fur("#2e2a2a"); fl(S([[-0.9, -0.5], [-0.8, -1.7], [0.0, -2.1], [0.8, -1.8], [0.9, -0.9], [0.6, -0.4]]), b); ring(0.75, -2.0, 0.42, b); fl(E(0.95, -1.9, 0.25, 0.2), T("#4a4444")); eye(0.85, -2.08, 0.05); beam([[0.7, -1.6], [1.2, -0.6], [1.15, 0]], 0.28, b); beam([[-0.6, -0.6], [-0.6, 0]], 0.3, b); beam([[0.3, -0.5], [0.35, 0]], 0.3, b); out = { head: [0.75, -2.0] }; break; }
@@ -60,5 +55,4 @@ const body = `
     case "warHorse": { out = animal("horse", 0, 0.9, { barding: typeof o.barding === "string" ? o.barding : typeof o.blanket === "string" ? o.blanket : "#8a2f2a", saddle: true }) || {}; break; }
     case "packHorse": { const res = animal("horse", 0, 0.9) || {}; [[-0.7, 0], [0.3, 0]].forEach(([x]) => fl(S([[x - 0.35, -1.6], [x - 0.4, -2.3], [x + 0.35, -2.35], [x + 0.4, -1.6]]), T("#c9b48a"))); fl(E(-0.2, -2.45, 0.6, 0.2), T("#8a6444")); ln([[-0.9, -1.65], [0.7, -1.65]], 0.8, rope); out = res; break; }
     case "oxTeam": { c.save(); c.translate(0.7 * R, -0.25 * R); c.globalAlpha *= 0.92; animal("ox", 0, 0.8); c.restore(); const res = animal("ox", 0, 0.8) || {}; const hx = res.head ? res.head[0] / R : 2.0, hy = res.head ? res.head[1] / R : -1.8; beam([[hx - 0.55, hy + 0.05], [hx + 0.2, hy - 0.35]], 0.18, wood); ring(hx - 0.2, hy - 0.12, 0.08, iron); out = res; break; }`;
-
 export const MOTION_LIBRARY_CRITTERS: MotionLibraryPart = { part: "lib_critters", fn: "animal", items, js: motionLibraryPart(items, body, 0.9, helpers) };

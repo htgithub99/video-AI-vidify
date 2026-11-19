@@ -61,7 +61,6 @@ const productionAiOverride = (value?: Record<string, any>): Record<string, any> 
 interface ProductionRecord {
   durationRepair?: { round: number; rate: number; chapters?: string[]; done?: boolean };
   voiceCastChapters?: string[];
-  /** Scene redraws / deletions asked for while the run was past its scene builder: done before the video is put together. */
   sceneActions?: MotionHtmlSceneAction[];
   version: number;
   input: Record<string, any>;
@@ -75,14 +74,10 @@ interface ProductionRecord {
 }
 const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime };
 export const createMotionProductionService = (dependencies: Partial<typeof productionDependencies> = {}, directory = path.join(getMotionRootDirectory(), P.RUN_FOLDER), pollMs: number = P.POLL_MS, serviceRetryMs: number = P.SERVICE_RETRY_MS, seoWaitMs: number = P.SEO_WAIT_MS) => {
-  const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime } = {
-    ...productionDependencies,
-    ...dependencies,
-  };
+  const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime } = { ...productionDependencies, ...dependencies };
   const store = new MotionProductionStore<ProductionRecord>(directory);
   const logs = new MotionLogStore(path.join(directory, P.LOG_FOLDER));
   const active = new Map<string, { record: ProductionRecord; controller: AbortController; owner: MotionProductionOwner }>();
-  /** Per running production: starts drawing the waiting scene actions now (false while the scene builder has not run yet). */
   const sceneKicks = new Map<string, () => boolean>();
   const failedSnapshots = new Map<string, ProductionRecord>();
   const terminal = (status: S): boolean => [S.COMPLETED, S.CANCELLED, S.ERROR].includes(status);
@@ -106,7 +101,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     logs.seed(record.job.id, prior);
     logs.append(record.job.id, entry);
   };
-  const publicSteps = (record: ProductionRecord): MotionProductionJobState["stepStates"] => Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error, elapsedMs: task.segmentAt ? task.elapsedMs || 0 : motionStepElapsedMs(task), segmentAt: task.segmentAt }]] : [])));
+  const publicSteps = (record: ProductionRecord): MotionProductionJobState["stepStates"] =>
+    Object.fromEntries(
+      Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error, elapsedMs: task.segmentAt ? task.elapsedMs || 0 : motionStepElapsedMs(task), segmentAt: task.segmentAt }]] : [])),
+    );
   const publicJob = (record: ProductionRecord, knownRev?: string): MotionProductionJobState => {
     const resultRev = record.resultRev || String(record.rev || 0);
     if (knownRev === resultRev && !terminal(record.job.status)) {
@@ -377,7 +375,27 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         const ai = (exec?: { provider?: unknown; model?: unknown }) => (exec?.provider ? `${exec.provider}${exec.model ? `/${exec.model}` : ""}` : undefined);
         const input = base as unknown as Record<string, any>;
         const visual = visualSettings as unknown as Record<string, any>;
-        log(record, VISUAL.LOG_CONFIG({ genre: input.videoGenre, storytelling: input.storytelling, length: input.length, language: input.language, style: visual.profileId, layout: visual.layout, pacing: visual.pacing, mainAi: ai(input.aiExecution), scriptAi: ai(input.scriptAiExecution || input.aiExecution), planAi: ai(input.planAiExecution || input.aiExecution), sceneAi: ai(input.sceneAiExecution || input.aiExecution), review: input.aiReview !== false, lowSpec: isLowSpecMode(), subtitles: input.subtitles !== false, music: input.musicMood, sfx: input.sfx !== false }));
+        log(
+          record,
+          VISUAL.LOG_CONFIG({
+            genre: input.videoGenre,
+            storytelling: input.storytelling,
+            length: input.length,
+            language: input.language,
+            style: visual.profileId,
+            layout: visual.layout,
+            pacing: visual.pacing,
+            mainAi: ai(input.aiExecution),
+            scriptAi: ai(input.scriptAiExecution || input.aiExecution),
+            planAi: ai(input.planAiExecution || input.aiExecution),
+            sceneAi: ai(input.sceneAiExecution || input.aiExecution),
+            review: input.aiReview !== false,
+            lowSpec: isLowSpecMode(),
+            subtitles: input.subtitles !== false,
+            music: input.musicMood,
+            sfx: input.sfx !== false,
+          }),
+        );
       }
       if (visualSettings.mode === RT_SHARED.REMOTION) {
         if (base.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
@@ -410,9 +428,6 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
       save();
       const sceneInput = (analysis: MotionStoryAnalysis, script: MotionStoryScript, sheetCarry: boolean) => ({ ...base, analysis, script, sheetCarry, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false });
-      // Scenes the user redraws or deletes after the scene builder has finished get a scene run of their own at once, next
-      // to the voice and SEO; the video is put together only after it (an action arriving while compiling sends the run
-      // back), so the export always has the newest scenes. One runner at a time works through the waiting actions in order.
       let fixRound = 0;
       let fixing: Promise<void> | undefined;
       const applySceneActions = (): Promise<void> => {
@@ -437,7 +452,6 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         });
         return fixing;
       };
-      // Before the scene builder has run, actions wait and are drawn right after it.
       sceneKicks.set(record.job.id, () => {
         if (!record.steps[P.STAGES.SCENES]?.done) return false;
         void applySceneActions().catch((error) => void (!signal.aborted && log(record, P.SCENE_ACTION_FAILED(String((error as Error)?.message || error)))));
@@ -562,28 +576,29 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           jobs.push(
             (isLowSpecMode()
               ? Promise.allSettled(jobs.slice()).then(() =>
-                  // The AI steps are over: close the AI Chrome now instead of leaving an empty window open through the voice step.
                   closeChatBrowserIfIdle()
                     .then((closed) => void (closed && log(record, P.CHROME_CLOSED_BEFORE_VOICE)))
                     .catch(() => undefined),
                 )
               : Promise.resolve()
-            ).then(() => step<MotionVoiceTrack>(
-              stage(P.STAGES.VOICE),
-              async () => {
-                await earlyVoice?.settle();
-                return voiceMotionStoryInput({ ...base, analysis: result.analysis, script: voicedScript, aiExecution: base.aiExecution, castChapterIds: record.voiceCastChapters });
-              },
-              (voice) => {
-                result.voice = voice;
-                if (result.script) result.script.voiceTrack = voice;
-                prerender();
-              },
-              0.3,
-              0.3,
-              false,
-              RT_SHARED.VOICE,
-            )),
+            ).then(() =>
+              step<MotionVoiceTrack>(
+                stage(P.STAGES.VOICE),
+                async () => {
+                  await earlyVoice?.settle();
+                  return voiceMotionStoryInput({ ...base, analysis: result.analysis, script: voicedScript, aiExecution: base.aiExecution, castChapterIds: record.voiceCastChapters });
+                },
+                (voice) => {
+                  result.voice = voice;
+                  if (result.script) result.script.voiceTrack = voice;
+                  prerender();
+                },
+                0.3,
+                0.3,
+                false,
+                RT_SHARED.VOICE,
+              ),
+            ),
           );
         if (isLowSpecMode() && media !== RT_SHARED.SCENES && media !== RT_SHARED.VOICE) log(record, P.LOW_SPEC_VOICE_LATER);
         let firstFailure: unknown;
@@ -662,25 +677,23 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       log(record, `${RT_MAINTENANCE.THOI_LUONG_DA_CHON}${Math.round(selectedSeconds)}${RT_MAINTENANCE.S_TONG_PHAN_NAY_DU_KIEN}${Math.round(targetSeconds)}${RT_MAINTENANCE.S_AUDIO_THUC}${result.voice!.totalSeconds.toFixed(1)}${RT_MAINTENANCE.S_5}`);
       await finishSeo();
       signal.throwIfAborted();
-      // Every AI step is over (script, scenes, SEO); the voice is made on this machine. Without an automatic export (which
-      // takes the browser itself) nothing needs the AI Chrome any more: close it instead of leaving it open.
       if (base.autoExport === false)
         await closeMotionStandaloneBrowser()
           .then((closed) => void (closed && log(record, P.CHROME_CLOSED_AI_DONE)))
           .catch(() => undefined);
       do {
-      await applySceneActions();
-      record.job.stage = P.STAGES.COMPILE;
-      if (!result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis) || !motionVoiceAsrSatisfied(result.voice, base.asrCheck === true)) throw new Error(P.AUDIO_REQUIRED);
-      result.compiled = await compileMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, voiceTrack: result.voice, durations: result.voice.durations, audioId: result.voice.audioId });
-      if (isRemotionSpec(result.compiled.spec) && base.fps && result.compiled.spec.fps !== base.fps) throw new Error(VISUAL.SETTINGS_CHANGED);
-      result.compiled.spec = { ...result.compiled.spec, fps: base.fps || result.compiled.spec.fps, ...(base.subtitles === false ? { subtitles: [] } : {}) };
-      if (isRemotionSpec(result.compiled.spec)) {
-        const short = (result.compiled.spec.scenes || []).filter((scene) => (scene.endFrame - scene.startFrame) / result.compiled!.spec.fps < PACING.SHORT_SECONDS).length;
-        if (short) log(record, PACING.SHORT_LOG(short));
-      }
-      if (result.compiled.missing.length || result.compiled.voiceStale) throw new Error(P.AUDIO_REQUIRED);
-      save();
+        await applySceneActions();
+        record.job.stage = P.STAGES.COMPILE;
+        if (!result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis) || !motionVoiceAsrSatisfied(result.voice, base.asrCheck === true)) throw new Error(P.AUDIO_REQUIRED);
+        result.compiled = await compileMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, voiceTrack: result.voice, durations: result.voice.durations, audioId: result.voice.audioId });
+        if (isRemotionSpec(result.compiled.spec) && base.fps && result.compiled.spec.fps !== base.fps) throw new Error(VISUAL.SETTINGS_CHANGED);
+        result.compiled.spec = { ...result.compiled.spec, fps: base.fps || result.compiled.spec.fps, ...(base.subtitles === false ? { subtitles: [] } : {}) };
+        if (isRemotionSpec(result.compiled.spec)) {
+          const short = (result.compiled.spec.scenes || []).filter((scene) => (scene.endFrame - scene.startFrame) / result.compiled!.spec.fps < PACING.SHORT_SECONDS).length;
+          if (short) log(record, PACING.SHORT_LOG(short));
+        }
+        if (result.compiled.missing.length || result.compiled.voiceStale) throw new Error(P.AUDIO_REQUIRED);
+        save();
       } while (record.sceneActions?.length);
       if (base.autoExport !== false)
         await step<MotionResultItem>(
@@ -787,9 +800,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         }
       }
       if (active.get(record.job.id)?.owner.token === owner.token) {
-          active.delete(record.job.id);
-          sceneKicks.delete(record.job.id);
-        }
+        active.delete(record.job.id);
+        sceneKicks.delete(record.job.id);
+      }
     }
   };
   const launch = (record: ProductionRecord, seoOnly = false): MotionProductionJobState => {
@@ -992,8 +1005,6 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       store.release(id, owner);
     }
   };
-  // Redraw or delete scenes while the run is going: a running scene builder takes them at once; past it, they wait in the
-  // record and are drawn before the video is put together. Not running: the caller does it the usual way.
   const actMotionProductionScenes = (id: string, action: MotionHtmlSceneAction): { live: boolean; count?: number; queued?: boolean } => {
     const running = active.get(id);
     if (!running || terminal(running.record.job.status)) return { live: false };
@@ -1012,9 +1023,6 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     store.save(id, record, owner);
     return { live: true, queued: !started, count: action.ids.length };
   };
-  // Scenes rebuilt on the page while no run is going (redraw, retry, the scenes still missing) are written back into the
-  // production, scene by scene, wherever the page's scene is a newer attempt: reloading the page or resuming the run
-  // then keeps them, and the next export draws them instead of the old ones.
   const syncMotionProductionScenes = (id: string, scenes: Record<string, MotionRemotionScene[]> | undefined): number => {
     if (!scenes || active.has(id)) return 0;
     const current = read(id);

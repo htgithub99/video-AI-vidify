@@ -27,8 +27,7 @@ export const MODAL_CLASS_NAME = {
   BOTTOM_DECORATION: "absolute bottom-0 left-0 w-64 h-64 bg-amber-500/[0.03] rounded-full blur-3xl pointer-events-none z-0",
   HEADER: "modal-header-bar flex items-center justify-between px-6 py-4 border-b border-slate-800/80 relative z-10 bg-slate-850 backdrop-blur-sm",
   TITLE: "modal-title-text text-sm font-extrabold uppercase tracking-wider text-white flex items-center gap-2 truncate",
-  CLOSE_BUTTON:
-    "modal-close-button-custom btn-icon-tiny w-8 h-8 rounded-lg aspect-square flex items-center justify-center border shadow-xs bg-slate-800/90 hover:bg-rose-950/80 text-slate-200 hover:text-rose-400 border-slate-700/90 hover:border-rose-500/40 transition-all ml-auto shrink-0 cursor-pointer",
+  CLOSE_BUTTON: "modal-close-button-custom btn-icon-tiny w-8 h-8 rounded-lg aspect-square flex items-center justify-center border shadow-xs bg-slate-800/90 hover:bg-rose-950/80 text-slate-200 hover:text-rose-400 border-slate-700/90 hover:border-rose-500/40 transition-all ml-auto shrink-0 cursor-pointer",
   CLOSE_ICON: "w-4 h-4 stroke-[2.5]",
   BODY: "modal-body-area flex-1 overflow-y-auto bg-transparent relative z-10 p-6 text-slate-100",
   DEFAULT_WIDTH: "max-w-2xl",

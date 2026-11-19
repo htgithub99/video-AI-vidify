@@ -1,7 +1,4 @@
-// Houses and public buildings of every region and age not in the base kit (front elevation, ground y = 0, units of R
-// like the base buildings: a house is about 3 R tall). Built from shared wall, roof, door and window pieces.
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "cave", to: -3000, names: ["caveDwelling", "rockShelter"] },
   { id: "hideTent", to: 1900, names: ["teepee", "tipi", "wigwam", "skinTent"] },
@@ -44,7 +41,6 @@ const items = [
   { id: "oilDerrick", from: 1859, names: ["oilWell"] },
   { id: "fieldHospitalTent", from: 1850, names: ["redCrossTent", "medicalTent"] },
 ];
-
 const helpers = `const wall = (x0, y0, x1, y1, col, pat) => { const p = rect(x0, y0, x1, y1); fl(p, col); clip(p, () => { if (pat === "brick") for (let r = 0, y = y1; y > y0; r++, y -= 0.22) { ln([[x0, y], [x1, y]], 0.3); for (let x = x0 + (r % 2 ? 0.2 : 0); x < x1; x += 0.4) ln([[x, y], [x, y - 0.22]], 0.3); } if (pat === "stone") for (let r = 0, y = y1; y > y0; r++, y -= 0.3) { ln([[x0, y], [x1, y]], 0.35); for (let x = x0 + (r % 2 ? 0.3 : 0); x < x1; x += 0.6) ln([[x, y], [x, y - 0.3]], 0.35); } if (pat === "plank") for (let x = x0; x < x1; x += 0.3) ln([[x, y0], [x, y1]], 0.35); if (pat === "log") for (let y = y1; y > y0; y -= 0.28) { ln([[x0, y], [x1, y]], 0.5); } }); return p; };
   const gable = (x0, x1, y, h, col) => fl(P([[x0 - 0.2, y], [(x0 + x1) / 2, y - h], [x1 + 0.2, y]]), col);
   const hip = (x0, x1, y, h, col) => fl(P([[x0 - 0.25, y], [x0 + 0.4, y - h], [x1 - 0.4, y - h], [x1 + 0.25, y]]), col);
@@ -54,7 +50,6 @@ const helpers = `const wall = (x0, y0, x1, y1, col, pat) => { const p = rect(x0,
   const cols = (x0, x1, n, y0, y1, col) => { for (let i = 0; i < n; i++) { const x = x0 + (x1 - x0) * i / (n - 1); fl(rect(x - 0.12, y0, x + 0.12, y1), col || white); } };
   const flatRoof = (x0, x1, y, col) => fl(rect(x0 - 0.1, y - 0.18, x1 + 0.1, y), col || K.shade(stone, 0.85));
   const plaster = T(night ? "#a8a090" : "#e4dac4"), cream = T(night ? "#b8b0a0" : "#efe2c4"), concrete = T(night ? "#7a7a7a" : "#a8a8a4"), snow = T("#eef2f6"), mud = T(night ? "#7a6450" : "#c09a6a");`;
-
 const body = `
     case "cave": fl(S([[-2.4, 0], [-2.3, -1.6], [-1.4, -2.7], [0.4, -3.0], [1.9, -2.4], [2.5, -1.2], [2.5, 0]]), T(night ? "#6a645c" : "#9a9288")); fl(S([[-1.0, 0], [-1.0, -1.1], [-0.4, -1.65], [0.4, -1.6], [1.0, -1.0], [1.0, 0]]), black, { hatch: false }); ln([[-1.9, -2.0], [-1.2, -1.5]], 0.5); ln([[1.4, -2.2], [2.0, -1.7]], 0.5); break;
     case "hideTent": fl(P([[-1.4, 0], [0, -3.0], [1.4, 0]]), leather); for (let i = 0; i < 4; i++) ln([[0, -3.0], [-1.4 + i * 0.93, 0]], 0.35); [-0.2, 0.2].forEach((dx) => beam([[dx, -2.9], [dx * 4, -3.6]], 0.05)); fl(P([[-0.4, 0], [0, -1.0], [0.4, 0]]), black, { hatch: false }); ln([[-0.6, -1.6], [0.6, -1.6]], 0.8, red); break;
@@ -96,6 +91,16 @@ const body = `
     case "oilRig": water(3.0); [-1.6, 1.6].forEach((x) => beam([[x, 0.2], [x, -2.0]], 0.14, iron)); fl(rect(-2.2, -2.4, 2.2, -2.0), T("#8a8a80")); [-0.5, 0.5].forEach((x) => beam([[x, -2.4], [x * 0.2, -5.4]], 0.06, iron)); for (let y = -2.8; y > -5.2; y -= 0.5) ln([[-0.4 * (1 + (y + 2.4) / 3), y], [0.4 * (1 + (y + 2.4) / 3), y]], 0.5, iron); fl(rect(1.0, -3.0, 2.0, -2.4), white); break;
     case "oilDerrick": [-0.8, 0.8].forEach((x) => beam([[x, 0], [x * 0.15, -4.6]], 0.08, wood)); for (let y = -0.6; y > -4.4; y -= 0.6) { const k = 1 + y / 5.4; ln([[-0.8 * k, y], [0.8 * k, y]], 0.5, wood); ln([[-0.8 * k, y], [0.8 * (1 + (y - 0.6) / 5.4), y - 0.6]], 0.4, wood); } fl(rect(-1.1, -0.4, 1.1, 0), dark); break;
     case "fieldHospitalTent": fl(P([[-2.2, 0], [-1.8, -1.6], [0, -2.2], [1.8, -1.6], [2.2, 0]]), T(night ? "#8a8a74" : "#c8c4a8")); fl(rect(-0.25, -1.6, 0.25, -0.9), red, { hatch: false }); fl(rect(-0.6, -1.45, 0.6, -1.05), red, { hatch: false }); fl(P([[-0.5, 0], [0, -0.8], [0.5, 0]]), black, { hatch: false }); break;`;
-
-export const MOTION_LIBRARY_BUILDINGS: MotionLibraryPart = { part: "lib_buildings", fn: "building", items, js: motionLibraryPart(items, body, 2.2, helpers + `
-  const water = (hw) => { for (let i = 0; i < 4; i++) { const x = -hw + 0.3 + i * (2 * hw - 0.6) / 3 + Math.sin(t + i) * 0.1; ln([[x, 0.15], [x + 0.35, 0.12], [x + 0.6, 0.15]], 0.45, T("#5a7a8a")); } };`) };
+export const MOTION_LIBRARY_BUILDINGS: MotionLibraryPart = {
+  part: "lib_buildings",
+  fn: "building",
+  items,
+  js: motionLibraryPart(
+    items,
+    body,
+    2.2,
+    helpers +
+      `
+  const water = (hw) => { for (let i = 0; i < 4; i++) { const x = -hw + 0.3 + i * (2 * hw - 0.6) / 3 + Math.sin(t + i) * 0.1; ln([[x, 0.15], [x + 0.35, 0.12], [x + 0.6, 0.15]], 0.45, T("#5a7a8a")); } };`,
+  ),
+};

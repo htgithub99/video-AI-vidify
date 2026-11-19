@@ -1,5 +1,4 @@
 import { MOTION_PRODUCTION_REPORT as R } from "../constants/motionProductionReport.js";
-
 interface MotionReportScene {
   id: string;
   html?: { attempts?: number; warnings?: string[]; notes?: string[]; fallback?: boolean };
@@ -13,7 +12,6 @@ interface MotionReportInput {
 }
 const sceneState = (scene: MotionReportScene): string => (scene.html?.fallback ? R.STATE.FALLBACK : (scene.html?.attempts || 1) > 1 ? R.STATE.REDRAWN : scene.html?.warnings?.length ? R.STATE.WARNED : R.STATE.FIRST);
 const shown = (value: unknown): string => (value === undefined || value === null || value === "" ? "-" : typeof value === "object" ? JSON.stringify(value) : String(value));
-// Builds the report text and its one-line summary from plain data, so it can be tested without a production.
 export const motionProductionReport = (data: MotionReportInput): { text: string; summary: string } => {
   const config = [...R.CONFIG_KEYS.map((key) => [key, data.input[key]] as const), ...Object.entries(data.visual || {})].filter(([, value]) => value !== undefined);
   const scenes = data.scenes.filter((scene) => scene.html);

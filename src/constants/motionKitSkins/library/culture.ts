@@ -1,6 +1,4 @@
-// Writing and news, faith and festivals, medicine, and the things of law and punishment.
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "book", names: ["tome", "codex"], fit: "rigid" as const },
   { id: "bookStack", names: ["books"] },
@@ -39,7 +37,6 @@ const items = [
   { id: "cangue", to: 1910, names: ["neckCangue", "woodenCollar"] },
   { id: "judgeTable", names: ["courtBench", "magistrateDesk", "tribunal"] },
 ];
-
 const body = `
     case "book": fl(P([[-0.6, 0], [0.6, 0], [0.6, -0.25], [-0.6, -0.25]]), leather); fl(P([[-0.55, -0.25], [0.55, -0.25], [0.5, -0.3], [-0.5, -0.3]]), paper, { hatch: false }); fl(P([[-0.6, -0.3], [0.6, -0.3], [0.6, -0.4], [-0.6, -0.4]]), leather); ln([[-0.1, -0.33], [0.3, -0.36]], 0.8, gold); break;
     case "bookStack": [[0, red], [-0.1, blue], [0.08, green], [-0.05, leather]].forEach(([dx, col], i) => { const y = -i * 0.32; fl(rect(-0.7 + dx, y - 0.3, 0.7 + dx, y), col); fl(rect(-0.6 + dx, y - 0.25, 0.65 + dx, y - 0.05), paper, { hatch: false }); }); break;
@@ -77,5 +74,4 @@ const body = `
     case "prisonCart": fl(rect(-1.4, -0.9, 1.0, -0.7), wood); for (let i = 0; i < 9; i++) beam([[-1.3 + i * 0.28, -0.9], [-1.3 + i * 0.28, -2.4]], 0.05); beam([[-1.4, -2.4], [1.0, -2.4]], 0.08); woodWheel(-0.2, 0.7); beam([[1.0, -0.8], [2.2, -1.2]], 0.07); break;
     case "cangue": fl(rect(-1.0, -0.35, 1.0, 0), wood); fl(E(0, -0.18, 0.18, 0.15), black, { hatch: false }); ln([[-1.0, -0.18], [1.0, -0.18]], 0.4); fl(rect(-0.8, -0.32, -0.4, -0.05), paper, { hatch: false }); break;
     case "judgeTable": fl(rect(-1.8, -1.3, 1.8, 0), red); fl(rect(-2.0, -1.45, 2.0, -1.3), dark); clip(rect(-1.8, -1.3, 1.8, 0), () => { for (let x = -1.2; x < 1.8; x += 1.2) ln([[x, -1.3], [x, 0]], 0.5, gold); }); fl(rect(0.6, -1.65, 1.0, -1.45), dark); beam([[-0.8, -1.55], [-0.3, -1.6]], 0.08, dark); break;`;
-
 export const MOTION_LIBRARY_CULTURE: MotionLibraryPart = { part: "lib_culture", fn: "prop", items, js: motionLibraryPart(items, body, 0.9) };

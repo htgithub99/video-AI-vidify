@@ -46,8 +46,6 @@ const MotionHtmlStill = ({ document }: { document: MotionRemotionSpec }) => {
   const [stored, setStored] = useState(false);
   const shownWhen = (on: boolean) => cn(MOTION_STYLES.MEDIA_THUMB_FILL, on ? MOTION_STYLES.MEDIA_SHOWN : MOTION_STYLES.MEDIA_HIDDEN);
   const storedDone = useMemo(() => () => setStored(true), []);
-  // The stored picture is used while it shows the current "Cách dựng"; otherwise the scene itself is drawn, and the
-  // stored picture (an older look) stands in until that drawing is done, so a card is never an empty box.
   const live = !!html && (!html.thumbnail || (!!html.spec && html.render !== motionFigureRenderKey(motionFigureRenderOf(document, document.scenes[0] as MotionFigureScene))));
   const picture = html?.thumbnail ? (
     <img src={html.thumbnail} alt={document.title} onLoad={live ? storedDone : done} onError={live ? storedDone : done} className={cn(shownWhen(live ? stored && !ready : ready), live && MOTION_STYLES.MEDIA_THUMB_UNDER)} style={{ width: RT_MAINTENANCE.VALUE_100, aspectRatio: motionAspect(document.width, document.height), objectFit: RT_MAINTENANCE.CONTAIN }} />

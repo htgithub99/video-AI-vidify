@@ -2,11 +2,11 @@ import _ from "lodash";
 import { REUP_TEXT } from "../constants/reupConfig.js";
 import type { ReupMediaItem, ReupShot, ReupSubLine, ReupTranscript, ReupWord } from "../types/reup.js";
 const SENTENCE_END = /[.!?…。！？]["')\]]*$/u;
-const norm = (w: string): string => w.toLowerCase().normalize("NFC").replace(/[^\p{L}\p{N}]+/gu, "");
-/**
- * Phrases a script can pick from: words run together until a pause longer than `gap`, a sentence end, or `max`
- * seconds. Each phrase keeps its word range so cuts land between words.
- */
+const norm = (w: string): string =>
+  w
+    .toLowerCase()
+    .normalize("NFC")
+    .replace(/[^\p{L}\p{N}]+/gu, "");
 export const reupPhrases = (words: ReupWord[], gap: number, max: number): ReupTranscript["phrases"] => {
   const out: ReupTranscript["phrases"] = [];
   let from = 0;
@@ -20,10 +20,6 @@ export const reupPhrases = (words: ReupWord[], gap: number, max: number): ReupTr
   });
   return out;
 };
-/**
- * Start time of each cue inside a narration, from the recogniser's words: cue texts are matched to the spoken words
- * in order (tolerant to small recognition errors); without usable words, time is shared by text length.
- */
 export const reupAlignCues = (cues: string[], words: ReupWord[], total: number): number[] => {
   const lengths = cues.map((c) => Math.max(1, c.replace(/\s+/g, "").length));
   const byLength = (): number[] => {
@@ -61,19 +57,13 @@ export const reupAlignCues = (cues: string[], words: ReupWord[], total: number):
   }
   return starts.map((s, i) => (i && s <= starts[i - 1] ? byLength()[i] : s));
 };
-/** Item covering a moment of a folder's virtual timeline. */
 export const reupItemAt = (items: ReupMediaItem[], t: number): ReupMediaItem | undefined => items.find((it) => t >= it.start && t < it.end) || (t >= (_.last(items)?.end ?? 0) ? _.last(items) : undefined);
-/** A shot of the virtual timeline split at item borders, as offsets inside each item. */
-export const reupShotPieces = (items: ReupMediaItem[], shot: ReupShot): { item: ReupMediaItem; from: number; to: number }[] =>
-  items
-    .filter((it) => it.end > shot.start + 0.01 && it.start < shot.end - 0.01)
-    .map((it) => ({ item: it, from: _.round(Math.max(shot.start, it.start) - it.start, 3), to: _.round(Math.min(shot.end, it.end) - it.start, 3) }));
+export const reupShotPieces = (items: ReupMediaItem[], shot: ReupShot): { item: ReupMediaItem; from: number; to: number }[] => items.filter((it) => it.end > shot.start + 0.01 && it.start < shot.end - 0.01).map((it) => ({ item: it, from: _.round(Math.max(shot.start, it.start) - it.start, 3), to: _.round(Math.min(shot.end, it.end) - it.start, 3) }));
 const assTime = (s: number): string => {
   const cs = Math.max(0, Math.round(s * 100));
   return `${Math.floor(cs / 360000)}:${String(Math.floor(cs / 6000) % 60).padStart(2, "0")}:${String(Math.floor(cs / 100) % 60).padStart(2, "0")}.${String(cs % 100).padStart(2, "0")}`;
 };
 const assColor = (hex: string): string => `&H00${hex.slice(5, 7)}${hex.slice(3, 5)}${hex.slice(1, 3)}`.toUpperCase();
-/** ASS header with one style (its line after "Style: "). */
 const assHead = (width: number, height: number, style: string): string[] => [
   "[Script Info]",
   "ScriptType: v4.00+",
@@ -88,21 +78,16 @@ const assHead = (width: number, height: number, style: string): string[] => [
   "[Events]",
   "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
 ];
-const assText = (text: string): string => text.replace(/[{}\\]/g, "").replace(/\s+/g, " ").trim();
-/**
- * Subtitle text a cue holds: as much as fits `rows` lines across the subtitle width (Video Motion's look: 4 % of the
- * height, 86 % of the width), counted in characters with an average glyph width per script.
- */
+const assText = (text: string): string =>
+  text
+    .replace(/[{}\\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 export const reupSubChars = (aspect: string, lang = "en"): number => {
   const [w, h] = aspect === "9:16" ? [9, 16] : [16, 9];
   const glyph = lang === "ja" || lang === "ko" ? REUP_TEXT.SUB_GLYPH_CJK : REUP_TEXT.SUB_GLYPH;
   return Math.max(12, Math.floor((w * REUP_TEXT.SUB_WIDTH) / (h * REUP_TEXT.SUB_SIZE * glyph))) * REUP_TEXT.SUB_ROWS;
 };
-/**
- * Narration cut into subtitle cues of at most `maxChars` characters: whole clauses packed together, a longer clause
- * split evenly between words (or characters for scripts written without spaces). The renderer wraps a cue across
- * the subtitle width, so lines break by width, not by a word count.
- */
 export const reupSubtitleLines = (text: string, maxChars: number): string[] => {
   const clean = text.replace(/\s+/g, " ").trim();
   if (!clean) return [];
@@ -131,19 +116,20 @@ export const reupSubtitleLines = (text: string, maxChars: number): string[] => {
   for (const piece of clauses.flatMap(split)) {
     const last = out[out.length - 1];
     const joined = last && (spaced ? `${last} ${piece}` : `${last}${piece}`);
-    // Clauses share a cue while it fits; a cue never ends on a stub ("Well,").
     if (last && joined && (joined.length <= maxChars || last.length < 8)) out[out.length - 1] = joined;
     else out.push(piece);
   }
   return out;
 };
-/**
- * Narration cut into sentences, each read as its own clip (like Video Motion's per-line voice): the clips' lengths then
- * time subtitles and picture changes exactly, with no listening back. Sentences over `max` characters are cut at a
- * comma, then a space; very short ones join the next so the read keeps its flow.
- */
 export const reupSentences = (text: string, max: number, min = 12): string[] => {
-  const parts = (text.replace(/\s+/g, " ").trim().match(/[^.!?…。！？]+(?:[.!?…。！？]+["')\]」』]*|$)/gu) || []).map((p) => p.trim()).filter(Boolean);
+  const parts = (
+    text
+      .replace(/\s+/g, " ")
+      .trim()
+      .match(/[^.!?…。！？]+(?:[.!?…。！？]+["')\]」』]*|$)/gu) || []
+  )
+    .map((p) => p.trim())
+    .filter(Boolean);
   const cut = (sentence: string): string[] => {
     const out: string[] = [];
     let rest = sentence;
@@ -165,19 +151,11 @@ export const reupSentences = (text: string, max: number, min = 12): string[] => 
   }
   return merged;
 };
-/** Subtitle lines of a narration read clip by clip: each clip's lines share its exact span (by text length inside it). */
-export const reupClipSubtitles = (clips: { text: string; start: number; end: number }[], maxChars: number): ReupSubLine[] =>
-  clips.flatMap((clip) => reupSubtitleTimes(reupSubtitleLines(clip.text, maxChars), [], clip.end - clip.start).map((line) => ({ text: line.text, start: _.round(clip.start + line.start, 2), end: _.round(clip.start + line.end, 2) })));
-/** Subtitle lines timed inside one narration: starts matched to the spoken words, each line held until the next. */
+export const reupClipSubtitles = (clips: { text: string; start: number; end: number }[], maxChars: number): ReupSubLine[] => clips.flatMap((clip) => reupSubtitleTimes(reupSubtitleLines(clip.text, maxChars), [], clip.end - clip.start).map((line) => ({ text: line.text, start: _.round(clip.start + line.start, 2), end: _.round(clip.start + line.end, 2) })));
 export const reupSubtitleTimes = (lines: string[], words: ReupWord[], total: number): ReupSubLine[] => {
   const starts = lines.length > 1 ? reupAlignCues(lines, words, total) : [0];
   return lines.map((text, i) => ({ text, start: starts[i], end: _.round(i + 1 < lines.length ? Math.max(starts[i] + 0.3, starts[i + 1] - 0.05) : total, 2) }));
 };
-/**
- * Narration subtitles (ASS) in Video Motion's look: bold, 4 % of the frame height, white with a thin dark outline and a
- * faint shadow, wrapped across 86 % of the width, 4 % above the bottom (shorts sit higher, clear of the app's
- * buttons; `lift` raises them above captions).
- */
 export const reupSubtitleAss = (lines: ReupSubLine[], opt: { width: number; height: number; font: string; lift?: number }): string => {
   const T = REUP_TEXT;
   const size = Math.max(T.SUB_MIN_PX, Math.round(opt.height * T.SUB_SIZE));
@@ -189,10 +167,6 @@ export const reupSubtitleAss = (lines: ReupSubLine[], opt: { width: number; heig
   const events = lines.filter((l) => l.end > l.start && assText(l.text)).map((l) => `Dialogue: 0,${assTime(l.start)},${assTime(l.end)},S,,0,0,0,,${assText(l.text)}`);
   return [...head, ...events, ""].join("\n");
 };
-/**
- * Karaoke subtitles (ASS): a few words per line, each word lights up in the brand colour while it is spoken.
- * `words` are on the output timeline; `cut` marks the first word after a jump cut (a new line starts there).
- */
 export const reupKaraokeAss = (words: (ReupWord & { cut?: boolean })[], opt: { width: number; height: number; font: string; color: string; perLine: number; gap: number }): string => {
   const size = Math.round(Math.min(opt.width, opt.height) * 0.075);
   const lines: ReupWord[][] = [];
@@ -204,7 +178,15 @@ export const reupKaraokeAss = (words: (ReupWord & { cut?: boolean })[], opt: { w
   const head = assHead(opt.width, opt.height, `K,${opt.font},${size},${assColor(opt.color)},&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,${Math.round(size * 0.09)},${Math.round(size * 0.05)},2,40,40,${Math.round(opt.height * 0.2)},1`);
   const events = lines.map((line) => {
     const start = line[0].s;
-    const text = line.map((w, i) => `{\\k${Math.max(1, Math.round(((line[i + 1]?.s ?? w.e) - w.s) * 100))}}${w.w.trim().toUpperCase().replace(/[{}\\]/g, "")}`).join(" ");
+    const text = line
+      .map(
+        (w, i) =>
+          `{\\k${Math.max(1, Math.round(((line[i + 1]?.s ?? w.e) - w.s) * 100))}}${w.w
+            .trim()
+            .toUpperCase()
+            .replace(/[{}\\]/g, "")}`,
+      )
+      .join(" ");
     return `Dialogue: 0,${assTime(start)},${assTime(_.last(line)!.e + 0.15)},K,,0,0,0,,${text}`;
   });
   return [...head, ...events, ""].join("\n");

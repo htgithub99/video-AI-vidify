@@ -52,30 +52,16 @@ export const VIDEO_EXPORT_AI_CLIP_CONSTANTS = {
   FIELD_MESSAGE: "message",
   FIELD_CANCEL_REQUESTED: "cancelRequested",
 } as const;
-export const VIDEO_EXPORT_AI_CLIP_GEMINI_ASPECT: Record<VideoExportAspectRatio, VideoExportAspectRatio> = {
-  [VideoExportAspectRatio.HORIZONTAL_16_9]: VideoExportAspectRatio.HORIZONTAL_16_9,
-  [VideoExportAspectRatio.VERTICAL_9_16]: VideoExportAspectRatio.VERTICAL_9_16,
-  [VideoExportAspectRatio.SQUARE_1_1]: VideoExportAspectRatio.HORIZONTAL_16_9,
-};
+export const VIDEO_EXPORT_AI_CLIP_GEMINI_ASPECT: Record<VideoExportAspectRatio, VideoExportAspectRatio> = { [VideoExportAspectRatio.HORIZONTAL_16_9]: VideoExportAspectRatio.HORIZONTAL_16_9, [VideoExportAspectRatio.VERTICAL_9_16]: VideoExportAspectRatio.VERTICAL_9_16, [VideoExportAspectRatio.SQUARE_1_1]: VideoExportAspectRatio.HORIZONTAL_16_9 };
 export const VIDEO_EXPORT_AI_CLIP_FILTERS = {
   FPS: (fps: number) => `fps=${fps}`,
   SILENCE_SOURCE: (sampleRate: number) => `anullsrc=r=${sampleRate}:cl=stereo`,
-  CLIP_AUDIO: (sampleRate: number, durationSeconds: number, fadeOutStartSeconds: number, fadeSeconds: number) =>
-    `aresample=${sampleRate},aformat=sample_fmts=fltp:channel_layouts=stereo,atrim=0:${durationSeconds.toFixed(6)},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fadeSeconds.toFixed(3)},afade=t=out:st=${Math.max(0, fadeOutStartSeconds).toFixed(3)}:d=${fadeSeconds.toFixed(3)}`,
+  CLIP_AUDIO: (sampleRate: number, durationSeconds: number, fadeOutStartSeconds: number, fadeSeconds: number) => `aresample=${sampleRate},aformat=sample_fmts=fltp:channel_layouts=stereo,atrim=0:${durationSeconds.toFixed(6)},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=${fadeSeconds.toFixed(3)},afade=t=out:st=${Math.max(0, fadeOutStartSeconds).toFixed(3)}:d=${fadeSeconds.toFixed(3)}`,
   AMIX_TWO: "[0:a][1:a]amix=inputs=2:duration=shortest:dropout_transition=2:normalize=0[aout]",
-  TRIM_VIDEO_SEGMENT: (inputIndex: number, startFrame: number, endFrame: number, fps: number, pixelFormat: string, labelIndex: number) =>
-    `[${inputIndex}:v]trim=start_frame=${startFrame}:end_frame=${endFrame},setpts=PTS-STARTPTS,settb=AVTB,fps=${fps},format=${pixelFormat}[s${labelIndex}]`,
+  TRIM_VIDEO_SEGMENT: (inputIndex: number, startFrame: number, endFrame: number, fps: number, pixelFormat: string, labelIndex: number) => `[${inputIndex}:v]trim=start_frame=${startFrame}:end_frame=${endFrame},setpts=PTS-STARTPTS,settb=AVTB,fps=${fps},format=${pixelFormat}[s${labelIndex}]`,
 } as const;
-export const VIDEO_EXPORT_AI_CLIP_FORMAT = {
-  COUNT_LABEL: (label: string, count: number) => `${label} (${count})`,
-  CONTINUE_LABEL: (label: string, remaining: number, total: number) => `${label} (${remaining}/${total})`,
-  RETRY_FAILED_LABEL: (label: string, count: number) => (count > 1 ? `${label} (${count})` : label),
-} as const;
-export const VIDEO_EXPORT_AI_CLIP_REGEX = {
-  CLIP_ID: /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
-  IMAGE_DATA_URL: /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=]+$/i,
-  DATA_URL_PREFIX: /^data:[^;]+;base64,/i,
-} as const;
+export const VIDEO_EXPORT_AI_CLIP_FORMAT = { COUNT_LABEL: (label: string, count: number) => `${label} (${count})`, CONTINUE_LABEL: (label: string, remaining: number, total: number) => `${label} (${remaining}/${total})`, RETRY_FAILED_LABEL: (label: string, count: number) => (count > 1 ? `${label} (${count})` : label) } as const;
+export const VIDEO_EXPORT_AI_CLIP_REGEX = { CLIP_ID: /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i, IMAGE_DATA_URL: /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=]+$/i, DATA_URL_PREFIX: /^data:[^;]+;base64,/i } as const;
 export const VIDEO_EXPORT_AI_CLIP_PROMPTS = {
   AUTO: "Create a short video from the attached image. First study the image: its subject, mood, lighting and composition. Then animate it the way a polished CapCut video effect would, choosing the motion that suits this exact image best, such as a slow cinematic push in, gentle parallax between foreground and background, drifting light or particles, and natural movement of hair, cloth, water, smoke or leaves. Keep the original composition, subjects, colors and art style unchanged. Do not add text, logos, people or new objects. Keep the camera smooth and the motion calm enough to loop well behind music.",
   WITH_NOTE: (note: string) => `Create a short video from the attached image. Effect requested: ${note}. Keep the original composition, subjects, colors and art style unchanged unless the request says otherwise. Do not add text or logos. Keep the motion smooth so the clip loops well behind music.`,

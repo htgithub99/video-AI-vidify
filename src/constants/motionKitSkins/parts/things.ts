@@ -1,5 +1,3 @@
-// Single things for every skin (units of R, ground y = 0): monuments and gallows, farm and harbour gear, and the small
-// objects stories point at (crown, skull, key, clock, phone...), drawn as things standing on the ground, not as icons.
 export const MOTION_KIT_THING_KINDS = ["wheel", "column", "obelisk", "gallows", "guillotine", "stocks", "anchor", "saddle", "plow", "tomb", "arch", "sled", "batteringRam", "lute", "blackboard", "sail", "crown", "skull", "clock", "globe", "phone", "computer", "key", "lock", "medal", "trophy", "hourglass", "calendar", "document", "bulb", "scale"];
 export const SKIN_PART_THINGS = `(c, o, K) => {
   const kind = o.kind;

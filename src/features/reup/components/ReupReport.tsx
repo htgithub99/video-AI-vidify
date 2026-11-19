@@ -5,7 +5,6 @@ import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupTexts } from "../constants/reupTexts.js";
 import type { ReupReport as Report } from "../types/reup.js";
 const ICON = { ok: ShieldCheck, review: ShieldQuestion, risk: ShieldAlert } as const;
-/** The upload check against YouTube's reused / mass-produced content rules: overall verdict, then each finding. */
 export const ReupReport: FC<{ report: Report; text: ReupTexts }> = ({ report, text }) => {
   const Icon = ICON[report.level];
   return (

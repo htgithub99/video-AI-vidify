@@ -16,11 +16,8 @@ export const MotionMediaPlaceholder: FC<{ width?: number; height?: number }> = (
   </div>
 );
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-/** "16:9"-style label for the player badge. */
 export const motionRatioLabel = (width: number, height: number): string => {
   const d = gcd(Math.round(width), Math.round(height)) || 1;
   return `${Math.round(width) / d}:${Math.round(height) / d}`;
 };
-export const MotionExportedVideo: FC<{ url: string; width?: number; height?: number }> = ({ url, width, height }) => (
-  <StudioVideoPlayer src={url} aspect={motionAspect(width, height)} badge={width && height ? motionRatioLabel(width, height) : undefined} loadingIcon={MOTION_LOADING_GLYPH} />
-);
+export const MotionExportedVideo: FC<{ url: string; width?: number; height?: number }> = ({ url, width, height }) => <StudioVideoPlayer src={url} aspect={motionAspect(width, height)} badge={width && height ? motionRatioLabel(width, height) : undefined} loadingIcon={MOTION_LOADING_GLYPH} />;

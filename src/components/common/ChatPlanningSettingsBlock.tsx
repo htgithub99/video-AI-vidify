@@ -84,7 +84,7 @@ const resolveBadgeSummary = (isApiOnly: boolean, provider: AiPlanningFallbackPro
   const modeText = chromeHeadless ? texts.PLANNING_CHROME_HIDDEN : texts.PLANNING_CHROME_VISIBLE;
   return SOURCE_TEMPLATE_SYMBOL_32(name, modeText);
 };
-export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, roomOnly = false, extraControl , multiRoom, onMultiRoomChange, allowFallback, onAllowFallbackChange }: ChatPlanningSettingsBlockProps) {
+export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, roomOnly = false, extraControl, multiRoom, onMultiRoomChange, allowFallback, onAllowFallbackChange }: ChatPlanningSettingsBlockProps) {
   const texts = CINEMATIC_SETUP_TEXTS[currentLang] || CINEMATIC_SETUP_TEXTS.vi;
   const isApiOnly = _.isEqual(executionMode, AiPlanningExecutionMode.ApiOnly);
   const resolvedProvider = _.isEqual(provider, AiPlanningFallbackProvider.Disabled) ? AiPlanningFallbackProvider.GeminiChat : provider;

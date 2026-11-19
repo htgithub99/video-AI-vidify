@@ -4,7 +4,6 @@ import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { STUDIO_CONFIRM as C } from "../../constants/studioTheme.js";
 import { SOURCE_TEXT_BUTTON, SOURCE_TEXT_DANGER, SOURCE_TEXT_OUTLINE, SOURCE_TEXT_SM } from "../../constants/sourceText.js";
-
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,8 +16,6 @@ interface ConfirmDeleteModalProps {
   busy?: boolean;
   children?: ReactNode;
 }
-
-/** The one delete confirmation dialog shared by every screen. */
 export const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, title, message, warning, cancelLabel, confirmLabel, busy, children }: ConfirmDeleteModalProps) => (
   <Modal
     isOpen={isOpen}

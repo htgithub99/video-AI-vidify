@@ -142,7 +142,7 @@ export const tagAiAvailability = <T>(error: T, found: AiAvailabilityClass, exhau
 };
 const untilFor = (kind: AiUnavailableKind, provider: string, text: string): number => {
   const parsed = parseAiResetAt(text);
-  const fallback = Date.now() + (kind === A.KIND.QUOTA ? A.PROVIDER_QUOTA_MS[provider] ?? A.DEFAULT_MS.quota : A.DEFAULT_MS[kind]);
+  const fallback = Date.now() + (kind === A.KIND.QUOTA ? (A.PROVIDER_QUOTA_MS[provider] ?? A.DEFAULT_MS.quota) : A.DEFAULT_MS[kind]);
   const until = parsed ? parsed + A.RESET_PAD_MS : fallback;
   return Math.min(Date.now() + A.MAX_MS, Math.max(Date.now() + A.MIN_MS, until));
 };

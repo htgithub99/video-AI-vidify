@@ -16,7 +16,6 @@ export const MotionVisualModeField: FC<{ value: MotionVisualSettings; language: 
   const styles = Object.entries(V.PROFILES).map(([id, p]) => ({ id, name: p[lang], hint: p.hint[lang], preview: p.preview }));
   const movementTitle = MOTION_MOVEMENT_TEXT[lang].title;
   const movements = Object.entries(MOTION_MOVEMENT_OPTIONS).map(([id, m]) => ({ id, name: m.label[lang], hint: m.hint[lang], preview: m.preview }));
-  // Kept only when it differs from the drawing style's own movement, so switching styles keeps each style's default.
   const ownMovement = motionDrawStyle(value.profileId).movement || "smooth";
   const layouts = Object.entries(L).map(([id, l]) => ({ id, name: l.label[lang], hint: l.hint[lang], preview: l.preview }));
   return (

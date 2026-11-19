@@ -1,7 +1,5 @@
 import { MOTION_MASTER as M } from "./motionMasterScale.js";
 import { MOTION_AIR_DISTANCE, MOTION_OBJECT_SIZE as Z } from "./motionObjectSize.js";
-// The scene engine: draws a scene spec (window.__motionSpec) with the figure table and the kit, in whatever drawing style
-// is chosen. Added to every scene page when it is shown (motionHtmlFigures), so a fix here reaches every scene at once.
 export const MOTION_SCENE_ENGINE = String.raw`(function () {
 const MASTER_STD = ${JSON.stringify({ SHOTS: M.SHOTS, GENRE: M.GENRE, PORTRAIT_WIDTH: M.PORTRAIT_WIDTH, THING: M.THING, LEAST_SCALE: M.LEAST_SCALE })};
 const SIZE_STD = ${JSON.stringify(Z)};

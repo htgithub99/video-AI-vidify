@@ -175,8 +175,10 @@ export const CHAT_ROOM_RECOVERY = {
   RETRY_NAME: /^(?:(?:refresh|autorenew|replay)\s+)?(?:thử lại|thử lại câu trả lời|tạo lại|làm lại|khôi phục|retry|try again|regenerate|redo)(?:\s|$)/iu,
   RETRY_MENU_NAME: /^(?:(?:refresh|autorenew|replay)\s+)?(?:khôi phục|thử lại|làm lại|tạo lại|regenerate|redo|retry)(?:\s|$)/iu,
   RETRY_MENU_SELECTOR: 'gem-menu[role="menu"]:visible, [role="menu"]:visible, .mat-mdc-menu-panel:visible, .cdk-overlay-pane:visible',
-  GEMINI_REGENERATE_SELECTOR: 'regenerate-button [data-test-id="regenerate-button"], [data-test-id="regenerate-button"], [data-test-id="regenerate-button"] button, [data-testid="regenerate-button"], [data-testid="regenerate-button"] button, regenerate-button gem-icon-button[fonticonname="refresh"], gem-icon-button[fonticonname="refresh"], gem-icon-button[fonticonname="refresh"] button, gem-icon-button[arialabel*="Khôi phục" i], gem-icon-button[arialabel*="Khôi phục" i] button, gem-icon-button[arialabel*="Làm lại" i], gem-icon-button[arialabel*="Làm lại" i] button, button[aria-label*="Khôi phục" i], button[aria-label*="Làm lại" i]',
-  GEMINI_RETRY_OPTION_SELECTOR: '[data-test-id="regenerate-option"], [data-testid="regenerate-option"], gem-menu-item[data-test-id="regenerate-option"]:has(mat-icon[fonticon="refresh"]), gem-menu-item[data-test-id="regenerate-option"]:has(mat-icon[data-mat-icon-name="refresh"]), gem-menu-item:has(mat-icon[fonticon="refresh"]), gem-menu-item:has(mat-icon[data-mat-icon-name="refresh"]), [role="menuitem"]:has(mat-icon[fonticon="refresh"]), [role="menuitem"]:has(mat-icon[data-mat-icon-name="refresh"]), button.mat-mdc-menu-item:has(mat-icon[fonticon="refresh"]), button.mat-mdc-menu-item:has(mat-icon[data-mat-icon-name="refresh"])',
+  GEMINI_REGENERATE_SELECTOR:
+    'regenerate-button [data-test-id="regenerate-button"], [data-test-id="regenerate-button"], [data-test-id="regenerate-button"] button, [data-testid="regenerate-button"], [data-testid="regenerate-button"] button, regenerate-button gem-icon-button[fonticonname="refresh"], gem-icon-button[fonticonname="refresh"], gem-icon-button[fonticonname="refresh"] button, gem-icon-button[arialabel*="Khôi phục" i], gem-icon-button[arialabel*="Khôi phục" i] button, gem-icon-button[arialabel*="Làm lại" i], gem-icon-button[arialabel*="Làm lại" i] button, button[aria-label*="Khôi phục" i], button[aria-label*="Làm lại" i]',
+  GEMINI_RETRY_OPTION_SELECTOR:
+    '[data-test-id="regenerate-option"], [data-testid="regenerate-option"], gem-menu-item[data-test-id="regenerate-option"]:has(mat-icon[fonticon="refresh"]), gem-menu-item[data-test-id="regenerate-option"]:has(mat-icon[data-mat-icon-name="refresh"]), gem-menu-item:has(mat-icon[fonticon="refresh"]), gem-menu-item:has(mat-icon[data-mat-icon-name="refresh"]), [role="menuitem"]:has(mat-icon[fonticon="refresh"]), [role="menuitem"]:has(mat-icon[data-mat-icon-name="refresh"]), button.mat-mdc-menu-item:has(mat-icon[fonticon="refresh"]), button.mat-mdc-menu-item:has(mat-icon[data-mat-icon-name="refresh"])',
   SNACKBAR_SELECTOR: 'bard-simple-snack-bar, mat-snack-bar-container, [role="alert"], [role="status"]',
   GEM_MENU_TRIGGER: "gemmenutrigger",
   MAT_MENU_TRIGGER_CLASS: "mat-mdc-menu-trigger",
@@ -185,7 +187,6 @@ export const CHAT_ROOM_RECOVERY = {
   ARIA_CONTROLS: "aria-controls",
   ARIA_DISABLED: "aria-disabled",
   POPUP_VALUES: ["true", "menu"],
-  /** Canned refusals that a Retry of the same turn often clears (Gemini's image filter also flips on a regenerate). */
   GENERIC_REFUSAL: /(?:chỉ là một mô hình ngôn ngữ|(?:just|only) (?:a |an )?(?:language|text[- ]based) model|can['’]t help with (?:that|this) image)/iu,
   TURN_SELECTOR: 'model-response, [data-message-author-role="assistant"], [data-testid="assistant-message"], .ds-message, [data-is-streaming]',
   CONTAINER_SELECTOR: 'model-response, article[data-testid^="conversation-turn-"]:has([data-message-author-role="assistant"]), [data-virtual-list-item-key]:has(.ds-message)',

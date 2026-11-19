@@ -1,6 +1,4 @@
-// Boats and road and rail vehicles not in the base kit (side view, front toward +x).
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "basketBoat", names: ["coracle", "thungChai", "roundBoat"], fit: "rigid" as const },
   { id: "dragonBoat", from: -300 },
@@ -21,11 +19,9 @@ const items = [
   { id: "camelCaravan", names: ["caravan"] },
   { id: "elephantHowdah", names: ["warElephant", "howdah"] },
 ];
-
 const helpers = `const water = (hw) => { for (let i = 0; i < 4; i++) { const x = -hw + 0.3 + i * (2 * hw - 0.6) / 3 + Math.sin(t + i) * 0.1; ln([[x, 0.15], [x + 0.35, 0.12], [x + 0.6, 0.15]], 0.45, T("#5a7a8a")); } };
   const cab = (x0, x1, top, col) => { fl(S([[x0, -0.5], [x0, top], [x1 - 0.4, top], [x1, top + 0.6], [x1 + 0.1, -0.5]]), col); fl(P([[x0 + 0.15, top + 0.12], [x1 - 0.45, top + 0.12], [x1 - 0.1, top + 0.6], [x0 + 0.15, top + 0.6]]), glass, { hatch: false }); };
   const animal = (kind2, x, s, extra) => { const part = K.part && K.part(kind2 === "horse" ? "horse" : "quad"); if (part) part(c, Object.assign({ kind: kind2, x: x * R, y: 0, r: R * s, facing: 1, pose: moving ? "walk" : "stand", t, seed: K.num(o.seed, 3) }, extra || {}), K); };`;
-
 const body = `
     case "basketBoat": water(1.2); fl(S([[-1.0, -0.6], [-0.9, 0.0], [0.9, 0.0], [1.0, -0.6]]), T("#4a3a28")); clip(S([[-1.0, -0.6], [-0.9, 0.0], [0.9, 0.0], [1.0, -0.6]]), () => { for (let x = -1.0; x < 1.0; x += 0.16) ln([[x, -0.6], [x + 0.08, 0]], 0.35, straw); }); fl(E(0, -0.6, 1.0, 0.12), straw); break;
     case "dragonBoat": water(3.0); fl(S([[-2.9, -0.5], [-2.5, 0.1], [2.4, 0.1], [2.8, -0.5]]), red); for (let i = 0; i < 12; i++) fl(E(-2.3 + i * 0.42, -0.3, 0.12, 0.08), gold, { hatch: false }); fl(S([[2.7, -0.5], [3.0, -1.3], [3.4, -1.25], [3.2, -0.95], [2.95, -0.45]]), red); ring(3.1, -1.15, 0.05, black); fl(S([[-2.8, -0.5], [-3.2, -1.1], [-2.9, -0.4]]), gold); for (let i = 0; i < 6; i++) beam([[-1.8 + i * 0.7, -0.4], [-2.1 + i * 0.7, 0.3]], 0.04); break;
@@ -45,5 +41,4 @@ const body = `
     case "dogSled": fl(rect(-2.2, -0.7, -0.6, -0.45), wood); beam([[-2.4, -0.05], [-0.4, -0.05], [-0.2, -0.3]], 0.05, dark); beam([[-2.2, -0.45], [-2.3, -1.2]], 0.05, dark); ln([[-0.6, -0.5], [2.6, -0.5]], 0.6, rope); [0.4, 1.6].forEach((x) => animal("wolf", x, 0.38, { color: "#a8a8b0" })); break;
     case "camelCaravan": [-2.4, 0, 2.4].forEach((x, i) => animal("camel", x, 0.55)); ln([[-1.6, -1.7], [-0.6, -1.8]], 0.5, rope); ln([[0.8, -1.7], [1.8, -1.8]], 0.5, rope); [-2.6, -0.2].forEach((x) => fl(E(x, -2.1, 0.45, 0.3), cloth)); break;
     case "elephantHowdah": animal("elephant", 0, 0.75); fl(S([[-0.9, -2.7], [-0.9, -3.3], [0.7, -3.3], [0.7, -2.7]]), red); fl(S([[-1.0, -3.3], [-0.1, -3.9], [0.8, -3.3]]), gold); fl(rect(-1.0, -2.75, 0.8, -2.55), gold); break;`;
-
 export const MOTION_LIBRARY_TRANSPORT: MotionLibraryPart = { part: "lib_transport", fn: "vehicle", items, js: motionLibraryPart(items, body, 1.8, helpers + `\n  const concrete = () => T(night ? "#7a7a7a" : "#a8a8a4");`) };

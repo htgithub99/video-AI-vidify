@@ -12,15 +12,7 @@ import { VIDEO_EXPORT_CONSTANTS } from "../../constants/videoExport.js";
 import { VIDEO_EXPORT_AI_CLIP_CONSTANTS, VIDEO_EXPORT_AI_CLIP_GEMINI_ASPECT, VIDEO_EXPORT_AI_CLIP_LOG, VIDEO_EXPORT_AI_CLIP_PROMPTS, VIDEO_EXPORT_AI_CLIP_REGEX, VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS } from "../../constants/videoExportAiClip.js";
 import { VideoExportAiClip, VideoExportAiClipInput, VideoExportAiClipJobState, VideoExportAiClipJobStatus, VideoExportAspectRatio } from "../../types/videoExport.js";
 type AiClipJob = VideoExportAiClipJobState & { cancelRequested: boolean };
-type StartAiClipJobParams = {
-  inputs: VideoExportAiClipInput[];
-  note: string;
-  aspectRatio: VideoExportAspectRatio;
-  provider?: AiPlanningFallbackProvider;
-  model?: AiPlanningChatModel;
-  executionMode?: AiPlanningExecutionMode;
-  chromeHeadless?: boolean;
-};
+type StartAiClipJobParams = { inputs: VideoExportAiClipInput[]; note: string; aspectRatio: VideoExportAspectRatio; provider?: AiPlanningFallbackProvider; model?: AiPlanningChatModel; executionMode?: AiPlanningExecutionMode; chromeHeadless?: boolean };
 const resolveAiClipEngine = (provider?: AiPlanningFallbackProvider, model?: AiPlanningChatModel): ImageGeneratorEngine => {
   if (provider === AiPlanningFallbackProvider.GrokChat) return ImageGeneratorEngine.GrokImagine;
   const baseModel = parseGeminiChatModel(model)?.model ?? model;

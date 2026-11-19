@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { MOTION_HTML_CAST as C } from "../constants/motionHtmlCast.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../types/motionVideo.js";
-const pick = <T>(list: readonly T[], key: string, salt: string): T => list[createHash(C.HASH).update(salt + key).digest()[0] % list.length];
+const pick = <T>(list: readonly T[], key: string, salt: string): T =>
+  list[
+    createHash(C.HASH)
+      .update(salt + key)
+      .digest()[0] % list.length
+  ];
 const mentions = (text: string, name: string): boolean => {
   const said = new Set(text.match(C.WORD) || []);
   const words = (name.toLowerCase().match(C.WORD) || []).filter((word) => !C.TITLES.test(word));

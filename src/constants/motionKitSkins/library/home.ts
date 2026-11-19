@@ -1,6 +1,4 @@
-// Furniture, lamps and household machines, kitchen ware and food (front or side view, ground y = 0).
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "mat", names: ["sleepingMat", "chieu", "tatami", "rug"], fit: "ground" as const },
   { id: "stool" },
@@ -40,11 +38,9 @@ const items = [
   { id: "wineCup", names: ["goblet", "chalice"], fit: "rigid" as const },
   { id: "gourd", names: ["waterGourd", "canteen", "flask"], fit: "rigid" as const },
 ];
-
 const helpers = `const legs4 = (x0, x1, top, wd) => { beam([[x0, top], [x0, 0]], wd || 0.08); beam([[x1, top], [x1, 0]], wd || 0.08); };
   const box = (x0, y0, x1, y1, col) => fl(rect(x0, y0, x1, y1), col || wood);
   const knob = (x, y) => ring(x, y, 0.05, gold);`;
-
 const body = `
     case "mat": fl(P([[-1.6, 0], [1.6, 0], [1.4, -0.18], [-1.4, -0.18]]), straw); for (let i = 0; i < 8; i++) ln([[-1.5 + i * 0.42, 0], [-1.3 + i * 0.4, -0.18]], 0.35); ln([[-1.5, -0.09], [1.5, -0.09]], 0.5, red); break;
     case "stool": fl(rect(-0.5, -1.0, 0.5, -0.85), wood); legs4(-0.4, 0.4, -0.85, 0.07); beam([[-0.4, -0.35], [0.4, -0.35]], 0.05); break;
@@ -83,5 +79,4 @@ const body = `
     case "teaSet": fl(E(0, -0.05, 1.1, 0.1), wood); fl(S([[-0.4, -0.1], [-0.45, -0.5], [-0.2, -0.7], [0.2, -0.7], [0.45, -0.5], [0.4, -0.1]]), T("#7a5a8a")); fl(P([[0.4, -0.35], [0.75, -0.6], [0.4, -0.2]]), T("#7a5a8a")); [-0.85, 0.85].forEach((x) => fl(S([[x - 0.15, -0.35], [x + 0.15, -0.35], [x + 0.1, -0.1], [x - 0.1, -0.1]]), white)); break;
     case "wineCup": fl(S([[-0.35, -0.95], [0.35, -0.95], [0.25, -0.55], [0.05, -0.45], [-0.05, -0.45], [-0.25, -0.55]]), gold); beam([[0, -0.45], [0, -0.1]], 0.06, gold); fl(E(0, -0.05, 0.28, 0.07), gold); break;
     case "gourd": fl(S([[-0.4, 0], [-0.5, -0.4], [-0.3, -0.75], [-0.15, -0.9], [-0.2, -1.1], [0, -1.3], [0.2, -1.1], [0.15, -0.9], [0.3, -0.75], [0.5, -0.4], [0.4, 0]]), T("#c8a04a")); ln([[-0.2, -0.95], [0.2, -0.95]], 0.8, red); break;`;
-
 export const MOTION_LIBRARY_HOME: MotionLibraryPart = { part: "lib_home", fn: "prop", items, js: motionLibraryPart(items, body, 0.9, helpers + `\n  const clay = () => T(night ? "#7a4a3a" : "#b8643e");`) };

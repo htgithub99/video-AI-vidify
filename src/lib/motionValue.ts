@@ -1,4 +1,3 @@
-
 export const canonicalMotionValue = (value: unknown): unknown =>
   Array.isArray(value)
     ? value.map(canonicalMotionValue)

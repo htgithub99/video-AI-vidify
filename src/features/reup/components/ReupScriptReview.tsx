@@ -11,13 +11,11 @@ import type { ReupScript } from "../types/reup.js";
 import { reupClock } from "./ReupControls.js";
 const SHOW_SHOTS = 10;
 const words = (text: string): number => text.split(/\s+/).filter(Boolean).length;
-/** Step 03 (stop 1): edit narration and on-screen titles; shots stay as planned and are shown as real frames. */
 export const ReupScriptReview: FC<{ studio: ReupStudio }> = ({ studio }) => {
   const { text, job } = studio;
   const [draft, setDraft] = useState<ReupScript | null>(job?.script || null);
   useEffect(() => setDraft(job?.script || null), [job?.id, job?.script]);
   const scenes = useMemo(() => new Map((job?.sceneMap?.segments || []).map((g) => [g.id, { start: g.start, end: g.end }])), [job?.sceneMap]);
-  // A moment's frame: the tile time itself (start = end), so the review shows what the line talks about.
   const moments = useMemo(() => new Map((job?.sceneMap?.segments || []).flatMap((g) => reupMoments(g).map((m) => [m.id, { start: m.t, end: m.t }] as const))), [job?.sceneMap]);
   if (!job || !draft || job.status !== "waiting-script") return null;
   const edit = (fn: (script: ReupScript) => void) =>
@@ -73,18 +71,17 @@ export const ReupScriptReview: FC<{ studio: ReupStudio }> = ({ studio }) => {
                   </>
                 ) : section.cues?.length ? (
                   section.cues.map((cue, k) => {
-                    // The picture each line plays over: its moment (narrated footage) or its whole item (photo reports).
                     const at = (cue.moment && moments.get(cue.moment)) ?? scenes.get(cue.segment);
                     return (
-                    <div key={`${cue.moment || cue.segment}-${k}`} className={S.ROW}>
-                      {at !== undefined && (
-                        <div className={S.SHOT}>
-                          {frame(at.start, at.end)}
-                          <p className={S.SHOT_TIME}>{reupClock(at.start)}</p>
-                        </div>
-                      )}
-                      <StudioTextarea className={cn(S.INPUT, S.TEXTAREA)} rows={2} aria-label={text.CUE} value={cue.text} onChange={(e) => edit((d) => void (d.outputs[o].sections[i].cues![k].text = e.target.value))} />
-                    </div>
+                      <div key={`${cue.moment || cue.segment}-${k}`} className={S.ROW}>
+                        {at !== undefined && (
+                          <div className={S.SHOT}>
+                            {frame(at.start, at.end)}
+                            <p className={S.SHOT_TIME}>{reupClock(at.start)}</p>
+                          </div>
+                        )}
+                        <StudioTextarea className={cn(S.INPUT, S.TEXTAREA)} rows={2} aria-label={text.CUE} value={cue.text} onChange={(e) => edit((d) => void (d.outputs[o].sections[i].cues![k].text = e.target.value))} />
+                      </div>
                     );
                   })
                 ) : (

@@ -26,11 +26,13 @@ const renamedBeats = (beats: MotionBeat[], analysis: MotionStoryAnalysis, log?: 
   return fixed.beats;
 };
 const countChapterUnits = (rows: any[]): number => rows.reduce((sum, row) => sum + speechUnits(String(row?.narration || "")), 0);
-// Last resort for length, with no AI call: while the text is over its limit, drop the sentence that carries the least
-// (fewest names and numbers for its length), never the first sentence of a beat and never a beat with its own utterances.
 export const motionTrimBeatsToUnits = <T extends { narration?: string; utterances?: unknown }>(beats: T[], max: number): { beats: T[]; dropped: number } => {
   const rows = beats.map((beat) => ({ ...beat }));
-  const sentences = (text: string) => text.split(W.OVER.SENTENCE).map((part) => part.trim()).filter(Boolean);
+  const sentences = (text: string) =>
+    text
+      .split(W.OVER.SENTENCE)
+      .map((part) => part.trim())
+      .filter(Boolean);
   let dropped = 0;
   while (dropped < W.OVER.MAX_DROPS && countChapterUnits(rows) > max) {
     let best: { row: number; index: number; score: number } | undefined;
@@ -253,7 +255,6 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
         const askPart = (text: string) => (opts.ai ? opts.ai(text, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : runMotionAi(text, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log));
         let rawPart = await askPart(partPrompt);
         if (!Array.isArray(rawPart?.beats) || !rawPart.beats.length) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN);
-        // The writer is held to the part's length here, while the text is fresh: one counted rewrite, kept only when shorter.
         const written = countChapterUnits(rawPart.beats);
         if (written > partMaxUnits * W.OVER.TOLERANCE) {
           opts.log?.(W.OVER.LOG(chapter.id, index + 1, written, partMaxUnits));
@@ -284,7 +285,6 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
   const raw = opts.draft?.inputKey === key && opts.draft.rows.length ? { beats: opts.draft.rows } : opts.ai ? await opts.ai(prompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : await runMotionAi(prompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log);
   let rows = raw.beats;
   if (!Array.isArray(rows)) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN);
-  // The writer gets one counted rewrite while the text is fresh; code only trims sentences when that is still too long.
   const written = countChapterUnits(rows);
   if (!stretch && opts.draft?.inputKey !== key && written > maxUnits * W.OVER.TOLERANCE) {
     opts.log?.(W.OVER.LOG(chapter.id, 1, written, maxUnits));
@@ -321,7 +321,9 @@ export const editMotionHtmlScript = async (source: MotionStorySource, analysis: 
         const beat = items.find((item) => item.id === finding.id);
         const budget = chapterBudgets.find((item) => item.chapterId === beat?.chapterId);
         const full = !!budget && budget.currentUnits >= budget.maxUnits;
-        const words = String(beat?.narration || "").split(CRAFT.WORD_SPLIT).filter(Boolean).length;
+        const words = String(beat?.narration || "")
+          .split(CRAFT.WORD_SPLIT)
+          .filter(Boolean).length;
         return { ...finding, maxWords: full ? words : Math.ceil(words * CRAFT.EDIT_GROWTH) + CRAFT.EDIT_SLACK };
       });
     return list.length ? { [CRAFT.NOTES_FIELD]: list } : {};
@@ -352,17 +354,7 @@ export const editMotionHtmlScript = async (source: MotionStorySource, analysis: 
           motionHtmlWritingDirection(analysis, opts.language),
           craft.edit,
           CRAFT.NOTES_RULE,
-          JSON.stringify({
-            ...fixFor(batch.items),
-            ...contextFor(batch.chapterId),
-            language: opts.language,
-            batch: `${idx + 1}${RT_MAINTENANCE.SLASH}${batches.length}`,
-            chapterBudget: focus ? undefined : chapterBudget,
-            chapter: chapter ? chapterInfo(chapter) : undefined,
-            beats: slim(batch.items),
-            source: batchSource,
-            renamed: analysis.renameEntities ? analysis.renameMap : undefined,
-          }),
+          JSON.stringify({ ...fixFor(batch.items), ...contextFor(batch.chapterId), language: opts.language, batch: `${idx + 1}${RT_MAINTENANCE.SLASH}${batches.length}`, chapterBudget: focus ? undefined : chapterBudget, chapter: chapter ? chapterInfo(chapter) : undefined, beats: slim(batch.items), source: batchSource, renamed: analysis.renameEntities ? analysis.renameMap : undefined }),
         ].join(RT_MAINTENANCE.NEWLINE);
         const checkpoint = motionTaskCheckpoint<any>(opts.scope, `${RT_MAINTENANCE.HTML_SCRIPT_EDIT_BATCH}${idx + 1}`, [batchPrompt]);
         let rawBatch = checkpoint.read();

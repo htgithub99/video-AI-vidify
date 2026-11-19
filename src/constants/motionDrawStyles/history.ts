@@ -1,9 +1,2 @@
 import type { MotionDrawStyleSpec } from "./types.js";
-export const HISTORY_DRAW_STYLE: MotionDrawStyleSpec = {
-  family: "history",
-  label: { vi: "Đầu tròn", en: "Round-head cartoon" },
-  hint: { vi: "Nhân vật đầu tròn kiểu OverSimplified, viền nâu sẫm, tông màu ấm", en: "Round-head OverSimplified-like figures, dark-brown outline, warm tone" },
-  kitLook: "outline",
-  proportion: "natural",
-  preview: "/motion-styles/history.webp?v=1114f",
-};
+export const HISTORY_DRAW_STYLE: MotionDrawStyleSpec = { family: "history", label: { vi: "Đầu tròn", en: "Round-head cartoon" }, hint: { vi: "Nhân vật đầu tròn kiểu OverSimplified, viền nâu sẫm, tông màu ấm", en: "Round-head OverSimplified-like figures, dark-brown outline, warm tone" }, kitLook: "outline", proportion: "natural", preview: "/motion-styles/history.webp?v=1114f" };

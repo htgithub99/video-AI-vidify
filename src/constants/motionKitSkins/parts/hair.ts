@@ -1,6 +1,3 @@
-// Hair for the sketch and comic skins, traced from the reference videos: a tufted cap that follows the skull,
-// a jagged fringe over the forehead and short sideburns (video 2 GIs, video 1 legionaries).
-// Hooks: skinPart('hair', kind, c, {o, hx, hy, r, side: 'back' | 'front'}). Back draws long hair, braids and buns behind the head; front draws the cap.
 export const SKIN_PART_HAIR = `(c, a, K) => {
   const { o, hx, hy, r } = a;
   const st = K.S(), h = o.hair || "short", w = K.LW(r), col = o.hairColor || "#3a2a20";

@@ -1,6 +1,10 @@
 import { MOTION_PLAN_VARIETY as V } from "../constants/motionPlanVariety.js";
 type Row = { id?: string; kind?: unknown; shot?: unknown; setting?: unknown };
-const norm = (value: unknown): string => String(value ?? V.NONE).toLowerCase().replace(V.SPACE, V.SPACE_ONE).trim();
+const norm = (value: unknown): string =>
+  String(value ?? V.NONE)
+    .toLowerCase()
+    .replace(V.SPACE, V.SPACE_ONE)
+    .trim();
 export const motionPlanVarietyIssues = (rows: Row[], texts: string[]): string[] => {
   const issues: string[] = [];
   rows.forEach((row, index) => {

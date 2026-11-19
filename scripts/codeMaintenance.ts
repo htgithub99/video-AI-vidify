@@ -26,8 +26,8 @@ export const parseCode = (source: string, file = "source.tsx"): ts.SourceFile =>
 export const getCommentRanges = (source: string, tree: ts.SourceFile): ts.CommentRange[] => {
   const ranges = new Map<number, ts.CommentRange>();
   const visit = (node: ts.Node): void => {
-    for (const range of [...(ts.getLeadingCommentRanges(source, node.pos) || []), ...(ts.getTrailingCommentRanges(source, node.end) || [])]) ranges.set(range.pos, range);
-    ts.forEachChild(node, visit);
+    for (const position of [node.pos, node.end]) for (const range of [...(ts.getLeadingCommentRanges(source, position) || []), ...(ts.getTrailingCommentRanges(source, position) || [])]) ranges.set(range.pos, range);
+    node.getChildren(tree).forEach(visit);
   };
   visit(tree);
   return [...ranges.values()].sort((a, b) => a.pos - b.pos);
@@ -44,6 +44,7 @@ export const removeCodeComments = (source: string, file: string): string => {
   }
   return result;
 };
+const BLANK_LINE = /(?<=\n)[\t ]*\r?\n/g;
 export const compactTrivia = (source: string, file: string): string => {
   const tree = parseCode(source, file);
   const protectedRanges: { pos: number; end: number }[] = [];
@@ -58,10 +59,10 @@ export const compactTrivia = (source: string, file: string): string => {
   let cursor = 0;
   let result = "";
   for (const range of protectedRanges.sort((a, b) => a.pos - b.pos)) {
-    result += source.slice(cursor, range.pos).replace(/^[\t ]*\r?\n/gm, "") + source.slice(range.pos, range.end);
+    result += source.slice(cursor, range.pos).replace(BLANK_LINE, "") + source.slice(range.pos, range.end);
     cursor = range.end;
   }
-  return result + source.slice(cursor).replace(/^[\t ]*\r?\n/gm, "");
+  return result + source.slice(cursor).replace(BLANK_LINE, "");
 };
 export const compactCode = async (source: string, file = "source.tsx"): Promise<string> => {
   const config = await prettier.resolveConfig(path.resolve(file));
@@ -86,5 +87,5 @@ export const compactCode = async (source: string, file = "source.tsx"): Promise<
     visit(parse(source, { sourceCodeLocationInfo: true }));
     for (const range of ranges.sort((a, b) => b.start - a.start)) prepared = prepared.slice(0, range.start) + prepared.slice(range.end);
   }
-  return prettier.format(prepared, { ...config, filepath: file, printWidth: 400 });
+  return prettier.format(prepared, { ...config, filepath: file, printWidth: 400, endOfLine: "auto" });
 };

@@ -8,7 +8,6 @@ const load = (src: string): Promise<HTMLImageElement> =>
     img.onerror = reject;
     img.src = src;
   });
-/** Draw `img` covering the box (centre crop). */
 const cover = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number): void => {
   const scale = Math.max(w / img.width, h / img.height);
   const sw = w / scale;
@@ -16,10 +15,6 @@ const cover = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, 
   ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
 };
 const fontOf = (css: string, size: number): string => css.replace("{size}", String(Math.round(size)));
-/**
- * One font size for the whole block: every line fits the width, and the stacked lines (with room above each for
- * Vietnamese stacked diacritics) fit the block height.
- */
 const fitBlock = (ctx: CanvasRenderingContext2D, css: string, lines: string[], maxWidth: number, maxHeight: number): number => {
   let size = REUP_THUMB.MAX_SIZE;
   const fits = (): boolean => {
@@ -29,7 +24,6 @@ const fitBlock = (ctx: CanvasRenderingContext2D, css: string, lines: string[], m
   while (size > REUP_THUMB.MIN_SIZE && !fits()) size -= 2;
   return size;
 };
-/** Lines bottom-up from `bottom`: white then yellow, a thin dark outline under the fill and a soft shadow (readable without filling in the diacritics). */
 const drawLines = (ctx: CanvasRenderingContext2D, css: string, lines: string[], x: number, bottom: number, maxWidth: number, align: CanvasTextAlign): void => {
   const size = fitBlock(ctx, css, lines, maxWidth, REUP_THUMB.H * REUP_TEXT.THUMB_BLOCK);
   const step = size * REUP_TEXT.THUMB_LINE_HEIGHT;
@@ -51,11 +45,9 @@ const drawLines = (ctx: CanvasRenderingContext2D, css: string, lines: string[], 
     ctx.fillText(line, x, y);
   });
 };
-/** A thumbnail drawn from real frames as a JPEG data URL: single frame, before/after split, or a circle reveal. */
 export const drawReupThumbnail = async (layout: ReupThumbLayout, frames: string[], lines: string[], lang = "en"): Promise<string> => {
   if (!frames[0]) return "";
   const css = REUP_CSS_FONTS[reupFontScript(lang)];
-  // System fonts are usually ready at once; waiting avoids drawing with a fallback face on a cold start.
   await document.fonts?.load(fontOf(css, 100), lines.join(" ")).catch(() => undefined);
   const [a, b] = await Promise.all([load(frames[0]), frames[1] ? load(frames[1]) : Promise.resolve(undefined)]);
   const { W, H } = REUP_THUMB;
@@ -91,7 +83,10 @@ export const drawReupThumbnail = async (layout: ReupThumbLayout, frames: string[
   shade.addColorStop(1, REUP_THUMB.SHADE);
   ctx.fillStyle = shade;
   ctx.fillRect(0, H * 0.45, W, H * 0.55);
-  const clean = lines.map((l) => l.trim().toLocaleUpperCase(lang)).filter(Boolean).slice(0, 2);
+  const clean = lines
+    .map((l) => l.trim().toLocaleUpperCase(lang))
+    .filter(Boolean)
+    .slice(0, 2);
   if (clean.length) drawLines(ctx, css, clean, layout === "split" ? W / 2 : 56, H - 56, layout === "split" ? W - 112 : layout === "circle" ? W - 600 : W - 112, layout === "split" ? "center" : "left");
   return canvas.toDataURL("image/jpeg", REUP_THUMB.QUALITY);
 };

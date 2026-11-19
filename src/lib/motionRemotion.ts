@@ -35,7 +35,6 @@ const remotionAssetAnchors = (raw: unknown, required: string[] = []): MotionVect
   if (missing.length) throw new Error(V.ANCHORS_MISSING(missing));
   return anchors;
 };
-// figures: the "Cách dựng" choice to preview with (the current one in the editor); defaults to the one the scenes were built with.
 export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState, figures?: { profileId?: unknown; proportion?: unknown; layout?: unknown; movement?: unknown }): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
   if (scene.renderer === RT_MAINTENANCE.HTML_CANVAS) {
     if (!scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status) || !state || state.settings.mode !== RT_MAINTENANCE.REMOTION) return { error: scene.htmlRequest?.error };

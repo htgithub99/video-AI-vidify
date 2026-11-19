@@ -1,6 +1,24 @@
-
 import { CHAT_PLANNING_RUNTIME as C } from "../../../../constants/chatPlanningRuntime.js";
-import { SOURCE_TEMPLATE_SYMBOL_75, SOURCE_TEMPLATE_SYMBOL_86, SOURCE_TEXT_CLOSE_2, SOURCE_TEMPLATE_PARTIAL, SOURCE_TEMPLATE_SEO_4, SOURCE_TEMPLATE_SYMBOL_33, SOURCE_TEMPLATE_SYMBOL_5, SOURCE_TEMPLATE_SYMBOL_51, SOURCE_TEXT_1, SOURCE_TEXT_AUDIO_MPEG, SOURCE_TEXT_AUDIO_WAV, SOURCE_TEXT_FAILED_TO_BUILD_MUSIC_MIXER_ZIP, SOURCE_TEXT_MANIFEST_JSON, SOURCE_TEXT_MUSIC_MIXER_MANIFEST, SOURCE_TEXT_SELECT_SAVE_FILE, SOURCE_TEXT_UTF_8, SOURCE_TEXT_WAV_2, SOURCE_TEXT_WX } from "../../../../constants/sourceText.js";
+import {
+  SOURCE_TEMPLATE_SYMBOL_75,
+  SOURCE_TEMPLATE_SYMBOL_86,
+  SOURCE_TEXT_CLOSE_2,
+  SOURCE_TEMPLATE_PARTIAL,
+  SOURCE_TEMPLATE_SEO_4,
+  SOURCE_TEMPLATE_SYMBOL_33,
+  SOURCE_TEMPLATE_SYMBOL_5,
+  SOURCE_TEMPLATE_SYMBOL_51,
+  SOURCE_TEXT_1,
+  SOURCE_TEXT_AUDIO_MPEG,
+  SOURCE_TEXT_AUDIO_WAV,
+  SOURCE_TEXT_FAILED_TO_BUILD_MUSIC_MIXER_ZIP,
+  SOURCE_TEXT_MANIFEST_JSON,
+  SOURCE_TEXT_MUSIC_MIXER_MANIFEST,
+  SOURCE_TEXT_SELECT_SAVE_FILE,
+  SOURCE_TEXT_UTF_8,
+  SOURCE_TEXT_WAV_2,
+  SOURCE_TEXT_WX,
+} from "../../../../constants/sourceText.js";
 import { execFile } from "child_process";
 import { randomUUID } from "crypto";
 import express, { Request, Response } from "express";
@@ -151,7 +169,20 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
         _.map(chunk, (item: any, index: number) => ({ index: offset + index + 1, title: item.title })),
         requestId,
       );
-      const result = await generatePlanningWithChatUi({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, model: req.body?.model, prompt, projectId: rankingId, workerId: lane === 0 ? undefined : CHAT_EXECUTION_POLICY.WORKER_ID(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX, lane), signal: planningRun.signal, chromeHeadless: req.body?.chromeHeadless === true, attachments, artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT, requestId, closeRoomOnComplete: false, allowDefaultGeminiModel: true });
+      const result = await generatePlanningWithChatUi({
+        provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat,
+        model: req.body?.model,
+        prompt,
+        projectId: rankingId,
+        workerId: lane === 0 ? undefined : CHAT_EXECUTION_POLICY.WORKER_ID(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX, lane),
+        signal: planningRun.signal,
+        chromeHeadless: req.body?.chromeHeadless === true,
+        attachments,
+        artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT,
+        requestId,
+        closeRoomOnComplete: false,
+        allowDefaultGeminiModel: true,
+      });
       const parsed = parseJson(result.text.replace(/^```(?:json)?\s*|\s*```$/g, C.EMPTY));
       const validScores = parsed.artifactType === MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT && parsed.requestId === requestId && Array.isArray(parsed.scores) && parsed.scores.length === chunk.length && parsed.scores.every((item: any) => Number.isInteger(item.index) && item.index >= offset + 1 && item.index <= offset + chunk.length && Number.isInteger(item.score) && item.score >= 0 && item.score <= 100);
       if (!validScores) throw new Error(MUSIC_MIXER_SERVER.ERROR_RANKING_RESPONSE);
@@ -288,9 +319,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
             if (parsed && typeof parsed.success === "boolean") {
               return resolve(parsed);
             }
-          } catch {
-            // Fall through to error handling below
-          }
+          } catch {}
         }
         if (error) {
           return resolve({ success: false, error: stderr?.trim() || error.message || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });

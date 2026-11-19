@@ -29,7 +29,6 @@ interface MotionSeoCardProps {
   thumbnails?: Record<number, MotionThumbnail>;
   onThumbnail?: (optionIndex: number) => void;
   thumbnailBusy?: number | null;
-  /** Extra lines at the end of the card (e.g. Reup's pinned comment and upload notes). */
   footer?: ReactNode;
 }
 export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail, thumbnailBusy, footer }) => {
@@ -64,14 +63,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
     if (seo) handleCopy(renderSeoOptionText(option, seo, index, t), MR.MOTION_TEMPLATE_SEO_FULL(index), t.copied);
   };
   const renderCopyField = (value: string, key: string, titleText?: string) => (
-    <MotionCopyButton
-      copied={copiedKey === key}
-      onClick={() => handleCopy(value, key, t.copied)}
-      title={copiedKey === key ? t.copied : titleText || t.copy}
-      className={MR.MOTION_TEXT_BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX}
-      copiedIconClassName={MR.W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0}
-      iconClassName={MR.MOTION_TEXT_W_3_5_H_3_5_SHRINK_0}
-    />
+    <MotionCopyButton copied={copiedKey === key} onClick={() => handleCopy(value, key, t.copied)} title={copiedKey === key ? t.copied : titleText || t.copy} className={MR.MOTION_TEXT_BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX} copiedIconClassName={MR.W_3_5_H_3_5_TEXT_EMERALD_400_SHRINK_0} iconClassName={MR.MOTION_TEXT_W_3_5_H_3_5_SHRINK_0} />
   );
   const chaptersText = seo ? chapterLines(seo) : "";
   const chapterRows = chaptersText

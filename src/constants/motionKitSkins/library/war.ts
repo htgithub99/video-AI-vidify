@@ -1,7 +1,4 @@
-// War gear that stands on the ground: shields and armour on stands, field fortifications, camp gear and what a battle
-// leaves behind. Siege engines and guns on wheels are vehicles (siege.ts).
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const items = [
   { id: "roundShield", to: 1500, names: ["vikingShield"], fit: "rigid" as const },
   { id: "kiteShield", from: 1000, to: 1250, names: ["normanShield"] },
@@ -19,9 +16,7 @@ const items = [
   { id: "foxhole", from: 1914, names: ["rifleTrench"], fit: "ground" as const },
   { id: "tunnelEntrance", names: ["tunnel", "tunnelHatch"], fit: "ground" as const },
   { id: "earthwork", names: ["rampartMound", "earthenWall"], fit: "ground" as const },
-  // A row of sharpened stakes driven in at a slant against cavalry (and the planted stakes of a camp's edge).
   { id: "stakeRow", to: 1918, names: ["stakes", "sharpenedStakes", "stakeLine", "archerStakes", "chevalDeFrise", "spikedStakes"], fit: "ground" as const },
-
   { id: "minefieldSign", from: 1915, names: ["mineSign"] },
   { id: "hitchingPost", names: ["horsePost"] },
   { id: "supplyCrates", names: ["supplies", "crateStack"] },
@@ -38,10 +33,8 @@ const items = [
   { id: "grave", names: ["fieldGrave", "freshGrave"], fit: "ground" as const },
   { id: "bodyCovered", names: ["coveredBody", "shroud"], fit: "ground" as const },
 ];
-
 const helpers = `const stand = (h) => { beam([[0, 0], [0, -h]], 0.07); beam([[-0.45, 0], [0.45, 0]], 0.08); beam([[-0.5, -h + 0.25], [0.5, -h + 0.25]], 0.06); };
   const flag = (x, y, col) => { const wv = Math.sin(t * 3) * 0.08; fl(S([[x, y], [x + 0.6, y + wv], [x + 1.2, y - 0.05], [x + 1.15, y + 0.5], [x + 0.6, y + 0.55 + wv], [x, y + 0.5]]), col || red, { hatch: false }); };`;
-
 const body = `
     case "roundShield": ring(0, -1.0, 1.0, wood); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; ln([[0, -1.0], [Math.cos(a) * 0.95, -1.0 + Math.sin(a) * 0.95]], 0.4, dark); } ring(0, -1.0, 0.25, iron); break;
     case "kiteShield": fl(S([[-0.6, -2.2], [0.6, -2.2], [0.65, -1.4], [0, 0], [-0.65, -1.4]]), T("#d8cfb8")); fl(S([[-0.12, -2.15], [0.12, -2.15], [0.1, -0.4], [-0.1, -0.4]]), red, { hatch: false }); break;
@@ -75,12 +68,7 @@ const body = `
     case "stretcher": [-1.4, 1.4].forEach((x) => beam([[x - 0.3, -0.5], [x + 0.3, -0.5]], 0.06)); beam([[-1.7, -0.5], [1.7, -0.5]], 0.07); fl(rect(-1.1, -0.62, 1.1, -0.45), cloth); [-1.0, 1.0].forEach((x) => beam([[x, -0.45], [x, 0]], 0.05)); break;
     case "grave": fl(S([[-1.1, 0], [-0.9, -0.35], [0.9, -0.35], [1.1, 0]]), T(night ? "#4a3e30" : "#7a6448")); beam([[-0.7, 0], [-0.7, -1.4]], 0.08); beam([[-1.0, -1.05], [-0.4, -1.05]], 0.07); break;
     case "bodyCovered": fl(S([[-1.4, 0], [-1.35, -0.35], [-0.8, -0.5], [0.6, -0.42], [1.2, -0.5], [1.45, -0.2], [1.4, 0]]), cloth); for (let i = 0; i < 4; i++) ln([[-0.9 + i * 0.5, -0.45], [-0.8 + i * 0.5, -0.05]], 0.35); break;`;
-
 export const MOTION_LIBRARY_WAR: MotionLibraryPart = { part: "lib_war", fn: "prop", items, js: motionLibraryPart(items, body, 1, helpers) };
-
-// Things in flight (no ground shadow), drawn lying nose toward +x: the scene turns them along their path. An arrow, a
-// crossbow bolt, a thrown spear, a cannon shot or a sling/catapult stone; an arrow with burning tow at its head; a volley
-// is many arrows in flight, drawn slanting along the box. ("arrows" are arrows stuck in the ground, not in flight.)
 const flying = [
   { id: "arrow", to: 1900, names: ["flyingArrow", "shotArrow", "arrowShot", "arrowInFlight"] },
   { id: "bolt", from: -400, to: 1650, names: ["crossbowBolt", "quarrel", "flyingBolt", "bolts"] },
@@ -98,6 +86,5 @@ const flyingBody = `
     case "slingStone": fl(S([[0.2, -0.85], [0.75, -0.8], [0.95, -0.45], [0.7, -0.15], [0.2, -0.18], [0.0, -0.5]]), stone); if (moving) streak(-0.05, -0.5, 1.8, 3); break;
     case "fireArrow": { c.save(); beam([[-1.6, -0.5], [1.2, -0.5]], 0.05, wood); fl(P([[1.2, -0.62], [1.6, -0.5], [1.2, -0.38]]), iron); [[-1.6, -0.62], [-1.6, -0.38]].forEach(([x, y]) => fl(P([[x, y], [x + 0.45, -0.5], [x + 0.15, y]]), red, { hatch: false })); glow(1.25, -0.5, 1.0); flame(1.15, -0.35, 0.45); c.restore(); break; }
     case "arrowVolley": for (let i = 0; i < 14; i++) { const x = -2.2 + (i % 7) * 0.7 + rnd(i) * 0.25, y = -0.6 - Math.floor(i / 7) * 0.9 - rnd(i + 9) * 0.5; c.save(); c.translate(x * R, y * R); c.rotate(0.45); beam([[-0.7, 0], [0.5, 0]], 0.03, wood); fl(P([[0.5, -0.07], [0.72, 0], [0.5, 0.07]]), iron); fl(P([[-0.7, -0.08], [-0.45, 0], [-0.7, 0.08]]), cloth, { hatch: false }); c.restore(); } break;`;
-// Speed lines behind a thing in flight: from x back by len, n lines around y.
 const flyingHelpers = `const streak = (x, y, len, n) => { for (let i = 0; i < n; i++) { const dy = (i - (n - 1) / 2) * 0.22; c.save(); c.globalAlpha *= 0.55; ln([[x, y + dy], [x - len * (1 - Math.abs(dy)), y + dy]], 0.35); c.restore(); } };`;
 export const MOTION_LIBRARY_WAR_FLYING: MotionLibraryPart = { part: "lib_warFlying", fn: "prop", items: flying, js: motionLibraryPart(flying, flyingBody, 0, flyingHelpers) };

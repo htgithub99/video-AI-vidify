@@ -12,7 +12,6 @@ export const RUNTIME_TEXT = {
   LAZY: "lazy" as const,
   PRELOAD_AUTO: "auto" as const,
   DEFAULT_ASPECT: "16/9",
-  // The drawing reports when it is done; this only ends a wait for one that never answers.
   STILL_READY_MS: 20000,
   BLOCK: "block",
   VALUE_111: "#111",

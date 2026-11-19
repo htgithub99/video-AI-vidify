@@ -25,7 +25,6 @@ export const reupJobDir = (id: string, ...parts: string[]): string => {
   fs.mkdirSync(parts.length && path.extname(_.last(parts) || "") ? path.dirname(dir) : dir, { recursive: true });
   return dir;
 };
-/** URL the app serves a job file at (data/output is mounted at /assets). */
 export const reupFileUrl = (file: string): string => REUP_DIR.ASSETS_URL + path.relative(reupRoot(), file).split(path.sep).map(encodeURIComponent).join("/");
 export const reupEmptySteps = (): Record<ReupStepId, ReupStepState> => Object.fromEntries(REUP_STEPS.map((id) => [id, { status: "idle", progress: 0, message: "" }])) as Record<ReupStepId, ReupStepState>;
 const writeNow = (entry: Entry): void => {
@@ -47,7 +46,6 @@ export const saveReupJob = (job: ReupJob, now = false): void => {
   if (now) writeNow(entry);
   else entry.timer ||= setTimeout(() => writeNow(entry), 800);
 };
-/** Job from memory, or from disk after a restart — a step that was running then is marked as interrupted. */
 export const getReupJob = (id: string): ReupJob | undefined => {
   if (!ID_RE.test(id)) return undefined;
   const live = entries.get(id);
@@ -56,15 +54,10 @@ export const getReupJob = (id: string): ReupJob | undefined => {
   if (!fs.existsSync(file)) return undefined;
   const job = parseJson(fs.readFileSync(file, "utf8")) as ReupJob | null;
   if (!job?.id) return undefined;
-  // Runs saved before the package became Video Motion's SEO options: the videos stand, the old package is dropped.
   if ((job.status as string) === "waiting-package") job.status = "done";
   if (job.package && !job.package.options) job.package = undefined;
-  // Packages written while the prompt still asked to mention the AI voice: those sentences go, the rest stays.
   for (const option of job.package?.options || []) option.description = reupStripToolNotes(option.description || "");
-  // Runs from before footage rights were split into own / licensed: treat as licensed (the stricter notes).
   job.rights ||= "licensed";
-  // Rules added since the run was saved take the type's values.
-  // Settings saved before the music library: "auto" or a mood of the old generated score now means the library.
   job.settings = { ...reupPresetRules(job.preset), ...job.settings, angle: job.settings.angle ?? "", music: reupMusicChoice(job.settings.music, (job.settings as { musicMood?: string }).musicMood, "off") };
   if (job.status === "running") {
     for (const step of REUP_STEPS) if (job.steps[step]?.status === "running") job.steps[step] = { ...job.steps[step], status: "error", message: REUP_LOG.INTERRUPTED };
@@ -102,7 +95,6 @@ export const learnReupUploadLimit = (provider: string, limit: number): void => {
   fs.mkdirSync(reupRoot(), { recursive: true });
   fs.writeFileSync(limitFile(), stringifyJson({ ...readReupUploadLimits(), [provider]: limit }));
 };
-/** Delete runs with every file they made (Results tab); a run still working is kept and reported as failed. */
 export const deleteReupJobs = async (ids: unknown): Promise<OutputDeleteResult> => {
   const list = _.uniq(_.castArray(ids ?? []).map((id) => _.toString(id))).filter((id) => ID_RE.test(id));
   const running = list.filter((id) => entries.get(id)?.job.status === "running");
@@ -114,7 +106,6 @@ export const deleteReupJobs = async (ids: unknown): Promise<OutputDeleteResult> 
   const result = await deleteOutputEntries(reupRoot(), gone);
   return { freedBytes: result.freedBytes, failed: [...running, ...result.failed] };
 };
-/** Past runs, newest first (for the Results tab, which pages through them). */
 export const listReupJobs = (limit = Infinity): ReupJob[] => {
   const root = reupRoot();
   if (!fs.existsSync(root)) return [];

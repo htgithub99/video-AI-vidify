@@ -1,4 +1,3 @@
-// A scene as the AI describes it (frame pixels 1280×720, keyframes over progress 0..1); the engine draws it with the kit.
 export type MotionSpecFn = "person" | "animal" | "vehicle" | "building" | "prop" | "tree" | "wall" | "bridge" | "sticker";
 export type MotionSpecLook = Record<string, unknown>;
 export interface MotionSpecKey extends MotionSpecLook {
@@ -31,9 +30,7 @@ export interface MotionSpecItem {
   on?: string;
   from?: number;
   to?: number;
-  // Open stretches of a wall, a palisade or a wagon fort ([x0, x1] pairs).
   gaps?: [number, number][];
-  // A thing in the air: how far it is (near, mid, far), its size follows.
   dist?: "near" | "mid" | "far";
   z?: number;
   focal?: boolean;
@@ -67,7 +64,6 @@ export interface MotionSpecDevice {
   groups?: { n: number; color?: string }[];
   w?: number;
   h?: number;
-  // A thought bubble's picture: a few library things drawn small inside it.
   items?: MotionSpecItem[];
 }
 export interface MotionSpecMap {
@@ -81,9 +77,7 @@ export interface MotionSpecMap {
 }
 export interface MotionSceneSpec {
   version: 1;
-  // Frame size in pixels when it is not 1280×720 (a portrait thumbnail).
   frame?: [number, number];
-  // The master frame's target height of the focal person, as a share of the measured frame side (motionMasterTarget).
   master?: number;
   horizon: number;
   time: "day" | "dawn" | "dusk" | "night";
@@ -98,12 +92,8 @@ export interface MotionSceneSpec {
   items: MotionSpecItem[];
   devices?: MotionSpecDevice[];
   map?: MotionSpecMap | null;
-  // A thumbnail's headline (the only text a thumbnail has).
   headline?: { lines: string[]; x: number; y: number; size: number; align?: "left" | "center" | "right"; accent?: string; color?: string; tilt?: number };
-  // The time header (date part only), filled by code from the plan.
   header?: string;
-  // Who acts on whom (the plan's INTERACT pairs, as mark ids): they may stand close.
   pairs?: [string, string][];
-  // The focal item's id (code keeps exactly one).
   focus?: string;
 }

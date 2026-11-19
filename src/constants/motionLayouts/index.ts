@@ -1,8 +1,4 @@
 export type MotionLayoutId = "auto" | "stage" | "cinematic" | "wide" | "medium" | "close";
-// A layout is a virtual camera over the scene's master shot: it never changes the drawing, only the shot sizes and how
-// the scene is cut into shots (the scene engine's camera reads the id). Shot sizes are the cinematographer's cut points
-// on the lead: full = head to toe, cowboy = mid-thigh, medium = just below the waist, mcu = mid-chest; wide = the whole
-// master shot.
 interface MotionLayoutSpec {
   label: { vi: string; en: string };
   hint: { vi: string; en: string };
@@ -17,6 +13,5 @@ export const MOTION_LAYOUTS: Record<MotionLayoutId, MotionLayoutSpec> = {
   close: { label: { vi: "Cận cảnh", en: "Close" }, hint: { vi: "Cú đầu trung cảnh để định hướng, sau đó cận giữa ngực, thấy rõ mặt", en: "A medium shot to set the place, then medium close-ups at mid-chest" }, preview: "/motion-layouts/close.webp?v=1116" },
 };
 export const MOTION_LAYOUT_DEFAULT: MotionLayoutId = "auto";
-// The AI's whole frame, with no camera (scene checks and thumbnails taken while drawing).
 export const MOTION_LAYOUT_WIDE: MotionLayoutId = "wide";
 export const MOTION_LAYOUT_TEXT = { vi: { title: "Bố cục" }, en: { title: "Layout" } } as const;

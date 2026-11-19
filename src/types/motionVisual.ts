@@ -1,7 +1,6 @@
 import type { MotionSpec } from "./motionVideo.js";
 import type { MotionSceneFormat, MotionSceneView } from "../constants/motionProfiles/framing.js";
 export type MotionRemotionProfile = keyof typeof import("../constants/motionDrawStyles/index.js").MOTION_DRAW_STYLES;
-;
 export type MotionScenePacing = "few" | "medium" | "many";
 export interface MotionRenderBehavior {
   version: 1;
@@ -26,7 +25,17 @@ export interface MotionRemotionEffect {
   direction?: "up" | "ground" | "left" | "right";
   intensity?: number;
 }
-export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; pacing?: MotionScenePacing; proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId; layout?: import("../constants/motionLayouts/index.js").MotionLayoutId; movement?: import("../constants/motionDrawStyles/types.js").MotionMovement };
+export type MotionVisualSettings = {
+  version: 1;
+  mode: "remotion";
+  engine: "remotion";
+  profileId: MotionRemotionProfile;
+  componentRevision: number;
+  pacing?: MotionScenePacing;
+  proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId;
+  layout?: import("../constants/motionLayouts/index.js").MotionLayoutId;
+  movement?: import("../constants/motionDrawStyles/types.js").MotionMovement;
+};
 export interface MotionVectorAsset {
   key: string;
   inputKey: string;
@@ -126,15 +135,12 @@ export interface MotionSceneActionPlan {
 }
 export interface MotionRemotionScene {
   renderer?: "html-canvas";
-  // The plan's picture: kind (here|cutaway|map|detail), shot size, place, the one sentence a viewer must take from it, the
-  // picture that says it and the devices (thought, emote, inset, count, spotlight, time, sound, speed, impact) that show the rest.
   kind?: string;
   shot?: string;
   setting?: string;
   message?: string;
   keyVisual?: string;
   devices?: string[];
-  // What the picture check found when a drawing missed the message (kept for the project's scorecard).
   offMessage?: string[];
   places?: string[];
   timeLabel?: string;
@@ -193,14 +199,12 @@ export interface MotionRemotionScene {
   requestKeys?: string[];
   speaking?: { entityId: string; startFrame: number; endFrame: number }[];
   cues?: number[];
-  /** Chapter title shown over the start of the chapter's first scene (lower third). */
   titleCard?: MotionTitleCard;
 }
 export interface MotionTitleCard {
   kicker: string;
   title: string;
   subtitle?: string;
-  /** How long the title stays on screen, from the scene's start. */
   seconds: number;
 }
 export interface MotionSceneLayer {
@@ -248,11 +252,9 @@ export interface MotionSceneDesign {
   continuityNotes?: string;
 }
 export interface MotionRemotionState {
-  // The scorecard of the last scene run (see motionSceneScorecard).
   scorecard?: import("../lib/motionSceneScorecard.js").MotionSceneScorecard;
   renderer?: "html-canvas";
   htmlPlanSources?: Record<string, string>;
-  // Look of each named person, taken from the first scene that drew them and applied to every later scene.
   castLooks?: Record<string, Record<string, string | number | boolean>>;
   htmlSfx?: boolean;
   version: number;
@@ -273,7 +275,6 @@ export interface MotionRemotionState {
   profileRevision?: number;
   invalidAssets?: Record<string, { asset: MotionVectorAsset; reason: string }>;
   renderBehavior?: MotionRenderBehavior;
-  // The year the story takes place (from the analysis), carried to scene previews.
   eraYear?: number;
   layoutRevision?: number;
   locations?: Record<string, { environment: string; backgroundKey?: string }>;
@@ -308,9 +309,7 @@ export interface MotionRemotionSpec {
   motion: boolean;
   profileId: MotionRemotionProfile;
   proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId;
-  // The layout's camera over every scene (the scenes themselves are drawn once, whatever the layout).
   layout?: import("../constants/motionLayouts/index.js").MotionLayoutId;
-  // How the figures and the camera move ("Chuyển động"): smooth, or the cut-out storybook.
   movement?: import("../constants/motionDrawStyles/types.js").MotionMovement;
   assets: Record<string, MotionVectorAsset>;
   scenes: MotionRemotionTimedScene[];
@@ -318,7 +317,6 @@ export interface MotionRemotionSpec {
   fontFamily?: string;
   music?: MotionSpec["music"];
   renderBehavior?: MotionRenderBehavior;
-  // The year the story takes place (from the analysis), so the figure kit builds bridges and the like as they were then.
   eraYear?: number;
   resolvedSettings?: { layoutRevision: number; effectRevision: number; sceneRevision?: number; behavior: MotionRenderBehavior };
 }

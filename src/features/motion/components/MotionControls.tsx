@@ -187,7 +187,6 @@ export const MotionProgressBar: FC<{ progress?: number; minimum?: number; classN
     <div className={animated ? MOTION_STYLES.H_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_VIA_PINK_500_TO_PURPLE_500_ROUNDED_FULL_ANIMATE_PULSE : MOTION_STYLES.H_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_VIA_FUCHSIA_500_TO_PINK_500_TRANSITION_ALL_DURATION_300} style={{ width: formatMotionProgress(progress, minimum) }} />
   </div>
 );
-// The motion screen's one loading glyph (the Tạo video button's spinning sparkle): every spinner on the screen uses it.
 export const MOTION_LOADING_GLYPH = Sparkles;
 export const MotionLoadingIcon: FC<{ className?: string }> = ({ className = MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0 }) => <MOTION_LOADING_GLYPH className={className} aria-hidden={true} />;
 export const MotionSelectField: FC<SelectHTMLAttributes<HTMLSelectElement> & { label: React.ReactNode; wrapperClassName?: string; labelClassName?: string }> = ({ label, wrapperClassName = MOTION_STYLES.STEP1_TOGGLE_WRAPPER, labelClassName = MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE, id, children, ...props }) => {

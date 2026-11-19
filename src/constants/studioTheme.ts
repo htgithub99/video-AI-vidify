@@ -14,6 +14,12 @@ export const STUDIO_UI = {
   LOADING_COPY: "space-y-1",
   LOADING_TITLE: "text-sm font-extrabold text-slate-200",
   LOADING_DESCRIPTION: "text-xs text-slate-400",
+  EMPTY_STATE: "py-14 flex flex-col items-center justify-center text-center space-y-3.5",
+  EMPTY_FRAME: "w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-500 shadow-inner",
+  EMPTY_ICON: "w-7 h-7 text-purple-400/80",
+  EMPTY_COPY: "space-y-1 max-w-sm",
+  EMPTY_TITLE: "text-sm font-extrabold text-slate-200",
+  EMPTY_DESCRIPTION: "text-xs text-slate-400 leading-relaxed",
   PAGE: "studio-page creation-workspace w-full h-full min-h-0 flex flex-col overflow-y-auto overflow-x-hidden p-4 sm:p-6 custom-scrollbar",
   CANVAS: "studio-canvas w-full min-w-0 rounded-2xl p-4 sm:p-6 space-y-5 relative",
   CARD: "studio-card glass-card min-w-0 rounded-2xl",
@@ -81,13 +87,9 @@ export const STUDIO_CONTROL_CONTENT = {
   ROLES: ["switch", "checkbox", "radio", "combobox"],
   HIDDEN_LABEL: /(?:^|\s)sr-only(?:\s|$)/,
   ICON_NAME: /Icon$/,
-  // An icon-only button keeps only its layout: fills, frames and every pointer effect (colour, scale, movement, fade) come
-  // from the shared icon-button rule.
   ICON_APPEARANCE: /(?:^|:)!?(?:bg-|from-|via-|to-|border(?:-|$)|shadow(?:-|$)|ring(?:-|$))|^(?:hover|active|focus|group-hover):!?(?:text-|scale-|-?translate-|rotate-|opacity-|brightness-)/,
   INTERACTION_APPEARANCE: /(?:^|:)(?:hover|active|focus|focus-within|focus-visible|group-hover|group-active|group-focus-within):!?(?:bg-|from-|via-|to-|border(?:-|$)|ring(?:-|$)|shadow(?:-|$))/,
 } as const;
-
-// Shared "confirm delete" dialog used by every screen.
 export const STUDIO_CONFIRM = {
   TITLE: "inline-flex items-center gap-2 leading-none text-slate-100",
   TITLE_ICON: "w-4 h-4 text-rose-500 shrink-0",
@@ -101,15 +103,12 @@ export const STUDIO_CONFIRM = {
   CONFIRM: "h-9 px-5 rounded-xl text-xs font-extrabold",
   MAX_WIDTH: "max-w-md",
 } as const;
-
-// Shared video player (Export, Motion, Flow, Shorts, Auto video): YouTube-style controls on every screen.
 export const STUDIO_PLAYER = {
   FRAME: "studio-player relative rounded-2xl overflow-hidden bg-black border border-slate-800/80 flex items-center justify-center group/video select-none",
   MEDIA: "absolute inset-0 w-full h-full",
   VIDEO: "absolute inset-0 w-full h-full bg-black",
   FIT_CONTAIN: "object-contain",
   FIT_COVER: "object-cover",
-  // Click layer over the picture: a click plays or pauses.
   SURFACE: "absolute inset-0 z-[5] cursor-pointer",
   BIG_PLAY: "absolute inset-0 m-auto w-14 h-14 rounded-full bg-black/60 flex items-center justify-center pointer-events-none z-[6]",
   BIG_PLAY_ICON: "w-7 h-7 text-white fill-white ml-1",
@@ -130,8 +129,6 @@ export const STUDIO_PLAYER = {
   HOVER_TIME: "shrink-0",
   HOVER_TITLE: "truncate min-w-0",
   CONTROLS: "mt-1 flex items-center justify-between gap-2",
-  // The left group takes the room left and its chapter pill shrinks; the right group never shrinks, so the fullscreen
-  // button keeps the same inset from the right edge as Back has from the left.
   GROUP: "flex items-center gap-1.5 min-w-0 flex-1",
   GROUP_END: "flex items-center gap-1.5 shrink-0",
   CTRL: "studio-player-ctrl",
@@ -150,20 +147,13 @@ export const STUDIO_PLAYER_TEXT = {
   vi: { PLAY: "Phát", PAUSE: "Tạm dừng", BACK: "Lùi", NEXT: "Tiếp", FULLSCREEN: "Toàn màn hình", EXIT_FULLSCREEN: "Thoát toàn màn hình", MUTE: "Tắt tiếng", UNMUTE: "Bật tiếng", VOLUME: "Âm lượng" },
   en: { PLAY: "Play", PAUSE: "Pause", BACK: "Back", NEXT: "Next", FULLSCREEN: "Fullscreen", EXIT_FULLSCREEN: "Exit fullscreen", MUTE: "Mute", UNMUTE: "Unmute", VOLUME: "Volume" },
 } as const;
-// Seconds jumped by Back / Next when the video has no scene marks.
 export const STUDIO_PLAYER_STEP_SECONDS = 5;
-// Words of the scene name shown in the seek-bar hover label.
 export const STUDIO_PLAYER_HOVER_WORDS = 3;
-// One video plays at a time across the whole app.
 export const STUDIO_PLAYER_PLAY_EVENT = "studio-player-play";
-// Shared "download video" button: one look on every screen.
 export const STUDIO_DOWNLOAD = {
   BUTTON: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-950/85 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 border border-slate-700/80 hover:border-purple-400 text-slate-200 hover:text-white backdrop-blur-md shadow-lg transition-all cursor-pointer group/download disabled:opacity-60 disabled:cursor-wait",
   ICON: "w-3.5 h-3.5 shrink-0 text-purple-300 group-hover/download:text-white",
   SPIN: "w-3.5 h-3.5 shrink-0 animate-spin",
   WIDE: "h-10 justify-center",
 } as const;
-export const STUDIO_DOWNLOAD_TEXT = {
-  vi: { LABEL: "Tải xuống", BUSY: "Đang tải…" },
-  en: { LABEL: "Download", BUSY: "Downloading…" },
-} as const;
+export const STUDIO_DOWNLOAD_TEXT = { vi: { LABEL: "Tải xuống", BUSY: "Đang tải…" }, en: { LABEL: "Download", BUSY: "Downloading…" } } as const;

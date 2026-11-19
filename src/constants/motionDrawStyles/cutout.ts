@@ -1,6 +1,4 @@
 import type { MotionDrawStyleSpec } from "./types.js";
-// Storybook cut-out: thin dark line, flat colour with one shade band, held poses that snap and hop, a camera that holds,
-// pans evenly with whoever walks and pushes in on each line of the narration.
 export const CUTOUT_DRAW_STYLE: MotionDrawStyleSpec = {
   family: "history",
   label: { vi: "Cắt dán kể chuyện", en: "Cut-out storybook" },

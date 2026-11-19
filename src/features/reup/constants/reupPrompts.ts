@@ -4,56 +4,42 @@ import type { ReupJobSettings, ReupMediaItem, ReupOutputKind, ReupSceneMap, Reup
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 export const REUP_ARTIFACT = { SCENES: "reup-scene-map", SCRIPT: "reup-script", PACKAGE: "reup-package" } as const;
 const LANG_NAME = { en: "English", vi: "Vietnamese", ja: "Japanese", ko: "Korean" } as const;
-/**
- * Units the narration length is counted in, and how many of them fit the speaking time of one unit of the type's
- * words-per-second rate (measured on the narrators: Vietnamese reads ≈ 3.5 syllables/s, a 1317-syllable script ran
- * 376 s; Japanese is counted in characters).
- */
 const LANG_UNIT = { en: { factor: 1, unit: "words" }, vi: { factor: 1.65, unit: "words (Vietnamese syllables)" }, ja: { factor: 3.2, unit: "Japanese characters" }, ko: { factor: 1, unit: "words" } } as const;
 const itemsLine = (items: ReupMediaItem[]): string => items.map((it) => `${it.id} ${it.type} "${it.name}" ${Math.round(it.start)}-${Math.round(it.end)}s`).join("; ");
 const TRUTH = "Describe only what is visible. Never invent numbers, days, catches, animals, names or results that the images do not show. Missing is fine, wrong is not.";
-/**
- * Added value (YouTube's reused-content rule): the narration must bring something the footage alone does not — stated
- * as general know-how, never as invented facts about this footage.
- */
 const VALUE = [
   "Add value beyond what is seen: every body section carries at least one line of explanation the footage alone does not give — why it is done this way, how the technique works, a practical tip, a comparison or a risk.",
-  "Say such lines as general know-how (\"usually\", \"a common way is\", \"the reason is\"), never as facts about this person, place, time or result. Do not just describe the picture line by line.",
+  'Say such lines as general know-how ("usually", "a common way is", "the reason is"), never as facts about this person, place, time or result. Do not just describe the picture line by line.',
 ].join(" ");
-/**
- * Storytelling over real footage (narrated videos): colour the pictures cannot show is allowed, the things a viewer can
- * check or be hurt by are not.
- */
 const STORY = [
-  "Storytelling may add what the pictures cannot show: the person's motivation and feelings, their plan and goals, general context (season, weather, the kind of place) and rough sizes or distances said as estimates (\"about 20 metres\"). Call the person by a simple first name or a role and keep it the same all video; never a full name, nationality, age or family story.",
+  'Storytelling may add what the pictures cannot show: the person\'s motivation and feelings, their plan and goals, general context (season, weather, the kind of place) and rough sizes or distances said as estimates ("about 20 metres"). Call the person by a simple first name or a role and keep it the same all video; never a full name, nationality, age or family story.',
   "Never contradict the pictures. Never invent results or counts the viewer can check on screen (fish caught, days, buildings, animals), accidents, injuries, rescues or other dramatic events the footage does not show, or advice that would be unsafe if wrong. Describe only what can be seen or reasoned: no smells or tastes.",
 ].join(" ");
-/** How a top documentary-style narrator writes over building and survival footage (what keeps viewers to the end). */
 const CRAFT = [
   "Write like a top documentary-style YouTube narrator:",
   "- The hook promises the whole journey: 3-4 concrete payoffs the viewer will see later (from the scene map) and one stake — what could go wrong.",
   "- Introduce the person and their goal early, and what they will need to build or do to reach it.",
-  "- Each body section runs problem → why it matters → the solution on screen → why it works → the result. Link sections with \"But…\", \"So…\", \"That means…\" so a new question is always open.",
-  "- Active voice with the person as the subject (in Vietnamese avoid chains of \"được\" passives).",
-  "- Mostly short sentences (6-14 words); a 2-5 word line at each payoff (\"And it works.\").",
+  '- Each body section runs problem → why it matters → the solution on screen → why it works → the result. Link sections with "But…", "So…", "That means…" so a new question is always open.',
+  '- Active voice with the person as the subject (in Vietnamese avoid chains of "được" passives).',
+  '- Mostly short sentences (6-14 words); a 2-5 word line at each payoff ("And it works.").',
   "- Plain words. No filler adjectives or clichés (peaceful, perfect, amazing, well-deserved, every worry melts away; thật bình yên, trọn vẹn, tuyệt vời, xứng đáng, nghi ngút).",
   "- If the scene map shows a setback (damage, storm, failure, repair), build a section around it. End with a callback to the opening promise.",
 ].join("\n");
 const angleLine = (angle: string): string => (angle.trim() ? `The channel's own knowledge and viewpoint (from the creator; weave it in naturally in at least two places, in your own words): ${angle.trim()}` : "");
 const styleLines = (style: ReupStyle): string[] => [REUP_COMMENTARY.VOICES[style.voice], style.hook ? REUP_COMMENTARY.HOOKS[style.hook] : "", REUP_COMMENTARY.ENDINGS[style.ending]];
-/** Narration length: the type's speaking rate over the share of the length that carries words (all of it when not given). */
 const wordRange = (s: Pick<ReupJobSettings, "targetSeconds" | "wordsPerSecond" | "language">, share: [number, number] = [1, 1]): [number, number] => [Math.round(s.targetSeconds * share[0] * s.wordsPerSecond[0] * LANG_UNIT[s.language].factor), Math.round(s.targetSeconds * share[1] * s.wordsPerSecond[1] * LANG_UNIT[s.language].factor)];
-
 export const REUP_PROMPT = {
   SCENES: (input: { sheets: { index: number; start: number; interval: number; count: number; cols: number }[]; duration: number; part: number; parts: number; bad: string; language: ReupJobSettings["language"]; items?: ReupMediaItem[]; photoSeconds?: number }): string =>
     [
-      input.items ? `You are a video editor reviewing contact sheets of a folder of real photos and short clips laid end to end as one ${mmss(input.duration)} timeline (each photo held ${input.photoSeconds} s). Items in this batch: ${itemsLine(input.items)}. Make exactly one segment per item, with its span. This is batch ${input.part} of ${input.parts}.` : `You are a video editor reviewing contact sheets of ONE real, wordless source video (${mmss(input.duration)} long). This is batch ${input.part} of ${input.parts}.`,
+      input.items
+        ? `You are a video editor reviewing contact sheets of a folder of real photos and short clips laid end to end as one ${mmss(input.duration)} timeline (each photo held ${input.photoSeconds} s). Items in this batch: ${itemsLine(input.items)}. Make exactly one segment per item, with its span. This is batch ${input.part} of ${input.parts}.`
+        : `You are a video editor reviewing contact sheets of ONE real, wordless source video (${mmss(input.duration)} long). This is batch ${input.part} of ${input.parts}.`,
       "Each attached image is a grid of frames read left to right, top to bottom. Tile n of a sheet shows the moment start + n * interval seconds (n starts at 0). A timestamp is printed on each tile when available.",
       ...input.sheets.map((s, i) => `Image ${i + 1}: tiles 0..${s.count - 1}, start ${s.start}s, interval ${s.interval}s, ${s.cols} tiles per row (covers ${mmss(s.start)}–${mmss(s.start + s.interval * s.count)}).`),
       input.bad ? `Skip these dark or blurry ranges: ${input.bad}.` : "",
       TRUTH,
       `Write summary, "what", captions and moment lines in ${LANG_NAME[input.language]}.`,
-      "Return JSON: {\"summary\": string (2-3 sentences, what happens in this batch), \"segments\": [{\"id\": string, \"start\": seconds, \"end\": seconds, \"what\": string (one short factual line), \"moments\": [{\"t\": seconds (the time of a tile where it is visible), \"what\": string (the action seen on that tile, a few words), \"pull\": 1-5 (how strong it is on screen: 5 = striking result, danger, catch, reveal; 1 = filler)}] (1-4 per segment, in time order), \"tags\": string[] (from: result, before, after, animal, face, action, build, catch, cook, danger, landscape, tool, water, fire), \"value\": 1-5 (how strong the segment is on screen), \"focusX\": 0-1 (where the main subject sits across the frame), \"caption\": string (max 8 words, factual, for an on-screen caption)}], \"hook\": [segment ids good for a fast opening], \"ending\": segment id of the clearest finished result, \"thumbnails\": [seconds of frames that would make a strong thumbnail]}.",
+      'Return JSON: {"summary": string (2-3 sentences, what happens in this batch), "segments": [{"id": string, "start": seconds, "end": seconds, "what": string (one short factual line), "moments": [{"t": seconds (the time of a tile where it is visible), "what": string (the action seen on that tile, a few words), "pull": 1-5 (how strong it is on screen: 5 = striking result, danger, catch, reveal; 1 = filler)}] (1-4 per segment, in time order), "tags": string[] (from: result, before, after, animal, face, action, build, catch, cook, danger, landscape, tool, water, fire), "value": 1-5 (how strong the segment is on screen), "focusX": 0-1 (where the main subject sits across the frame), "caption": string (max 8 words, factual, for an on-screen caption)}], "hook": [segment ids good for a fast opening], "ending": segment id of the clearest finished result, "thumbnails": [seconds of frames that would make a strong thumbnail]}.',
       input.items ? "" : "Segments cover the batch in time order without gaps or overlaps; one segment per distinct action, usually 8–40 seconds (a long unchanged view may run longer). Moments are what a narrator would point at: a new step, a result, something unexpected.",
     ]
       .filter(Boolean)
@@ -66,7 +52,6 @@ export const REUP_PROMPT = {
     const alt = LANG_NAME[s.languageAlt];
     const long = input.kind === "long";
     const rate = ((s.wordsPerSecond[0] + s.wordsPerSecond[1]) / 2) * LANG_UNIT[s.language].factor * (share?.[1] ?? 1);
-    // Narrated footage: every cue points at a moment; each moment shows how long its picture lasts and how many words fit.
     const scenes = input.folder
       ? input.map.segments.map((g) => `${g.id} [${mmss(g.start)}-${mmss(g.end)}] v${g.value} ${g.tags.join(",")}: ${g.what}`).join("\n")
       : input.map.segments
@@ -84,7 +69,9 @@ export const REUP_PROMPT = {
       ? `{"outputs": [{"title": [line1, line2], "sections": [{"role": "body"|"ending", "chapter": short chapter title or "" (only when a new chapter starts), "cues": [{"scene": segment id, "text": the words spoken while this picture is on screen (1-2 sentences)}]}]}]}`
       : `{"outputs": [{"title": [line1, line2] (on-screen title, max 28 characters per line)${input.bilingual ? `, "titleAlt": [the same in ${alt}]` : ""}, "sections": [{"role": "hook"|"body"|"teaser"|"ending", "cues": [${cue}]}]}]}`;
     return [
-      long ? `Write the voice-over for ONE ${input.folder ? "photo report" : "video"} (${s.targetSeconds >= 120 ? `${Math.round(s.targetSeconds / 60)}+ minutes` : `${s.targetSeconds} seconds`} on screen) built from real ${input.folder ? "photos and clips" : "footage"}.` : `Write ${input.count} separate vertical shorts (${s.targetSeconds} seconds each) cut from a real source video. Each short uses different scenes.`,
+      long
+        ? `Write the voice-over for ONE ${input.folder ? "photo report" : "video"} (${s.targetSeconds >= 120 ? `${Math.round(s.targetSeconds / 60)}+ minutes` : `${s.targetSeconds} seconds`} on screen) built from real ${input.folder ? "photos and clips" : "footage"}.`
+        : `Write ${input.count} separate vertical shorts (${s.targetSeconds} seconds each) cut from a real source video. Each short uses different scenes.`,
       `Narration language: ${lang}${input.bilingual ? ` and, for every line, a natural ${alt} version` : ""}. Target ${wordsMin}-${wordsMax} ${LANG_UNIT[s.language].unit} ${long ? "in total" : "per short"}, aim for about ${Math.round((wordsMin + wordsMax) / 2)} — the narration must fit the length, not run over it. ${input.folder ? "Warm, clear, formal register." : "Natural spoken style; short sentences."}`,
       share ? `Words cover about ${Math.round(share[0] * 100)}-${Math.round(share[1] * 100)}% of the time; between lines the footage and its own sound carry the story. Do not talk over every second.` : "",
       input.rules,

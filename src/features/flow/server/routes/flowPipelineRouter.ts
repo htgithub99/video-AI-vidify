@@ -1,6 +1,33 @@
-
 import { CHAT_PLANNING_RUNTIME as C } from "../../../../constants/chatPlanningRuntime.js";
-import { SOURCE_TEMPLATE_SYMBOL_86, SOURCE_TEMPLATE_FLOW_VIDEO, SOURCE_TEMPLATE_FLOW_VIDEO_PROMPTS, SOURCE_TEMPLATE_MP4, SOURCE_TEMPLATE_MP4_2, SOURCE_TEMPLATE_VIDEO_CHUA_SAN_SANG_DE_LUU, SOURCE_TEMPLATE_WRITE_EXACTLY_DISTINCT_VIDEO_CONCEPTS_FOR, SOURCE_TEXT_ABORTED, SOURCE_TEXT_AI_CHUA_TRA_DU_TEN_VA, SOURCE_TEXT_FINISH, SOURCE_TEXT_FLOW_VIDEO_PROMPTS, SOURCE_TEXT_GENERATE_FLOW_VIDEO_BATCH, SOURCE_TEXT_HAY_GHI_SO_VIDEO_1_50, SOURCE_TEXT_KHONG_THE_LUU_VIDEO, SOURCE_TEXT_KHONG_THE_VIET_PROMPT_VIDEO, SOURCE_TEXT_KHONG_TIM_THAY_DU_AN, SOURCE_TEXT_PHONG_CHAT_TRA_KET_QUA_KHONG, SOURCE_TEXT_PLAN_FLOW_VIDEO_PROMPTS, SOURCE_TEXT_RECOVER_FLOW_VIDEO, SOURCE_TEXT_SAVE_FLOW_VIDEOS, SOURCE_TEXT_SCENEID, SOURCE_TEXT_SUCCESS, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_SYSTEM_ERROR, SOURCE_TEXT_THIEU_DU_AN_VIDEO_HOAC_THU, SOURCE_TEXT_VIDEOS, SOURCE_TEXT_VI_TRI_LUU_KHONG_PHAI_THU } from "../../../../constants/sourceText.js";
+import {
+  SOURCE_TEMPLATE_SYMBOL_86,
+  SOURCE_TEMPLATE_FLOW_VIDEO,
+  SOURCE_TEMPLATE_FLOW_VIDEO_PROMPTS,
+  SOURCE_TEMPLATE_MP4,
+  SOURCE_TEMPLATE_MP4_2,
+  SOURCE_TEMPLATE_VIDEO_CHUA_SAN_SANG_DE_LUU,
+  SOURCE_TEMPLATE_WRITE_EXACTLY_DISTINCT_VIDEO_CONCEPTS_FOR,
+  SOURCE_TEXT_ABORTED,
+  SOURCE_TEXT_AI_CHUA_TRA_DU_TEN_VA,
+  SOURCE_TEXT_FINISH,
+  SOURCE_TEXT_FLOW_VIDEO_PROMPTS,
+  SOURCE_TEXT_GENERATE_FLOW_VIDEO_BATCH,
+  SOURCE_TEXT_HAY_GHI_SO_VIDEO_1_50,
+  SOURCE_TEXT_KHONG_THE_LUU_VIDEO,
+  SOURCE_TEXT_KHONG_THE_VIET_PROMPT_VIDEO,
+  SOURCE_TEXT_KHONG_TIM_THAY_DU_AN,
+  SOURCE_TEXT_PHONG_CHAT_TRA_KET_QUA_KHONG,
+  SOURCE_TEXT_PLAN_FLOW_VIDEO_PROMPTS,
+  SOURCE_TEXT_RECOVER_FLOW_VIDEO,
+  SOURCE_TEXT_SAVE_FLOW_VIDEOS,
+  SOURCE_TEXT_SCENEID,
+  SOURCE_TEXT_SUCCESS,
+  SOURCE_TEXT_SYMBOL_25,
+  SOURCE_TEXT_SYSTEM_ERROR,
+  SOURCE_TEXT_THIEU_DU_AN_VIDEO_HOAC_THU,
+  SOURCE_TEXT_VIDEOS,
+  SOURCE_TEXT_VI_TRI_LUU_KHONG_PHAI_THU,
+} from "../../../../constants/sourceText.js";
 import express, { Request, Response } from "express";
 import fs from "fs";
 import _ from "lodash";
@@ -20,7 +47,7 @@ import { resolveLocalProjectAssetPath } from "../../../../server/services/imageA
 import { ensureFlowCharacters, generateFlowVideoPromptBatchWithPlaywright, recoverExistingFlowVideo } from "../../../../server/services/imageGeneratorService.js";
 import { getProjectDetailFromDb, saveProjectDetailToDb } from "../../../../server/utils/db.js";
 import { safeParseJSON } from "../../../../server/utils/helpers.js";
-import { incrementFeatureUsage, requireBatchVisualLicense, persistProjectVideo, getPersistedProjectVideoVariantUrl, persistRecoveredFlowScene , activeVideoProjectKeys } from "../../../../server/controllers/pipelineShared.js";
+import { incrementFeatureUsage, requireBatchVisualLicense, persistProjectVideo, getPersistedProjectVideoVariantUrl, persistRecoveredFlowScene, activeVideoProjectKeys } from "../../../../server/controllers/pipelineShared.js";
 const router = express.Router();
 router.post(SOURCE_TEXT_RECOVER_FLOW_VIDEO, requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {

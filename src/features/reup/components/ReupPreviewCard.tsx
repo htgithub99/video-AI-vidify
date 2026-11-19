@@ -7,7 +7,6 @@ import { MotionLoadingIcon, StepHeader } from "../../motion/components/MotionCon
 import { MotionExportedVideo } from "../../motion/components/MotionMediaFrame.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
-/** Video Motion's preview card: the exported MP4 with its ratio badge, saved through the "Save as" dialog. A run with several videos (Shorts, bilingual pair) lists each with its own save button. */
 export const ReupPreviewCard: FC<{ studio: ReupStudio; motionText: MotionVideoTexts }> = ({ studio, motionText }) => {
   const { text, job } = studio;
   const outputs = job?.outputs || [];

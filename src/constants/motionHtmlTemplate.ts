@@ -7,19 +7,15 @@ export const MOTION_HTML = {
   WORKERS: MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length,
   BASE_STYLE: "Clean hand-drawn 2D cartoon (OverSimplified-like cel style): even dark outlines, flat muted colours with at most one soft shade tone, no hatching, paper texture or grain; light, weather and time of day as the story says.",
   RETRY_MS: [2000, 5000, 10000, 20000, 30000],
-  // A received answer that could not be stored or shown is tried again locally after this many ms × the try number.
   LOCAL_RETRY_MS: 250,
   THUMBNAIL_BROWSER_IDLE_MS: 90_000,
   SAVE_THROTTLE_MS: 1000,
-  // How many scenes before a group's lines its plan sees.
   PREVIOUS_SCENES: 3,
-  // Devices a scene may use (thought, emote, inset, count, spotlight, time, sound, speed, impact).
   DEVICES_MAX: 2,
   THUMBNAIL_STILL: { width: 960, quality: 0.82, mime: "image/jpeg", canvas: "canvas", context: "2d", smoothing: "high" },
   ABANDON_LOG: (id: string): string => `Cảnh HTML ${id}: tab dựng không trả kết quả sau khi tự phục hồi – bỏ lượt cũ, gửi lại ở tab dựng đang trống.`,
   DATE_PART: /\d+/g,
   LEGACY_PLAN_FIELD: "graphics",
-  // Settings applied only when the scenes are shown (never part of a plan).
   VIEW_SETTINGS: ["profileId", "layout", "proportion", "movement"] as readonly string[],
   SWITCH_AFTER: 2,
   SWITCH_LOG: (id: string, from: string, to: string): string => `Cảnh HTML ${id}: ${from} lỗi 2 lần liền – chuyển cảnh này sang ${to}.`,

@@ -1,4 +1,3 @@
-// Shared results list (Video Motion, Export video, Shorts AI, Flow video, Reup): select, delete one / many / all behind a confirm dialog, paged.
 export const STUDIO_RESULTS = {
   PAGE_SIZE: 9,
   COUNT: "{count}",

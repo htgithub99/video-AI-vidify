@@ -26,7 +26,6 @@ export class MotionAiWorkerPool {
       const id = fallback >= 0 ? this.available.splice(fallback, 1)[0] : undefined;
       if (id !== undefined) waiter.take(id);
       else {
-        // A redraw of an earlier scene goes ahead of scenes that have not been drawn yet, behind other redraws.
         const at = waiter.urgent ? this.waiting.findIndex((entry) => !entry.urgent) : -1;
         if (at >= 0) this.waiting.splice(at, 0, waiter);
         else this.waiting.push(waiter);

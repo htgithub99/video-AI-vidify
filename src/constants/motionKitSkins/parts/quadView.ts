@@ -1,6 +1,3 @@
-// Front and back views of every kit animal for every skin (animal coming toward or going away from the camera).
-// Called from horse.ts and quad.ts through K.part("quadView") when view is front or back. Sizes follow the core ANIMALS table.
-// Front: rear legs behind, barrel body, chest, neck, face with eyes, nostrils, ears, horns. Back: rump, tail, legs, ears over the back.
 export const SKIN_PART_QUAD_VIEW = `(c, o, K) => {
   const T = {
     horse: [2.6, 1.15, 0.34, 1.2, 0.45, "#7c5f4a", "pointed", "", "long"], mule: [2.2, 1.05, 0.3, 1.1, 0.42, "#6e5444", "long", "", "long"], donkey: [2.1, 1.05, 0.3, 1.1, 0.42, "#837d78", "long", "", "long"],

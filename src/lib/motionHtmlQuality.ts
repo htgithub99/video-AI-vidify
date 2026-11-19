@@ -1,10 +1,14 @@
 import { MOTION_HTML_QUALITY as Q } from "../constants/motionHtmlQuality.js";
-
 interface MotionHtmlRequired {
   id: string;
   focal: boolean;
 }
-export const motionHtmlMarkId = (value: unknown): string => String(value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
+export const motionHtmlMarkId = (value: unknown): string =>
+  String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
 export const motionHtmlRequired = (template: string | undefined): MotionHtmlRequired[] => {
   const line = template?.match(Q.REQUIRED_LINE)?.[1];
   if (!line) return [];

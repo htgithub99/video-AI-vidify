@@ -1,6 +1,6 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_VIDEO_EXPORT } from "../constants/runtimeText.js";
-import { StudioCard } from "../../../components/ui/Studio.js";
+import { StudioCard, StudioEmptyState } from "../../../components/ui/Studio.js";
 import { VideoExportSectionHeading } from "./VideoExportSectionHeading";
 import { VIDEO_EXPORT_TEXT_SYMBOL, VIDEO_EXPORT_TEXT_SYMBOL_2 } from "../../../constants/videoExportText";
 import { FC } from "react";
@@ -89,15 +89,7 @@ export const VideoExportResultList: FC<VideoExportResultListProps> = ({ exporter
         </div>
       )}
       {!hasResults ? (
-        <div className={cn(RT_SHARED.PY_14_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT)}>
-          <div className={cn(RT_VIDEO_EXPORT.W_14_H_14_ROUNDED_2XL_BG_SLATE_800_80)}>
-            <Film className={cn(RT_SHARED.W_7_H_7_TEXT_PURPLE_400_80)} />
-          </div>
-          <div className={cn(RT_SHARED.SPACE_Y_1_MAX_W_SM)}>
-            <h3 className={cn(RT_SHARED.TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_200)}>{text.RESULTS_EMPTY_TITLE}</h3>
-            <p className={cn(RT_SHARED.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED)}>{text.RESULTS_EMPTY_DESC}</p>
-          </div>
-        </div>
+        <StudioEmptyState icon={Film} title={text.RESULTS_EMPTY_TITLE} description={text.RESULTS_EMPTY_DESC} />
       ) : (
         <StudioResults
           items={results}

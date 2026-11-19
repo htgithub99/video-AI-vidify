@@ -1,6 +1,3 @@
-// Birds for every skin, side view (units of R, ground y = 0, head toward +x): poultry (chicken, rooster, duck, goose),
-// and wild birds (dove, crow, eagle, vulture, owl, peacock, crane). pose "fly" spreads the wings and lifts the bird off
-// its ground point; other poses stand.
 export const MOTION_KIT_BIRD_KINDS = ["chicken", "rooster", "duck", "goose", "dove", "crow", "eagle", "vulture", "owl", "peacock", "crane"];
 export const SKIN_PART_BIRD = `(c, o, K) => {
   const SP = {

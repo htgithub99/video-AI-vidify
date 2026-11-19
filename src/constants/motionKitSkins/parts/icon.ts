@@ -1,6 +1,3 @@
-// Icons for every skin, drawn like the infographic cards of reference video 2: chunky ink outlines,
-// flat fills with one shade side, small inner detail lines (clock ticks, page lines, coin rims, gear teeth).
-// All 59 kit icons; same call contract as the core icon drawers (c, s = size, col, t), origin at the icon centre.
 export const SKIN_PART_ICON = `(c, a, K) => {
   const { kind, s, col, t } = a;
   const st = K.S(), w = K.LW(s) * 1.1, ol = st.ol;

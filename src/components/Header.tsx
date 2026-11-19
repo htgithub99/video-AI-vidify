@@ -1,18 +1,6 @@
 import { RUNTIME_TEXT as RT_UI } from "../constants/runtime/ui.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
-import {
-  SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER,
-  SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE,
-  SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD,
-  SOURCE_TEXT_BUTTON,
-  SOURCE_TEXT_MAX_W_MD,
-  SOURCE_TEXT_MESSAGE,
-  SOURCE_TEXT_SYMBOL,
-  SOURCE_TEXT_TEXT_AMBER_400,
-  SOURCE_TEXT_TEXT_BLUE_400,
-  SOURCE_TEXT_TEXT_EMERALD_400,
-  SOURCE_TEXT_UNSTYLED,
-} from "../constants/sourceText";
+import { SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER, SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE, SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD, SOURCE_TEXT_BUTTON, SOURCE_TEXT_MAX_W_MD, SOURCE_TEXT_MESSAGE, SOURCE_TEXT_SYMBOL, SOURCE_TEXT_TEXT_AMBER_400, SOURCE_TEXT_TEXT_BLUE_400, SOURCE_TEXT_TEXT_EMERALD_400, SOURCE_TEXT_UNSTYLED } from "../constants/sourceText";
 import { FC, ReactNode, useState, useRef, useEffect } from "react";
 import { cn } from "../lib/utils";
 import { Lang, translations } from "../lib/lang.js";
@@ -201,11 +189,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
                           setIsDropdownOpen(false);
                           setConfirmAction(action);
                         }}
-                        className={cn(
-                          RT_UI.BTN_ICON_TINY_GROUP_BTN_W_7_H_7_MIN,
-                          "bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/30",
-                          RT_UI.DISABLED_OPACITY_50_DISABLED_CURSOR_NOT_ALLOWED_FOCUS_OUTLINE_NONE,
-                        )}
+                        className={cn(RT_UI.BTN_ICON_TINY_GROUP_BTN_W_7_H_7_MIN, "bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/30", RT_UI.DISABLED_OPACITY_50_DISABLED_CURSOR_NOT_ALLOWED_FOCUS_OUTLINE_NONE)}
                         title={planningTexts.CLEAR_ROOM_TOOLTIP.replace(SecurityConstants.PLACEHOLDER_0, action.name)}
                         aria-label={action.label}>
                         <Trash2 className={cn(RT_UI.W_3_5_H_3_5_SHRINK_0_TRANSITION_TRANSFORM)} />

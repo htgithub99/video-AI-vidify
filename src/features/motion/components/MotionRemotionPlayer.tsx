@@ -15,7 +15,6 @@ const PreviewComposition: FC<{ document: MotionRemotionSpec; audioUrl?: string }
     {audioUrl && <Audio src={audioUrl} />}
   </>
 );
-// Memoised: the studio page re-renders on every job update, which must not touch a preview that is playing.
 export const MotionRemotionPlayer = memo(({ spec, audioUrl, videoUrl }: { spec: MotionRemotionSpec; audioUrl?: string; videoUrl?: string }) =>
   videoUrl ? (
     <StudioVideoPlayer src={videoUrl} aspect={motionAspect(spec.width, spec.height)} badge={motionRatioLabel(spec.width, spec.height)} loadingIcon={MOTION_LOADING_GLYPH} />
@@ -23,4 +22,5 @@ export const MotionRemotionPlayer = memo(({ spec, audioUrl, videoUrl }: { spec: 
     <MotionHtmlScenePlayer spec={spec} audioUrl={audioUrl} />
   ) : (
     <Player component={PreviewComposition} inputProps={{ document: spec, audioUrl }} durationInFrames={Math.ceil(spec.duration * spec.fps)} compositionWidth={spec.width} compositionHeight={spec.height} fps={spec.fps} controls style={{ width: RT_MOTION.VALUE_100, maxHeight: 600, borderRadius: 12, backgroundColor: RT_MOTION.VALUE_111 }} />
-  ));
+  ),
+);

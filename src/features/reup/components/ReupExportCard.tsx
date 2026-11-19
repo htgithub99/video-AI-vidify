@@ -13,11 +13,9 @@ const ASPECTS: { aspect: ReupAspect; icon: typeof Tv }[] = [
   { aspect: "9:16", icon: Smartphone },
 ];
 const FPS = [24, 25, 30, 60];
-/** Step 04: the export format, laid out like Video Motion's export card. */
 export const ReupExportCard: FC<{ studio: ReupStudio; motionText: MotionVideoTexts }> = ({ studio, motionText: m }) => {
   const { text, settings, patch } = studio;
   const locked = studio.running || studio.busy;
-  // Built automatically by "Start"; once the voice is ready the videos can be exported again in another format or mix.
   const ready = studio.job?.steps.voice.status === "done";
   const exporting = studio.running && studio.job?.steps.build.status === "running";
   const qualities: [ReupQuality, string][] = [

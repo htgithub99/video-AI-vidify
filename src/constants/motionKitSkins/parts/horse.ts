@@ -1,6 +1,3 @@
-// The horse (also mule and donkey) for every skin, traced from the standing saddled horse of reference video 1 (frame 498, facing left).
-// Reference units: hooves on y=552, withers y=212, nose x=198, buttock x=705. m() mirrors to kit space (head toward +x).
-// Line width matches the people next to it (LW of their head unit p = R/1.6); near legs share one union outline with the body.
 export const SKIN_PART_HORSE_REAL = `(c, o, K) => {
   if (K.viewOf(o) !== "side") { const v = K.part && K.part("quadView"); return v ? v(c, o, K) : null; }
   const R = K.num(o.r, 30), s = R / 144, f = K.num(o.facing, 1) < 0 ? -1 : 1, t = K.num(o.t, K.num(window.__motionKitTime, 0));

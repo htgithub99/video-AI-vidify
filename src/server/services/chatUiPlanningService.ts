@@ -561,7 +561,25 @@ const writeGeminiTiming = (page: Page | undefined, request: ChatPlanningRequest,
   if (page) roomTimings.delete(page);
   const at = (value?: number) => (value ? Math.round((value - started) / 100) / 10 : undefined);
   try {
-    fs.appendFileSync(path.join(getLogsDirectory(), CHAT_SPEED.TIMING_FILE), stringifyJson({ at: new Date().toISOString(), artifact: request.artifactType, worker: request.workerId, model: request.model, ok, tab: at(phases.tab), model_ready: at(phases.model), uploaded: at(marks[CHAT_SPEED.MARK.UPLOADED]), compose: at(marks[CHAT_SPEED.MARK.COMPOSE]), prompt_chars: request.prompt?.length, written: at(marks[CHAT_SPEED.MARK.WRITTEN]), sent: at(marks[CHAT_SPEED.MARK.SENT]), first_text: at(marks[CHAT_SPEED.MARK.FIRST_TEXT]), done: at(phases.done) }) + CHAT_SPEED.NEWLINE);
+    fs.appendFileSync(
+      path.join(getLogsDirectory(), CHAT_SPEED.TIMING_FILE),
+      stringifyJson({
+        at: new Date().toISOString(),
+        artifact: request.artifactType,
+        worker: request.workerId,
+        model: request.model,
+        ok,
+        tab: at(phases.tab),
+        model_ready: at(phases.model),
+        uploaded: at(marks[CHAT_SPEED.MARK.UPLOADED]),
+        compose: at(marks[CHAT_SPEED.MARK.COMPOSE]),
+        prompt_chars: request.prompt?.length,
+        written: at(marks[CHAT_SPEED.MARK.WRITTEN]),
+        sent: at(marks[CHAT_SPEED.MARK.SENT]),
+        first_text: at(marks[CHAT_SPEED.MARK.FIRST_TEXT]),
+        done: at(phases.done),
+      }) + CHAT_SPEED.NEWLINE,
+    );
   } catch {}
 };
 const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefined => {
@@ -780,10 +798,19 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
 const metaLastTurnError = async (page: Page): Promise<string | undefined> => {
   const turnError = page.locator(M.TURN_ITEM).last().locator(M.TURN_ERROR);
   if (!(await turnError.count().catch(() => 0))) return undefined;
-  return _.trim((await turnError.first().textContent().catch(() => null)) || M.TURN_EMPTY) || M.TURN_ERROR;
+  return (
+    _.trim(
+      (await turnError
+        .first()
+        .textContent()
+        .catch(() => null)) || M.TURN_EMPTY,
+    ) || M.TURN_ERROR
+  );
 };
 const metaTurnFailed = async (page: Page, prompt?: string): Promise<string | undefined> => {
-  const head = _.trim(prompt || M.TURN_EMPTY).replace(new RegExp(M.TURN_SPACE, M.TURN_SPACE_FLAGS), M.TURN_JOIN).slice(0, M.TURN_PROMPT_HEAD_CHARS);
+  const head = _.trim(prompt || M.TURN_EMPTY)
+    .replace(new RegExp(M.TURN_SPACE, M.TURN_SPACE_FLAGS), M.TURN_JOIN)
+    .slice(0, M.TURN_PROMPT_HEAD_CHARS);
   if (!head) return undefined;
   return page
     .evaluate(
@@ -1192,7 +1219,11 @@ const writeComposer = async (page: Page, input: Locator, prompt: string, directi
     await waitPageResponsive(page, signal, deadline);
     const cap = Math.max(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS, Math.min(uiActionCap(prompt.length), deadline - Date.now()));
     if (pass) appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_REWRITE_LOG);
-    const hasInlineImage = (await input.locator(M.INLINE_IMAGE_NODE).count().catch(() => 0)) > 0;
+    const hasInlineImage =
+      (await input
+        .locator(M.INLINE_IMAGE_NODE)
+        .count()
+        .catch(() => 0)) > 0;
     if (hasInlineImage) {
       await input
         .evaluate((el, inlineImgSel) => {
@@ -1337,7 +1368,6 @@ const submitPrompt = async (
       if (!receipts.matches(receiptKey)) {
         if (++generationChanges > CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_REPAIRS) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_ERROR);
         receipts.select(receiptKey);
-        // The first part's receipt was just read from the current conversation (the reset came from opening that conversation), so keep it instead of sending it twice.
         if (index === 0) receipts.accept(1);
         index = -1;
         continue;
@@ -2087,23 +2117,7 @@ const generateWithMetaAiChat = async (request: ChatPlanningRequest): Promise<str
   const room = await createRoom(browser.context, EXTERNAL_URLS.META_AI_CHAT, metaAiRooms, getPlanningRoomKey(request), request.signal);
   await ensureMetaAiReady(room, request);
   await selectMetaAiChatModel(room, request.model);
-  const response = await submitPrompt(
-    room,
-    getPlanningRoomKey(request),
-    request.prompt,
-    M.INPUT,
-    M.SEND,
-    M.RESPONSE,
-    M.BUSY,
-    request.expectedSceneIds || [],
-    request.attachments || [],
-    request.completionMarker,
-    request.artifactType,
-    request.requestId,
-    request.signal,
-    request.submission,
-    request.promptMessageLimit,
-  );
+  const response = await submitPrompt(room, getPlanningRoomKey(request), request.prompt, M.INPUT, M.SEND, M.RESPONSE, M.BUSY, request.expectedSceneIds || [], request.attachments || [], request.completionMarker, request.artifactType, request.requestId, request.signal, request.submission, request.promptMessageLimit);
   scheduleChatBrowserCleanup();
   return response;
 };
@@ -2418,29 +2432,29 @@ export const prepareChatPlanningRoom = (request: ChatPlanningRequest): Promise<v
   isChatBridgeEnabled()
     ? Promise.resolve()
     : withChromeBackupRecovery(
-    async () => {
-      for (let attempt = 0; ; attempt++) {
-        try {
-          return await prepareChatPlanningRoomTask(request);
-        } catch (error) {
-          throwIfPlanningCancelled(request.signal);
-          const message = String((error as Error).message);
-          if ((await aiOutage(error, request.provider)) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG] || !(AIR.TRANSPORT.test(message) || RECOVERY.RETRY_PATTERN.test(message))) throw error;
-          if (attempt >= RECOVERY.SAME_ROOM_RETRIES + 1) throw Object.assign(error as Error, { [RECOVERY.COMPLETE]: true });
-          const page = getChatPlanningRoom(request);
-          const line = attempt >= RECOVERY.SAME_ROOM_RETRIES ? RECOVERY.REPLACE_LOG : page && !page.isClosed() ? RECOVERY.RETRY_LOG(attempt + 1) : RECOVERY.RECONNECT_LOG(attempt + 1);
-          request.onRecovery?.(line);
-          appLog(line);
-          if (attempt >= RECOVERY.SAME_ROOM_RETRIES) await closeChatPlanningRoom(request, true);
-          else if (page && !page.isClosed()) await reloadChatPlanningRoom(request).catch((reloadError) => request.onRecovery?.(RECOVERY.RELOAD_FAILED(String(reloadError))));
-        }
-      }
-    },
-    request.signal,
-    request.onRecovery,
-    request.provider,
-    request.fallbackChain,
-  );
+        async () => {
+          for (let attempt = 0; ; attempt++) {
+            try {
+              return await prepareChatPlanningRoomTask(request);
+            } catch (error) {
+              throwIfPlanningCancelled(request.signal);
+              const message = String((error as Error).message);
+              if ((await aiOutage(error, request.provider)) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG] || !(AIR.TRANSPORT.test(message) || RECOVERY.RETRY_PATTERN.test(message))) throw error;
+              if (attempt >= RECOVERY.SAME_ROOM_RETRIES + 1) throw Object.assign(error as Error, { [RECOVERY.COMPLETE]: true });
+              const page = getChatPlanningRoom(request);
+              const line = attempt >= RECOVERY.SAME_ROOM_RETRIES ? RECOVERY.REPLACE_LOG : page && !page.isClosed() ? RECOVERY.RETRY_LOG(attempt + 1) : RECOVERY.RECONNECT_LOG(attempt + 1);
+              request.onRecovery?.(line);
+              appLog(line);
+              if (attempt >= RECOVERY.SAME_ROOM_RETRIES) await closeChatPlanningRoom(request, true);
+              else if (page && !page.isClosed()) await reloadChatPlanningRoom(request).catch((reloadError) => request.onRecovery?.(RECOVERY.RELOAD_FAILED(String(reloadError))));
+            }
+          }
+        },
+        request.signal,
+        request.onRecovery,
+        request.provider,
+        request.fallbackChain,
+      );
 const trackChatResponse = async <T>(request: ChatPlanningRequest, work: () => Promise<T>): Promise<T> => {
   try {
     return await work();
@@ -2448,7 +2462,7 @@ const trackChatResponse = async <T>(request: ChatPlanningRequest, work: () => Pr
     sharedChromeTasks.trackResponse(getPlanningRoomKey(request), !!request.submission?.attempted && !request.submission.completed && !request.signal?.aborted);
   }
 };
-export const resumeChatPlanningResponse = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => isChatBridgeEnabled() ? askChatBridge(request) : sharedChromeTasks.run(() => trackChatResponse(request, () => resumeChatPlanningResponseTask(request)), request.signal);
+export const resumeChatPlanningResponse = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => (isChatBridgeEnabled() ? askChatBridge(request) : sharedChromeTasks.run(() => trackChatResponse(request, () => resumeChatPlanningResponseTask(request)), request.signal));
 const blockedFallbackProviders = new Map<string, number>();
 const aiOutage = async (error: unknown, provider: string): Promise<boolean> => {
   const found = await classifyAiError(error, provider);
@@ -2456,12 +2470,7 @@ const aiOutage = async (error: unknown, provider: string): Promise<boolean> => {
   return !!found;
 };
 const providerBlockedUntil = (provider: string): number => Math.max(blockedFallbackProviders.get(provider) || 0, isAutoChromeSwitchEnabled() ? earliestProviderReset(provider) : aiUnavailableUntil(activeChromeId(), provider));
-const stopsFallback = (error: unknown, request: ChatPlanningRequest): boolean =>
-  !!request.signal?.aborted ||
-  !!_.get(error, BACKUP.ERROR_FLAG) ||
-  !!_.get(error, AIR.UNCERTAIN_FLAG) ||
-  _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR ||
-  _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR;
+const stopsFallback = (error: unknown, request: ChatPlanningRequest): boolean => !!request.signal?.aborted || !!_.get(error, BACKUP.ERROR_FLAG) || !!_.get(error, AIR.UNCERTAIN_FLAG) || _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR || _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR;
 export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (request.loadHeld) return generatePlanningWithChatUiWait(request);
   const release = await acquireAiLoadSlot(aiLoadPriority(request.artifactType), request.signal);

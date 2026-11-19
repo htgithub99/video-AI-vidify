@@ -32,10 +32,9 @@ export interface MotionRemotionSegment {
 }
 export const motionRemotionSegments = (spec: MotionRemotionSpec, encoding: { width: number; height: number; crf: number }): MotionRemotionSegment[] => {
   const total = Math.ceil(spec.duration * spec.fps);
-  const least = Math.max(1, Math.round(R.SEGMENT_MIN_SECONDS * spec.fps)), most = Math.max(least, Math.round(R.SEGMENT_MAX_SECONDS * spec.fps));
+  const least = Math.max(1, Math.round(R.SEGMENT_MIN_SECONDS * spec.fps)),
+    most = Math.max(least, Math.round(R.SEGMENT_MAX_SECONDS * spec.fps));
   const cuts = [...new Set((spec.scenes || []).map((scene) => scene.startFrame).filter((frame) => frame > 0 && frame < total))].sort((a, b) => a - b);
-  // Scene boundaries first (short scenes joined up to the least length), then a span longer than the most length split
-  // into even parts.
   const spans: [number, number][] = [];
   let start = 0;
   for (const cut of cuts) {
@@ -47,7 +46,8 @@ export const motionRemotionSegments = (spec: MotionRemotionSpec, encoding: { wid
   if (spans.length && total - start < least) spans[spans.length - 1][1] = total - 1;
   else spans.push([start, total - 1]);
   const bounds: [number, number][] = spans.flatMap(([from, to]) => {
-    const parts = Math.ceil((to - from + 1) / most), size = Math.ceil((to - from + 1) / parts);
+    const parts = Math.ceil((to - from + 1) / most),
+      size = Math.ceil((to - from + 1) / parts);
     return Array.from({ length: parts }, (_, i) => [from + i * size, Math.min(to, from + (i + 1) * size - 1)] as [number, number]);
   });
   const global = stringifyJson([R.SEGMENT_VERSION, spec.renderer, encoding, spec.version, spec.aspect, spec.fps, spec.width, spec.height, spec.motion, spec.profileId, spec.fontFamily, spec.renderBehavior, spec.resolvedSettings, total]);

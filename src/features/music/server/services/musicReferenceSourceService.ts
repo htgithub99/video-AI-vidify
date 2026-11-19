@@ -3,13 +3,18 @@ import { MUSIC_REFERENCE_SOURCE as S } from "../../../../constants/musicPlanning
 const cache = new Map<string, string>();
 const clip = (text: string, max: number): string => (text.length > max ? text.slice(0, max) : text);
 export const resolveMusicReferenceSource = async (input: string, signal?: AbortSignal): Promise<string> => {
-  const raw = String(input || "").replace(/\r\n?/g, S.JOIN).trim();
+  const raw = String(input || "")
+    .replace(/\r\n?/g, S.JOIN)
+    .trim();
   if (!raw) return raw;
   const hit = cache.get(raw);
   if (hit) return hit;
   const urls = [...new Set(raw.match(S.URL_RE) || [])].slice(0, S.MAX_LINKS);
   if (!urls.length) return raw;
-  const notes = raw.replace(S.URL_RE, "").replace(/\n{3,}/g, S.BLOCK_JOIN).trim();
+  const notes = raw
+    .replace(S.URL_RE, "")
+    .replace(/\n{3,}/g, S.BLOCK_JOIN)
+    .trim();
   const fetched = await Promise.all(urls.map((url) => fetchLinkSource(url, signal).catch(() => undefined)));
   const blocks = urls.map((url, index) => {
     const item = fetched[index];

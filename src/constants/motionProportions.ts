@@ -4,16 +4,9 @@ export const MOTION_PROPORTIONS = {
   NATIVE: "chibi" as MotionProportionId,
   LABEL_JOIN: ": ",
   CHOICES: ["chibi", "balanced", "storybook", "natural"] as MotionProportionId[],
-  TEXT: {
-    vi: { title: "Tỷ lệ", style: "Theo kiểu vẽ", hint: "Tỷ lệ đầu so với thân người; đồ vật, con vật và nhà cửa luôn theo kích thước thật so với người" },
-    en: { title: "Proportions", style: "Match the style", hint: "Head-to-body ratio of people; objects, animals and buildings always keep their real size next to people" },
-  },
+  TEXT: { vi: { title: "Tỷ lệ", style: "Theo kiểu vẽ", hint: "Tỷ lệ đầu so với thân người; đồ vật, con vật và nhà cửa luôn theo kích thước thật so với người" }, en: { title: "Proportions", style: "Match the style", hint: "Head-to-body ratio of people; objects, animals and buildings always keep their real size next to people" } },
   SPECS: {
-    chibi: {
-      label: { vi: "Chibi đầu to (~2 đầu)", en: "Big-head chibi (~2 heads)" },
-      planner: "PROPORTIONS: big-head chibi people about two heads tall (the head is close to half the height); props, animals, vehicles and buildings keep their real size next to them.",
-      figure: "",
-    },
+    chibi: { label: { vi: "Chibi đầu to (~2 đầu)", en: "Big-head chibi (~2 heads)" }, planner: "PROPORTIONS: big-head chibi people about two heads tall (the head is close to half the height); props, animals, vehicles and buildings keep their real size next to them.", figure: "" },
     balanced: {
       label: { vi: "Hoạt hình cân đối (~4 đầu)", en: "Balanced cartoon (~4 heads)" },
       planner: "PROPORTIONS: people are balanced cartoon figures about four heads tall (head a quarter of the height, legs a little under half, shoulders about two head widths); props, animals, vehicles and buildings keep their real size next to them.",

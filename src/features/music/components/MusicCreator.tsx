@@ -13,8 +13,109 @@ import { recordMusicDownloadProgressActivity } from "../services/musicDownloadAc
 import * as SRT from "../../../constants/sourceText.js";
 import * as MCS from "../constants/musicCreatorStyles.js";
 import { MUSIC_CREATOR_FORMAT as MCF } from "../../../constants/musicCreator.js";
-import { StudioLoadingState, StudioSegmentedControl, StudioSegmentButton, StudioHeader, StudioDisclosureButton, StudioPage, StudioCanvas, StudioFieldset, StudioCard, StudioInput, StudioTextarea } from "../../../components/ui/Studio.js";
-import { SOURCE_TEMPLATE_1_1, SOURCE_TEMPLATE_HTTP, SOURCE_TEMPLATE_LYRICS, SOURCE_TEMPLATE_MUSIC, SOURCE_TEMPLATE_MUSIC_BACKGROUND, SOURCE_TEMPLATE_MUSIC_COVER, SOURCE_TEMPLATE_MUSIC_TRACK_EVALUATION, SOURCE_TEMPLATE_SEO, SOURCE_TEMPLATE_SEO_2, SOURCE_TEMPLATE_SEO_ALL, SOURCE_TEMPLATE_SYMBOL_10, SOURCE_TEMPLATE_SYMBOL_11, SOURCE_TEMPLATE_SYMBOL_12, SOURCE_TEMPLATE_SYMBOL_13, SOURCE_TEMPLATE_SYMBOL_14, SOURCE_TEMPLATE_SYMBOL_15, SOURCE_TEMPLATE_SYMBOL_16, SOURCE_TEMPLATE_SYMBOL_17, SOURCE_TEMPLATE_SYMBOL_5, SOURCE_TEMPLATE_SYMBOL_7, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEMPLATE_SYMBOL_9, SOURCE_TEMPLATE_TITLE, SOURCE_TEXT_0, SOURCE_TEXT_16_9_HD, SOURCE_TEXT_ALERT, SOURCE_TEXT_BUTTON, SOURCE_TEXT_CAN_TAI_FILE_NHAC_TU_DANH, SOURCE_TEXT_CENTER, SOURCE_TEXT_CHECKBOX, SOURCE_TEXT_COUNT, SOURCE_TEXT_DATA_PLAYLISTSEOOPTIONS, SOURCE_TEXT_DATA_SEOWARNING, SOURCE_TEXT_DATA_SONGS, SOURCE_TEXT_DATA_STYLEANALYSIS, SOURCE_TEXT_DATA_SUNOSETTINGS, SOURCE_TEXT_DATA_SUNOSETTINGSANALYSIS, SOURCE_TEXT_DESCRIPTION, SOURCE_TEXT_END, SOURCE_TEXT_EXCLUDESTYLES, SOURCE_TEXT_FILE, SOURCE_TEXT_FOLDER, SOURCE_TEXT_FROM_AMBER_500_TO_ORANGE_500, SOURCE_TEXT_FROM_FUCHSIA_500_TO_PINK_500, SOURCE_TEXT_FROM_INDIGO_500_TO_CYAN_500, SOURCE_TEXT_FROM_PURPLE_500_TO_INDIGO_500, SOURCE_TEXT_GRID_COLS_1, SOURCE_TEXT_GRID_COLS_1_LG_GRID_COLS, SOURCE_TEXT_GRID_COLS_1_MD_GRID_COLS, SOURCE_TEXT_HASHTAGS, SOURCE_TEXT_KHOP, SOURCE_TEXT_LYRICS, SOURCE_TEXT_MAXMODE, SOURCE_TEXT_MESSAGE, SOURCE_TEXT_MP3, SOURCE_TEXT_NAME, SOURCE_TEXT_NOOPENER_NOREFERRER, SOURCE_TEXT_PERSONALIZE, SOURCE_TEXT_POLITE, SOURCE_TEXT_READONLY, SOURCE_TEXT_READWRITE, SOURCE_TEXT_SEO, SOURCE_TEXT_SETTINGKEY, SOURCE_TEXT_SPLIT, SOURCE_TEXT_START, SOURCE_TEXT_STATUS, SOURCE_TEXT_SWITCH, SOURCE_TEXT_SYMBOL_10, SOURCE_TEXT_SYMBOL_11, SOURCE_TEXT_SYMBOL_12, SOURCE_TEXT_SYMBOL_13, SOURCE_TEXT_SYMBOL_14, SOURCE_TEXT_SYMBOL_15, SOURCE_TEXT_SYMBOL_16, SOURCE_TEXT_SYMBOL_17, SOURCE_TEXT_SYMBOL_18, SOURCE_TEXT_SYMBOL_19, SOURCE_TEXT_SYMBOL_2, SOURCE_TEXT_SYMBOL_20, SOURCE_TEXT_SYMBOL_21, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_SYMBOL_5, SOURCE_TEXT_SYMBOL_6, SOURCE_TEXT_SYMBOL_7, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_TAGS, SOURCE_TEXT_TAI_NHAC_SUNO, SOURCE_TEXT_TEXT, SOURCE_TEXT_TEXT_EMERALD_300_BG_EMERALD_500, SOURCE_TEXT_TEXT_FUCHSIA_300_BG_FUCHSIA_500, SOURCE_TEXT_TEXT_SLATE_300_BG_SLATE_800, SOURCE_TEXT_TEXT_SLATE_400_BG_SLATE_800, SOURCE_TEXT_TITLE, SOURCE_TEXT_TRACK_ORDER, SOURCE_TEXT_TRUE, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_URL, SOURCE_TEXT_VI, SOURCE_TEXT_WAV } from "../../../constants/sourceText";
+import { StudioEmptyState, StudioLoadingState, StudioSegmentedControl, StudioSegmentButton, StudioHeader, StudioDisclosureButton, StudioPage, StudioCanvas, StudioFieldset, StudioCard, StudioInput, StudioTextarea } from "../../../components/ui/Studio.js";
+import {
+  SOURCE_TEMPLATE_1_1,
+  SOURCE_TEMPLATE_HTTP,
+  SOURCE_TEMPLATE_LYRICS,
+  SOURCE_TEMPLATE_MUSIC,
+  SOURCE_TEMPLATE_MUSIC_BACKGROUND,
+  SOURCE_TEMPLATE_MUSIC_COVER,
+  SOURCE_TEMPLATE_MUSIC_TRACK_EVALUATION,
+  SOURCE_TEMPLATE_SEO,
+  SOURCE_TEMPLATE_SEO_2,
+  SOURCE_TEMPLATE_SEO_ALL,
+  SOURCE_TEMPLATE_SYMBOL_10,
+  SOURCE_TEMPLATE_SYMBOL_11,
+  SOURCE_TEMPLATE_SYMBOL_12,
+  SOURCE_TEMPLATE_SYMBOL_13,
+  SOURCE_TEMPLATE_SYMBOL_14,
+  SOURCE_TEMPLATE_SYMBOL_15,
+  SOURCE_TEMPLATE_SYMBOL_16,
+  SOURCE_TEMPLATE_SYMBOL_17,
+  SOURCE_TEMPLATE_SYMBOL_5,
+  SOURCE_TEMPLATE_SYMBOL_7,
+  SOURCE_TEMPLATE_SYMBOL_8,
+  SOURCE_TEMPLATE_SYMBOL_9,
+  SOURCE_TEMPLATE_TITLE,
+  SOURCE_TEXT_0,
+  SOURCE_TEXT_16_9_HD,
+  SOURCE_TEXT_ALERT,
+  SOURCE_TEXT_BUTTON,
+  SOURCE_TEXT_CAN_TAI_FILE_NHAC_TU_DANH,
+  SOURCE_TEXT_CENTER,
+  SOURCE_TEXT_CHECKBOX,
+  SOURCE_TEXT_COUNT,
+  SOURCE_TEXT_DATA_PLAYLISTSEOOPTIONS,
+  SOURCE_TEXT_DATA_SEOWARNING,
+  SOURCE_TEXT_DATA_SONGS,
+  SOURCE_TEXT_DATA_STYLEANALYSIS,
+  SOURCE_TEXT_DATA_SUNOSETTINGS,
+  SOURCE_TEXT_DATA_SUNOSETTINGSANALYSIS,
+  SOURCE_TEXT_DESCRIPTION,
+  SOURCE_TEXT_END,
+  SOURCE_TEXT_EXCLUDESTYLES,
+  SOURCE_TEXT_FILE,
+  SOURCE_TEXT_FOLDER,
+  SOURCE_TEXT_FROM_AMBER_500_TO_ORANGE_500,
+  SOURCE_TEXT_FROM_FUCHSIA_500_TO_PINK_500,
+  SOURCE_TEXT_FROM_INDIGO_500_TO_CYAN_500,
+  SOURCE_TEXT_FROM_PURPLE_500_TO_INDIGO_500,
+  SOURCE_TEXT_GRID_COLS_1,
+  SOURCE_TEXT_GRID_COLS_1_LG_GRID_COLS,
+  SOURCE_TEXT_GRID_COLS_1_MD_GRID_COLS,
+  SOURCE_TEXT_HASHTAGS,
+  SOURCE_TEXT_KHOP,
+  SOURCE_TEXT_LYRICS,
+  SOURCE_TEXT_MAXMODE,
+  SOURCE_TEXT_MESSAGE,
+  SOURCE_TEXT_MP3,
+  SOURCE_TEXT_NAME,
+  SOURCE_TEXT_NOOPENER_NOREFERRER,
+  SOURCE_TEXT_PERSONALIZE,
+  SOURCE_TEXT_POLITE,
+  SOURCE_TEXT_READONLY,
+  SOURCE_TEXT_READWRITE,
+  SOURCE_TEXT_SEO,
+  SOURCE_TEXT_SETTINGKEY,
+  SOURCE_TEXT_SPLIT,
+  SOURCE_TEXT_START,
+  SOURCE_TEXT_STATUS,
+  SOURCE_TEXT_SWITCH,
+  SOURCE_TEXT_SYMBOL_10,
+  SOURCE_TEXT_SYMBOL_11,
+  SOURCE_TEXT_SYMBOL_12,
+  SOURCE_TEXT_SYMBOL_13,
+  SOURCE_TEXT_SYMBOL_14,
+  SOURCE_TEXT_SYMBOL_15,
+  SOURCE_TEXT_SYMBOL_16,
+  SOURCE_TEXT_SYMBOL_17,
+  SOURCE_TEXT_SYMBOL_18,
+  SOURCE_TEXT_SYMBOL_19,
+  SOURCE_TEXT_SYMBOL_2,
+  SOURCE_TEXT_SYMBOL_20,
+  SOURCE_TEXT_SYMBOL_21,
+  SOURCE_TEXT_SYMBOL_4,
+  SOURCE_TEXT_SYMBOL_5,
+  SOURCE_TEXT_SYMBOL_6,
+  SOURCE_TEXT_SYMBOL_7,
+  SOURCE_TEXT_SYMBOL_8,
+  SOURCE_TEXT_SYMBOL_9,
+  SOURCE_TEXT_TAGS,
+  SOURCE_TEXT_TAI_NHAC_SUNO,
+  SOURCE_TEXT_TEXT,
+  SOURCE_TEXT_TEXT_EMERALD_300_BG_EMERALD_500,
+  SOURCE_TEXT_TEXT_FUCHSIA_300_BG_FUCHSIA_500,
+  SOURCE_TEXT_TEXT_SLATE_300_BG_SLATE_800,
+  SOURCE_TEXT_TEXT_SLATE_400_BG_SLATE_800,
+  SOURCE_TEXT_TITLE,
+  SOURCE_TEXT_TRACK_ORDER,
+  SOURCE_TEXT_TRUE,
+  SOURCE_TEXT_UNSTYLED,
+  SOURCE_TEXT_URL,
+  SOURCE_TEXT_VI,
+  SOURCE_TEXT_WAV,
+} from "../../../constants/sourceText";
 import { readBlobAsDataUrl, saveBlobWithDialog as saveMusicBlobWithDialog } from "../../../lib/fileUtils";
 import { ConfirmDeleteModal } from "../../../components/common/ConfirmDeleteModal";
 import React, { useEffect, useRef, useState } from "react";
@@ -176,7 +277,6 @@ const SunoParameterAnalysisDetails = ({ analysis, texts }: { analysis?: SunoPara
   );
 };
 type SunoDownloadFormat = "mp3" | "wav";
-/** Download choice: AI picks 1 take per song, take 1 of each song without AI, or both takes. */
 type SunoDownloadPick = "curated" | "first" | "all";
 type ResultViewMode = "lyrics" | "seo" | "split";
 const formatPlaylistTimestamp = (seconds: number): string => {
@@ -251,7 +351,6 @@ interface PersistedMusicCreatorState {
   sunoPendingPlaylist?: { songIds: string[]; playlistName: string; sourceTitle: string; testOnly: boolean; resumeGeneration?: boolean } | null;
   curatedDownloadedTracks?: CuratedDownloadedTrack[];
   sunoDownloadFormat?: SunoDownloadFormat;
-  /** Older saves: false meant "take 1 without AI". */
   sunoEvaluateTracks?: boolean;
   sunoDownloadPick?: SunoDownloadPick;
   sunoInspo?: string;
@@ -898,7 +997,21 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_PLAN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ ...chatPolicy, requestedSongCount: outputCount, streamProgress: true, style: trimmedStyle, analyzeStyleFromSource, referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource], projectId: runId, requestId: runId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo, aiExecution: { provider, model, executionMode, chromeHeadless } }),
+        body: jsonUtils.safeStringify({
+          ...chatPolicy,
+          requestedSongCount: outputCount,
+          streamProgress: true,
+          style: trimmedStyle,
+          analyzeStyleFromSource,
+          referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource],
+          projectId: runId,
+          requestId: runId,
+          thumbnailReference,
+          thumbnailReferenceName,
+          thumbnailDescription,
+          sunoInspo,
+          aiExecution: { provider, model, executionMode, chromeHeadless },
+        }),
         signal: abortController.signal,
       });
       const result = await readMusicPlanResponse(response, ({ progress, data }) => {
@@ -971,7 +1084,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             const thumbnailResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
               method: HTTP_METHODS.POST,
               headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-              body: jsonUtils.safeStringify({ ...chatPolicy,
+              body: jsonUtils.safeStringify({
+                ...chatPolicy,
                 songs: generatedSongs,
                 style: analyzeStyleFromSource ? createAnalyzedMusicStyle(generatedStyleAnalysis)?.content || trimmedStyle : trimmedStyle,
                 styleAnalysis: generatedStyleAnalysis,
@@ -1197,13 +1311,13 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ ...chatPolicy,
+        body: jsonUtils.safeStringify({
+          ...chatPolicy,
           stream: true,
           folderPath,
           tracks,
           maxTracks: isTestPlaylistDownload ? 1 : undefined,
           playlistUrl: activePlaylistUrl,
-          // A pasted playlist of another project is named from Suno, not from this screen's songs.
           songTitles: !requestedPlaylistUrl || requestedPlaylistUrl === _.trim(sunoPlaylistUrl) ? _.map(songs, SOURCE_TEXT_TITLE) : [],
           keepAllTakes: !isTestPlaylistDownload && sunoDownloadPick === "all",
           format: sunoDownloadFormat,
@@ -2481,19 +2595,12 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
           {isLoading || (isRegeneratingSeo && viewMode === MUSIC_VIEW_MODES.SEO) ? (
             <StudioLoadingState secondary={isRegeneratingSeo} icon={isRegeneratingSeo ? Search : Disc3} title={isRegeneratingSeo ? texts.BLOCK_SEO_LOADING : texts.BLOCK_LYRICS_LOADING} description={isRegeneratingSeo ? texts.SEO_OPTIONS_COUNT_BADGE : SOURCE_TEMPLATE_SYMBOL_17(String(texts.HEADER_BADGE), String(outputCount), String(texts.SONG_UNIT))} />
           ) : _.isEmpty(songs) ? (
-            <div className={cn(SRT.SOURCE_TEXT_PY_14_FLEX_FLEX_COL_ITEMS_CENTER)}>
-              <div className={cn(SRT.SOURCE_TEXT_W_14_H_14_ROUNDED_2XL_BG)}>
-                <Music2 className={cn(SRT.SOURCE_TEXT_W_7_H_7_TEXT_PURPLE_400_2)} />
-              </div>
-              <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_1_MAX_W_SM)}>
-                <h3 className={cn(SRT.SOURCE_TEXT_TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_200)}>{texts.BLOCK_LYRICS_EMPTY_TITLE}</h3>
-                <p className={cn(SRT.SOURCE_TEXT_TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_2)}>{texts.BLOCK_LYRICS_EMPTY_DESC}</p>
-              </div>
+            <StudioEmptyState icon={Music2} title={texts.BLOCK_LYRICS_EMPTY_TITLE} description={texts.BLOCK_LYRICS_EMPTY_DESC}>
               <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleTrySampleTemplate} disabled={isBusy} className={cn(MCS.PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_BG_PURPLE_600_20_HOVER_BG_PURPLE_600)}>
                 <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_TEXT_8)} />
                 <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.TRY_SAMPLE_BTN}</span>
               </Button>
-            </div>
+            </StudioEmptyState>
           ) : (
             <div>
               {!_.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl) && (
@@ -2565,7 +2672,18 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         onClose={() => setStyleToDelete(null)}
         onConfirm={confirmDeleteStyle}
         title={texts.STYLE_DELETE_BTN}
-        message={<>{texts.STYLE_DELETE_CONFIRM}{SRT.SOURCE_TEXT_SYMBOL_52}<span className={cn(MCS.FONT_EXTRABOLD_TEXT_WHITE)}>{SOURCE_TEXT_SYMBOL_19}{styleToDelete?.title}{SOURCE_TEXT_SYMBOL_20}</span>{SOURCE_TEXT_SYMBOL_21}</>}
+        message={
+          <>
+            {texts.STYLE_DELETE_CONFIRM}
+            {SRT.SOURCE_TEXT_SYMBOL_52}
+            <span className={cn(MCS.FONT_EXTRABOLD_TEXT_WHITE)}>
+              {SOURCE_TEXT_SYMBOL_19}
+              {styleToDelete?.title}
+              {SOURCE_TEXT_SYMBOL_20}
+            </span>
+            {SOURCE_TEXT_SYMBOL_21}
+          </>
+        }
         warning={texts.CANNOT_BE_UNDONE}
         cancelLabel={texts.CANCEL_BTN}
         confirmLabel={texts.STYLE_DELETE_BTN}
@@ -2575,7 +2693,18 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         onClose={() => setInspoToDelete(null)}
         onConfirm={confirmDeleteInspo}
         title={texts.INSPO_DELETE_CONFIRM}
-        message={<>{texts.INSPO_DELETE_CONFIRM}{SRT.SOURCE_TEXT_SYMBOL_52}<span className={cn(MCS.FONT_EXTRABOLD_TEXT_WHITE)}>{SOURCE_TEXT_SYMBOL_19}{inspoToDelete?.title}{SOURCE_TEXT_SYMBOL_20}</span>{SOURCE_TEXT_SYMBOL_21}</>}
+        message={
+          <>
+            {texts.INSPO_DELETE_CONFIRM}
+            {SRT.SOURCE_TEXT_SYMBOL_52}
+            <span className={cn(MCS.FONT_EXTRABOLD_TEXT_WHITE)}>
+              {SOURCE_TEXT_SYMBOL_19}
+              {inspoToDelete?.title}
+              {SOURCE_TEXT_SYMBOL_20}
+            </span>
+            {SOURCE_TEXT_SYMBOL_21}
+          </>
+        }
         warning={texts.CANNOT_BE_UNDONE}
         cancelLabel={texts.CANCEL_BTN}
         confirmLabel={texts.STYLE_DELETE_BTN}

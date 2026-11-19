@@ -1,8 +1,3 @@
-// Hand tools and hand weapons for every skin, drawn lying along the ground (units of R, ground y = 0): the handle
-// end at -x, the working end at +x, so the figure table can stand a long one up by turning it around its foot.
-// Kinds: hammer, mallet, whetstone, sickle, scythe, hoe, pitchfork, shovel, pickaxe, saw, tongs, dagger, mace, halberd,
-// crossbow, club, oar, fishingRod, broom, staff; long guns (arquebus, musket, rifle, carbine, bayonet: a rifle with its
-// blade) and arrows (a sheaf stuck in the ground, drawn standing).
 export const MOTION_KIT_TOOL_KINDS = ["hammer", "mallet", "whetstone", "sickle", "scythe", "hoe", "pitchfork", "shovel", "pickaxe", "saw", "tongs", "dagger", "mace", "halberd", "crossbow", "club", "oar", "fishingRod", "broom", "staff", "arquebus", "musket", "rifle", "carbine", "bayonet", "arrows"];
 export const SKIN_PART_TOOL = `(c, o, K) => {
   const kind = o.kind;

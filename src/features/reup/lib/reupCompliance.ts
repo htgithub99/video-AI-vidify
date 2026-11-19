@@ -1,15 +1,17 @@
 import _ from "lodash";
 import type { ReupJob, ReupReport, ReupReportLevel } from "../types/reup.js";
-/** Thresholds of the upload check (shares are of the video's length). */
 export const REUP_CHECK = { NARRATED_RISK: 0.35, NARRATED_REVIEW: 0.5, SILENT_REVIEW: 12, PADDING_REVIEW: 0.45, SIMILAR_REVIEW: 0.2, SIMILAR_RISK: 0.4, NGRAM: 3 } as const;
 const RANK: Record<ReupReportLevel, number> = { ok: 0, review: 1, risk: 2 };
 const grams = (text: string): Set<string> => {
-  const words = text.toLowerCase().normalize("NFC").replace(/[^\p{L}\p{N}\s]+/gu, " ").split(/\s+/).filter(Boolean);
-  // Scripts without spaces (Japanese) compare by characters.
+  const words = text
+    .toLowerCase()
+    .normalize("NFC")
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .split(/\s+/)
+    .filter(Boolean);
   const units = words.length * 4 < text.length ? [...text.replace(/\s+/g, "")] : words;
   return new Set(_.range(Math.max(0, units.length - REUP_CHECK.NGRAM + 1)).map((i) => units.slice(i, i + REUP_CHECK.NGRAM).join(" ")));
 };
-/** How much two scripts share (Jaccard over word 3-grams), 0 … 1. */
 export const reupTextSimilarity = (a: string, b: string): number => {
   const x = grams(a);
   const y = grams(b);
@@ -20,11 +22,6 @@ export const reupTextSimilarity = (a: string, b: string): number => {
 };
 const scriptText = (job: Pick<ReupJob, "script">): string => (job.script?.outputs || []).flatMap((o) => o.sections.map((s) => s.text)).join(" ");
 const titles = (job: Pick<ReupJob, "package">): string[] => (job.package?.options || []).map((o) => o.title.trim().toLowerCase()).filter(Boolean);
-/**
- * Upload check against YouTube's reused and inauthentic (mass-produced) content rules, from the edited videos and this
- * channel's earlier runs: how much carries our own words, silent filler, repeated footage, reused sources, scripts or
- * titles that echo earlier videos, and the notes the footage rights or video type call for.
- */
 export const reupReport = (job: ReupJob, past: ReupJob[]): ReupReport => {
   const notes: ReupReport["notes"] = [];
   const add = (code: ReupReport["notes"][number]["code"], level: ReupReportLevel, value?: string | number) => notes.push({ code, level, ...(value !== undefined ? { value: String(value) } : {}) });
@@ -37,7 +34,6 @@ export const reupReport = (job: ReupJob, past: ReupJob[]): ReupReport => {
   if (silentMax > REUP_CHECK.SILENT_REVIEW) add("silence", "review", Math.round(silentMax));
   if (padding > REUP_CHECK.PADDING_REVIEW) add("padding", "review", Math.round(padding * 100));
   if (job.outputs.some((o) => o.repeated)) add("repeated", "review");
-  // Narrated footage with its own sound turned off: the quiet parts have only music; the sound makes them feel real.
   if (!speech && job.settings.natural === "off" && job.source?.hasAudio && job.source.kind === "video") add("naturalOff", "ok");
   const others = past.filter((p) => p.id !== job.id);
   const sameSource = others.filter((p) => job.fingerprint && p.fingerprint === job.fingerprint);

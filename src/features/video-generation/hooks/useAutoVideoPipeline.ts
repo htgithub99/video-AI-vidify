@@ -717,7 +717,8 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
       config.planningChatModel = resolvedAiExecution.model;
       config.planningExecutionMode = resolvedAiExecution.mode;
       config.planningChromeHeadless = resolvedAiExecution.chromeHeadless;
-      const pipelineSystemFetch = (url: string, payload: any, signal?: AbortSignal) => safeSystemFetch(url, { ...payload, aiExecution: { mode: resolvedAiExecution.mode, provider: resolvedAiExecution.provider, model: resolvedAiExecution.model, projectId: newProjectId || pipelineTargetKey, chromeHeadless: resolvedAiExecution.chromeHeadless, multiRoom: config.planningMultiRoom === true, allowFallback: config.planningAllowFallback === true } }, signal);
+      const pipelineSystemFetch = (url: string, payload: any, signal?: AbortSignal) =>
+        safeSystemFetch(url, { ...payload, aiExecution: { mode: resolvedAiExecution.mode, provider: resolvedAiExecution.provider, model: resolvedAiExecution.model, projectId: newProjectId || pipelineTargetKey, chromeHeadless: resolvedAiExecution.chromeHeadless, multiRoom: config.planningMultiRoom === true, allowFallback: config.planningAllowFallback === true } }, signal);
       const routeTexts = _.isEqual(config.language, ProjectLanguage.VI) ? PIPELINE_EXECUTION_ROUTE_TEXTS.vi : PIPELINE_EXECUTION_ROUTE_TEXTS.en;
       const modeLabel = _.isEqual(resolvedAiExecution.mode, AiPlanningExecutionMode.RoomOnly) ? routeTexts.ROOM_ONLY : _.isEqual(resolvedAiExecution.mode, AiPlanningExecutionMode.ApiOnly) ? routeTexts.API_ONLY : routeTexts.HYBRID;
       appendLog(routeTexts.formatRoute(modeLabel, resolvedAiExecution.provider, resolvedAiExecution.model));

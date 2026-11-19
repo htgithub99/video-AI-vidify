@@ -15,7 +15,23 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
   const script = motionScriptAiExecution(state);
   const onePass = state.visualSettings?.mode === RT_MAINTENANCE.REMOTION;
   const patchMain = (value: Partial<MotionAiChoice>) =>
-    patch({ ...value, lightAiProvider: light.provider, lightAiModel: light.model, lightAiHeadless: light.chromeHeadless, lightAiFallback: light.allowFallback, planAiProvider: plan.provider, planAiModel: plan.model, planAiHeadless: plan.chromeHeadless, planAiFallback: plan.allowFallback, scriptAiProvider: script.provider, scriptAiModel: script.model, scriptAiHeadless: script.chromeHeadless, scriptAiFallback: script.allowFallback, scriptAiMultiRoom: script.multiRoom, sceneAiHeadless: scene.chromeHeadless });
+    patch({
+      ...value,
+      lightAiProvider: light.provider,
+      lightAiModel: light.model,
+      lightAiHeadless: light.chromeHeadless,
+      lightAiFallback: light.allowFallback,
+      planAiProvider: plan.provider,
+      planAiModel: plan.model,
+      planAiHeadless: plan.chromeHeadless,
+      planAiFallback: plan.allowFallback,
+      scriptAiProvider: script.provider,
+      scriptAiModel: script.model,
+      scriptAiHeadless: script.chromeHeadless,
+      scriptAiFallback: script.allowFallback,
+      scriptAiMultiRoom: script.multiRoom,
+      sceneAiHeadless: scene.chromeHeadless,
+    });
   const selectSceneProvider = (provider: MotionSceneAiChoice["sceneAiProvider"]) => {
     const next = resolveMotionSceneExecution({ provider });
     patch({ sceneAiProvider: next.provider, sceneAiModel: next.model });

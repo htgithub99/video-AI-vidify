@@ -33,7 +33,6 @@ const append = (level: string, args: unknown[]): void => {
     return;
   }
 };
-// Mirrors the backend console into storage/logs/backend-console.log so runs can be diagnosed after the fact.
 export const installConsoleLog = (): void => {
   if (installed) return;
   installed = true;

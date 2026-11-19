@@ -73,24 +73,14 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         ...(motionRenameMapActive(analysis).length ? { renaming: RENAME.PROMPT.THUMBNAIL } : {}),
       };
       opts.log?.(T.LOG_SPEC);
-      // The thumbnail is a spec like every scene: the kit draws it in the video's drawing style.
       const render = { profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE, year: motionAnalysisEraYear(analysis) };
       const specExec: MotionAiExecution = { ...exec, singleResponse: true };
-      const base = [
-        motionSceneSpecPrompt({}, { year: motionAnalysisEraYear(analysis), task: T.SPEC_TASK(width, height), frame: [width, height] }),
-        T.LAYOUT,
-        T.REFERENCE_RULE,
-        T.STYLE_RULE + style,
-        T.SPEC_HEADLINE,
-        stringifyJson(brief),
-      ].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+      const base = [motionSceneSpecPrompt({}, { year: motionAnalysisEraYear(analysis), task: T.SPEC_TASK(width, height), frame: [width, height] }), T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, T.SPEC_HEADLINE, stringifyJson(brief)].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
       let reason = "";
       for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
         opts.signal?.throwIfAborted();
         const prompt = reason ? [base, T.SPEC_RETRY(reason)].join(RT_MAINTENANCE.NEWLINE) : base;
         let page = "";
-        // The AI's own failures (no answer, quota) are the AI runner's to resend or report; only an answer that is not a
-        // usable spec asks again here.
         const answer = await deps.runMotionAi(prompt, T.HTML_ARTIFACT, specExec, opts.signal, opts.log, images);
         try {
           const spec = motionSceneSpecRead(typeof answer === "string" ? extractJson(answer) : answer, [width, height]);
@@ -105,8 +95,6 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         }
         const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.PNG}`);
         await fs.promises.writeFile(file.replace(/\.png$/u, T.HTML_FILE_EXT), motionHtmlFigures(page, render));
-        // The browser can fail on its own: the accepted spec is shown again (no new AI request). A blank or wrongly sized
-        // picture is the spec's fault and asks for a new one.
         for (let show = 1; show <= T.RENDER_TRIES; show++) {
           opts.log?.(T.RENDER_LOG);
           let runtime: Awaited<ReturnType<typeof deps.openMotionHtmlRuntime>> | undefined;

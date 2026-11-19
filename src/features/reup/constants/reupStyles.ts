@@ -1,13 +1,8 @@
 import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_LOG_SECTIONS } from "../../motion/constants/motionLogSections.js";
 import { MOTION_REMOTION_STYLES as R, MOTION_STYLES as M } from "../../motion/constants/motionStyles.js";
-/** The Reup screen wears Video Motion's look: its classes are reused here, only Reup's own pieces are added. */
 export const REUP_STYLES = {
   EXPORT_ACTIONS: "grid grid-cols-1 gap-2 pt-2",
-  MUSIC_LIST: "col-span-full grid grid-cols-1 gap-2",
-  MUSIC_TRACK: "flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-950/40 p-2",
-  MUSIC_NAME: "truncate text-xs font-semibold text-slate-300",
-  MUSIC_PLAYER: "h-8 w-full",
   PAGE: MR.MOTION_TEXT_SPACE_Y_6_W_FULL,
   CARD: MR.MOTION_TEXT_GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P,
   INPUT: MR.MOTION_TEXT_W_FULL_PX_3_PY_2_ROUNDED_XL,
@@ -31,7 +26,6 @@ export const REUP_STYLES = {
   STEPPER_NUM_IDLE: MR.MOTION_TEXT_BG_SLATE_800_TEXT_SLATE_400,
   STEPPER_TITLE: MR.MOTION_TEXT_FONT_SEMIBOLD_TEXT_XS_TRUNCATE,
   GRID: M.STUDIO_GRID_LAYOUT,
-  /** The left column stretches to the right one's height; its last card takes the rest. */
   LEFT: `${M.STUDIO_LEFT_COLUMN} xl:self-stretch [&>*:last-child]:flex-1`,
   RIGHT: M.STUDIO_RIGHT_COLUMN,
   BODY: M.SPACE_Y_3,
@@ -66,7 +60,6 @@ export const REUP_STYLES = {
   LOG_RERUN: "shrink-0 text-[10px] font-semibold text-purple-300 hover:text-purple-200 hover:underline underline-offset-2",
   BAR: M.H_2,
   WARN_BOX: "rounded-xl border border-amber-400/40 bg-amber-400/5 p-3 space-y-1",
-  /** Video Motion's scene grid (MOTION_REMOTION_STYLES), with Reup's frame image and summary lines. */
   SCENES: R.PANEL,
   SCENES_HEAD: R.HEAD,
   SCENES_COUNT: R.COUNT,
@@ -74,7 +67,6 @@ export const REUP_STYLES = {
   SCENES_GRID: R.GRID,
   SCENE_CARD: R.CARD,
   SCENE_IMAGE: "block w-full aspect-video object-cover bg-slate-950",
-  /** Download icon beside the caption, always visible (an icon over a bright frame could not be seen). */
   SCENE_DOWNLOAD: "btn-icon-tiny shrink-0 w-7 h-7 !p-0 rounded-lg flex items-center justify-center cursor-pointer text-slate-300 hover:text-purple-300",
   SCENE_CAPTION_ROW: "flex items-center gap-1 pr-1 min-w-0",
   SCENE_PENDING: `${R.PENDING} bg-slate-955/60`,
@@ -94,7 +86,6 @@ export const REUP_STYLES = {
   TEXTAREA: "resize-y leading-relaxed",
   INLINE_ICON: "w-3.5 h-3.5 shrink-0 inline mr-1 align-[-2px]",
   VIDEO_HEAD: "flex items-center justify-between gap-2",
-  /** Video Motion's empty player: a black frame with the spinning sparkle tile. */
   PREVIEW_EMPTY: M.W_FULL_H_340PX_SM_H_380PX_MD_H_420PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER,
   PREVIEW_EMPTY_TILE: M.W_14_H_14_ROUNDED_2XL_BG_GRADIENT_TO_TR_FROM_PURPLE_600_20_VIA_FUCHSIA_600_20_TO_PINK_600_20,
   PREVIEW_EMPTY_ICON: M.W_7_H_7_TEXT_PURPLE_400_ANIMATE_SPIN,

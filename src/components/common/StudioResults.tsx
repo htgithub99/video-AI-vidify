@@ -11,34 +11,25 @@ import { getPagination } from "../../lib/pagination.js";
 import { formatMediaFileSize } from "../../lib/mediaFormat.js";
 import { cn } from "../../lib/utils.js";
 import type { Lang } from "../../lib/lang.js";
-
-/** What a delete did: ids that could not be removed (kept in the dialog for a retry) and the space it gave back. */
 export type StudioDeleteOutcome = { failed?: string[]; error?: string; freedBytes?: number };
-/** Pieces a result card places itself: its checkbox, its delete button and whether it is picked. */
 export type StudioResultSlots = { selected: boolean; select: ReactNode; remove: ReactNode };
 type Props<T> = {
   items: T[];
   lang: Lang;
   getId: (item: T) => string;
   getTitle: (item: T) => string;
-  /** Delete these items; `all` is true for "Delete all". Throws or returns `failed` ids when some could not go. */
   remove: (items: T[], all: boolean) => Promise<StudioDeleteOutcome | void>;
   renderItem: (item: T, slots: StudioResultSlots) => ReactNode;
   gridClassName: string;
-  /** Extra toolbar text after the count (size on disk...). */
   summary?: ReactNode;
-  /** Extra toolbar buttons (download ZIP, clean junk...). */
   actions?: ReactNode;
-  /** Items that must not be picked or deleted right now (a clip still rendering...). */
   locked?: (item: T) => boolean;
   disabled?: boolean;
-  /** "disk": files are deleted for good; "list": only the list entry goes (the user's saved file stays). */
   scope?: "disk" | "list";
   pageSize?: number;
   className?: string;
 };
 const count = (template: string, n: number): string => template.replace(S.COUNT, String(n));
-/** The results list every studio screen shares, modelled on Video Motion's: pick one / many / all, delete behind one confirm dialog, page through the rest. */
 export const StudioResults = <T,>({ items, lang, getId, getTitle, remove, renderItem, gridClassName, summary, actions, locked, disabled = false, scope = "disk", pageSize = S.PAGE_SIZE, className }: Props<T>) => {
   const text = STUDIO_RESULTS_TEXT[lang] || STUDIO_RESULTS_TEXT.vi;
   const [page, setPage] = useState(1);
@@ -50,13 +41,13 @@ export const StudioResults = <T,>({ items, lang, getId, getTitle, remove, render
   const selected = pickable.filter((item) => picked.has(getId(item)));
   const allSelected = pickable.length > 0 && selected.length === pickable.length;
   const blocked = busy || disabled;
+  const pickableIds = pickable.map(getId).join("\n");
   useEffect(() => {
     setPicked((previous) => {
-      const next = new Set(pickable.map(getId).filter((id) => previous.has(id)));
+      const next = new Set(pickableIds.split("\n").filter((id) => previous.has(id)));
       return next.size === previous.size ? previous : next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items]);
+  }, [pickableIds]);
   if (!items.length) return null;
   const { page: current, start, end } = getPagination(items.length, page, pageSize);
   const ask = (list: T[], all = false) => {

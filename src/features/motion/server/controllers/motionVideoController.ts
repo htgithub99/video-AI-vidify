@@ -148,7 +148,6 @@ export const clearMotionVideoResults = (_req: Request, res: Response): void => {
   if (isMotionRenderBusy()) return void fail(res, 409, MOTION_TEXT_DANG_RENDER_KHONG_THE_XOA_TAT_CA);
   res.json({ success: true, ...clearMotionResults() });
 };
-/** The system "Save as" dialog for an MP4; empty when the user cancels. Shared with other video screens (Reup). */
 export const pickMotionSaveFile = (suggestedName: string): Promise<string> => execFileText(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), MOTION_TEXT_SELECT_SAVE_FILE, path.basename(suggestedName), MOTION_VIDEO_CONSTANTS.EXT_MP4]);
 export const selectMotionSaveDestination = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -365,21 +364,14 @@ export const registerMotionVoice = async (req: Request, res: Response): Promise<
 export const compileMotionStory = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, compileMotionStoryInput);
 export const createMotionProduction = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, job: startMotionProduction(body) }));
 export const continueMotionProduction = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, job: resumeMotionProduction(String(body.productionId), body.clearGeminiChatsBeforeExport, { aiExecution: body.aiExecution, sceneAiExecution: body.sceneAiExecution, planAiExecution: body.planAiExecution, scriptAiExecution: body.scriptAiExecution }) }));
-export const deleteMotionProductionScenesHandler = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, deleted: deleteMotionProductionScenes(String(body.productionId), Array.isArray(body.sceneIds) ? body.sceneIds.map(String) : undefined, MOTION_VISUAL.TEXT[body.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI].sceneDeleted) }));
-// Redraw / delete scenes of a production that is still running (the run takes them over); { live: false } when it is not.
+export const deleteMotionProductionScenesHandler = (req: Request, res: Response): Promise<void> =>
+  respondMotionAction(req, res, (body) => ({ success: true, deleted: deleteMotionProductionScenes(String(body.productionId), Array.isArray(body.sceneIds) ? body.sceneIds.map(String) : undefined, MOTION_VISUAL.TEXT[body.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI].sceneDeleted) }));
 export const motionProductionSceneActionHandler = (req: Request, res: Response): Promise<void> =>
   respondMotionAction(req, res, (body) => ({
     success: true,
-    ...actMotionProductionScenes(String(body.productionId), {
-      kind: body.action === "delete" ? "delete" : "redo",
-      ids: Array.isArray(body.sceneIds) ? body.sceneIds.map(String) : [],
-      note: body.note ? String(body.note).slice(0, 400) : undefined,
-      reason: MOTION_VISUAL.TEXT[body.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI].sceneDeleted,
-    }),
+    ...actMotionProductionScenes(String(body.productionId), { kind: body.action === "delete" ? "delete" : "redo", ids: Array.isArray(body.sceneIds) ? body.sceneIds.map(String) : [], note: body.note ? String(body.note).slice(0, 400) : undefined, reason: MOTION_VISUAL.TEXT[body.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI].sceneDeleted }),
   }));
-// Scenes the page rebuilt while no run was going, written back into the production so a reload or a resume keeps them.
-export const motionProductionSyncScenesHandler = (req: Request, res: Response): Promise<void> =>
-  respondMotionAction(req, res, (body) => ({ success: true, synced: syncMotionProductionScenes(String(body.productionId), body.scenes && typeof body.scenes === "object" ? body.scenes : undefined) }));
+export const motionProductionSyncScenesHandler = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, synced: syncMotionProductionScenes(String(body.productionId), body.scenes && typeof body.scenes === "object" ? body.scenes : undefined) }));
 export const getMotionStoryStatus = (req: Request, res: Response): void => {
   const job = getMotionProduction(_.toString(req.params.jobId), _.toString(req.query.rev) || undefined) || getStoryJob(_.toString(req.params.jobId));
   if (!job) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH);

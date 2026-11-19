@@ -862,8 +862,8 @@ const motionRoomChatModel = (provider: string, model?: string): AiPlanningChatMo
               AiPlanningChatModel.MetaAiAuto,
             )
           : provider === AiPlanningFallbackProvider.GrokChat
-          ? ((_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined) as AiPlanningChatModel)
-          : pickEnum(_.values(AiPlanningChatModel), model, AiPlanningChatModel.GeminiFlash);
+            ? (_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined as AiPlanningChatModel)
+            : pickEnum(_.values(AiPlanningChatModel), model, AiPlanningChatModel.GeminiFlash);
 const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, aiOutageMs(provider), (unavailableRoomProvider(provider)?.until || 0) - Date.now(), (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
 const countMotionRequest = (provider: string, log?: MotionAiLog): void => {
   const run = motionAiRunStore.getStore();
@@ -1163,7 +1163,16 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
         () => motionRoomBlockedMs(provider, route.model),
         (ms) => motionServiceDelay(ms, linked),
         async () => {
-          await probeChatPlanningRoomReady({ provider: provider as AiPlanningFallbackProvider, model: motionRoomChatModel(provider, route.model), prompt: MR.MOTION_TEXT_EMPTY, projectId: run?.projectId || AIR.PROBE_WORKER, workerId: run?.workerId || AIR.PROBE_WORKER, chromeHeadless: route.chromeHeadless !== false, signal: AbortSignal.any([linked, AbortSignal.timeout(AIR.PROBE_TIMEOUT_MS)]), allowDefaultGeminiModel: true });
+          await probeChatPlanningRoomReady({
+            provider: provider as AiPlanningFallbackProvider,
+            model: motionRoomChatModel(provider, route.model),
+            prompt: MR.MOTION_TEXT_EMPTY,
+            projectId: run?.projectId || AIR.PROBE_WORKER,
+            workerId: run?.workerId || AIR.PROBE_WORKER,
+            chromeHeadless: route.chromeHeadless !== false,
+            signal: AbortSignal.any([linked, AbortSignal.timeout(AIR.PROBE_TIMEOUT_MS)]),
+            allowDefaultGeminiModel: true,
+          });
           clearMotionRoomBlocks(provider, route.model);
         },
         {
@@ -1262,9 +1271,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     const basePrompt = editorialContext + (exec.bible && !bibleSent ? MOTION_STORY_CONFIG.BIBLE_WRAP(exec.bible.text) : MR.MOTION_TEXT_EMPTY) + prompt;
     const singleMessage = motionPromptSingleMessage(artifactType);
     const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
-    const fullPrompt = singleMessage
-      ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity))
-      : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
+    const fullPrompt = singleMessage ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity)) : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
     log?.(PROMPT.LOG(artifactType, fullPrompt.length, images?.length || 0));
     const measurement = motionPromptMeasurement(prompt, fullPrompt, editorialContext.length, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")), singleMessage);
     if (measurement.overflow) log?.(singleMessage ? PROMPT.SINGLE_MESSAGE_LOG(artifactType, measurement.finalChars) : PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
@@ -1373,8 +1380,8 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
                     AiPlanningChatModel.MetaAiAuto,
                   )
                 : provider === AiPlanningFallbackProvider.GrokChat
-                ? (_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: exec.model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined)
-                : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
+                  ? (_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: exec.model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined)
+                  : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
       if (run?.roomRefreshes.delete(workerId!)) {
         const repairs = run.roomRecoveries.get(workerId!) || 0;
         if (repairs < AIR.ROOM_RELOADS) {
@@ -1401,46 +1408,50 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       roomCtrl.signal.throwIfAborted();
       if (!submission.attempted) await staggerMotionSend(provider, roomCtrl.signal);
       countMotionRequest(provider, log);
-      const r = await settleOrStuck(generatePlanningWithChatUi({
-        loadHeld: true,
-        provider,
-        model,
-        prompt: fullPrompt,
-        promptMessageLimit: measurement.budget,
-        projectId,
-        workerId,
-        chromeHeadless: exec.chromeHeadless !== false,
-        artifactType,
-        requestId,
-        signal: roomCtrl.signal,
-        oneGeneration: exec.singleResponse === true && (artifactType === SCENE_COMPOSITION.ARTIFACT || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML)),
-        closeRoomOnComplete: !run,
-        allowDefaultGeminiModel: true,
-        allowFallback: false,
-        fallbackChain: motionFallbackChain(exec),
-        waitOnExhausted: exec.allowFallback === false,
-        submission,
-        restoreContext: () => {
-          run?.contextRooms.delete(workerId!);
-          run?.bibles?.delete(workerId!);
-          fullPrompt = requestPrompt(true).fullPrompt;
-          return fullPrompt;
+      const r = await settleOrStuck(
+        generatePlanningWithChatUi({
+          loadHeld: true,
+          provider,
+          model,
+          prompt: fullPrompt,
+          promptMessageLimit: measurement.budget,
+          projectId,
+          workerId,
+          chromeHeadless: exec.chromeHeadless !== false,
+          artifactType,
+          requestId,
+          signal: roomCtrl.signal,
+          oneGeneration: exec.singleResponse === true && (artifactType === SCENE_COMPOSITION.ARTIFACT || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML)),
+          closeRoomOnComplete: !run,
+          allowDefaultGeminiModel: true,
+          allowFallback: false,
+          fallbackChain: motionFallbackChain(exec),
+          waitOnExhausted: exec.allowFallback === false,
+          submission,
+          restoreContext: () => {
+            run?.contextRooms.delete(workerId!);
+            run?.bibles?.delete(workerId!);
+            fullPrompt = requestPrompt(true).fullPrompt;
+            return fullPrompt;
+          },
+          onRecovery: (line) => {
+            log?.(line, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+            clearTimeout(watchdog);
+            if (line !== CHROME_BACKUP.WAIT && !line.startsWith(AI_AVAILABILITY.WAIT_PREFIX))
+              watchdog = setTimeout(() => {
+                timedOut = true;
+                roomCtrl.abort(submission.attempted ? AIR.TIMEOUT_REASON : AIR.READINESS_TIMEOUT_REASON);
+              }, roomTimeout);
+          },
+          attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
+        }),
+        roomCtrl.signal,
+        async () => {
+          log?.(AIR.STUCK_LOG, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+          if (run) await closeMotionAiRoom(run, workerId!);
+          else await closeChatPlanningRoom({ provider, projectId, workerId }, true);
         },
-        onRecovery: (line) => {
-          log?.(line, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
-          clearTimeout(watchdog);
-          if (line !== CHROME_BACKUP.WAIT && !line.startsWith(AI_AVAILABILITY.WAIT_PREFIX))
-            watchdog = setTimeout(() => {
-              timedOut = true;
-              roomCtrl.abort(submission.attempted ? AIR.TIMEOUT_REASON : AIR.READINESS_TIMEOUT_REASON);
-            }, roomTimeout);
-        },
-        attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
-      }), roomCtrl.signal, async () => {
-        log?.(AIR.STUCK_LOG, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
-        if (run) await closeMotionAiRoom(run, workerId!);
-        else await closeChatPlanningRoom({ provider, projectId, workerId }, true);
-      });
+      );
       exec.responseReceived?.(r.text);
       const result = extractMotionRoomJson(r.text);
       run?.roomRecoveries.delete(workerId!);
@@ -1811,11 +1822,12 @@ export const analyzeStory = async (
     return { ...analysis, ...(htmlSettings ? { authoringSettings: htmlSettings } : {}), visualSettings: opts.visualSettings, stylePreset: opts.stylePreset, videoGenre: motionVideoGenre(opts.videoGenre), storytelling: motionStorytelling(opts.storytelling), renameEntities: rename, ...(rename ? { renameMap } : {}) };
   };
   const renameErrors = (value: any): string[] => (rename ? motionRenameAnalysisIssues(value).map((issue) => MOTION_RESPONSE_TEXT.EXPECTED(issue.path, issue.expected, issue.actual)) : []);
-  const genreDirective =
-    opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) + `${RT_MAINTENANCE.SPACE}${motionGenreCraft(motionVideoGenre(opts.videoGenre)).plan}` : motionVideoGenreDirective(opts.videoGenre, opts.storytelling);
+  const genreDirective = opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) + `${RT_MAINTENANCE.SPACE}${motionGenreCraft(motionVideoGenre(opts.videoGenre)).plan}` : motionVideoGenreDirective(opts.videoGenre, opts.storytelling);
   const fullRequest = withMotionResponsePrompt(
     MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS,
-    ([WRITING.TEXT_TASK, prompt, PROMPT.DNA_CORE + stringifyJson(settings), EDITORIAL_POLICY.COMPACT, htmlAuthoring && motionVideoGenre(opts.videoGenre) !== WRITING.VERDICT_GENRE ? WRITING.PLAN_LEAN : WRITING.PLAN, WRITING.BOOKENDS, SOURCE_READING_RULES, sourceDirections(source), briefNote, rename ? RENAME.PROMPT.ANALYSIS : MR.MOTION_TEXT_EMPTY] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
+    ([WRITING.TEXT_TASK, prompt, PROMPT.DNA_CORE + stringifyJson(settings), EDITORIAL_POLICY.COMPACT, htmlAuthoring && motionVideoGenre(opts.videoGenre) !== WRITING.VERDICT_GENRE ? WRITING.PLAN_LEAN : WRITING.PLAN, WRITING.BOOKENDS, SOURCE_READING_RULES, sourceDirections(source), briefNote, rename ? RENAME.PROMPT.ANALYSIS : MR.MOTION_TEXT_EMPTY] as string[])
+      .filter(Boolean)
+      .join(MR.MOTION_TEXT_SYMBOL_27) +
       MR.MOTION_TEXT_SYMBOL_27 +
       (htmlAuthoring
         ? `${RT_MAINTENANCE.CANVAS_MOTION}${opts.characterMotion ? RT_MAINTENANCE.ENABLED_DESCRIBE_THE_SOURCE_SUPPORTED_ACTIONS_AND_CAMERA_IN_PROSE : RT_MAINTENANCE.DISABLED_PLAN_AN_OPENING_ILLUSTRATION_THE_HOST_WILL_FREEZE_ALL}${RT_MAINTENANCE.NO_POSE_TRANSFORMS_MOVETO_COORDINATES_STOCK_FRAMES_OR_SIMPLIFIED_CONTACT}`
@@ -1866,7 +1878,6 @@ export const analyzeStory = async (
   opts.log?.(EDITORIAL_POLICY.PROFILE_LOG);
   const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
   const withLanguage = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
-  // One period for the whole production: the analysis's era (its year drives what every scene and the figure kit build).
   const videoDna = typeof raw.era === "string" && raw.era.trim() && withLanguage.era ? { ...withLanguage, era: { ...withLanguage.era, storyPeriod: raw.era.trim() } } : withLanguage;
   opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
   return complete(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target, opts.videoGenre, htmlAuthoring), raw), raw.renameMap));

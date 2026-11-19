@@ -298,10 +298,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
                   type={VIDEO_EXPORT_TEXT_BUTTON}
                   disabled={isDisabled}
                   onClick={() => exporter.updateConfig(VIDEO_EXPORT_TEXT_ASPECTRATIO, item.value)}
-                  className={cn(RT_VIDEO_EXPORT.FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_PY_2_5, {
-                    "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected,
-                    "bg-slate-950/60 border-slate-800 text-slate-200 hover:border-slate-700 hover:text-white hover:bg-slate-900/60": !isSelected,
-                  })}>
+                  className={cn(RT_VIDEO_EXPORT.FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_PY_2_5, { "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected, "bg-slate-950/60 border-slate-800 text-slate-200 hover:border-slate-700 hover:text-white hover:bg-slate-900/60": !isSelected })}>
                   <Icon className={cn(RT_VIDEO_EXPORT.W_4_H_4_MB_1_TRANSITION_TRANSFORM_GROUP_HOVER, isSelected ? RT_VIDEO_EXPORT.TEXT_WHITE : RT_VIDEO_EXPORT.TEXT_PURPLE_400_2B8739)} />
                   <span className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO, isSelected ? RT_VIDEO_EXPORT.TEXT_WHITE : RT_VIDEO_EXPORT.TEXT_SLATE_200)}>{item.label}</span>
                 </Button>
@@ -331,10 +328,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
                       type={VIDEO_EXPORT_TEXT_BUTTON}
                       disabled={isDisabled}
                       onClick={() => exporter.updateConfig(VIDEO_EXPORT_TEXT_REFRAMEMODE, item.mode)}
-                      className={cn(RT_VIDEO_EXPORT.H_8_ROUNDED_XL_BORDER_FONT_MONO_FONT_BOLD_TEXT, {
-                        "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected,
-                        "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-900/60": !isSelected,
-                      })}>
+                      className={cn(RT_VIDEO_EXPORT.H_8_ROUNDED_XL_BORDER_FONT_MONO_FONT_BOLD_TEXT, { "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-900/60": !isSelected })}>
                       <Icon className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />
                       <span className={RT_SHARED.TRUNCATE}>{item.label}</span>
                     </Button>

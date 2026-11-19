@@ -4,19 +4,8 @@ import { STUDIO_DOWNLOAD as D, STUDIO_DOWNLOAD_TEXT } from "../../constants/stud
 import { cn } from "../../lib/utils.js";
 import { Button } from "../ui/Button.js";
 import { SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText.js";
-
-type StudioDownloadButtonProps = {
-  /** Starts the download (save dialog, fetch…). */
-  onClick: () => void;
-  busy?: boolean;
-  disabled?: boolean;
-  title?: string;
-  className?: string;
-};
-
+type StudioDownloadButtonProps = { onClick: () => void; busy?: boolean; disabled?: boolean; title?: string; className?: string };
 const downloadText = () => (document.documentElement.lang === "en" ? STUDIO_DOWNLOAD_TEXT.en : STUDIO_DOWNLOAD_TEXT.vi);
-
-/** The one "Tải xuống" button used for every video download in the app. */
 export const StudioDownloadButton: FC<StudioDownloadButtonProps> = ({ onClick, busy = false, disabled = false, title, className }) => {
   const text = downloadText();
   const body = (

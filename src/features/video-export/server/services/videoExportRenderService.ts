@@ -253,21 +253,7 @@ const buildSingleTrackNormalizeArgs = (inputPath: string, outputPath: string): s
   VIDEO_EXPORT_TEXT_Y,
   outputPath,
 ];
-const buildAudioConcatCopyArgs = (listPath: string, outputPath: string): string[] => [
-  VIDEO_EXPORT_AI_CLIP_CONSTANTS.FFLAGS,
-  VIDEO_EXPORT_AI_CLIP_CONSTANTS.GENPTS,
-  VIDEO_EXPORT_TEXT_F,
-  VIDEO_EXPORT_TEXT_CONCAT,
-  VIDEO_EXPORT_TEXT_SAFE,
-  VIDEO_EXPORT_TEXT_0,
-  VIDEO_EXPORT_TEXT_I,
-  listPath,
-  VIDEO_EXPORT_TEXT_VN,
-  VIDEO_EXPORT_TEXT_C_A,
-  VIDEO_EXPORT_TEXT_COPY,
-  VIDEO_EXPORT_TEXT_Y,
-  outputPath,
-];
+const buildAudioConcatCopyArgs = (listPath: string, outputPath: string): string[] => [VIDEO_EXPORT_AI_CLIP_CONSTANTS.FFLAGS, VIDEO_EXPORT_AI_CLIP_CONSTANTS.GENPTS, VIDEO_EXPORT_TEXT_F, VIDEO_EXPORT_TEXT_CONCAT, VIDEO_EXPORT_TEXT_SAFE, VIDEO_EXPORT_TEXT_0, VIDEO_EXPORT_TEXT_I, listPath, VIDEO_EXPORT_TEXT_VN, VIDEO_EXPORT_TEXT_C_A, VIDEO_EXPORT_TEXT_COPY, VIDEO_EXPORT_TEXT_Y, outputPath];
 const getAudioCacheDirectory = (): string => path.join(getDataDirectory(), VIDEO_EXPORT_CONSTANTS.OUTPUT_FOLDER, VIDEO_EXPORT_CONSTANTS.EXPORT_FOLDER, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUDIO_CACHE_FOLDER);
 const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string, workDir: string, signal?: AbortSignal, onProgressRatio?: (ratio: number) => void): Promise<number> => {
   const cacheDir = getAudioCacheDirectory();
@@ -395,11 +381,7 @@ const buildAiClipCycleXfadeArgs = (normalizedPaths: string[], clipFrames: number
     ..._.map(_.range(1, normalizedPaths.length), (index) => VIDEO_EXPORT_AI_CLIP_FILTERS.TRIM_VIDEO_SEGMENT(index, 0, clipFrames[index], fps, pixelFormat, index)),
     VIDEO_EXPORT_AI_CLIP_FILTERS.TRIM_VIDEO_SEGMENT(0, 0, transitionFrames, fps, pixelFormat, normalizedPaths.length),
   ];
-  const segmentDurations: number[] = [
-    (clipFrames[0] - transitionFrames) / fps,
-    ..._.map(_.range(1, normalizedPaths.length), (index) => clipFrames[index] / fps),
-    transitionSeconds,
-  ];
+  const segmentDurations: number[] = [(clipFrames[0] - transitionFrames) / fps, ..._.map(_.range(1, normalizedPaths.length), (index) => clipFrames[index] / fps), transitionSeconds];
   let cumulativeOffset = 0;
   const totalStreams = normalizedPaths.length + 1;
   const transitions = _.map(_.range(1, totalStreams), (index) => {
@@ -409,26 +391,7 @@ const buildAiClipCycleXfadeArgs = (normalizedPaths: string[], clipFrames: number
     return VIDEO_EXPORT_TEMPLATE_S_XFADE_TRANSITION_DURATION_OFFSET(`${previousLabel}`, `${index}`, `${resolveTransition(transition, index - 1)}`, `${transitionSeconds.toFixed(3)}`, `${Math.max(0.05, cumulativeOffset).toFixed(3)}`, `${outputLabel}`);
   });
   const filter = _.join([...prepared, ...transitions], VIDEO_EXPORT_TEXT_SYMBOL_15);
-  return [
-    ...inputArgs,
-    VIDEO_EXPORT_TEXT_FILTER_COMPLEX,
-    filter,
-    VIDEO_EXPORT_TEXT_MAP,
-    VIDEO_EXPORT_TEXT_VOUT,
-    VIDEO_EXPORT_TEXT_C_V,
-    profile.codec,
-    VIDEO_EXPORT_TEXT_PRESET,
-    profile.preset,
-    VIDEO_EXPORT_TEXT_CRF,
-    profile.crf,
-    VIDEO_EXPORT_TEXT_PIX_FMT,
-    pixelFormat,
-    VIDEO_EXPORT_TEXT_R,
-    `${fps}`,
-    VIDEO_EXPORT_TEXT_AN,
-    VIDEO_EXPORT_TEXT_Y,
-    outputPath,
-  ];
+  return [...inputArgs, VIDEO_EXPORT_TEXT_FILTER_COMPLEX, filter, VIDEO_EXPORT_TEXT_MAP, VIDEO_EXPORT_TEXT_VOUT, VIDEO_EXPORT_TEXT_C_V, profile.codec, VIDEO_EXPORT_TEXT_PRESET, profile.preset, VIDEO_EXPORT_TEXT_CRF, profile.crf, VIDEO_EXPORT_TEXT_PIX_FMT, pixelFormat, VIDEO_EXPORT_TEXT_R, `${fps}`, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
 };
 const buildAiClipSingleMuxArgs = (videoPath: string, audioPath: string, totalSeconds: number, outputPath: string): string[] => [
   VIDEO_EXPORT_TEXT_I,
@@ -479,10 +442,7 @@ const buildStreamLoopMuxArgs = (cycleVideoPath: string, audioPath: string, total
 type AiClipRenderParams = { clipPaths: string[]; clipKeepAudio?: boolean[]; audioPath: string; totalSeconds: number; config: VideoExportConfig; profile: EncodeProfile; workDir: string; outputPath: string; signal?: AbortSignal; onNormalize?: (index: number) => void; onLoopSeconds?: (seconds: number) => void };
 const renderAiClipOutput = async (params: AiClipRenderParams): Promise<void> => {
   const { clipPaths, clipKeepAudio = [], audioPath, totalSeconds, config, profile, workDir, outputPath, signal, onNormalize, onLoopSeconds } = params;
-  const [probedDurations, probedHasAudio] = await Promise.all([
-    Promise.all(_.map(clipPaths, probeMediaDurationSeconds)),
-    Promise.all(_.map(clipPaths, probeMediaHasAudio)),
-  ]);
+  const [probedDurations, probedHasAudio] = await Promise.all([Promise.all(_.map(clipPaths, probeMediaDurationSeconds)), Promise.all(_.map(clipPaths, probeMediaHasAudio))]);
   throwIfAborted(signal);
   const rawClipSeconds = _.map(probedDurations, (sec) => (sec >= VIDEO_EXPORT_AI_CLIP_CONSTANTS.MIN_CLIP_SECONDS ? sec : VIDEO_EXPORT_AI_CLIP_CONSTANTS.DEFAULT_CLIP_SECONDS));
   const effectiveKeepAudio = _.map(clipPaths, (_clipPath, index) => Boolean(clipKeepAudio[index]) && Boolean(probedHasAudio[index]));
@@ -543,18 +503,7 @@ const splitSegmentFrames = (totalSeconds: number, segmentCount: number, transiti
   const extraFrames = neededFrames - baseFrames * segmentCount;
   return _.times(segmentCount, (index) => baseFrames + (index < extraFrames ? 1 : 0));
 };
-const buildPieceArgs = (segmentPath: string, startFrame: number, frameCount: number, fps: number, outputPath: string): string[] => [
-  ...(startFrame > 0 ? [VIDEO_EXPORT_SPEED.SEEK, (startFrame / fps).toFixed(6)] : []),
-  VIDEO_EXPORT_TEXT_I,
-  segmentPath,
-  VIDEO_EXPORT_SPEED.FRAMES_V,
-  `${frameCount}`,
-  VIDEO_EXPORT_TEXT_C_V,
-  VIDEO_EXPORT_TEXT_COPY,
-  VIDEO_EXPORT_TEXT_AN,
-  VIDEO_EXPORT_TEXT_Y,
-  outputPath,
-];
+const buildPieceArgs = (segmentPath: string, startFrame: number, frameCount: number, fps: number, outputPath: string): string[] => [...(startFrame > 0 ? [VIDEO_EXPORT_SPEED.SEEK, (startFrame / fps).toFixed(6)] : []), VIDEO_EXPORT_TEXT_I, segmentPath, VIDEO_EXPORT_SPEED.FRAMES_V, `${frameCount}`, VIDEO_EXPORT_TEXT_C_V, VIDEO_EXPORT_TEXT_COPY, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
 const buildTransitionArgs = (fromPath: string, fromFrames: number, toPath: string, transitionFrames: number, transition: VideoExportTransition, profile: EncodeProfile, threads: number, outputPath: string): string[] => [
   VIDEO_EXPORT_SPEED.SEEK,
   ((fromFrames - transitionFrames - VIDEO_EXPORT_SPEED.SEEK_BACK_FRAMES) / profile.fps).toFixed(6),

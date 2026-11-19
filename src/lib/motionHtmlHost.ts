@@ -1,7 +1,6 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { motionHtmlFigures, type MotionFigureRender } from "./motionFigures.js";
 import { MOTION_CHAPTER_CARD_SCRIPT } from "../constants/motionChapterCard.js";
-// render: how the scene's figures are drawn ("Dựng cảnh AI" or "Bộ vẽ chuẩn").
 export const motionHtmlHostDocument = (raw: string, token: string, render?: MotionFigureRender): string => {
   const html = motionHtmlFigures(raw, render);
   const canvasGuard = RT_MAINTENANCE.CANVAS_GUARD_SCRIPT;

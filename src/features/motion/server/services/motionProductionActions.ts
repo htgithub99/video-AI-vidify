@@ -265,7 +265,9 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       const scope = body.productionId || body.editorialSessionId;
       const planScenes = body?.planScenes !== false;
       const canStreamHtmlScenes = planScenes && visualSettings.mode === RT_MAINTENANCE.REMOTION && !(globalThis as any).__motionHtmlStages && body?.durationRepair !== true && todo.length > 0;
-      const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body), review: body?.review !== undefined ? body.review !== false : body?.aiReview !== false }) : undefined;
+      const htmlStreamer = canStreamHtmlScenes
+        ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body), review: body?.review !== undefined ? body.review !== false : body?.aiReview !== false })
+        : undefined;
       const streamSettled = (): void =>
         htmlStreamer?.push(streamBeats(), chapterDrafts, false, (remotion) => {
           keepGen = { ...(keepGen || emptyGen()), remotion };
@@ -364,23 +366,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
             if (ratio > MOTION_STORY_CONFIG.LENGTH_GUARD.OVER || ratio < MOTION_STORY_CONFIG.LENGTH_GUARD.UNDER) {
               ctx.log(MOTION_STORY_CONFIG.LENGTH_GUARD.LOG(chapter.id, Math.round(ratio * 100)));
               try {
-                byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, {
-                  language,
-                  multiVoice,
-                  exec: scriptExec,
-                  signal: ctx.signal,
-                  log: ctx.log,
-                  previous,
-                  history,
-                  previousSummary: prevChapter?.summary,
-                  isFirst: idx === 0,
-                  isLast: idx === chapters.length - 1,
-                  speechRate,
-                  speechRateMeasured,
-                  durationRepair: true,
-                  existing: byChapter[chapter.id],
-                  onDraft: () => checkpoint(),
-                });
+                byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, { language, multiVoice, exec: scriptExec, signal: ctx.signal, log: ctx.log, previous, history, previousSummary: prevChapter?.summary, isFirst: idx === 0, isLast: idx === chapters.length - 1, speechRate, speechRateMeasured, durationRepair: true, existing: byChapter[chapter.id], onDraft: () => checkpoint() });
                 const after = _.sumBy(byChapter[chapter.id] || [], (beat: MotionBeat) => speechUnits(beat.narration));
                 ctx.log(MOTION_STORY_CONFIG.LENGTH_GUARD.DONE(chapter.id, Math.round((after / Math.max(1, wanted)) * 100)));
               } catch (error) {

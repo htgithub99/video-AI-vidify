@@ -1,8 +1,3 @@
-// Buildings for every skin: all 20 kit kinds rebuilt from flat walls, roofs and openings,
-// with material textures in the reference style (rounded stone blocks like the video 1 camp wall, plank boards,
-// thatch strokes, roof tiles). Footprints follow the core kit in units of R (ground y = 0) so scenes keep their scale.
-// Also serves the wall, gate and palisade props (prop:wall / prop:gate / prop:palisade). Library buildings: stall,
-// watchtower, gatehouse, cityGate, mosque, communalHouse, stockadeGate, mudHouse.
 export const SKIN_PART_BUILDING = `(c, o0, K) => {
   const o = Object.assign({ kind: "house", x: 0, y: 0, r: 40 }, o0 || {});
   const kind = o.kind, R = o.r, st = K.S(), ink = !!st.hatch, w = K.LW(R), ol = st.ol, t = K.num(o.t, K.num(window.__motionKitTime, 0));

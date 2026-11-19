@@ -3,19 +3,7 @@ import * as MR from "../../../../constants/motionRuntime.js";
 import { MOTION_VOICE_PACING } from "../../../../constants/motionVoice.js";
 import _ from "lodash";
 import { MOTION_HISTORY } from "../../../../constants/motionHistory.js";
-import {
-  MOTION_TEMPLATE_JOIN_SPACE,
-  MOTION_TEXT_CHAPTER,
-  MOTION_TEXT_ENDING,
-  MOTION_TEXT_SYMBOL_13,
-  MOTION_TEXT_TITLE,
-  MOTION_TEXT_COUNTER,
-  MOTION_TEXT_HEADLINE,
-  MOTION_TEXT_MAP,
-  MOTION_TEXT_QUOTE,
-  MOTION_TEXT_STATS,
-  MOTION_TEXT_TIMELINE,
-} from "../../../../constants/motionRuntime.js";
+import { MOTION_TEMPLATE_JOIN_SPACE, MOTION_TEXT_CHAPTER, MOTION_TEXT_ENDING, MOTION_TEXT_SYMBOL_13, MOTION_TEXT_TITLE, MOTION_TEXT_COUNTER, MOTION_TEXT_HEADLINE, MOTION_TEXT_MAP, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_TIMELINE } from "../../../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_DIRECTOR_PATTERNS as P } from "../../../../constants/motionVideo.js";
 import { motionLanguage, motionLanguageRate, motionSpeechUnits } from "../../../../lib/motionLanguage.js";
 import type { MotionBeat } from "../../../../types/motionVideo.js";

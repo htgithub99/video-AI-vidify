@@ -1,7 +1,3 @@
-// Road vehicles of the 19th and 20th centuries and animal-drawn carts for every skin, side view (units of R, ground
-// y = 0, front toward +x): earlyCar (a Model T), earlyTruck (a canvas-covered army lorry), armoredCar, halftrack,
-// sidecar (a motorcycle with sidecar), rickshaw, cyclo, oxCart, horseCarriage, tram, scooter, tractor. Wheels turn when
-// moving; a drawn cart shows its animal (ox or horse) through the shared animal parts.
 export const MOTION_KIT_MOTOR_KINDS = ["earlyCar", "earlyTruck", "armoredCar", "halftrack", "sidecar", "rickshaw", "cyclo", "oxCart", "horseCarriage", "tram", "scooter", "tractor"];
 export const SKIN_PART_MOTOR = `(c, o, K) => {
   const kind = o.kind;

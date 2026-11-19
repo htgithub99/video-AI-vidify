@@ -235,7 +235,6 @@ export const saveSingleShortVideo = async (req: Request, res: Response): Promise
     res.status(500).json({ success: false, error: error?.message || SHORTS_TEXTS.ERR_PROCESS_FAILED });
   }
 };
-/** Delete rendered Shorts clips (video + thumbnail) from disk (Results list). */
 export const deleteShortsClips = async (req: Request, res: Response): Promise<void> => {
   try {
     res.json({ success: true, ...(await deleteOutputEntries(path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER, SHORTS_CONSTANTS.SHORTS_FOLDER), req.body?.fileNames)) });

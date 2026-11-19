@@ -15,14 +15,6 @@ export const useChatExecutionPolicy = (screen: string) => {
     return { multiRoom: saved?.multiRoom === true, allowFallback: saved?.allowFallback === true };
   });
   useEffect(() => jsonUtils.setItem(key, policy), [key, policy]);
-  const blockProps = useMemo<ChatExecutionPolicyProps>(
-    () => ({
-      multiRoom: policy.multiRoom,
-      onMultiRoomChange: (multiRoom: boolean) => setPolicy((current) => ({ ...current, multiRoom })),
-      allowFallback: policy.allowFallback,
-      onAllowFallbackChange: (allowFallback: boolean) => setPolicy((current) => ({ ...current, allowFallback })),
-    }),
-    [policy],
-  );
+  const blockProps = useMemo<ChatExecutionPolicyProps>(() => ({ multiRoom: policy.multiRoom, onMultiRoomChange: (multiRoom: boolean) => setPolicy((current) => ({ ...current, multiRoom })), allowFallback: policy.allowFallback, onAllowFallbackChange: (allowFallback: boolean) => setPolicy((current) => ({ ...current, allowFallback })) }), [policy]);
   return { policy, blockProps };
 };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FC } from "react";
+import { useEffect, useRef, useState, type FC } from "react";
 import { Info } from "lucide-react";
 import type { MotionThumbnail } from "../../../types/motionVideo.js";
 import { MotionSeoCard } from "../../motion/components/MotionSeoCard.js";
@@ -9,17 +9,21 @@ import { drawReupThumbnail } from "../lib/reupThumbnail.js";
 import { ReupReport } from "./ReupReport.js";
 import type { ReupThumbIdea, ReupThumbLayout } from "../types/reup.js";
 const LAYOUTS: ReupThumbLayout[] = ["hero", "split", "circle"];
-/** Another take of an option's thumbnail: the next layout, the next real frames. */
 const variant = (idea: ReupThumbIdea, frames: number[], turn: number): ReupThumbIdea => {
   if (!turn || !frames.length) return idea;
   const first = Math.max(0, frames.indexOf(idea.frames[0]));
   return { ...idea, layout: LAYOUTS[(LAYOUTS.indexOf(idea.layout) + turn) % LAYOUTS.length], frames: [frames[(first + turn) % frames.length], frames[(first + turn + 1) % frames.length]] };
 };
-/** The upload package in Video Motion's SEO card: options to copy or export, each with a thumbnail drawn from real frames. */
+const useSame = <T,>(value: T): T => {
+  const last = useRef<{ key: string; value: T }>();
+  const key = JSON.stringify(value ?? null);
+  if (!last.current || last.current.key !== key) last.current = { key, value };
+  return last.current.value;
+};
 export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, lang }) => {
   const { job, text } = studio;
-  const pack = job?.package;
-  const seo = useMemo(() => (job ? reupSeoPack(job) : null), [job]);
+  const pack = useSame(job?.package);
+  const seo = useSame(job ? reupSeoPack(job) : null);
   const [turns, setTurns] = useState<Record<number, number>>({});
   const [thumbnails, setThumbnails] = useState<Record<number, MotionThumbnail>>({});
   const [drawing, setDrawing] = useState<number | null>(null);

@@ -6,10 +6,12 @@ import { isLowSpecMode } from "./chromeBackupService.js";
 const watched = new WeakSet<Page>();
 const responsive = (page: Page): Promise<boolean> =>
   Promise.race([
-    page.evaluate(() => true).then(
-      () => true,
-      () => true,
-    ),
+    page
+      .evaluate(() => true)
+      .then(
+        () => true,
+        () => true,
+      ),
     delay(W.PROBE_TIMEOUT_MS, false, { ref: false }),
   ]);
 export const watchHungPage = <T extends Page | null | undefined>(page: T, label: string): T => {

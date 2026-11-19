@@ -28,7 +28,16 @@ export const resolvePipelineAiExecution = (incoming: PipelineAiExecutionInput, s
     if (_.isEqual(provider, AiPlanningFallbackProvider.Disabled)) provider = AiPlanningFallbackProvider.GeminiChat;
   }
   provider ||= AiPlanningFallbackProvider.Disabled;
-  const availableModels = provider === AiPlanningFallbackProvider.ClaudeChat ? CLAUDE_CHAT_MODEL_OPTIONS.map((option) => option.value) : provider === AiPlanningFallbackProvider.DeepSeekChat ? DEEPSEEK_CHAT_MODES.map((option) => option.value) : provider === AiPlanningFallbackProvider.GeminiChat ? GEMINI_CHAT_MODEL_OPTIONS.map((option) => option.value) : provider === AiPlanningFallbackProvider.MetaAi ? CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.MetaAi].map((option) => option.value) : _.values(AiPlanningChatModel);
+  const availableModels =
+    provider === AiPlanningFallbackProvider.ClaudeChat
+      ? CLAUDE_CHAT_MODEL_OPTIONS.map((option) => option.value)
+      : provider === AiPlanningFallbackProvider.DeepSeekChat
+        ? DEEPSEEK_CHAT_MODES.map((option) => option.value)
+        : provider === AiPlanningFallbackProvider.GeminiChat
+          ? GEMINI_CHAT_MODEL_OPTIONS.map((option) => option.value)
+          : provider === AiPlanningFallbackProvider.MetaAi
+            ? CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.MetaAi].map((option) => option.value)
+            : _.values(AiPlanningChatModel);
   const model = resolveEnumValue(availableModels, incoming.planningChatModel, savedVisual?.planningChatModel, savedConfig?.planningChatModel) || CINEMATIC_CHAT_DEFAULT_MODELS[provider];
   const chromeHeadless = _.isBoolean(incoming.planningChromeHeadless) ? incoming.planningChromeHeadless : _.isBoolean(savedVisual?.planningChromeHeadless) ? savedVisual.planningChromeHeadless : _.isBoolean(savedConfig?.planningChromeHeadless) ? savedConfig.planningChromeHeadless : true;
   return { provider, model, mode, chromeHeadless };

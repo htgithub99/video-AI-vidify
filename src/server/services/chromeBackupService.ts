@@ -164,12 +164,29 @@ export const addBackupChrome = (name?: string): ChromeBackupSettings => {
   let index = stored.chromes.length + 1;
   while (stored.chromes.some((chrome) => chrome.id === C.ID_PREFIX + index)) index++;
   const id = C.ID_PREFIX + index;
-  writeStored({ ...stored, chromes: [...stored.chromes, { id, name: String(name || C.EMPTY).trim().slice(0, C.NAME_MAX) || C.DEFAULT_NAME(index), profile: path.join(C.PROFILES_DIR, id), port: nextPort(stored.chromes), ready: false }] });
+  writeStored({
+    ...stored,
+    chromes: [
+      ...stored.chromes,
+      {
+        id,
+        name:
+          String(name || C.EMPTY)
+            .trim()
+            .slice(0, C.NAME_MAX) || C.DEFAULT_NAME(index),
+        profile: path.join(C.PROFILES_DIR, id),
+        port: nextPort(stored.chromes),
+        ready: false,
+      },
+    ],
+  });
   return readChromeBackupSettings();
 };
 export const renameBackupChrome = (id: string, name: string): ChromeBackupSettings => {
   const stored = readStored();
-  const clean = String(name || C.EMPTY).trim().slice(0, C.NAME_MAX);
+  const clean = String(name || C.EMPTY)
+    .trim()
+    .slice(0, C.NAME_MAX);
   if (clean) writeStored({ ...stored, chromes: stored.chromes.map((chrome) => (chrome.id === id ? { ...chrome, name: clean } : chrome)) });
   return readChromeBackupSettings();
 };

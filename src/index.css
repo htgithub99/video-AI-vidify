@@ -4,7 +4,6 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @variant dark (&:where(.dark, .dark *));
 @theme {
-  /* Extra shades the components use; their values for each theme are in styles/palette.css. */
   --color-slate-205: #e9e3f0;
   --color-slate-250: #ddd5e6;
   --color-slate-350: #c4b8d6;
@@ -1208,7 +1207,6 @@ ol[data-sonner-toaster] {
   box-shadow:
     0 18px 45px -8px rgba(0, 0, 0, 0.75),
     0 6px 18px -4px rgba(0, 0, 0, 0.5) !important;
-  /* Opaque cards on a flat page: a backdrop blur costs a repaint on every change and shows nothing. */
   backdrop-filter: none !important;
 }
 :root.light .glass-card,

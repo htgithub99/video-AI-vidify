@@ -278,16 +278,15 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
     setSceneAction(key);
     void work().finally(() => setSceneAction(null));
   };
-  // Scenes on the figure table follow "Cách dựng" on the spot; scenes drawn before it are redrawn by the next scene build.
-  const legacyCount = Object.values(state.script?.gen?.remotion?.scenes || {}).flat().filter((scene) => !!scene.html && !scene.html.spec).length;
+  const legacyCount = Object.values(state.script?.gen?.remotion?.scenes || {})
+    .flat()
+    .filter((scene) => !!scene.html && !scene.html.spec).length;
   const scenesBusy = busyKind === MOTION_TEXT_SCENES;
   const sceneTotal = remotionProgress?.planned ? remotionProgress.total : 0;
   const estimateTotal = studio.compiled?.spec.duration || 0;
   const plannedSeconds = state.analysis?.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0) || 0;
   const actualAudioSeconds = state.uploadedAudio?.durationSeconds || (studio.voiceValid ? state.voice?.totalSeconds : undefined);
   const htmlTiming = state.analysis?.authoringSettings;
-  // The same compilation can arrive twice (the page compiles it as soon as the scenes are built, the production sends it
-  // again when it finishes): keep the spec the player already has, so playback does not restart and reload every scene.
   const previewSpecCache = useRef<{ key?: string; behavior?: unknown; spec: ReturnType<typeof applyMotionRenderBehavior> | null }>({ spec: null });
   const previewSpec = useMemo(() => {
     const spec = studio.compiled?.spec;
@@ -297,7 +296,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
     if (key && cached.key === key && cached.behavior === state.renderBehavior && cached.spec) return cached.spec;
     return (previewSpecCache.current = { key, behavior: state.renderBehavior, spec: applyMotionRenderBehavior(spec, state.renderBehavior) }).spec;
   }, [studio.compiled, state.renderBehavior]);
-  // An exported video is shown while it matches the scenes; once they change, the scenes play live instead.
   const showExported = !!studio.renderedVideoUrl && !(studio.renderedVideoStale && isRemotionSpec(previewSpec));
   const updateBeat = (id: string, patchBeat: Partial<MotionBeat>) => {
     if (!state.script) return;
@@ -307,8 +305,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   };
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
   const job = studio.storyJob;
-  // The production's own status, also when another job ran after it (a scene rebuild or a scene deletion after the run
-  // stopped): the resume button follows the production, not whichever job happens to be shown.
   const productionStatus = job?.kind === MotionStoryJobKind.PRODUCTION && job.id === state.productionId ? job.status : studio.logHistory.find((entry) => entry.id === state.productionId)?.status;
   const rj = studio.renderJob;
   const displayedLog = studio.logHistory.at(-1);
@@ -394,12 +390,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   {state.source.notes ? MR.MOTION_TEMPLATE_SYMBOL_17(currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_DIRECTIONS : MR.MOTION_TEXT_YEU_CAU, state.source.notes) : MR.MOTION_TEXT_EMPTY}
                 </p>
               ) : null}
-              <MotionVisualModeField
-                value={state.visualSettings}
-                language={currentLang}
-                disabled={studio.busy}
-                onChange={(visualSettings) => patch({ visualSettings })}
-              />
+              <MotionVisualModeField value={state.visualSettings} language={currentLang} disabled={studio.busy} onChange={(visualSettings) => patch({ visualSettings })} />
               {state.visualSettingsError && (
                 <p role={RT_MOTION.ALERT} className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>
                   {state.visualSettingsError}
@@ -417,8 +408,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                         { id: MOTION_NOTICE_IDS.RESUME, tone: MOTION_NOTICE_IDS.INFO, text: settingsText.resume, show: !!state.productionId },
                       ]}
                     />
-                  }
-                >
+                  }>
                   <MotionSelectField label={genreText.LABEL} value={motionVideoGenre(state.videoGenre)} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
                     {_.map(MOTION_VIDEO_GENRES, (genre) => (
                       <option key={genre} value={genre}>
@@ -711,10 +701,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     {_.map(state.analysis.facts, (f, i) => (
                       <div key={i} className={MOTION_STYLES.TEXT_XS_FLEX_GAP_2_5_ROUNDED_XL_BORDER_BORDER_SLATE_800_BG_SLATE_955_70}>
                         <span
-                          className={cn(
-                            MOTION_STYLES.SHRINK_0_PX_2_PY_0_5_ROUNDED_LG_TEXT_9PX_FONT_BOLD_UPPERCASE,
-                            f.status === MOTION_TEXT_OK ? MOTION_STYLES.BG_EMERALD_500_15_TEXT_EMERALD_400_BORDER_BORDER_EMERALD : f.status === MOTION_TEXT_WRONG ? MOTION_STYLES.BG_ROSE_500_15_TEXT_ROSE_400_BORDER_BORDER_ROSE_500_30 : MOTION_STYLES.BG_PURPLE_500_15_TEXT_PURPLE_300_BORDER_BORDER_PURPLE_500_30,
-                          )}>
+                          className={cn(MOTION_STYLES.SHRINK_0_PX_2_PY_0_5_ROUNDED_LG_TEXT_9PX_FONT_BOLD_UPPERCASE, f.status === MOTION_TEXT_OK ? MOTION_STYLES.BG_EMERALD_500_15_TEXT_EMERALD_400_BORDER_BORDER_EMERALD : f.status === MOTION_TEXT_WRONG ? MOTION_STYLES.BG_ROSE_500_15_TEXT_ROSE_400_BORDER_BORDER_ROSE_500_30 : MOTION_STYLES.BG_PURPLE_500_15_TEXT_PURPLE_300_BORDER_BORDER_PURPLE_500_30)}>
                           {f.status === MOTION_TEXT_OK ? text.FACT_OK : f.status === MOTION_TEXT_WRONG ? text.FACT_WRONG : text.FACT_UNCERTAIN}
                         </span>
                         <div className={MOTION_STYLES.MIN_W_0_FLEX_1_SPACE_Y_0_5}>
@@ -812,22 +799,22 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 {_.map(state.analysis.chapters, (chapter, ci) => (
                   <div key={chapter.id}>
                     <div className={MOTION_STYLES.CHAPTER_STICKY_BAND}>
-                    <div className={MOTION_STYLES.CHAPTER_STICKY_HEADER}>
-                      <div className={MOTION_STYLES.TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDE_FLEX_ITEMS_CENTER_GAP_2}>
-                        <span className={MOTION_STYLES.W_5_H_5_ROUNDED_LG_BG_PURPLE_600_TEXT_WHITE_FLEX_ITEMS_CENTER}>{ci + 1}</span>
-                        <span className={MOTION_STYLES.TEXT_PURPLE_400_FONT_EXTRABOLD}>{chapter.title}</span>
-                        <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_LOWERCASE}>
-                          {MOTION_TEXT_SYMBOL_43}
-                          {chapter.targetSeconds}
-                          {MOTION_TEXT_S_2}
-                        </span>
+                      <div className={MOTION_STYLES.CHAPTER_STICKY_HEADER}>
+                        <div className={MOTION_STYLES.TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDE_FLEX_ITEMS_CENTER_GAP_2}>
+                          <span className={MOTION_STYLES.W_5_H_5_ROUNDED_LG_BG_PURPLE_600_TEXT_WHITE_FLEX_ITEMS_CENTER}>{ci + 1}</span>
+                          <span className={MOTION_STYLES.TEXT_PURPLE_400_FONT_EXTRABOLD}>{chapter.title}</span>
+                          <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_LOWERCASE}>
+                            {MOTION_TEXT_SYMBOL_43}
+                            {chapter.targetSeconds}
+                            {MOTION_TEXT_S_2}
+                          </span>
+                        </div>
+                        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.writeScript([chapter.id])} disabled={studio.storyBusy} className={MOTION_STYLES.PX_2_5_PY_1_ROUNDED_LG_TEXT_11PX_FONT_BOLD_BG_SLATE_955_80_BORDER}>
+                          <RefreshCw className={MOTION_STYLES.W_3_H_3} />
+                          {MR.MOTION_TEXT_SYMBOL_13}
+                          <span>{text.SCRIPT_REGEN_CHAPTER}</span>
+                        </Button>
                       </div>
-                      <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.writeScript([chapter.id])} disabled={studio.storyBusy} className={MOTION_STYLES.PX_2_5_PY_1_ROUNDED_LG_TEXT_11PX_FONT_BOLD_BG_SLATE_955_80_BORDER}>
-                        <RefreshCw className={MOTION_STYLES.W_3_H_3} />
-                        {MR.MOTION_TEXT_SYMBOL_13}
-                        <span>{text.SCRIPT_REGEN_CHAPTER}</span>
-                      </Button>
-                    </div>
                     </div>
                     <div className={MOTION_STYLES.SPACE_Y_2_5}>
                       {_.map(beatsByChapter[chapter.id] || [], (b, bi) => (
@@ -883,11 +870,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               title={text.PREVIEW}
               hint={<MotionNoticeHint notices={[{ id: MOTION_NOTICE_IDS.STALE, tone: MOTION_NOTICE_IDS.WARN, text: text.EXPORTED_VIDEO_STALE, show: !!studio.renderedVideoUrl && !!studio.renderedVideoStale }]} />}
               badge={showExported ? text.EXPORTED_VIDEO_BADGE : isRemotionSpec(previewSpec) && !motionAudioUrl(studio.previewAudioId) ? text.PREVIEW_SILENT_BADGE : text.PREVIEW_REMOTION_BADGE}
-              right={
-                studio.renderedVideoResult && (
-                  <StudioDownloadButton onClick={() => studio.renderedVideoResult && void studio.saveResult(studio.renderedVideoResult)} />
-                )
-              }
+              right={studio.renderedVideoResult && <StudioDownloadButton onClick={() => studio.renderedVideoResult && void studio.saveResult(studio.renderedVideoResult)} />}
             />
             {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][state.multiVoice === false ? RUNTIME_VALUES.PREPARINGSINGLE_21F3001B : RUNTIME_VALUES.PREPARING_D932D92A]}</p> : null}
             {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
@@ -904,7 +887,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 <MotionExportedVideo key={studio.renderedVideoUrl} url={studio.renderedVideoUrl!} width={studio.renderedVideoResult?.width} height={studio.renderedVideoResult?.height} />
               </div>
             ) : isRemotionSpec(previewSpec) ? (
-              // Every scene is built: the scenes play straight away, without the voice until it is ready.
               <div className={MOTION_STYLES.SPACE_Y_3}>
                 {state.autoExport && studio.renderBusy ? (
                   <>
@@ -933,21 +915,12 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           </StudioCard>
           {state.script && state.analysis && (
             <StudioCard className={cardCls}>
-              <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES}
-                badge={sceneTotal ? MOTION_TEMPLATE_SYMBOL_4(String(builtCount), String(sceneTotal)) : undefined}
-                hint={<MotionNoticeHint notices={[{ id: MOTION_NOTICE_IDS.LEGACY, tone: MOTION_NOTICE_IDS.INFO, text: visualText.legacyNote(legacyCount), show: legacyCount > 0 && !scenesBusy }]} />}
-              />
+              <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES} badge={sceneTotal ? MOTION_TEMPLATE_SYMBOL_4(String(builtCount), String(sceneTotal)) : undefined} hint={<MotionNoticeHint notices={[{ id: MOTION_NOTICE_IDS.LEGACY, tone: MOTION_NOTICE_IDS.INFO, text: visualText.legacyNote(legacyCount), show: legacyCount > 0 && !scenesBusy }]} />} />
               <div className={MOTION_STYLES.SPACE_Y_3}>
                 <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{visualText.sceneHint}</p>
                 <StudioInput value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.busy} />
                 <div className={MOTION_STYLES.SCENE_BAR}>
-                  <ActionBtn
-                    icon={Wand2}
-                    className={MOTION_STYLES.SCENE_BAR_BUTTON}
-                    busy={scenesBusy || (sceneAction === MOTION_NOTICE_IDS.CONTINUE && studio.busy)}
-                    onClick={() => runSceneAction(MOTION_NOTICE_IDS.CONTINUE, () => studio.buildScenes({ note: sceneNote || undefined }))}
-                    disabled={studio.busy}
-                  >
+                  <ActionBtn icon={Wand2} className={MOTION_STYLES.SCENE_BAR_BUTTON} busy={scenesBusy || (sceneAction === MOTION_NOTICE_IDS.CONTINUE && studio.busy)} onClick={() => runSceneAction(MOTION_NOTICE_IDS.CONTINUE, () => studio.buildScenes({ note: sceneNote || undefined }))} disabled={studio.busy}>
                     {scenesBusy ? text.SCENES_RUNNING : builtCount ? text.SCENES_CONTINUE : text.SCENES_BTN}
                   </ActionBtn>
                   {scenesBusy ? (

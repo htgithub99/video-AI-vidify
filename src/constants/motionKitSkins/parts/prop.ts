@@ -1,6 +1,3 @@
-// Props for every skin, redrawn flat with skin ink and material marks (wood grain, burlap seams,
-// iron bands, stone joints, straw strokes) for the kinds history scenes use most. Footprints follow the core kit
-// (units of R, ground y = 0). Unlisted kinds return null (the kit draws nothing for a name it does not know).
 export const SKIN_PART_PROP = `(c, o, K) => {
   const kind = o.kind;
   const LIST = ["fence", "sandbags", "barbedWire", "barrel", "crate", "sack", "cart", "campfire", "bonfirePit", "haystack", "woodpile", "well", "table", "bench", "weaponRack", "spearStand", "banner", "torch", "ladder", "bridge", "gravestone", "cross", "cannonballs", "chest", "mapTable", "stake", "basket", "jar", "tombMound"];

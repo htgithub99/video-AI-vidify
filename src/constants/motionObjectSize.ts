@@ -1,11 +1,5 @@
-// The real size of every thing in the object library, against an adult standing beside it (1 = about 1.7 m): its height
-// "h" and its length "l" (side view), where it is ("ground", "air", "water", "held" in a hand, "wall" a line along the
-// ground) and the poses it may be drawn in. One source for the scene prompt, the server's size check, the scene engine
-// (old scenes are put right with it on display) and the drawing kit. Written as "id h l" lines per family (l left out =
-// as long as tall); the family gives the place, a line may name its own after a third number.
 export type MotionObjectPlace = "ground" | "air" | "water" | "held" | "wall";
 export type MotionObjectSize = { h: number; l: number; place: MotionObjectPlace; poses?: readonly string[] };
-
 const table = (place: MotionObjectPlace, rows: string): [string, MotionObjectSize][] =>
   rows
     .trim()
@@ -14,9 +8,10 @@ const table = (place: MotionObjectPlace, rows: string): [string, MotionObjectSiz
       const [id, h, l, own] = row.trim().split(/\s+/);
       return [id, { h: +h, l: l != null && l !== "-" ? +l : +h, place: (own as MotionObjectPlace) || place }];
     });
-
 const VEHICLES = [
-  ...table("ground", `
+  ...table(
+    "ground",
+    `
     wagon 0.85 2.4, chariot 0.75 1.6, catapult 1.2 2.2, trebuchet 2.6 3, cannon 0.7 1.6, artillery 0.9 2.4, howitzer 1.1 3.2, bombard 0.6 1.8,
     siegeMortar 0.7 1.2, fieldGun 0.9 2.4, antiTankGun 0.9 2.6, antiAircraftGun 1.2 2.4, rocketArtillery 1.6 4.2, siegeTower 5 2.4, ballista 0.9 1.6,
     siegeLadder 3 0.5, mantlet 1.2 1.4, supplyCart 0.8 2, train 2.2 6, steamTrain 2.4 12, subwayTrain 2 12, tram 2 8, bicycle 0.6 1, motorbike 0.65 1.2,
@@ -25,18 +20,27 @@ const VEHICLES = [
     tank 1.4 4.3, tankModern 1.4 5.5, apc 1.4 4, armoredCar 1.3 3.2, halftrack 1.3 3.6, tractor 1.6 2.4, combineHarvester 2.2 5.5, bulldozer 1.9 3.6,
     constructionCrane 12 6, excavator 1.9 5, rickshaw 0.9 1.6, cyclo 0.9 1.6, oxCart 0.9 2.6, bullockWagon 1 3, horseCarriage 1.1 2.8, hansomCab 1.3 2.6,
     dogSled 0.6 2.4, camelCaravan 1.3 6, elephantHowdah 2.4 2.6
-  `),
-  ...table("water", `
+  `,
+  ),
+  ...table(
+    "water",
+    `
     raft 0.15 2, bambooRaft 1.1 2.6, canoe 0.45 2.6, rowboat 0.45 2.5, basketBoat 0.35 1.1, sampan 0.6 4, boat 0.7 4, dragonBoat 1 9, speedboat 0.7 4.4,
     patrolBoat 1.6 11, ferry 2.4 12, longship 7 13, trireme 8 20, junk 9 14, cog 10 12, caravel 12 12, galleon 18 22, ship 14 26, warship 14 30,
     shipOfTheLine 30 34, turtleShip 2.2 20, ironclad 3 30, gunboat 3 18, landingCraft 1.6 9, carrier 14 150, containerShip 18 120, submarine 4.5 50
-  `),
-  ...table("air", `
+  `,
+  ),
+  ...table(
+    "air",
+    `
     balloon 9 7, airship 10 70, biplane 1.7 4.3, plane 2.2 5.5, fighter 2.6 9, bomber 3.5 14, jet 3 10, airliner 7 35, transportPlane 6 24,
     helicopter 2.3 10, attackHelicopter 2.3 10, rocket 1.2 9, missile 0.5 3.5, drone 0.15 0.4
-  `),
+  `,
+  ),
 ];
-const BUILDINGS = table("ground", `
+const BUILDINGS = table(
+  "ground",
+  `
   house 2.2 2.4, cottage 2 2.6, hut 1.6 1.8, stiltHouse 2.6 3, longhouse 2.2 6, yurt 1.5 2.4, tent 1.5 2.4, campTent 1.1 1.8, hideTent 1.2 1.8,
   pavilionTent 1.6 2.4, domeTent 1.2 1.8, fieldHospitalTent 1.8 3.6, church 4 3.4, cathedral 9 7, temple 4 4.4, pagoda 6 2.4, mosque 5 4.4, stupa 4 3,
   torii 2.6 2.8, ziggurat 6 9, pyramid 9 14, castle 5 7, palace 5 9, imperialPalace 5 11, tower 4.5 1.4, watchtower 4 1.4, lighthouse 7 1.6, waterTower 6 2,
@@ -47,31 +51,42 @@ const BUILDINGS = table("ground", `
   dock 0.9 6, oilRig 9 6, oilDerrick 6 1.6, bunker 1.4 3, trench 0.6 4, ruins 2 3.6, amphitheater 4 12, aqueduct 6 12, cave 2.4 3, caveMouth 2.4 3,
   mountain 30 40, volcano 30 45, waterfall 6 4, karst 14 8, glacier 12 30, dunes 4 20, riceTerraces 4 14, cliff 8 10, villageCluster 2.6 8,
   shipyardHull 3 9, wreckedTank 1.3 4.3
-`);
+`,
+);
 const ANIMALS = [
-  ...table("ground", `
+  ...table(
+    "ground",
+    `
     horse 0.95 1.4, warHorse 1 1.5, packHorse 0.9 1.4, mule 0.85 1.3, donkey 0.75 1.1, ox 0.85 1.5, oxTeam 0.85 3.2, cow 0.8 1.4, buffalo 0.85 1.6,
     yak 0.9 1.4, bison 1 1.7, camel 1.2 1.6, llama 1 0.9, elephant 1.8 2.5, giraffe 2.8 1.6, hippo 0.85 2.2, rhino 0.95 2.2, zebra 0.8 1.3,
     deer 0.75 1, reindeer 0.75 1.1, moose 1.2 1.6, dog 0.4 0.55, wolf 0.45 0.75, fox 0.25 0.5, sheep 0.45 0.65, goat 0.45 0.6, pig 0.4 0.7,
     boar 0.45 0.8, tiger 0.6 1.6, lion 0.65 1.5, leopard 0.45 1.2, bear 0.75 1.2, panda 0.5 0.9, gorilla 0.9 0.8, monkey 0.35 0.3, kangaroo 0.9 0.7,
     cat 0.15 0.3, rat 0.05 0.12, rabbit 0.15 0.25, squirrel 0.1 0.2, chicken 0.18 0.2, rooster 0.2 0.22, duck 0.18 0.25, goose 0.28 0.35,
     peacock 0.4 1.1, crane 0.6 0.6, crocodile 0.25 2.5, turtle 0.1 0.3, crab 0.04 0.1, snake 0.08 0.9, frog 0.04 0.06, lizard 0.04 0.15
-  `),
-  ...table("air", `
+  `,
+  ),
+  ...table(
+    "air",
+    `
     dove 0.1 0.18, crow 0.12 0.25, eagle 0.35 0.5, vulture 0.4 0.6, owl 0.25 0.15, parrot 0.2 0.18, seagull 0.1 0.7, bat 0.05 0.25, butterfly 0.03 0.04,
     beeSwarm 0.4 0.6, mosquito 0.01 0.01, locustSwarm 1.5 3
-  `),
+  `,
+  ),
   ...table("water", `fishSchool 0.4 1.2, shark 0.5 2.4, whale 2 9, dolphin 0.35 1.4`),
 ];
-const TREES = table("ground", `
+const TREES = table(
+  "ground",
+  `
   oak 3 2.4, pine 3.2 1.4, fir 3.4 1.4, birch 2.8 1.2, willow 2.8 2.6, cypress 3 0.8, cherry 2.4 2.2, fruit 2.4 2, olive 2.2 2.4, maple 3 2.4,
   palm 3 1.6, coconut 3.4 1.6, banana 2.2 1.6, bamboo 2.6 1, banyan 3.4 4, baobab 3.6 3, acacia 2.8 3.4, mangrove 1.8 2.4, cactus 1.2 0.6,
   dead 2.4 1.8, bush 0.7 1, sugarcane 1.6 0.8, teaBush 0.6 0.8, vine 1.2 1, lotusPlant 0.3 0.6
-`);
+`,
+);
 const WALLS = table("wall", `bridge 0.6 -, palisade 1.4 -, wall 2 -, gate 2.2 2, fence 0.55 -, wagonFort 0.85 -, sandbags 0.5 -, barbedWire 0.5 -, earthwork 0.6 -, stakeRow 0.65 -`);
 const PROPS = [
-  // Held in a hand: weapons, tools, small things (length along the thing).
-  ...table("held", `
+  ...table(
+    "held",
+    `
     spear 1.3 0.05, javelin 1.1 0.04, pilum 1.2 0.05, lance 1.9 0.06, pike 2.6 0.06, halberd 1.3 0.1, naginata 1.3 0.08, guandao 1.3 0.1, trident 1.1 0.15,
     staff 1.1 0.05, bow 0.75 0.2, longbow 1.1 0.2, compositeBow 0.7 0.2, crossbow 0.45 0.55, arrows 0.45 0.1, quiver 0.45 0.12, sword 0.55 0.1,
     longsword 0.65 0.12, greatsword 0.8 0.15, gladius 0.4 0.06, khopesh 0.35 0.12, falchion 0.45 0.1, scimitar 0.5 0.1, sabre 0.55 0.1, katana 0.6 0.06,
@@ -95,9 +110,11 @@ const PROPS = [
     tray 0.05 0.3, teaSet 0.08 0.3, samovar 0.3 0.2, clock 0.15 0.15, calendar 0.2 0.15, wallPhone 0.15 0.08, candlestickPhone 0.18 0.06, radio 0.15 0.25,
     lute 0.4 0.15, corinthianHelmet 0.15 0.12, galeaHelmet 0.15 0.12, nasalHelmet 0.15 0.12, greatHelm 0.18 0.13, morionHelmet 0.15 0.18,
     pickelhaube 0.15 0.12, brodieHelmet 0.1 0.18, helmetProp 0.15 0.13, shieldProp 0.5 0.45, lionDanceHead 0.4 0.4, offeringTray 0.06 0.3
-  `),
-  // On the ground: furniture, gear, structures, things of the land.
-  ...table("ground", `
+  `,
+  ),
+  ...table(
+    "ground",
+    `
     spearStand 1 0.6, weaponRack 0.9 0.8, cannonballs 0.15 0.3, batteringRam 0.9 3, warDrum 0.5 0.5, stake 1 0.05, skullPile 0.3 0.5, gallows 1.8 1.4,
     guillotine 2.4 0.8, stocks 0.6 0.9, barrel 0.45 0.35, crate 0.4 0.45, sack 0.35 0.3, chest 0.4 0.55, basket 0.3 0.3, bucket 0.2 0.18, jar 0.4 0.3,
     amphora 0.45 0.25, cookpot 0.35 0.4, cauldron 0.5 0.6, table 0.45 0.9, chair 0.55 0.3, stool 0.28 0.25, bench 0.3 0.9, bed 0.4 1.2, cradle 0.4 0.6,
@@ -123,24 +140,18 @@ const PROPS = [
     reeds 0.6 0.4, flowers 0.2 0.3, lotus 0.2 0.3, bushes 0.6 1.4, mushroom 0.05 0.05, fallenLeaves 0.02 0.6, snowdrift 0.3 1.4, puddle 0.01 0.8,
     termiteMound 1 0.6, bookStack 0.25 0.15, wheel 0.6 0.1, chainmail 0.6 0.5, plateArmor 1.2 0.5, lamellar 0.7 0.5,
     samuraiArmor 1 0.5
-  `),
+  `,
+  ),
   ...table("ground", `moat 0.2 6, wheatField 0.5 8, cornField 1.2 8, irrigationCanal 0.1 6, fishPond 0.1 4`),
 ];
-
-// Every library kind's size; a kind not here is a gap the size check (verify-motion-scale-standard.ts) reports.
 export const MOTION_OBJECT_SIZE: Record<string, MotionObjectSize> = Object.fromEntries([...VEHICLES, ...BUILDINGS, ...ANIMALS, ...TREES, ...WALLS, ...PROPS]);
-
-// Poses a kind may be drawn in beyond its plain one (an aircraft flies or stands parked; a rocket flies or stands on its pad).
 const AIRCRAFT = ["biplane", "plane", "fighter", "bomber", "jet", "airliner", "transportPlane", "helicopter", "attackHelicopter"];
 AIRCRAFT.forEach((id) => (MOTION_OBJECT_SIZE[id].poses = ["fly", "parked"]));
 MOTION_OBJECT_SIZE.rocket.poses = ["fly", "launch"];
 ["balloon", "airship", "missile", "drone"].forEach((id) => (MOTION_OBJECT_SIZE[id].poses = ["fly"]));
-
-// The place of a thing in a scene: what it is by nature, or on the ground for an aircraft drawn parked.
 export const motionObjectPlace = (kind: string | undefined, pose?: string): MotionObjectPlace | undefined => {
   const size = kind ? MOTION_OBJECT_SIZE[kind] : undefined;
   if (!size) return undefined;
   return size.place === "air" && (pose === "parked" || pose === "launch") ? "ground" : size.place;
 };
-// How far an air thing is (its size against the reference person): near, mid or far.
 export const MOTION_AIR_DISTANCE = { near: 0.6, mid: 0.2, far: 0.07 } as const;

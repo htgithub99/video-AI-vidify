@@ -17,7 +17,6 @@ interface Stored {
   presetSettings?: Partial<Record<ReupPresetId, ReupSettings>>;
   jobId?: string;
   sourcePath?: string;
-  /** The footage rights confirmed for this source (asked again when another source is chosen). */
   rights?: ReupRights | "";
 }
 export interface ReupJobSummary {
@@ -30,7 +29,6 @@ export interface ReupJobSummary {
   packageDir?: string;
 }
 const errorText = (error: unknown): string => String((error as Error)?.message || error);
-/** State of the Reup screen: choices saved per video type, the current run (polled while it works), voice channels and past runs. */
 export const useReupStudio = (lang: Lang) => {
   const text = reupTexts(lang);
   const [loaded, setLoaded] = useState(false);
@@ -42,8 +40,6 @@ export const useReupStudio = (lang: Lang) => {
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<ReupJob | null>(null);
   const [results, setResults] = useState<ReupJobSummary[]>([]);
-  /** The music library's folder and the tracks made for the selected video type. */
-  const [music, setMusic] = useState<{ dir: string; tracks: { name: string }[] }>({ dir: "", tracks: [] });
   const [voiceChannels, setVoiceChannels] = useState<MotionVoiceChannels>({ channels: [] });
   const channelsRef = useRef<MotionVoiceChannels>({ channels: [] });
   const settings = useMemo(() => presetSettings[preset] || reupPresetDefaults(preset), [presetSettings, preset]);
@@ -60,7 +56,6 @@ export const useReupStudio = (lang: Lang) => {
     const res = await motionRequest<{ jobs: ReupJobSummary[] }>(REUP_URL.JOBS).catch(() => null);
     if (res) setResults(res.jobs || []);
   }, []);
-  /** Delete runs and their files; the open run closes when it is one of them. */
   const deleteResults = useCallback(async (ids: string[]): Promise<{ freedBytes?: number; failed?: string[] }> => {
     const res = await motionRequest<{ freedBytes?: number; failed?: string[] }>(REUP_URL.DELETE, { ids });
     const failed = new Set(res.failed || []);
@@ -95,7 +90,12 @@ export const useReupStudio = (lang: Lang) => {
     void (async () => {
       const saved = await jsonUtils.getAsyncItem<Stored>(REUP_STORAGE.STATE, {});
       setPreset(reupPreset(saved.preset).id);
-      setPresetSettings(_.mapValues(saved.presetSettings || {}, (value, key) => cleanReupSettings(value, key as ReupPresetId)));
+      setPresetSettings(
+        _.mapValues(saved.presetSettings || {}, (value, key) => {
+          const clean = cleanReupSettings(value, key as ReupPresetId);
+          return clean.angle.trim() ? clean : { ...clean, angle: reupPresetDefaults(key as ReupPresetId).angle };
+        }),
+      );
       if (saved.sourcePath) setSourcePath(saved.sourcePath);
       if (saved.rights === "own" || saved.rights === "licensed") setRights(saved.rights);
       if (saved.jobId) await openJob(saved.jobId);
@@ -105,12 +105,6 @@ export const useReupStudio = (lang: Lang) => {
     void reloadVoiceChannels();
     void reloadResults();
   }, [openJob, reloadResults, reloadVoiceChannels]);
-  const reloadMusic = useCallback(async () => {
-    const res = await motionRequest<{ dir: string; tracks: { name: string }[] }>(REUP_URL.MUSIC(preset)).catch(() => null);
-    if (res) setMusic({ dir: res.dir, tracks: res.tracks || [] });
-  }, [preset]);
-  useEffect(() => void reloadMusic(), [reloadMusic]);
-  // Rights are confirmed per source: choosing another file asks again (a reload keeps them).
   const rightsFor = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (!source) return;
@@ -164,12 +158,9 @@ export const useReupStudio = (lang: Lang) => {
     void act(REUP_URL.START, { path: source.path, preset, settings, rights });
   }, [act, rights, preset, settings, source, text]);
   const cancel = useCallback(() => job && act(REUP_URL.CANCEL, { jobId: job.id }), [act, job]);
-  /** Re-run a step with the current choices for the run's video type (e.g. another voice channel). */
   const rerun = useCallback((step: ReupStepId) => job && act(REUP_URL.RERUN, { jobId: job.id, step, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
-  /** Build the videos again with the screen's export format and mix (scenes, script and voice stay). */
   const exportVideo = useCallback(() => job && act(REUP_URL.EXPORT, { jobId: job.id, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
   const approveScript = useCallback((script: ReupScript) => job && act(REUP_URL.APPROVE_SCRIPT, { jobId: job.id, script }), [act, job]);
-  /** Save an edited video through the "Save as" dialog, like Video Motion's download button. */
   const saveVideo = useCallback(async (jobId: string, outputId: string) => {
     try {
       const res = await motionRequest<{ cancelled?: boolean; savedPath?: string }>(REUP_URL.SAVE_VIDEO, { jobId, outputId });
@@ -180,6 +171,6 @@ export const useReupStudio = (lang: Lang) => {
   }, []);
   const newJob = useCallback(() => setJob(null), []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
-  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, rerun, exportVideo, approveScript, saveVideo, newJob, music, reloadMusic };
+  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, rerun, exportVideo, approveScript, saveVideo, newJob };
 };
 export type ReupStudio = ReturnType<typeof useReupStudio>;

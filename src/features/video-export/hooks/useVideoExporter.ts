@@ -107,7 +107,20 @@ export function useVideoExporter(lang: Lang) {
   const preview = useMemo(() => previews[config.aspectRatio] ?? null, [previews, config.aspectRatio]);
   const renderPayload = useMemo(() => ({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, aiClipAudioIds: aiClips.activeClipAudioIds, ...config }), [source?.token, selectedAudios, selectedImages, aiClips.activeClipIds, aiClips.activeClipAudioIds, config]);
   const currentPreviewSignature = useMemo(
-    () => stringifyJson({ token: source?.token ?? "", aspectRatio: config.aspectRatio, totalAudioSeconds: Math.round(totalAudioSeconds), audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, aiClipAudioIds: aiClips.activeClipAudioIds, reframeMode: config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: config.effect, transition: config.transition, transitionSeconds: config.transition === VideoExportTransition.NONE ? 0 : config.transitionSeconds }),
+    () =>
+      stringifyJson({
+        token: source?.token ?? "",
+        aspectRatio: config.aspectRatio,
+        totalAudioSeconds: Math.round(totalAudioSeconds),
+        audioIndexes: _.map(selectedAudios, (item) => item.index),
+        imageIndexes: _.map(selectedImages, (item) => item.index),
+        aiClipIds: aiClips.activeClipIds,
+        aiClipAudioIds: aiClips.activeClipAudioIds,
+        reframeMode: config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND,
+        effect: config.effect,
+        transition: config.transition,
+        transitionSeconds: config.transition === VideoExportTransition.NONE ? 0 : config.transitionSeconds,
+      }),
     [source?.token, config.aspectRatio, totalAudioSeconds, selectedAudios, selectedImages, aiClips.activeClipIds, aiClips.activeClipAudioIds, config.reframeMode, config.effect, config.transition, config.transitionSeconds],
   );
   const isPreviewOutdated = useMemo(() => {
@@ -119,7 +132,19 @@ export function useVideoExporter(lang: Lang) {
         if (!raw || typeof raw !== VIDEO_EXPORT_TEXT_OBJECT) return {};
         const audios = Array.isArray(raw.audioIndexes) ? raw.audioIndexes : Array.isArray(raw.audioIds) ? raw.audioIds : [];
         const imgs = Array.isArray(raw.imageIndexes) ? raw.imageIndexes : Array.isArray(raw.imageIds) ? raw.imageIds : [];
-        return { token: _.toString(raw.token), aspectRatio: _.toString(raw.aspectRatio), totalAudioSeconds: Number(raw.totalAudioSeconds ?? 0), audioIndexes: audios, imageIndexes: imgs, aiClipIds: Array.isArray(raw.aiClipIds) ? raw.aiClipIds : [], aiClipAudioIds: Array.isArray(raw.aiClipAudioIds) ? raw.aiClipAudioIds : [], reframeMode: raw.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: _.toString(raw.effect), transition: _.toString(raw.transition), transitionSeconds: raw.transition === VideoExportTransition.NONE ? 0 : Number(raw.transitionSeconds ?? 1) };
+        return {
+          token: _.toString(raw.token),
+          aspectRatio: _.toString(raw.aspectRatio),
+          totalAudioSeconds: Number(raw.totalAudioSeconds ?? 0),
+          audioIndexes: audios,
+          imageIndexes: imgs,
+          aiClipIds: Array.isArray(raw.aiClipIds) ? raw.aiClipIds : [],
+          aiClipAudioIds: Array.isArray(raw.aiClipAudioIds) ? raw.aiClipAudioIds : [],
+          reframeMode: raw.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND,
+          effect: _.toString(raw.effect),
+          transition: _.toString(raw.transition),
+          transitionSeconds: raw.transition === VideoExportTransition.NONE ? 0 : Number(raw.transitionSeconds ?? 1),
+        };
       };
       const savedObj = normalize(parseJson(previewSignature));
       const currentObj = normalize(parseJson(currentPreviewSignature));
@@ -480,11 +505,13 @@ export function useVideoExporter(lang: Lang) {
     },
     [text],
   );
-  /** Delete exported videos from disk and the list; ids whose file could not go come back as failed. */
   const deleteResults = useCallback(async (items: VideoExportResultItem[]): Promise<{ freedBytes?: number; failed?: string[] }> => {
     const res = await requestJson<{ freedBytes?: number; failed?: string[] }>(API_ROUTES.VIDEO_EXPORT_DELETE_RESULTS, { fileNames: _.map(items, "fileName") });
     const failedNames = new Set(res.failed || []);
-    const failed = _.map(_.filter(items, (item) => failedNames.has(item.fileName)), "id");
+    const failed = _.map(
+      _.filter(items, (item) => failedNames.has(item.fileName)),
+      "id",
+    );
     const gone = new Set(_.difference(_.map(items, "id"), failed));
     setResults((prev) => _.reject(prev, (item) => gone.has(item.id)));
     return { freedBytes: res.freedBytes, failed };

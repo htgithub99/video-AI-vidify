@@ -1,5 +1,3 @@
-// The remaining 46 props for every skin: furniture, lamps, ritual and folk items, tools, weapons on the
-// ground. Flat skin-ink drawing with material marks; footprints follow the core kit (units of R, ground y = 0).
 export const SKIN_PART_PROP2 = `(c, o, K) => {
   const kind = o.kind;
   const st = K.S(), R = K.num(o.r, 30), t = K.num(o.t, K.num(window.__motionKitTime, 0)), w = K.LW(R), ol = st.ol, night = K.NIGHT();

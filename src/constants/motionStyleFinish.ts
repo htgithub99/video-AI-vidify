@@ -1,4 +1,3 @@
-
 export interface MotionStyleFinish {
   pixel?: number;
   palette?: string[];

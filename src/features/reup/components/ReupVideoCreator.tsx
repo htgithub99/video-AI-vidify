@@ -22,7 +22,6 @@ import { ReupScriptReview } from "./ReupScriptReview.js";
 import { ReupSeoCard } from "./ReupSeoCard.js";
 import { ReupSourceCard } from "./ReupSourceCard.js";
 type Tab = "create" | "voices" | "results";
-/** The stepper's five stages; voice and edit are one stage on screen. */
 const STAGES: { steps: ReupStepId[]; label: keyof ReupStudio["text"] }[] = [
   { steps: ["source"], label: "STEP_SOURCE" },
   { steps: ["scenes"], label: "STEP_SCENES" },

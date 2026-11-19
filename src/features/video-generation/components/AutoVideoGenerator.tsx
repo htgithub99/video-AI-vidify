@@ -483,7 +483,18 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
               <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} T={T} />
             )}
             {!cinematicMode && (
-              <ChatPlanningSettingsBlock {...chatPolicyProps} provider={planningFallbackProvider} model={planningChatModel} onProviderChange={setPlanningFallbackProvider} onModelChange={setPlanningChatModel} executionMode={planningExecutionMode} onExecutionModeChange={setPlanningExecutionMode} chromeHeadless={planningChromeHeadless} onChromeHeadlessChange={setPlanningChromeHeadless} currentLang={currentLang} />
+              <ChatPlanningSettingsBlock
+                {...chatPolicyProps}
+                provider={planningFallbackProvider}
+                model={planningChatModel}
+                onProviderChange={setPlanningFallbackProvider}
+                onModelChange={setPlanningChatModel}
+                executionMode={planningExecutionMode}
+                onExecutionModeChange={setPlanningExecutionMode}
+                chromeHeadless={planningChromeHeadless}
+                onChromeHeadlessChange={setPlanningChromeHeadless}
+                currentLang={currentLang}
+              />
             )}
             {!cinematicMode && <VoiceSelectionSection voiceName={voiceName} voiceURI={voiceURI} voiceProvider={voiceProvider} isVoiceDialogOpen={isVoiceDialogOpen} setIsVoiceDialogOpen={setIsVoiceDialogOpen} voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE} currentLang={currentLang} handleVoiceSelect={handleVoiceSelectAndClose} truncateWords={truncateWords} T={T} />}
             <StudioCard className={cn(AV.SETTINGS_PANEL)}>

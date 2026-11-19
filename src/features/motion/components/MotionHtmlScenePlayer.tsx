@@ -11,34 +11,8 @@ import { STUDIO_PLAYER } from "../../../constants/studioTheme.js";
 import { cn } from "../../../lib/utils.js";
 import { motionRatioLabel } from "./MotionMediaFrame.js";
 import { MOTION_LOADING_GLYPH } from "./MotionControls.js";
-
-// Playback draws frames ahead into a buffer and plays them on a steady clock (like a video player), instead of
-// drawing each frame live: a heavy scene then waits briefly instead of stuttering.
-const PREVIEW = {
-  AHEAD_SECONDS: 1.5,
-  // Frames drawn ahead before playback (re)starts.
-  START_FRAMES: 8,
-  // Preview frames are drawn at the size they are shown, never above the video size.
-  MAX_DPR: 1.5,
-  // If drawing keeps falling behind, play every 2nd (then 3rd) frame so motion stays even.
-  MAX_STEP: 3,
-  STALL_WINDOW_MS: 3000,
-  STALL_SHARE: 0.2,
-  SPINNER_DELAY_MS: 250,
-  HOST_QUEUE: "motion-host-queue",
-  HOST_SHOW: "motion-host-show",
-  HOST_RESET: "motion-host-reset",
-  HOST_BUFFERED: "motion-host-buffered",
-  HOST_CLEARED: "motion-host-cleared",
-  HOST_SNAP: "motion-host-snap",
-  // The scene pill shows the scene number and the narration it shows (the plan's purpose is a production note, not for viewers).
-  CHAPTER_TITLE: (index: number, text?: string) => [`Cảnh ${index + 1}`, String(text || "").replace(/\s+/g, " ").trim()].filter(Boolean).join(" · "),
-  // Hover preview pictures are small.
-  THUMB_WIDTH: 400,
-} as const;
-
+import { MOTION_HTML_PREVIEW as PREVIEW } from "../constants/motionHtmlPreview.js";
 type HtmlScene = MotionRemotionSpec["scenes"][number];
-
 export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotionSpec; audioUrl?: string }) => {
   const [time, setTime] = useState(0),
     [playing, setPlaying] = useState(false),
@@ -54,8 +28,6 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
   const frame = frameAt(time);
   const scene = sceneAt(frame);
   const nextScene = scene ? spec.scenes.find((item) => item.startFrame === scene.endFrame) : undefined;
-
-  // One host page per scene, kept while it is current or next so the next scene is loaded before it starts.
   const tokens = useRef(new Map<string, string>());
   const sources = useRef(new Map<string, string>());
   const tokenOf = useCallback((item: HtmlScene): string => {
@@ -84,7 +56,6 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     for (const token of [...sources.current.keys()]) if (!keep.has(token)) sources.current.delete(token);
   }, [slots]);
   const currentToken = scene?.html ? tokenOf(scene) : "";
-
   const frames = useRef(new Map<string, HTMLIFrameElement>());
   const [loaded, setLoaded] = useState<Set<string>>(() => new Set());
   const ready = useRef(new Map<string, Set<number>>());
@@ -95,8 +66,6 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     ready.current.clear();
     queued.current.clear();
   }, [post]);
-
-  // Frames are drawn at the size they are shown.
   const renderWidth = Math.max(160, Math.min(spec.width, Math.round((displayWidth || spec.width) * Math.min(PREVIEW.MAX_DPR, window.devicePixelRatio || 1))));
   const renderHeight = Math.round((renderWidth * spec.height) / spec.width);
   useEffect(() => {
@@ -110,11 +79,9 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
   useEffect(() => {
     setError("");
   }, [currentToken]);
-
   useEffect(() => {
     legacy.current?.seekTo(frame);
   }, [frame, scene?.id]);
-  // Paused: draw the current frame live (also hides the buffered picture).
   useEffect(() => {
     if (playing || !scene?.html || !loaded.has(currentToken)) return;
     post(currentToken, { type: RT_MAINTENANCE.MOTION_HOST_RENDER, input: motionHtmlFrame(spec, scene, frame, renderWidth, renderHeight) });
@@ -144,11 +111,8 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     window.addEventListener(RT_MAINTENANCE.MESSAGE, receive);
     return () => window.removeEventListener(RT_MAINTENANCE.MESSAGE, receive);
   }, [spec.scenes, tokenOf]);
-
-  // Playback clock: advances only while the frame to show is drawn; otherwise it waits (and the voice with it).
   const timeRef = useRef(time);
   timeRef.current = time;
-  // Read through a ref: a scene page finishing its load must not restart the clock (and re-prime the buffer) mid-play.
   const loadedRef = useRef(loaded);
   loadedRef.current = loaded;
   const step = useRef(1);
@@ -190,7 +154,6 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
       const at = frameAt(clock);
       const current = sceneAt(at);
       if (!current?.html) {
-        // Scenes drawn by the legacy player are not buffered.
         clock += delta;
         resumeVoice();
       } else {
@@ -219,7 +182,6 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
           if (!waitingSince) waitingSince = now;
           audio.current?.pause();
           if (now - waitingSince > PREVIEW.SPINNER_DELAY_MS) setBuffering(true);
-          // Drawing keeps falling behind: play fewer frames so the motion stays even.
           stalls.current = stalls.current.filter((stall) => now - stall.at < PREVIEW.STALL_WINDOW_MS);
           const stalled = stalls.current.reduce((sum, stall) => sum + stall.ms, 0) + (now - waitingSince);
           if (stalled > PREVIEW.STALL_WINDOW_MS * PREVIEW.STALL_SHARE && step.current < PREVIEW.MAX_STEP) {
@@ -237,10 +199,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     };
     request = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(request);
-    // The clock starts from the current position each time playback starts.
   }, [playing, spec, renderWidth, renderHeight, frameAt, sceneAt, tokenOf, post]);
-
-  // Hover preview: a hidden page for the hovered scene draws one small picture per request.
   const [thumbScene, setThumbScene] = useState<HtmlScene>();
   const thumbFrame = useRef<HTMLIFrameElement>(null);
   const thumbToken = useMemo(() => (thumbScene ? `${tokenOf(thumbScene)}-thumb` : ""), [thumbScene, tokenOf]);
@@ -351,18 +310,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
               className={cn("absolute inset-0 w-full h-full block border-0", slot.token === currentToken ? "visible" : "invisible")}
             />
           ))}
-          {thumbSource && (
-            <iframe
-              key={thumbToken}
-              ref={thumbFrame}
-              aria-hidden
-              tabIndex={-1}
-              sandbox={RT_MAINTENANCE.ALLOW_SCRIPTS}
-              srcDoc={thumbSource}
-              onLoad={() => thumbLoaded.current?.token === thumbToken && thumbLoaded.current.resolve()}
-              className="absolute w-px h-px opacity-0 pointer-events-none"
-            />
-          )}
+          {thumbSource && <iframe key={thumbToken} ref={thumbFrame} aria-hidden tabIndex={-1} sandbox={RT_MAINTENANCE.ALLOW_SCRIPTS} srcDoc={thumbSource} onLoad={() => thumbLoaded.current?.token === thumbToken && thumbLoaded.current.resolve()} className="absolute w-px h-px opacity-0 pointer-events-none" />}
           {!currentToken && scene && scene.renderer !== RT_MAINTENANCE.HTML_CANVAS ? (
             <Player ref={legacy} component={StoryComposition} inputProps={{ document: { ...spec, subtitles: [] } }} durationInFrames={totalFrames} compositionWidth={spec.width} compositionHeight={spec.height} fps={spec.fps} style={{ width: RT_MAINTENANCE.VALUE_100, height: RT_MAINTENANCE.VALUE_100 }} />
           ) : !currentToken ? (

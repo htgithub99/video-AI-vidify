@@ -36,7 +36,6 @@ export const MOTION_VISUAL = {
   LEGACY_LIBRARY: "library",
   SCENES_DONE: "Đã dựng xong các cảnh",
   LEGACY_LIBRARY_PROFILE: "horror" as const,
-  // A scene drawn before the figure table cannot follow "Cách dựng"; it is drawn again by the next scene build.
   LEGACY_SCENE: "Cảnh dựng theo cách cũ – cần dựng lại.",
   PROFILES: Object.fromEntries(Object.entries(MOTION_DRAW_STYLES).map(([id, style]) => [id, { ...FAMILY_METADATA[style.family], vi: style.label.vi, en: style.label.en, hint: style.hint, preview: style.preview }])) as Record<keyof typeof MOTION_DRAW_STYLES, (typeof FAMILY_METADATA)["history"] & { hint: { vi: string; en: string }; preview: string }>,
   TEXT: {
@@ -153,7 +152,6 @@ export const MOTION_VISUAL = {
   BUNDLE_FOLDER: "remotion",
   BUNDLE_PUBLIC_FOLDER: "empty-public",
   PROJECT_FOLDER: "remotion-projects",
-  // One line that states the configuration this run really applies, so a run can be checked against what the user chose.
   LOG_CONFIG: (c: { genre?: string; storytelling?: string; length?: string; language?: string; style?: string; layout?: string; pacing?: string; mainAi?: string; scriptAi?: string; planAi?: string; sceneAi?: string; review: boolean; lowSpec: boolean; subtitles: boolean; music?: string; sfx: boolean }) =>
     `Cấu hình áp dụng: thể loại ${c.genre || "-"} · cách kể ${c.storytelling || "-"} · ${c.length || "-"} · ngôn ngữ ${c.language || "-"} | kiểu vẽ ${c.style || "-"} · bố cục ${c.layout || "auto"} · nhịp đổi hình ${c.pacing || "mặc định"} | AI phân tích ${c.mainAi || "-"} · kịch bản ${c.scriptAi || "-"} · plan cảnh ${c.planAi || "-"} · dựng cảnh ${c.sceneAi || "-"} | AI duyệt ảnh ${c.review ? "bật" : "tắt"} · máy yếu ${c.lowSpec ? "bật" : "tắt"} · phụ đề ${c.subtitles ? "bật" : "tắt"} · nhạc ${c.music || "tắt"} · hiệu ứng âm ${c.sfx ? "bật" : "tắt"}.`,
   LOG_MODE: (mode: string) => `Phương thức dựng: ${mode === "remotion" ? "Remotion" : "Kho tài nguyên"}.`,

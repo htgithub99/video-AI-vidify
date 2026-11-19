@@ -2,8 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { MOTION_HTML_WRITING as W } from "../../../../constants/motionHtmlWriting.js";
-
-// How recent videos opened, kept per genre and language so a new script can open differently instead of reusing one pattern.
 interface Opening {
   at: number;
   genre: string;
@@ -31,7 +29,5 @@ export const recordMotionOpening = (genre: string, language: string, title: stri
   try {
     const rows = [...read().filter((row) => !(row.title === title && row.genre === genre && row.language === language)), { at: Date.now(), genre, language, title, opening }].slice(-W.OPENINGS.KEPT);
     fs.writeFileSync(file(), JSON.stringify(rows, null, 1));
-  } catch {
-    // The history only improves variety; a write failure never stops a script.
-  }
+  } catch {}
 };

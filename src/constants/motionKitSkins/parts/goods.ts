@@ -1,5 +1,3 @@
-// Food, goods and carried loads for every skin (units of R, ground y = 0): bread, meat (a carcass on a hook), fish,
-// cheese, planks, bundle, backpack, carryingPole (a shoulder pole with two baskets), tray, teapot, cup, palanquin.
 export const MOTION_KIT_GOODS_KINDS = ["bread", "meat", "fish", "cheese", "planks", "bundle", "backpack", "carryingPole", "tray", "teapot", "cup", "palanquin"];
 export const SKIN_PART_GOODS = `(c, o, K) => {
   const kind = o.kind;

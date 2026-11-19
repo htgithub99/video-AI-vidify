@@ -47,8 +47,6 @@ interface VisualDraftContext {
 }
 export const hasMotionVisualDraft = (state: VisualDraftContext) => !!Object.values(state.script?.gen?.remotion?.scenes || {}).some((scenes) => scenes.length);
 export const motionVisualDraftKey = (settings: MotionVisualSettings) => stringifyJson(motionPlanSettings(normalizeMotionVisualSettings(settings)));
-// Saved state from when every drawing style and layout kept its own scene set: one set per plan is kept, the shown one
-// when it has scenes, otherwise the one built most recently, and that set becomes the shown one.
 export const mergeMotionVisualDrafts = <T extends { visualSettings?: MotionVisualSettings; visualDrafts?: Record<string, MotionVisualDraft>; script?: { gen?: MotionVisualDraft["gen"] } | null }>(saved: T): T => {
   const drafts = saved.visualDrafts;
   if (!drafts || !saved.visualSettings) return saved;
@@ -104,11 +102,7 @@ export const migrateMotionRenderKey = <T>(key: T): T => {
   parts[1] = migrateMotionCompileKey(parts[1]);
   return hashText(JSON.stringify(parts)) as T;
 };
-export const migrateMotionVisualDraft = (draft: MotionVisualDraft): MotionVisualDraft => ({
-  ...draft,
-  renderSignature: migrateMotionRenderKey(draft.renderSignature),
-  compiled: draft.compiled && { ...draft.compiled, compilationKey: migrateMotionCompileKey(draft.compiled.compilationKey) },
-});
+export const migrateMotionVisualDraft = (draft: MotionVisualDraft): MotionVisualDraft => ({ ...draft, renderSignature: migrateMotionRenderKey(draft.renderSignature), compiled: draft.compiled && { ...draft.compiled, compilationKey: migrateMotionCompileKey(draft.compiled.compilationKey) } });
 export const motionProductionOutputKeys = (state: object, result: MotionProductionResult) => {
   if (!result.outputSettings || result.outputSettings.version !== 1) return null;
   if (!motionVoiceAsrSatisfied(result.voice, result.outputSettings.asrCheck)) return null;
@@ -166,7 +160,7 @@ export const switchMotionVisualDraft = <T extends VisualDraftContext>(state: T, 
     visualSettings: settings,
     visualDrafts: drafts,
     remotionProfile: settings.profileId,
-    analysis: target ? target.analysis : state.analysis && { ...state.analysis, visualSettings: settings, stylePreset: undefined,  },
+    analysis: target ? target.analysis : state.analysis && { ...state.analysis, visualSettings: settings, stylePreset: undefined },
     script: state.script && { ...state.script, visualSettings: target ? target.scriptSettings : settings, gen: target?.gen || (pacingOnly ? state.script.gen : undefined) },
     thumbnail: target?.thumbnail || null,
     thumbnails: target?.thumbnails || {},

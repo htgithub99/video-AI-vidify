@@ -6,7 +6,6 @@ import { REUP_FONTS, reupFontScript, type ReupFontFace, type ReupFontWeight } fr
 import { REUP_ERROR } from "../../constants/reupServerText.js";
 export const REUP_ABORTED = "REUP_ABORTED";
 export const isReupAbort = (error: unknown): boolean => (error as Error)?.message === REUP_ABORTED;
-/** Run ffmpeg; keeps the whole stderr when `keepLog` (metadata printing), otherwise only the tail for errors. */
 export const reupFfmpeg = (args: string[], opts: { signal?: AbortSignal; keepLog?: boolean; cwd?: string; onSeconds?: (s: number) => void } = {}): Promise<string> =>
   new Promise((resolve, reject) => {
     if (opts.signal?.aborted) return reject(new Error(REUP_ABORTED));
@@ -37,7 +36,6 @@ export const reupFfmpeg = (args: string[], opts: { signal?: AbortSignal; keepLog
     });
   });
 let filterList: Promise<string> | undefined;
-/** Whether this ffmpeg build has a filter (blurdetect needs ffmpeg 5.1+). */
 export const reupHasFilter = async (name: string): Promise<boolean> => {
   filterList ||= new Promise((resolve) => {
     const child = spawn(getFfmpegPath(), ["-hide_banner", "-filters"], { windowsHide: true });
@@ -48,7 +46,6 @@ export const reupHasFilter = async (name: string): Promise<boolean> => {
   });
   return new RegExp(`\\s${name}\\s`).test(await filterList);
 };
-/** Duration, picture size and audio of any media file (photo or video), from ffmpeg's own report. */
 export const reupProbe = (file: string): Promise<{ duration: number; width: number; height: number; hasAudio: boolean }> =>
   new Promise((resolve) => {
     const child = spawn(getFfmpegPath(), ["-hide_banner", "-i", file], { windowsHide: true });
@@ -62,9 +59,7 @@ export const reupProbe = (file: string): Promise<{ duration: number; width: numb
     child.on("error", done);
     child.on("close", done);
   });
-/** Escape a value for use inside a single-quoted filter option. */
 export const reupFilterValue = (value: string): string => value.replace(/\\/g, "/").replace(/'/g, "'\\''").replace(/:/g, "\\:");
-/** Font for on-screen text in this language (CJK scripts need their own): heavy for titles, bold for running text. */
 export const reupFontFor = (lang = "en", weight: ReupFontWeight = "bold"): ReupFontFace | undefined => REUP_FONTS[reupFontScript(lang)][weight].find((f) => fs.existsSync(f.file)) || REUP_FONTS.latin[weight].find((f) => fs.existsSync(f.file));
 export const reupFont = (lang?: string, weight: ReupFontWeight = "bold"): string | undefined => reupFontFor(lang, weight)?.file;
 export const reupAssertVideo = (ok: boolean): void => {

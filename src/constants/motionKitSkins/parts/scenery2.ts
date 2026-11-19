@@ -1,6 +1,3 @@
-// The remaining scenery for every skin: landforms, water, sky bodies, weather and plants.
-// Same options and footprints as the core kit (x, y, r, width, height, count, seed). Sun and moon keep the core
-// clamp-into-frame logic (the hook runs after it).
 export const SKIN_PART_SCENERY2 = `(c, o, K) => {
   const kind = o.kind;
   const st = K.S(), R = K.num(o.r, 40), t = K.num(o.t, K.num(window.__motionKitTime, 0)), w = K.LW(R), ol = st.ol, night = K.NIGHT(), ink = !!st.hatch;

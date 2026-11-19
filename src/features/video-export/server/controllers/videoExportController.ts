@@ -264,7 +264,6 @@ export const saveVideoExportVideo = async (req: Request, res: Response): Promise
     sendError(res, 500, error, VIDEO_EXPORT_SERVER_TEXTS.ERR_FILE_NOT_FOUND);
   }
 };
-/** Delete exported videos from disk (Results list). */
 export const deleteVideoExportResults = async (req: Request, res: Response): Promise<void> => {
   try {
     res.json({ success: true, ...(await deleteOutputEntries(getExportDirectory(), req.body?.fileNames)) });

@@ -1,7 +1,6 @@
 import { MOTION_SCENE_BLUEPRINT as B, type MotionBlueprintFn } from "../constants/motionSceneBlueprint.js";
 import { MOTION_HTML_QUALITY as Q } from "../constants/motionHtmlQuality.js";
 import { motionHtmlMarkId } from "./motionHtmlQuality.js";
-
 interface MotionBlueprintItem {
   id: string;
   focal: boolean;
@@ -17,7 +16,6 @@ interface MotionBlueprintItem {
   travelFrom?: number;
   count?: number;
   spread?: number;
-  // The plan's FIGURES options for this id (a value per phase when it changes: pose sit -> stand).
   look?: Record<string, string | string[] | true>;
 }
 interface MotionSceneBlueprint {
@@ -28,7 +26,6 @@ interface MotionSceneBlueprint {
   time: string;
   ground: string;
   mist: boolean;
-  // True when the plan itself named who acts on whom (INTERACT line); only then is a drawing checked against the pairs.
   explicit: boolean;
   items: MotionBlueprintItem[];
 }
@@ -45,12 +42,23 @@ const classify = (id: string): Pick<Draft, "fn" | "kind" | "wide"> => {
 };
 const drafts = (template: string): Draft[] => {
   const line = template.match(Q.REQUIRED_LINE)?.[1];
-  // A plan without a REQUIRED line still gets a usable layout: one lead figure plus the first group, vehicle and building it names.
   if (!line) {
     if (!template.trim()) return [];
     const found = (fn: MotionBlueprintFn) => B.KINDS.find((row) => row.fn === fn && row.re.test(template));
     const extras = (["crowd", "vehicle", "building"] as const).map(found).filter((row): row is (typeof B.KINDS)[number] => !!row);
-    return [{ id: B.LEAD, focal: true, fn: "person" }, ...extras.map((row) => ({ id: template.match(row.re)![0].toLowerCase().replace(/[^a-z0-9]+/g, ""), focal: false, fn: row.fn, kind: row.kind, wide: row.wide }))];
+    return [
+      { id: B.LEAD, focal: true, fn: "person" },
+      ...extras.map((row) => ({
+        id: template
+          .match(row.re)![0]
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, ""),
+        focal: false,
+        fn: row.fn,
+        kind: row.kind,
+        wide: row.wide,
+      })),
+    ];
   }
   const seen = new Set<string>();
   return line
@@ -63,8 +71,6 @@ const drafts = (template: string): Draft[] => {
       return [{ id, focal: match[2]?.toLowerCase() === Q.FOCAL, ...classify(id) }];
     });
 };
-// The plan's FIGURES line ("FIGURES: you: person, outfit soldier, hold crossbow, pose sit -> stand; ..."): each id's options
-// in the figure vocabulary's words; a value that changes by phase is a list.
 export const motionSceneFigures = (template: string): Record<string, Record<string, string | string[] | true>> => {
   const line = template.match(B.FIGURES_LINE)?.[1] || "";
   const out: Record<string, Record<string, string | string[] | true>> = {};
@@ -73,7 +79,10 @@ export const motionSceneFigures = (template: string): Record<string, Record<stri
     if (at <= 0) continue;
     const id = motionHtmlMarkId(entry.slice(0, at));
     const look: Record<string, string | string[] | true> = {};
-    for (const part of entry.slice(at + 1).split(/\s*,\s*/).slice(1)) {
+    for (const part of entry
+      .slice(at + 1)
+      .split(/\s*,\s*/)
+      .slice(1)) {
       const words = part.trim().split(/\s+/);
       if (!words[0] || !/^[a-z][A-Za-z]*$/.test(words[0])) continue;
       const value = words.slice(1).join(" ");
@@ -83,7 +92,6 @@ export const motionSceneFigures = (template: string): Record<string, Record<stri
   }
   return out;
 };
-// Who acts on whom (the plan's INTERACT line), as mark ids: such pairs may stand close and are framed together.
 export const motionSceneInteractPairs = (template: string | undefined): [string, string][] => {
   const line = template?.match(B.INTERACT_LINE)?.[1] || "";
   return [...line.matchAll(B.INTERACT_PAIR)].map((match) => [motionHtmlMarkId(match[1]), motionHtmlMarkId(match[2])] as [string, string]).filter(([from, to]) => from && to && from !== to);
@@ -94,7 +102,6 @@ const pairsOf = (template: string, ids: Set<string>): [string, string][] => {
 };
 const pick = (rows: readonly (readonly [string, RegExp])[], text: string, fallback: string) => rows.find(([, re]) => re.test(text))?.[0] ?? fallback;
 const round = (value: number) => Math.round(value);
-// Spreads one depth row across the frame: items keep their order, are centred, and shrink together when they would not fit.
 const spread = (widths: number[], gap: number, centre: number): { xs: number[]; scale: number } => {
   const total = widths.reduce((sum, width) => sum + width, 0) + gap * Math.max(0, widths.length - 1);
   const scale = total > B.MAX_SPAN ? Math.max(B.MIN_SCALE, B.MAX_SPAN / total) : 1;
@@ -106,7 +113,6 @@ const spread = (widths: number[], gap: number, centre: number): { xs: number[]; 
   });
   return { xs, scale };
 };
-// Places a rear row left and right of the near group (outside its half-width "clear"), so nothing important hides behind it.
 const flank = (widths: number[], gap: number, clear: number): { xs: number[]; scale: number } => {
   const room = Math.max(1, B.WORLD.centre - B.WORLD.left - clear);
   const sides = [0, 0];
@@ -133,19 +139,15 @@ export const motionSceneBlueprint = (template: string | undefined, input: { shot
   const map = String(input.kind || "").toLowerCase() === "map";
   const shot = motionSceneShot(input.shot);
   const { groundY } = B.SHOTS[shot];
-  // The shot's own size, never below what the focal check asks for (the layout's camera frames the scene when it is shown).
   const r = Math.min(B.MAX_R, Math.max(B.SHOTS[shot].r, Math.ceil(((input.focalMin || 0) * B.WORLD.height * B.FOCAL_MARGIN) / B.PERSON_HEIGHT)));
   const looks = motionSceneFigures(text);
   const pairs = pairsOf(text, new Set(list.map((item) => item.id)));
-  // Without an INTERACT line, two focal people are the scene's exchange: they stand together and face each other.
   const explicit = pairs.length > 0;
   const leads = list.filter((item) => item.focal && item.fn === "person");
   if (!pairs.length && leads.length >= 2) pairs.push([leads[0].id, leads[1].id]);
   const partner = (id: string) => pairs.find(([from]) => from === id)?.[1] ?? pairs.find(([, to]) => to === id)?.[0];
   const small = (item: Draft) => item.fn === "prop" && (B.SMALL as readonly string[]).includes(item.kind || "");
   const row = (item: Draft) => (item.fn === "person" || item.fn === "animal" || (item.fn === "crowd" && item.focal) || (item.fn === "prop" && !item.wide) ? 0 : item.focal || item.fn === "crowd" ? 1 : 2);
-  // Near row order: every acting element is followed directly by the element it acts on, so nothing can stand between them.
-  // An element with several partners (the protagonist grabbed by one person and handed something by another) ends up between them.
   const front = list.filter((entry) => row(entry) === 0 && !small(entry));
   const linked = (a: Draft, b?: Draft) => !!b && pairs.some(([from, to]) => (from === a.id && to === b.id) || (from === b.id && to === a.id));
   const near: Draft[] = [];
@@ -204,18 +206,7 @@ export const motionSceneBlueprint = (template: string | undefined, input: { shot
   const people = [...placed.values()].filter((item) => item.fn === "person");
   list.filter(small).forEach((item) => {
     const owner = placed.get(partner(item.id) || "") || people.find((entry) => B.PROTAGONISTS.includes(entry.id)) || people.find((entry) => entry.focal) || people[0];
-    placed.set(item.id, {
-      id: item.id,
-      focal: item.focal,
-      fn: "prop",
-      kind: item.kind,
-      x: round((owner?.x ?? B.WORLD.centre) + (owner?.facing ?? 1) * r * 0.9),
-      y: groundY + 4,
-      size: round(r * B.HEAD),
-      sizeKey: "p",
-      facing: owner?.facing ?? 1,
-      owner: owner?.id,
-    });
+    placed.set(item.id, { id: item.id, focal: item.focal, fn: "prop", kind: item.kind, x: round((owner?.x ?? B.WORLD.centre) + (owner?.facing ?? 1) * r * 0.9), y: groundY + 4, size: round(r * B.HEAD), sizeKey: "p", facing: owner?.facing ?? 1, owner: owner?.id });
   });
   const motion = text.match(Q.MOTION_LINE)?.[1] || "";
   if (B.TRAVEL_RE.test(motion)) {
@@ -226,11 +217,22 @@ export const motionSceneBlueprint = (template: string | undefined, input: { shot
   }
   const setting = text.match(B.SETTING_SECTION)?.[0] || text;
   const time = pick(B.TIME, setting, "day");
-  return { shot, groundY, r, map, time, ground: pick(B.GROUND, setting, B.DEFAULT_GROUND), mist: B.MIST_RE.test(setting), explicit, items: list.map((item) => placed.get(item.id)!).filter(Boolean).map((item) => (looks[item.id] ? { ...item, look: looks[item.id] } : item)) };
+  return {
+    shot,
+    groundY,
+    r,
+    map,
+    time,
+    ground: pick(B.GROUND, setting, B.DEFAULT_GROUND),
+    mist: B.MIST_RE.test(setting),
+    explicit,
+    items: list
+      .map((item) => placed.get(item.id)!)
+      .filter(Boolean)
+      .map((item) => (looks[item.id] ? { ...item, look: looks[item.id] } : item)),
+  };
 };
 export type MotionCastLooks = Record<string, Record<string, string | number | boolean>>;
-// Reads the colours a cast description states (coat, trim, trousers, hair, skin) into kit options. Only stated colours are
-// taken, and the entry is flagged as a seed so the first scene that draws the person completes the rest of the look.
 export const motionSceneCastSeed = (looks: MotionCastLooks, cast: { key?: string; name?: string; look?: string; skin?: string }[] | undefined): void => {
   const C = B.CAST_SEED;
   const colours = Object.keys(C.COLOURS).join("|");
@@ -241,7 +243,12 @@ export const motionSceneCastSeed = (looks: MotionCastLooks, cast: { key?: string
       const hit = new RegExp(`\\b(${colours})[ -]${part}\\b`, "i").exec(text);
       if (hit) look[key] = C.COLOURS[hit[1].toLowerCase()];
     }
-    const skin = C.SKIN[String(person.skin || "").toLowerCase().trim()];
+    const skin =
+      C.SKIN[
+        String(person.skin || "")
+          .toLowerCase()
+          .trim()
+      ];
     if (skin) look.skin = skin;
     if (!Object.keys(look).length) continue;
     const ids = [String(person.key || ""), ...String(person.name || "").split(/\s+/)].map((id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "")).filter((id) => id.length >= C.NAME_MIN);

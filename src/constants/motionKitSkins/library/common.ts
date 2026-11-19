@@ -1,16 +1,7 @@
-// The object library's skin parts: each file holds one family of things, with the catalogue facts of each kind (years,
-// other names, how it fits its box) next to its drawing, so a kind is added in one place. Drawings use the shared
-// prelude below (units of R, ground y = 0, front toward +x) and the active skin's ink, fill and tone.
 import type { MotionCatalogFn } from "../../../types/motionObjectCatalog.js";
-
 const LONG_HULL: Record<string, number> = { ironclad: 2, carrier: 2.2 };
 export type MotionLibraryItem = { id: string; from?: number; to?: number; names?: string[]; fit?: "stretch" | "elastic" | "rigid" | "ground" };
 export type MotionLibraryPart = { part: string; fn: MotionCatalogFn; items: MotionLibraryItem[]; js: string };
-
-// Helpers every library drawing may use:
-// P(pts) polygon, S(pts) smooth closed shape, E(x, y, a, b) ellipse, rect(x0, y0, x1, y1), fl(path, colour, opts) skin fill
-// with cel shading, ln(pts, k, colour) ink line, beam(pts, width, colour) outlined bar, ring(x, y, r, colour), clip(path, fn),
-// rnd(i) seeded 0..1, glow(x, y, r), flame(x, y, s), smoke(x, y, s); colours below (toned by the skin).
 const PRELUDE = `const st = K.S(), R = K.num(o.r, 30), w = K.LW(R), ol = st.ol, night = K.NIGHT(), t = K.num(o.t, K.num(window.__motionKitTime, 0));
   const f = K.num(o.facing, 1) < 0 ? -1 : 1, moving = o.moving !== false && o.pose !== "stand", spin = moving ? (o.distance != null ? +o.distance / R : t * 6) : 0;
   const rnd = (i) => K.rnd(K.num(o.seed, 3), i);
@@ -30,9 +21,6 @@ const PRELUDE = `const st = K.S(), R = K.num(o.r, 30), w = K.LW(R), ol = st.ol, 
   const smoke = (x, y, s) => { const fx = K.part && K.part("effect"); if (fx) fx(c, { kind: "smoke", x: x * R, y: y * R, r: s * R, t, seed: 5 }, K); };
   const wheel = (x, r, n, col) => { ring(x, -r, r, rubber); ring(x, -r, r * 0.7, col || T("#8a8c90")); for (let i = 0; i < (n || 0); i++) { const a = spin + i * Math.PI * 2 / n; ln([[x, -r], [x + Math.cos(a) * r * 0.68, -r + Math.sin(a) * r * 0.68]], 0.45); } ring(x, -r, r * 0.16, T("#4a4c52")); };
   const woodWheel = (x, r) => { ring(x, -r, r, K.shade(wood, 0.8)); ring(x, -r, r * 0.8, K.shade(wood, 1.1)); for (let i = 0; i < 10; i++) { const a = spin + i * Math.PI / 5; ln([[x, -r], [x + Math.cos(a) * r * 0.8, -r + Math.sin(a) * r * 0.8]], 0.5, dark); } ring(x, -r, r * 0.18, dark); };`;
-
-// One skin part drawing the given kinds; body is the switch's cases (each ends with break), helpers the family's own
-// shared drawing functions. shadow: half-width of the ground shadow in R (0 for none).
 export const motionLibraryPart = (items: MotionLibraryItem[], body: string, shadow = 1, helpers = ""): string => `(c, o, K) => {
   const kind = o.kind;
   if (${JSON.stringify(items.map((item) => item.id))}.indexOf(kind) < 0 || (o.view && o.view !== "side")) return null;

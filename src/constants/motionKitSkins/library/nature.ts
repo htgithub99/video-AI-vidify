@@ -1,7 +1,4 @@
-// Nature: more trees and plants (tree), small things on the ground (prop) and landforms a scene places as a whole
-// (building: a mountain, a volcano, a waterfall...).
 import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
-
 const trees = [
   { id: "coconut", names: ["coconutPalm"] },
   { id: "mangrove" },
@@ -16,11 +13,9 @@ const trees = [
   { id: "acacia", names: ["savannaTree"] },
   { id: "lotusPlant", names: ["waterLily"] },
 ];
-
 const leaf = `const canopy = (pts, col) => { const p = S(pts); fl(p, col || green); return p; };
   const trunk = (x0, y0, x1, y1, wd) => beam([[x0, y0], [x1, y1]], wd || 0.25, T(night ? "#4a3a2a" : "#7a5638"));
   const sway = Math.sin(t * 1.2 + K.num(o.seed, 1)) * 0.04;`;
-
 const treeBody = `
     case "coconut": { const p = new Path2D(); p.moveTo(0, 0); p.quadraticCurveTo(0.6 * R, -2.5 * R, 0.3 * R, -4.6 * R); c.lineWidth = 0.28 * R + w * 2; c.strokeStyle = ol; c.stroke(p); c.lineWidth = 0.28 * R; c.strokeStyle = T("#9a7a52"); c.stroke(p); for (let i = 0; i < 7; i++) { const a = -Math.PI / 2 + (i - 3) * 0.55 + sway; fl(S([[0.3, -4.6], [0.3 + Math.cos(a) * 1.0, -4.6 + Math.sin(a) * 1.0 - 0.2], [0.3 + Math.cos(a) * 1.9, -4.6 + Math.sin(a) * 1.9 + 0.5], [0.3 + Math.cos(a) * 1.0, -4.6 + Math.sin(a) * 1.0 + 0.05]]), green); } [-0.1, 0.25, 0.55].forEach((x) => ring(x + 0.05, -4.45, 0.16, T("#6a4a2a"))); break; }
     case "mangrove": for (let i = 0; i < 6; i++) { const x = -1.0 + i * 0.4; ln([[x, 0.1], [x * 0.3, -1.0]], 1.4, T("#6a5038")); } trunk(0, -0.9, 0, -2.2, 0.3); canopy([[-1.6, -1.9], [-1.4, -2.9], [-0.4, -3.4], [0.8, -3.3], [1.6, -2.6], [1.4, -1.9], [0, -1.7]]); break;
@@ -34,7 +29,6 @@ const treeBody = `
     case "vine": [-1.0, 1.0].forEach((x) => beam([[x, 0], [x, -1.8]], 0.07)); ln([[-1.1, -1.6], [1.1, -1.6]], 0.6, rope); ln([[-1.0, -0.2], [-0.5, -1.0], [0, -1.55], [0.6, -1.0], [1.0, -1.5]], 1.2, T("#6a4a2a")); for (let i = 0; i < 8; i++) fl(E(-0.9 + i * 0.26, -1.4 + (i % 2) * 0.25, 0.16, 0.12), green); [-0.4, 0.5].forEach((x) => { for (let k = 0; k < 5; k++) ring(x + (k % 2) * 0.08, -1.1 + k * 0.08, 0.06, T("#6a3a7a")); }); break;
     case "acacia": trunk(0, 0, 0.2, -2.2, 0.22); trunk(0.2, -2.2, -0.8, -2.8, 0.12); trunk(0.2, -2.2, 1.0, -2.9, 0.12); fl(S([[-2.0, -2.8], [-1.6, -3.3], [0, -3.5], [1.7, -3.3], [2.1, -2.8], [0, -2.7]]), T(night ? "#4a5a3a" : "#7a9a4a")); break;
     case "lotusPlant": ln([[-1.4, 0.05], [1.4, 0.05]], 0.6, T("#6a8a9a")); [-0.8, 0.6].forEach((x) => fl(E(x, -0.05, 0.5, 0.12), green)); beam([[0.0, 0], [0.1, -1.2]], 0.04, green); [[-0.17, -1.3, -0.5], [0.17, -1.3, 0.5], [0, -1.38, 0]].forEach(([dx, y, r]) => fl(E(0.1 + dx, y, 0.1, 0.24, r), T("#e8a0b4"))); break;`;
-
 const ground = [
   { id: "mushroom", names: ["mushrooms", "toadstool"], fit: "rigid" as const },
   { id: "fallenLeaves", names: ["leaves", "leafPile"], fit: "ground" as const },
@@ -43,7 +37,6 @@ const ground = [
   { id: "termiteMound", names: ["anthill"] },
   { id: "bushes", names: ["shrubs", "hedge", "undergrowth"], fit: "ground" as const },
 ];
-
 const groundBody = `
     case "mushroom": [[-0.3, 0.8], [0.35, 0.6]].forEach(([x, s]) => { beam([[x, 0], [x, -0.6 * s]], 0.14 * s, white); fl(S([[x - 0.45 * s, -0.55 * s], [x - 0.35 * s, -0.95 * s], [x, -1.05 * s], [x + 0.35 * s, -0.95 * s], [x + 0.45 * s, -0.55 * s]]), red); [[-0.15, -0.8], [0.15, -0.85]].forEach(([dx, dy]) => ring(x + dx * s, dy * s, 0.06 * s, white)); }); break;
     case "fallenLeaves": for (let i = 0; i < 14; i++) fl(E(-1.4 + rnd(i) * 2.8, -0.06 - rnd(i + 20) * 0.1, 0.14, 0.06, rnd(i + 40) * 3), [T("#d0602a"), T("#e8a83a"), T("#9a5a2a")][i % 3], { hatch: false }); break;
@@ -51,7 +44,6 @@ const groundBody = `
     case "puddle": fl(E(0, -0.04, 1.2, 0.18), T(night ? "#4e6680" : "#8ab0c8"), { hatch: false }); ln([[-0.5, -0.06], [-0.1, -0.06]], 0.5, white); break;
     case "termiteMound": fl(S([[-0.8, 0], [-0.6, -1.0], [-0.3, -2.2], [0, -2.5], [0.3, -2.0], [0.5, -1.0], [0.8, 0]]), T("#b88a5a")); ln([[-0.2, -0.6], [-0.1, -1.5]], 0.4); ln([[0.25, -0.4], [0.2, -1.2]], 0.4); break;
     case "bushes": [[-1.0, 0.7], [0.0, 0.9], [1.0, 0.75]].forEach(([x, s]) => fl(S([[x - 0.75 * s, 0], [x - 0.8 * s, -0.6 * s], [x - 0.3 * s, -1.0 * s], [x + 0.35 * s, -0.95 * s], [x + 0.8 * s, -0.55 * s], [x + 0.75 * s, 0]]), green)); break;`;
-
 const lands = [
   { id: "mountain", names: ["mountains", "peak"] },
   { id: "volcano" },
@@ -63,10 +55,8 @@ const lands = [
   { id: "riceTerraces", names: ["terraces", "terracedFields", "riceTerrace"] },
   { id: "cliff", names: ["rockFace", "bluff"] },
   { id: "hillFort", names: ["moundFort", "tumulus"] },
-  // A village or small town seen from afar: a cluster of roofs (and a church tower once there are churches).
   { id: "villageCluster", names: ["village", "hamlet", "distantVillage", "farVillage", "town", "smallTown", "settlement"] },
 ];
-
 const landBody = `
     case "mountain": fl(P([[-3.0, 0], [-1.2, -3.2], [-0.6, -2.6], [0.4, -4.4], [3.0, 0]]), T(night ? "#5a5e6a" : "#8a8e9a")); fl(P([[-0.25, -3.8], [0.4, -4.4], [1.0, -3.6], [0.6, -3.7], [0.2, -3.4]]), white, { hatch: false }); fl(P([[-1.7, -2.4], [-1.2, -3.2], [-0.8, -2.6], [-1.2, -2.7]]), white, { hatch: false }); break;
     case "volcano": fl(P([[-3.0, 0], [-0.7, -3.4], [0.7, -3.4], [3.0, 0]]), T(night ? "#4a4038" : "#6e5e50")); fl(E(0, -3.4, 0.7, 0.12), T("#e2672b"), { hatch: false }); ln([[-0.3, -3.3], [-0.6, -2.2], [-0.4, -1.4]], 1.4, T("#e2672b")); glow(0, -3.4, 1.5); if (o.smoking) smoke(0, -4.6, 1.2); break;
@@ -83,7 +73,6 @@ const landBody = `
       houses.forEach(([x, hw, h, k], i) => { const y = -0.05 * (i % 3); fl(rect(x - hw, y - h, x + hw, y), wall); fl(P([[x - hw - 0.12, y - h], [x, y - h - hw * 0.9], [x + hw + 0.12, y - h]]), k || yr < 1300 ? thatch : roof); fl(rect(x - 0.1, y - h * 0.55, x + 0.1, y), T("#4a3a2c"), { hatch: false }); });
       for (let i = 0; i < 5; i++) fl(E(-2.8 + i * 1.4, 0.05, 0.6, 0.18), green); if (o.smoking !== false) smoke(-1.9, -1.6, 0.35); break; }
     case "hillFort": fl(S([[-3.0, 0], [-1.8, -1.6], [1.8, -1.6], [3.0, 0]]), green); for (let i = 0; i < 12; i++) { const x = -1.7 + i * 0.31; beam([[x, -1.55], [x, -2.2]], 0.07); } break;`;
-
 export const MOTION_LIBRARY_TREES: MotionLibraryPart = { part: "lib_trees", fn: "tree", items: trees, js: motionLibraryPart(trees, treeBody, 1.0, leaf) };
 export const MOTION_LIBRARY_GROUND: MotionLibraryPart = { part: "lib_ground", fn: "prop", items: ground, js: motionLibraryPart(ground, groundBody, 0) };
 export const MOTION_LIBRARY_LANDS: MotionLibraryPart = { part: "lib_lands", fn: "building", items: lands, js: motionLibraryPart(lands, landBody, 0) };

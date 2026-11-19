@@ -13,7 +13,7 @@ type VideoExportPreviewCardProps = { exporter: Pick<VideoExporterState, "text" |
 export const VideoExportPreviewCard: FC<VideoExportPreviewCardProps> = ({ exporter }) => {
   const { text, preview, previewError, isPreviewing, isPreviewOutdated, canRender, isExporting, config } = exporter;
   return (
-    <StudioCard className={cn(RT_SHARED.GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P_5_SPACE)}>
+    <StudioCard className={cn(RT_SHARED.GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P_5_SPACE, RT_VIDEO_EXPORT.PREVIEW_CARD_FILL)}>
       <div className={cn(RT_VIDEO_EXPORT.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_FLEX_WRAP_GAP_2)}>
         <h3 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100)}>
           <Eye className={cn(RT_SHARED.W_3_5_H_3_5_TEXT_PURPLE_400)} />

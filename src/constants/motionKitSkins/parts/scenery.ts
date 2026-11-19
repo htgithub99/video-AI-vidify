@@ -1,6 +1,3 @@
-// Small scenery for every skin: rocks and boulders with facets and cracks, a cut stump with rings and roots,
-// a felled log with bark lines and an end grain, and grass clumps of ink blades. Other scenery kinds return null.
-// Outlines keep the weight of a mid-sized thing, so a stump or log seen close is not drawn in heavy ink.
 export const SKIN_PART_SCENERY = `(c, o, K) => {
   const kind = o.kind;
   if (["rock", "boulder", "stump", "log", "grass"].indexOf(kind) < 0) return null;

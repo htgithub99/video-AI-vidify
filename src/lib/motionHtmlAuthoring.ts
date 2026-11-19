@@ -47,11 +47,7 @@ export const motionHtmlGenreDirection = (genre: unknown, seconds: number, mode: 
 export const motionHtmlWritingDirection = (analysis: MotionStoryAnalysis, language = analysis.authoringSettings?.language): string => {
   const a = analysis.authoringSettings!;
   const target = analysis.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0) || a.selectedTargetSeconds;
-  return [
-    motionHtmlLanguageDirection(language),
-    motionHtmlGenreDirection(a.videoGenre, target, a.storytelling),
-    ...(motionRenameMapActive(analysis).length ? [MOTION_RENAME.PROMPT.CHAPTER(motionRenamePairs(motionRenameMapActive(analysis)))] : []),
-  ].join(RT_MAINTENANCE.NEWLINE);
+  return [motionHtmlLanguageDirection(language), motionHtmlGenreDirection(a.videoGenre, target, a.storytelling), ...(motionRenameMapActive(analysis).length ? [MOTION_RENAME.PROMPT.CHAPTER(motionRenamePairs(motionRenameMapActive(analysis)))] : [])].join(RT_MAINTENANCE.NEWLINE);
 };
 export const motionHtmlVisualDirection = (analysis: MotionStoryAnalysis, language = analysis.authoringSettings?.language): string => {
   const a = analysis.authoringSettings!;

@@ -937,7 +937,6 @@ const continueSunoCreation = async (checkpoint: SunoCreationCheckpoint, runId: s
     }, 2000);
   }
 };
-/** Song titles Suno lists for a playlist's clips (id → title), empty when the payload has none. */
 const playlistClipTitles = (payload: any): Record<string, string> => {
   const titles: Record<string, string> = {};
   for (const item of [..._.castArray(payload?.playlist_clips || []), ..._.castArray(payload?.playlist?.playlist_clips || []), ..._.castArray(payload?.playlist?.clips || []), ..._.castArray(payload?.clips || [])]) {
@@ -947,7 +946,6 @@ const playlistClipTitles = (payload: any): Record<string, string> => {
   }
   return titles;
 };
-/** Clips of a pasted playlist with the titles Suno gives them (title is empty when only the page could be read). */
 export const getSunoPlaylistTracks = async (playlistUrl: string): Promise<{ songId: string; title: string }[]> => {
   const normalizedUrl = _.trim(playlistUrl);
   if (!SUNO_AUTOMATION_PATTERNS.VALID_PLAYLIST_URL.test(normalizedUrl)) {

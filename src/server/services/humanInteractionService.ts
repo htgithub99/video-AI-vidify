@@ -78,7 +78,10 @@ export const waitHumanSendTurn = async (page: Page, signal?: AbortSignal): Promi
   const previous = sendQueues.get(host) || Promise.resolve();
   let release: () => void = () => undefined;
   const current = new Promise<void>((resolve) => (release = resolve));
-  sendQueues.set(host, previous.then(() => current));
+  sendQueues.set(
+    host,
+    previous.then(() => current),
+  );
   try {
     await previous;
     signal?.throwIfAborted();

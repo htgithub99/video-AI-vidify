@@ -1,12 +1,8 @@
 import { MOTION_FIGURE_VOCAB as V } from "./motionFigureVocabulary.js";
-// The plan's list of what a scene draws, in the figure vocabulary's words: the drawing request copies it, and both
-// renderers draw exactly these (motionFigureVocabulary).
 const FIGURES_LINE = `8. FIGURES: one line \`FIGURES: id: fn, options; id: fn, options\` listing every person, animal, vehicle, building, tree and prop the picture draws (the REQUIRED ids first, a crowd as one entry with its count), each written only in these words so both renderers draw the same thing. person: outfit ${V.OUTFITS.join("|")}; colours of top, pants, cape or robe as #hex; head ${V.HEADS.filter((h) => h !== "none").join("|")}; hold ${V.HOLDS.join("|")}; pose per phase (a -> b) from ${V.POSES.join("|")}; expression per phase from ${V.EXPRESSIONS.join("|")}; barefoot, wounded, bandage head|arm|hand, tied, wet, dirty only when the narration says so. animal: kind and pose stand|walk|run|graze|lie. Any other thing: its plain noun (wagon, raft, tent, log, campfire) and what it is built of. A held thing outside the hold words is its own prop entry held in the hand. Nothing else describes a figure. Example: \`FIGURES: you: person, outfit soldier, top #6e5038, hold crossbow, pose sit -> sit, expression worried -> surprised; drover: person, outfit peasant, wounded, pose walk -> point, expression sad; log: prop log; tents: building tent, canvas\``;
 export const MOTION_HTML_QUALITY = {
   KEY_PROGRESS: 0.5,
-  // Seconds of the cut-out style's dip to black at a jump in time.
   DIP_SECONDS: 0.45,
-  // When a still frame's place and time title is caught: fully shown.
   TITLE_STILL_SECONDS: 1.2,
   QUALITY_RETRIES: 1,
   REQUIRED_LINE: /^[ \t]*(?:\d+\.\s*)?REQUIRED\s*:\s*(.+)$/im,
@@ -20,31 +16,26 @@ export const MOTION_HTML_QUALITY = {
     FIGURES_LINE,
     "Consecutive scenes never repeat the same shot size with the same subject placement: change the shot size, the camera angle or the side the focal subject stands on. A loose prop (rope, tool, basket, stone) stays at most about half a standing person's height unless the narration makes it the subject. A map labels every place the narration names and draws an arrow for each movement; every arrow starts at a named place and ends at a named place, and the site of a battle or siege carries a battle mark, so a viewer who only sees the map knows who goes from where to where and where the fight is. In a scene with a river, lake or sea, say for every subject whether it is on the near bank, the far bank, a bridge, a boat or in the water.",
   ].join("\n"),
-  BLANK: {
-    RETRIES: 2,
-    LOG: (id: string, frame: number, attempt: number) => `Xuất video: khung ${frame} của cảnh ${id} ra một màu trơn (trang mất canvas) – mở lại trang và vẽ lại khung này (lần ${attempt}).`,
-    KEPT_LOG: (id: string) => `Xuất video: cảnh ${id} vẫn ra khung một màu sau khi mở lại trang – giữ nguyên và ghi cảnh báo.`,
-  },
-  VARIETY: (shot: string, setting: string) =>
-    `VARIETY: the previous scene is also a ${shot} shot of ${setting}; frame this one differently (another framing or height, the focal subject on the other side, different depth layering) while keeping the SCENE's shot size.`,
+  BLANK: { RETRIES: 2, LOG: (id: string, frame: number, attempt: number) => `Xuất video: khung ${frame} của cảnh ${id} ra một màu trơn (trang mất canvas) – mở lại trang và vẽ lại khung này (lần ${attempt}).`, KEPT_LOG: (id: string) => `Xuất video: cảnh ${id} vẫn ra khung một màu sau khi mở lại trang – giữ nguyên và ghi cảnh báo.` },
+  VARIETY: (shot: string, setting: string) => `VARIETY: the previous scene is also a ${shot} shot of ${setting}; frame this one differently (another framing or height, the focal subject on the other side, different depth layering) while keeping the SCENE's shot size.`,
   REVIEW_ARTIFACT: "motion-html-review",
   REVIEW_FILE: "review-",
   MOTION_LINE: /^[ \t]*(?:\d+\.\s*)?MOTION\s*:\s*(.+)$/im,
   EVENT_LINE: /Exact approved event:\s*([^\n]+)/i,
-  // The picture check asks what the frame says before it is told: a viewer who sees it for two seconds must get the
-  // scene's message.
   REVIEW_PROMPT: (c: { narration: string; message: string; keyVisual: string; required: string; motion: string; event: string }) =>
     [
       "You check one frame (the middle of the scene) of an illustrated story video. A viewer sees it for two seconds while the narrator speaks; the picture must make the scene's message clear. Judge only content, never drawing style, colours or small details.",
-      "First write in \"shows\" one short sentence of what the frame shows, as a viewer would say it. Then compare it with what the scene must say:",
+      'First write in "shows" one short sentence of what the frame shows, as a viewer would say it. Then compare it with what the scene must say:',
       c.message ? `MESSAGE: ${c.message}` : "",
       c.keyVisual ? `KEY VISUAL: ${c.keyVisual}` : "",
       `NARRATION: ${c.narration}`,
       c.event ? `EVENT TO SHOW: ${c.event}` : "",
       c.required ? `MUST BE VISIBLE: ${c.required}` : "",
       c.motion ? `ACTION: ${c.motion}` : "",
-      "Answer with JSON only: {\"shows\": \"...\", \"ok\": true} when a viewer gets the message, or {\"shows\": \"...\", \"ok\": false, \"problems\": [\"...\"]} with at most 5 short, concrete problems: the key subject, action or object missing, too small or unrecognisable, the eye drawn to something else, people or things in impossible places (fire or people standing on open water, things floating in the sky, a bridge that does not cross the water, a building cut in half), the wrong side of a river, or a frame that contradicts the narration (night for day, a crowd for one man, the wrong era).",
-    ].filter(Boolean).join("\n"),
+      'Answer with JSON only: {"shows": "...", "ok": true} when a viewer gets the message, or {"shows": "...", "ok": false, "problems": ["..."]} with at most 5 short, concrete problems: the key subject, action or object missing, too small or unrecognisable, the eye drawn to something else, people or things in impossible places (fire or people standing on open water, things floating in the sky, a bridge that does not cross the water, a building cut in half), the wrong side of a river, or a frame that contradicts the narration (night for day, a crowd for one man, the wrong era).',
+    ]
+      .filter(Boolean)
+      .join("\n"),
   REVIEW_LOG: (id: string, problems: string[]) => `Cảnh HTML ${id}: AI duyệt ảnh thấy chưa đúng nội dung (${problems.join("; ")}) – tạo lại 1 lần kèm yêu cầu sửa.`,
   REVIEW_SKIP_LOG: (id: string, reason: string) => `Cảnh HTML ${id}: bỏ qua bước AI duyệt ảnh (${reason}).`,
 } as const;

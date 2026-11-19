@@ -1,6 +1,3 @@
-// Two-wheel cart pulled behind an animal (option cart: true), drawn in the skin ink for the sketch and comic skins.
-// Called by horse.ts and quad.ts through K.part("cartRig") with pixel coordinates in the animal's facing frame:
-// {x0: rump x, y: ground, R, f: facing, ph: gait phase, hitch: [x, y] shoulder point, color, cover}.
 export const SKIN_PART_CART_RIG = `(c, a, K) => {
   const { R, f, ph } = a, st = K.S(), w = K.LW(R / 1.6), ol = st.ol;
   const wood = a.color ? K.toneOf(a.color) : "#8a6a44", dark = K.shade(wood, 0.72);

@@ -1,36 +1,8 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MUSIC } from "../constants/runtimeText.js";
-import { parseJson } from "../../../lib/jsonStringify.js";
+import { readNdjsonResponse } from "../../../lib/ndjsonStream.js";
 import type { MusicDownloadProgress } from "../../../types/musicDownloadProgress.js";
-import { MUSIC_PLANNING as P } from "../../../constants/musicPlanning.js";
-export const readMusicDownloadResponse = async (response: Response, onProgress: (progress: MusicDownloadProgress) => void): Promise<any> => {
-  if (!response.headers.get(P.STREAM_HEADER)?.includes(P.STREAM_TYPE) || !response.body) return response.json();
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let pending = "";
-  let result: any;
-  const consume = (line: string) => {
-    if (!line.trim()) return;
-    const event = parseJson(line);
-    if (event.type === RT_SHARED.PROGRESS) onProgress(event.progress);
-    else if (event.type === RT_SHARED.RESULT) result = event.result;
-  };
-  try {
-    for (;;) {
-      const { value, done } = await reader.read();
-      pending += decoder.decode(value, { stream: !done });
-      const lines = pending.split(RT_SHARED.SYMBOL_01BA47);
-      pending = lines.pop() || "";
-      lines.forEach(consume);
-      if (done) break;
-    }
-    consume(pending);
-  } finally {
-    reader.releaseLock();
-  }
-  if (!result) throw new Error(RT_MUSIC.LUONG_TAI_VA_DANH_GIA_NHAC_BI_NGAT_TRUOC_KHI);
-  return result;
-};
+export const readMusicDownloadResponse = (response: Response, onProgress: (progress: MusicDownloadProgress) => void): Promise<any> => readNdjsonResponse<any>(response, (event) => onProgress(event.progress), RT_MUSIC.LUONG_TAI_VA_DANH_GIA_NHAC_BI_NGAT_TRUOC_KHI);
 export const formatMusicDownloadProgress = (progress: MusicDownloadProgress, language: string): string => {
   const vi = language !== RT_SHARED.EN;
   const parts = [progress.room ? `${RT_MUSIC.ROOM}${progress.room}${RT_SHARED.SYMBOL_8A5EDA}${progress.rooms || progress.room}` : "", progress.attempt ? `${vi ? RT_MUSIC.LAN : RT_MUSIC.ATTEMPT}${RT_SHARED.SYMBOL_36A9E7}${progress.attempt}` : ""] as string[];

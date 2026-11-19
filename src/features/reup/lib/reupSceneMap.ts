@@ -2,14 +2,12 @@ import _ from "lodash";
 import { REUP_MOMENT, REUP_UPLOAD } from "../constants/reupConfig.js";
 import type { ReupBadRange, ReupMoment, ReupSceneMap, ReupSegment, ReupSheet } from "../types/reup.js";
 import { mergeSpans, subtractSpans } from "./reupTimeline.js";
-/** Images one request may carry for this AI route: the learned value wins when lower than the documented maximum. */
 export const reupUploadLimit = (provider: string, mode: string, learned: Record<string, number> = {}): number => {
   if (mode === REUP_UPLOAD.API_MODE) return Number.MAX_SAFE_INTEGER;
   const documented = REUP_UPLOAD.MAX[provider] ?? 1;
   const known = learned[provider];
   return Math.max(1, known ? Math.min(known, documented) : documented);
 };
-/** Split sheets into requests: as many images per request as the route allows (count, or bytes for the API route). */
 export const reupSheetBatches = <T extends Pick<ReupSheet, "index">>(sheets: T[], limit: number, sizes?: number[], byteLimit?: number): T[][] => {
   if (!byteLimit || !sizes) return _.chunk(sheets, Math.max(1, limit));
   const batches: T[][] = [];
@@ -28,9 +26,7 @@ export const reupSheetBatches = <T extends Pick<ReupSheet, "index">>(sheets: T[]
   if (current.length) batches.push(current);
   return batches;
 };
-/** Time covered by a sheet's tiles. */
 export const reupSheetSpan = (sheet: Pick<ReupSheet, "start" | "interval" | "count">, duration: number): { start: number; end: number } => ({ start: sheet.start, end: Math.min(duration, sheet.start + sheet.interval * sheet.count) });
-/** Turn per-second brightness/blur samples into merged bad ranges. */
 export const reupBadRanges = (samples: { t: number; y: number; blur?: number }[], darkLevel: number, blurLevel: number, gap: number, minLength: number): ReupBadRange[] => {
   const pick = (reason: ReupBadRange["reason"], test: (s: { y: number; blur?: number }) => boolean) => {
     const sorted = _.sortBy(samples, "t");
@@ -59,10 +55,6 @@ export interface ReupScenePart {
   thumbnails: number[];
   summary: string;
 }
-/**
- * A scene's moments from the AI: inside the scene (clear of its last half second), off dark or blurry footage, on a
- * contact-sheet tile's time (`interval`), at least MIN_GAP apart, at most MAX per scene. Ids are given after merging.
- */
 const cleanMoments = (raw: unknown, start: number, end: number, bad: ReupBadRange[], interval: number, value: number): Omit<ReupMoment, "id">[] => {
   const out: Omit<ReupMoment, "id">[] = [];
   for (const item of _.sortBy(_.castArray(raw || []), (m: any) => time(m?.t))) {
@@ -78,16 +70,11 @@ const cleanMoments = (raw: unknown, start: number, end: number, bad: ReupBadRang
   }
   return out.slice(0, REUP_MOMENT.MAX);
 };
-/**
- * Moments of a scene: the map's own, or (maps from before moments) one every EVEN_STEP seconds with the scene's line.
- * Ids are the scene's id plus "m" and a number, so a script can only point at moments that exist.
- */
 export const reupMoments = (segment: ReupSegment): ReupMoment[] => {
   if (segment.moments?.length) return segment.moments;
   const n = Math.max(1, Math.floor((segment.end - segment.start) / REUP_MOMENT.EVEN_STEP));
   return _.range(n).map((k) => ({ id: `${segment.id}m${k + 1}`, t: _.round(segment.start + k * REUP_MOMENT.EVEN_STEP, 2), what: segment.what, pull: segment.value }));
 };
-/** Validate one AI answer: times must sit inside the batch, segments may not be mostly bad footage, unknown ids are dropped. */
 export const cleanScenePart = (raw: any, span: { start: number; end: number }, bad: ReupBadRange[], prefix: string, interval = 0): ReupScenePart => {
   const segments: ReupSegment[] = [];
   const ids = new Map<string, string>();
@@ -105,7 +92,21 @@ export const cleanScenePart = (raw: any, span: { start: number; end: number }, b
     const caption = _.truncate(String(item?.caption || "").trim(), { length: 60 });
     const value = _.clamp(Math.round(Number(item?.value) || 1), 1, 5);
     const moments = cleanMoments(item?.moments, start, end, bad, interval, value).map((m, k) => ({ ...m, id: `${id}m${k + 1}` }));
-    segments.push({ id, start: _.round(start, 2), end: _.round(end, 2), what, ...(moments.length ? { moments } : {}), tags: _.uniq(_.castArray(item?.tags || []).map((t: unknown) => String(t).toLowerCase().trim()).filter((t: string) => TAG_RE.test(t))).slice(0, 6), value, ...(Number.isFinite(focusX) ? { focusX: _.clamp(focusX, 0, 1) } : {}), ...(caption ? { caption } : {}) });
+    segments.push({
+      id,
+      start: _.round(start, 2),
+      end: _.round(end, 2),
+      what,
+      ...(moments.length ? { moments } : {}),
+      tags: _.uniq(
+        _.castArray(item?.tags || [])
+          .map((t: unknown) => String(t).toLowerCase().trim())
+          .filter((t: string) => TAG_RE.test(t)),
+      ).slice(0, 6),
+      value,
+      ...(Number.isFinite(focusX) ? { focusX: _.clamp(focusX, 0, 1) } : {}),
+      ...(caption ? { caption } : {}),
+    });
   }
   const mapId = (value: unknown): string | undefined => ids.get(String(value ?? ""));
   return {
@@ -119,12 +120,14 @@ export const cleanScenePart = (raw: any, span: { start: number; end: number }, b
     summary: _.truncate(String(raw?.summary || "").trim(), { length: 600 }),
   };
 };
-/** Join batch answers in time order; overlapping segments at batch borders are trimmed, ids renumbered s1..sN. */
 export const mergeSceneParts = (parts: ReupScenePart[]): ReupSceneMap => {
   const ordered = _.sortBy(parts, (p) => p.span.start);
   const rename = new Map<string, string>();
   const segments: ReupSegment[] = [];
-  for (const segment of _.sortBy(ordered.flatMap((p) => p.segments), "start")) {
+  for (const segment of _.sortBy(
+    ordered.flatMap((p) => p.segments),
+    "start",
+  )) {
     const last = _.last(segments);
     const start = last && segment.start < last.end ? last.end : segment.start;
     if (segment.end - start < 1) {
@@ -133,7 +136,6 @@ export const mergeSceneParts = (parts: ReupScenePart[]): ReupSceneMap => {
     }
     const id = `s${segments.length + 1}`;
     rename.set(segment.id, id);
-    // A segment trimmed at a batch border loses the moments before its new start; moment ids follow the new scene id.
     const moments = (segment.moments || []).filter((m) => m.t >= start).map((m, k) => ({ ...m, id: `${id}m${k + 1}` }));
     segments.push({ ..._.omit(segment, "moments"), id, start, ...(moments.length ? { moments } : {}) });
   }
@@ -141,7 +143,10 @@ export const mergeSceneParts = (parts: ReupScenePart[]): ReupSceneMap => {
   const endings = _.compact(ordered.map((p) => rename.get(p.ending)));
   const best = _.orderBy(segments, ["value", "start"], ["desc", "desc"]);
   return {
-    summary: ordered.map((p) => p.summary).filter(Boolean).join(" "),
+    summary: ordered
+      .map((p) => p.summary)
+      .filter(Boolean)
+      .join(" "),
     segments,
     hook: hook.length ? hook : best.slice(0, 4).map((s) => s.id),
     ending: _.last(endings) || _.last(segments)?.id || "",

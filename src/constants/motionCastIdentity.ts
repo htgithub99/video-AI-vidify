@@ -8,7 +8,6 @@ export const MOTION_CAST_IDENTITY = {
   GROUP_FIELDS: ["origin", "skin", "outfit", "gear", "faction"] as readonly string[],
   MARKS_MAX: 3,
   CARRIES_MAX: 3,
-  // By drawing-style family, so every style (sketch and comic are round-head styles) has its skin colour.
   SKIN_DEFAULT: motionStyleRecord({ history: "#e3b78f", explainer: "#e3b78f", horror: "#ffffff" }) as Record<string, string>,
   HEX: /^#[0-9a-f]{6}$/i,
   SKIN_TONES: [

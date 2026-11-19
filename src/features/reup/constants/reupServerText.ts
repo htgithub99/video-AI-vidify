@@ -54,7 +54,7 @@ export const REUP_ERROR = {
   NO_SPEECH: "Không nhận ra lời nói trong video — loại E cần video có người nói",
   LICENSE: "Cần xác nhận footage là của bạn hoặc có giấy phép",
   LICENSE_LINK: "Footage có giấy phép: hãy điền link nguồn hoặc ghi chú giấy phép",
-  NO_ANGLE: "Hãy điền \"Góc nhìn của kênh\": kiến thức hoặc quan điểm riêng của bạn (ít nhất một câu) để video được xem là nội dung của bạn",
+  NO_ANGLE: 'Hãy điền "Góc nhìn của kênh": kiến thức hoặc quan điểm riêng của bạn (ít nhất một câu) để video được xem là nội dung của bạn',
   PRESET_LATER: "Loại video này thuộc giai đoạn sau, chưa dùng được",
   NO_JOB: "Không tìm thấy lần dựng này",
   BUSY: "Lần dựng đang chạy — chờ xong hoặc huỷ trước",
@@ -67,12 +67,10 @@ export const REUP_ERROR = {
   NOT_WAITING: "Lần dựng không ở điểm dừng này",
   BAD_STEP: "Bước không hợp lệ",
   NEED_STEP: "Cần chạy xong bước trước",
-  NO_TRACK: "Không có bài nhạc này trong kho",
   NEED_VOICE: "Cần dựng xong giọng đọc trước khi xuất lại video",
   EMPTY_SCRIPT: "Kịch bản trống",
 } as const;
 export const REUP_STEP_NAME: Record<string, string> = { source: "Nguồn", scenes: "Bản đồ cảnh", script: "Kịch bản", voice: "Giọng", build: "Dựng", package: "SEO & thumbnail" };
-/** Commentary style names for the log (Vietnamese, like every server log line). */
 export const REUP_STYLE_NAME: Record<string, string> = {
   expert: "người trong nghề",
   storyteller: "người kể chuyện",

@@ -202,11 +202,13 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
             return (
               <div key={chrome.id} className={cn(U.TILE, isActive && U.TILE_ACTIVE)}>
                 <div className={U.TILE_HEAD}>
-                  <div className={cn(U.TILE_ICON, tone)}>
-                    {busyTile ? <LoadingIcon className={cn(U.TILE_ICON_SVG, U.SPIN)} /> : <Globe className={U.TILE_ICON_SVG} />}
-                  </div>
+                  <div className={cn(U.TILE_ICON, tone)}>{busyTile ? <LoadingIcon className={cn(U.TILE_ICON_SVG, U.SPIN)} /> : <Globe className={U.TILE_ICON_SVG} />}</div>
                   <div className={U.TILE_BODY}>
-                    {isMain ? <span className={U.NAME_TEXT}>{chrome.name}</span> : <StudioInput deferred className={U.NAME_INPUT} value={chrome.name} placeholder={M.NAME_PLACEHOLDER[lang]} disabled={locked} onChange={(event) => event.target.value.trim() && void send({ keys: [U.KEY.RENAME(chrome.id)], label: T.ACTIVITY.RENAME[lang] }, C.ITEM_API(chrome.id), C.UI.PUT, { name: event.target.value })} />}
+                    {isMain ? (
+                      <span className={U.NAME_TEXT}>{chrome.name}</span>
+                    ) : (
+                      <StudioInput deferred className={U.NAME_INPUT} value={chrome.name} placeholder={M.NAME_PLACEHOLDER[lang]} disabled={locked} onChange={(event) => event.target.value.trim() && void send({ keys: [U.KEY.RENAME(chrome.id)], label: T.ACTIVITY.RENAME[lang] }, C.ITEM_API(chrome.id), C.UI.PUT, { name: event.target.value })} />
+                    )}
                     <div className={U.META}>
                       {isMain && <div className={cn(U.BADGE, U.BADGE_MAIN)}>{T.MAIN_BADGE[lang]}</div>}
                       {isActive && <div className={cn(U.BADGE, U.BADGE_ACTIVE)}>{M.ACTIVE_LABEL[lang]}</div>}
@@ -225,7 +227,15 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
                     {C.CHECK[lang]}
                   </Button>
                   {!isMain && (
-                    <Button variant={C.UI.DANGER} size={C.UI.SMALL} className={U.TILE_BUTTON} disabled={locked || isActive} isLoading={isPending(U.KEY.REMOVE(chrome.id))} title={M.REMOVE[lang]} aria-label={M.REMOVE[lang]} onClick={() => window.confirm(M.CONFIRM_REMOVE[lang]) && void send({ keys: [U.KEY.REMOVE(chrome.id)], label: T.ACTIVITY.REMOVE[lang](chrome.name) }, C.ITEM_API(chrome.id), C.DELETE)}>
+                    <Button
+                      variant={C.UI.DANGER}
+                      size={C.UI.SMALL}
+                      className={U.TILE_BUTTON}
+                      disabled={locked || isActive}
+                      isLoading={isPending(U.KEY.REMOVE(chrome.id))}
+                      title={M.REMOVE[lang]}
+                      aria-label={M.REMOVE[lang]}
+                      onClick={() => window.confirm(M.CONFIRM_REMOVE[lang]) && void send({ keys: [U.KEY.REMOVE(chrome.id)], label: T.ACTIVITY.REMOVE[lang](chrome.name) }, C.ITEM_API(chrome.id), C.DELETE)}>
                       <Trash2 className={U.BUTTON_ICON} />
                     </Button>
                   )}
@@ -260,21 +270,40 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
                 setOverIndex(null);
               }}
               onDrop={(event) => dropOn(event, index)}
-              className={cn(U.CHAIN_ROW, isPending(U.KEY.CHAIN(route.provider)) && BUTTON_CLASS_NAME.LOADING, dragIndex === index && U.CHAIN_DRAGGING, overIndex === index && dragIndex !== index && U.CHAIN_OVER, !route.enabled && U.CHAIN_OFF)}
-            >
+              className={cn(U.CHAIN_ROW, isPending(U.KEY.CHAIN(route.provider)) && BUTTON_CLASS_NAME.LOADING, dragIndex === index && U.CHAIN_DRAGGING, overIndex === index && dragIndex !== index && U.CHAIN_OVER, !route.enabled && U.CHAIN_OFF)}>
               <span className={U.HANDLE} title={T.DRAG[lang]}>
                 {isPending(U.KEY.CHAIN(route.provider)) ? <LoadingIcon className={cn(U.HANDLE_ICON, U.SPIN)} /> : <GripVertical className={U.HANDLE_ICON} />}
               </span>
               <div className={U.ORDER}>{index + 1}</div>
               <span className={U.PROVIDER}>{C.PROVIDER_LABEL[route.provider] || route.provider}</span>
-              <StudioSelect className={U.MODEL} disabled={locked || !route.enabled} value={route.model} onChange={(event) => saveChain(chain.map((item) => (item.provider === route.provider ? { ...item, model: event.target.value } : item)), route.provider)}>
+              <StudioSelect
+                className={U.MODEL}
+                disabled={locked || !route.enabled}
+                value={route.model}
+                onChange={(event) =>
+                  saveChain(
+                    chain.map((item) => (item.provider === route.provider ? { ...item, model: event.target.value } : item)),
+                    route.provider,
+                  )
+                }>
                 {modelOptions(route).map((option) => (
                   <option key={option.value || U.SITE_DEFAULT} value={option.value}>
                     {option.label}
                   </option>
                 ))}
               </StudioSelect>
-              <Button variant={C.UI.UNSTYLED} role={C.UI.SWITCH} aria-checked={route.enabled} aria-label={route.enabled ? T.ON[lang] : T.OFF[lang]} disabled={locked} onClick={() => saveChain(chain.map((item) => (item.provider === route.provider ? { ...item, enabled: !item.enabled } : item)), route.provider)}>
+              <Button
+                variant={C.UI.UNSTYLED}
+                role={C.UI.SWITCH}
+                aria-checked={route.enabled}
+                aria-label={route.enabled ? T.ON[lang] : T.OFF[lang]}
+                disabled={locked}
+                onClick={() =>
+                  saveChain(
+                    chain.map((item) => (item.provider === route.provider ? { ...item, enabled: !item.enabled } : item)),
+                    route.provider,
+                  )
+                }>
                 <ToggleIndicator checked={route.enabled} />
               </Button>
             </div>
