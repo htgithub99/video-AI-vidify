@@ -1,4 +1,4 @@
-import { MOTION_SCENE_SPEC as S, MOTION_SCENE_SPEC_PROMPT as P } from "../constants/motionSceneSpec.js";
+import { MOTION_SCENE_REVISE as R, MOTION_SCENE_SPEC as S, MOTION_SCENE_SPEC_PROMPT as P } from "../constants/motionSceneSpec.js";
 import { MOTION_AIR_DISTANCE, MOTION_OBJECT_SIZE as Z, motionObjectPlace } from "../constants/motionObjectSize.js";
 import { MOTION_MASTER as M } from "../constants/motionMasterScale.js";
 import { motionMasterBase, motionMasterTarget } from "./motionMasterScale.js";
@@ -115,7 +115,10 @@ const itemOf = (raw: unknown, index: number): MotionSpecItem | undefined => {
   if (raw.focal === true) item.focal = true;
   if (range(raw.fade)) item.fade = range(raw.fade);
   if (range(raw.at)) item.at = range(raw.at);
-  if (raw.burning === true) item.burning = true;
+  if (raw.burning === true || raw.state === "burning") item.burning = true;
+  if (raw.state === "broken" || raw.state === "collapsed") item.state = raw.state;
+  if (raw.shape === "ring") item.shape = "ring";
+  if (raw.bank === "near" || raw.bank === "far") item.bank = raw.bank;
   if (raw.heldBy != null) item.heldBy = idOf(raw.heldBy);
   if (raw.hand === "back" || raw.hand === "front") item.hand = raw.hand;
   if (typeof raw.code === "string") item.code = raw.code;
@@ -133,7 +136,7 @@ const deviceOf = (raw: unknown): MotionSpecDevice | undefined => {
   if (raw.sign != null) d.sign = oneOf(S.SIGNS, raw.sign, "alarm");
   if (raw.part === "hand" || raw.part === "head" || raw.part === "body") d.part = raw.part;
   if (raw.body === "moon" || raw.body === "sun") d.body = raw.body;
-  if (Array.isArray(raw.groups)) d.groups = raw.groups.filter(isObj).map((g) => ({ n: Math.max(1, num(g.n) || 1), color: typeof g.color === "string" ? g.color : undefined }));
+  if (Array.isArray(raw.groups)) d.groups = raw.groups.filter(isObj).map((g) => ({ n: Math.max(1, num(g.n) || 1), color: typeof g.color === "string" ? g.color : undefined, of: g.of != null ? idOf(g.of) : undefined }));
   if (Array.isArray(raw.items)) d.items = raw.items.map(itemOf).filter((it): it is MotionSpecItem => !!it && it.fn !== "sticker");
   return d;
 };
@@ -280,6 +283,20 @@ const resolveKind = (fn: string, kind: string, year?: number): { kind?: string; 
   return {};
 };
 export const motionSceneSpecSplit = (lines: readonly string[] = []): { issues: string[]; notes: string[] } => ({ issues: lines.filter((line) => S.ISSUE.test(line)), notes: lines.filter((line) => !S.ISSUE.test(line)) });
+const carried = (it: MotionSpecItem): string[] => {
+  if (it.fn !== "person") return [];
+  const looks = [it.look || {}, ...(it.keys || [])] as Record<string, unknown>[];
+  const holds = looks.map((q) => String(q.hold || "")).filter(Boolean);
+  const worn = Object.entries(R.HELD.WORN)
+    .filter(([, flag]) => looks.some((q) => !!q[flag] || (flag === "shield" && q.hold === "shield")))
+    .map(([word]) => word);
+  const named = [R.HELD.KIND, R.HELD.PART].flatMap((table) =>
+    Object.entries(table)
+      .filter(([, list]) => holds.some((h) => (list as readonly string[]).includes(h)))
+      .map(([word]) => word),
+  );
+  return [...holds, ...worn, ...named].map(motionHtmlMarkId);
+};
 export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string[] => {
   const warn: string[] = [];
   const W = spec.frame?.[0] || S.WIDTH,
@@ -369,6 +386,7 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
     if (it.fn === "sticker" || it.heldBy || it.fn === "person" || spec.interior || !it.kind || !Z[it.kind] || it === focalThing) continue;
     const real = Z[it.kind],
       place = motionObjectPlace(it.kind, it.look?.pose as string | undefined);
+    if (it.fn === "prop" && place !== "air" && Math.max(real.h, real.l) >= R.LONG * Math.min(real.h, real.l)) continue;
     let want: number | undefined;
     if (place === "air") want = it.dist ? leadH * real.h * MOTION_AIR_DISTANCE[it.dist] : undefined;
     else if (place === "held") {
@@ -394,9 +412,10 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
   }
   if (ctx.master) spec.master = ctx.master;
   const required = ctx.template ? motionHtmlRequired(ctx.template) : [];
+  const isRequired = (it: MotionSpecItem) => required.some((r) => r.id === motionHtmlMarkId(it.id));
   let focal = spec.items.filter((it) => it.focal);
   if (focal.length !== 1) {
-    const pick = focal[0] || spec.items.find((it) => required.some((r) => r.focal && r.id === it.id)) || spec.items.filter((it) => it.fn === "person").sort((a, b) => (b.h ?? 0) - (a.h ?? 0))[0];
+    const pick = focal[0] || spec.items.find((it) => required.some((r) => r.focal && r.id === motionHtmlMarkId(it.id))) || spec.items.filter((it) => it.fn === "person").sort((a, b) => (b.h ?? 0) - (a.h ?? 0))[0];
     spec.items.forEach((it) => delete it.focal);
     if (pick) {
       pick.focal = true;
@@ -409,7 +428,7 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
   if (pairs.length) spec.pairs = pairs;
   const together = (a: MotionSpecItem, b: MotionSpecItem) => pairs.some(([x, y]) => (x === motionHtmlMarkId(a.id) && y === motionHtmlMarkId(b.id)) || (y === motionHtmlMarkId(a.id) && x === motionHtmlMarkId(b.id)));
   for (const it of spec.items) {
-    if (it.fn === "sticker" || it.heldBy || it.fn === "wall" || !(it.focal || required.some((r) => r.id === it.id))) continue;
+    if (it.fn === "sticker" || it.heldBy || it.fn === "wall" || !(it.focal || isRequired(it))) continue;
     const w = (it.w ?? (it.h ?? 0) * aspectOf(it)) + (it.group ? (it.group.width ?? 0) : 0);
     const half = Math.min(w / 2, W / 2);
     const moving = !it.focal && it.keys?.some((k) => k.x != null);
@@ -425,7 +444,6 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
     });
     if (moved) warn.push(S.WARN.INTO_FRAME(it.id));
   }
-  const isRequired = (it: MotionSpecItem) => required.some((r) => r.id === it.id);
   const protect = spec.items.filter((it) => it.focal || (isRequired(it) && it.fn !== "person"));
   for (const target of protect) {
     for (const other of [...spec.items]) {
@@ -468,7 +486,7 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
         }
         shift(other, -dx);
       }
-      if (!done && !required.some((r) => r.id === other.id)) {
+      if (!done && !isRequired(other)) {
         spec.items = spec.items.filter((it) => it !== other && it.heldBy !== other.id);
         warn.push(S.WARN.DROPPED_COVER(other.id, target.id));
       }
@@ -483,6 +501,9 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
     spec.devices = spec.devices.filter((d) => {
       if (d.of && !present.has(d.of) && d.kind !== "impact" && d.kind !== "count" && d.kind !== "time") return false;
       if (d.kind === "inset") {
+        const thing = spec.items.find((it) => it.id === d.of && it.fn !== "person");
+        const owner = thing && spec.items.find((it) => it.fn === "person" && !it.group && carried(it).some((w) => w === motionHtmlMarkId(thing.kind) || w === motionHtmlMarkId(thing.id)));
+        if (owner) d.of = owner.id;
         const of = spec.items.find((it) => it.id === d.of);
         if (!of || of.fn !== "person" || of.group) {
           warn.push(S.WARN.INSET(String(d.of)));
@@ -493,7 +514,8 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
       return true;
     });
   }
-  const missing = required.map((r) => r.id).filter((id) => !spec.items.some((it) => it.id === id));
+  const onScreen = new Set([...spec.items.flatMap((it) => [motionHtmlMarkId(it.id), motionHtmlMarkId(it.mount), ...carried(it)]), ...(spec.water?.length ? S.TERRAIN.water : []), ...S.TERRAIN.ground, ...S.TERRAIN.sky]);
+  const missing = required.map((r) => r.id).filter((id) => !onScreen.has(id));
   if (missing.length) warn.push(S.WARN.MISSING(missing));
   return warn;
 };

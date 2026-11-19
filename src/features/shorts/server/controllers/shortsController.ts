@@ -17,6 +17,10 @@ import { SUNO_AUTOMATION_CONFIG } from "../../../../constants/sunoAutomation.js"
 import { logger } from "../../../../lib/logger.js";
 import { getDataDirectory, getPythonCommand, getStaticResourcePath } from "../../../../server/utils/paths.js";
 import { deleteOutputEntries } from "../../../../server/utils/outputFiles.js";
+import { HEAVY_JOB_TEXT, MEDIA_ENCODER } from "../../../../constants/mediaEncoder.js";
+import { isGpuEncoder, pickMediaEncoder } from "../../../../server/utils/mediaEncoder.js";
+import { HEAVY_RENDER, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
+import { mapLanes } from "../../../../lib/concurrency.js";
 const shortsSaveDestinations = new Map<string, string>();
 let currentShortsAbortController: AbortController | null = null;
 export const cancelShortsPipeline = async (_req: Request, res: Response): Promise<void> => {
@@ -126,19 +130,20 @@ export const generateShortsPipeline = async (req: Request, res: Response): Promi
       res.status(499).json({ success: false, error: SHORTS_TEXTS.PROGRESS_MSG_CANCELLED });
       return;
     }
-    const renderedClips: HighlightClipItem[] = [];
-    for (const clip of clips) {
-      if (abortController.signal.aborted) {
-        break;
-      }
-      logger.log(SHORTS_LOG_MESSAGES.RENDERING_CLIP(clip.index, clip.startTime, clip.endTime));
-      const { videoPath, thumbnailPath } = await renderSingleShortClip({ sourceVideoPath, clip, aspectRatio, reframeMode, signal: abortController.signal });
-      if (abortController.signal.aborted) {
-        break;
-      }
-      const relativeThumbPath = thumbnailPath ? _.replace(path.relative(process.cwd(), thumbnailPath), SHORTS_REGEX.BACKSLASH, SOURCE_TEXT_SYMBOL) : "";
-      renderedClips.push({ ...clip, outputVideoPath: videoPath, videoUrl: `${SHORTS_CONSTANTS.ASSETS_URL_PREFIX}${path.basename(videoPath)}`, thumbnailUrl: relativeThumbPath ? `${SHORTS_CONSTANTS.ASSETS_URL_PREFIX}${path.basename(thumbnailPath)}` : undefined });
-    }
+    const encoder = await pickMediaEncoder("auto", "h264");
+    logger.log(HEAVY_JOB_TEXT.ENCODER(encoder));
+    const signal = abortController.signal;
+    const renderedClips: HighlightClipItem[] = await runHeavyJob(
+      HEAVY_RENDER,
+      HEAVY_JOB_TEXT.LABEL(HEAVY_JOB_TEXT.SCREEN.SHORTS, path.basename(sourceVideoPath)),
+      () =>
+        mapLanes(clips, isGpuEncoder(encoder) ? MEDIA_ENCODER.SHORTS_LANES.GPU : MEDIA_ENCODER.SHORTS_LANES.CPU, async (clip) => {
+          const { videoPath, thumbnailPath } = await renderSingleShortClip({ sourceVideoPath, clip, aspectRatio, reframeMode, encoder, signal });
+          const relativeThumbPath = thumbnailPath ? _.replace(path.relative(process.cwd(), thumbnailPath), SHORTS_REGEX.BACKSLASH, SOURCE_TEXT_SYMBOL) : "";
+          return { ...clip, outputVideoPath: videoPath, videoUrl: `${SHORTS_CONSTANTS.ASSETS_URL_PREFIX}${path.basename(videoPath)}`, thumbnailUrl: relativeThumbPath ? `${SHORTS_CONSTANTS.ASSETS_URL_PREFIX}${path.basename(thumbnailPath)}` : undefined };
+        }),
+      { signal, onWait: (holder) => logger.log(HEAVY_JOB_TEXT.WAIT(HEAVY_RENDER, holder)) },
+    );
     if (audioPath && fs.existsSync(audioPath)) {
       try {
         await fs.promises.unlink(audioPath);

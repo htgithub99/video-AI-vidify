@@ -5,7 +5,7 @@ import _ from "lodash";
 import { logger } from "../../../../lib/logger.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import { REUP_DIR, REUP_LIMITS, REUP_STEPS } from "../../constants/reupConfig.js";
-import { REUP_ERROR, REUP_LOG, REUP_REPORT_LEVEL_NAME, REUP_STEP_NAME, REUP_STYLE_NAME } from "../../constants/reupServerText.js";
+import { REUP_ERROR, REUP_LOG, REUP_REPORT_ITEM, REUP_REPORT_LEVEL_NAME, REUP_STEP_NAME, REUP_STYLE_NAME } from "../../constants/reupServerText.js";
 import { reupJobSettings, reupPreset } from "../../constants/reupPresets.js";
 import { MOTION_TEXT_SYMBOL_4 } from "../../../../constants/motionRuntime.js";
 import { MOTION_SEO } from "../../../../constants/motionSeo.js";
@@ -21,30 +21,51 @@ import { cleanReupSettings } from "../../lib/reupSettings.js";
 import type { ReupJob, ReupPackage, ReupPresetId, ReupRights, ReupScript, ReupStepId } from "../../types/reup.js";
 import { buildReupSceneMap, reupCandidateTimes, withReupAi, writeReupPackage, writeReupScript } from "./reupAiService.js";
 import { buildReupJob } from "./reupBuildService.js";
-import { isReupAbort } from "./reupFfmpeg.js";
+import { REUP_ABORTED, isReupAbort } from "./reupFfmpeg.js";
+import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
+import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
 import { getReupJob, listReupJobs, reupController, reupEmptySteps, reupFileUrl, reupJobDir, reupLog, reupStep, saveReupJob, setReupController } from "./reupJobStore.js";
 import { inspectReupSource, makeReupProxy, reupFingerprint, makeReupSheets, measureReupQuality, reupFrame, transcribeReupSource } from "./reupMediaService.js";
+import { closeChatBrowserIfIdle } from "../../../../server/services/chatUiPlanningService.js";
 import { voiceReupJob } from "./reupVoiceService.js";
 const clearFrom = (job: ReupJob, step: ReupStepId): void => {
   const at = REUP_STEPS.indexOf(step);
-  if (at <= 0) {
+  const before = (id: ReupStepId) => at <= REUP_STEPS.indexOf(id);
+  if (step === "package") {
+    job.package = undefined;
+    job.packageDir = undefined;
+    job.steps.package = { status: "idle", progress: 0, message: "" };
+    return;
+  }
+  if (before("source")) {
     job.sheets = [];
     job.bad = [];
     job.transcript = undefined;
   }
-  if (at <= 1) job.sceneMap = undefined;
-  if (at <= 2) job.script = undefined;
-  if (at <= 4) job.outputs = [];
+  if (before("scenes")) job.sceneMap = undefined;
+  if (before("script")) job.script = undefined;
+  if (before("package")) {
+    job.package = undefined;
+    job.packageDir = undefined;
+  }
+  if (before("build")) job.outputs = [];
   job.report = undefined;
-  job.package = undefined;
-  job.packageDir = undefined;
   job.warnings = [];
   for (const id of REUP_STEPS.slice(at)) job.steps[id] = { status: "idle", progress: 0, message: "" };
 };
+const stepClock = (): (() => number) => {
+  const started = Date.now();
+  return () => (Date.now() - started) / 1000;
+};
+const heavy = <T>(job: ReupJob, kind: string, step: string, signal: AbortSignal, run: () => Promise<T>): Promise<T> =>
+  runHeavyJob(kind, HEAVY_JOB_TEXT.LABEL(HEAVY_JOB_TEXT.SCREEN.REUP, `${job.source.name} · ${step}`), run, { signal, onWait: (holder) => reupLog(job, HEAVY_JOB_TEXT.WAIT(kind, holder)), onStart: (waited) => waited >= 1 && reupLog(job, HEAVY_JOB_TEXT.START(step, waited)) }).catch((error) => {
+    throw signal.aborted ? new Error(REUP_ABORTED) : error;
+  });
 const pastRuns = (job: ReupJob): ReupJob[] => listReupJobs(REUP_COMMENTARY.HISTORY * 6).filter((p) => p.id !== job.id && p.createdAt < job.createdAt);
 const checkPolicy = (job: ReupJob): void => {
   job.report = reupReport(job, pastRuns(job));
-  reupLog(job, REUP_LOG.REPORT(REUP_REPORT_LEVEL_NAME[job.report.level], Math.round(job.report.narrated * 100)), job.report.level === "ok" ? "info" : "warn");
+  const flagged = job.report.notes.filter((n) => n.level !== "ok" && REUP_REPORT_ITEM[n.code]).map((n) => REUP_REPORT_ITEM[n.code]!(n.value || ""));
+  reupLog(job, REUP_LOG.REPORT(REUP_REPORT_LEVEL_NAME[job.report.level], flagged.length ? flagged : [REUP_REPORT_ITEM.narration!(String(Math.round(job.report.narrated * 100)))]), job.report.level === "ok" ? "info" : "warn");
 };
 const scriptWords = (script: ReupScript): number => _.sumBy(script.outputs, (o) => _.sumBy(o.sections, (s) => s.text.split(/\s+/).filter(Boolean).length));
 const checkClaims = (job: ReupJob, text: string): void => {
@@ -119,16 +140,20 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       reupLog(job, REUP_LOG.SPEECH_ONLY);
       return "next";
     }
-    const { voices, credits } = await voiceReupJob(
-      job,
-      (t, l) => reupLog(job, t, l),
-      (p) => reupStep(job, "voice", { progress: p }),
-      signal,
-      (id, voice) => {
-        job.voices = { ...job.voices, [id]: voice };
-        saveReupJob(job);
-      },
+    const voiced = stepClock();
+    const { voices, credits } = await heavy(job, HEAVY_VOICE, REUP_STEP_NAME.voice, signal, () =>
+      voiceReupJob(
+        job,
+        (t, l) => reupLog(job, t, l),
+        (p) => reupStep(job, "voice", { progress: p }),
+        signal,
+        (id, voice) => {
+          job.voices = { ...job.voices, [id]: voice };
+          saveReupJob(job);
+        },
+      ),
     );
+    reupLog(job, HEAVY_JOB_TEXT.STEP(REUP_STEP_NAME.voice, voiced(), _.sumBy(Object.values(voices), "seconds")));
     job.voices = voices;
     job.credits = (job.credits || 0) + credits;
     reupLog(job, REUP_LOG.VOICE_DONE(_.sumBy(Object.values(voices), "seconds")));
@@ -148,12 +173,16 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       job.style = { ...job.style!, track };
       reupLog(job, track ? REUP_LOG.MUSIC_TRACK(track) : REUP_LOG.MUSIC_EMPTY(job.preset, reupMusicDir()), track ? "info" : "warn");
     }
-    job.outputs = await buildReupJob(
-      job,
-      (t, l) => reupLog(job, t, l),
-      (p) => reupStep(job, "build", { progress: p }),
-      signal,
+    const built = stepClock();
+    job.outputs = await heavy(job, HEAVY_RENDER, REUP_STEP_NAME.build, signal, () =>
+      buildReupJob(
+        job,
+        (t, l) => reupLog(job, t, l),
+        (p) => reupStep(job, "build", { progress: p }),
+        signal,
+      ),
     );
+    reupLog(job, HEAVY_JOB_TEXT.STEP(REUP_STEP_NAME.build, built(), _.sumBy(job.outputs, "duration")));
     checkPolicy(job);
     if (job.package) writePackage(job, job.package);
     return "next";
@@ -176,8 +205,11 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     );
     reupLog(job, REUP_LOG.PACKAGE(job.package.options.length, job.package.thumbs.length));
     checkClaims(job, [...job.package.options.map((o) => o.title), ...job.package.thumbs.flatMap((t) => t.lines)].join("\n"));
-    checkPolicy(job);
-    writePackage(job, job.package);
+    if (job.outputs.length) {
+      checkPolicy(job);
+      writePackage(job, job.package);
+    }
+    if (await closeChatBrowserIfIdle()) reupLog(job, REUP_LOG.BROWSER_CLOSED);
     return "next";
   },
 };
@@ -190,9 +222,11 @@ const run = async (job: ReupJob, from: ReupStepId, until?: ReupStepId): Promise<
   let current: ReupStepId = from;
   try {
     for (const step of REUP_STEPS.slice(REUP_STEPS.indexOf(from), until ? REUP_STEPS.indexOf(until) + 1 : undefined)) {
+      if (step !== from && job.steps[step]?.status === "done") continue;
       current = step;
       reupStep(job, step, { status: "running", progress: 0, message: "" });
       const next = await STEP_RUN[step](job, controller.signal);
+      if (controller.signal.aborted) throw new Error(REUP_ABORTED);
       if (next === "stop") {
         reupStep(job, step, { status: "waiting", progress: 1 });
         job.status = "waiting-script";
@@ -202,10 +236,12 @@ const run = async (job: ReupJob, from: ReupStepId, until?: ReupStepId): Promise<
     }
     job.status = "done";
   } catch (error) {
+    if (reupController(job.id) !== controller) return;
     if (isReupAbort(error) || controller.signal.aborted) {
+      const logged = (job.status as string) === "cancelled";
       job.status = "cancelled";
       reupStep(job, current, { status: "idle", message: REUP_LOG.CANCELLED });
-      reupLog(job, REUP_LOG.CANCELLED);
+      if (!logged) reupLog(job, REUP_LOG.CANCELLED);
     } else {
       const message = String((error as Error)?.message || error);
       job.status = "error";
@@ -215,7 +251,7 @@ const run = async (job: ReupJob, from: ReupStepId, until?: ReupStepId): Promise<
       logger.warn(message);
     }
   } finally {
-    setReupController(job.id, undefined);
+    if (reupController(job.id) === controller) setReupController(job.id, undefined);
     saveReupJob(job, true);
   }
 };
@@ -250,10 +286,10 @@ export const rerunReup = (id: string, step: ReupStepId, settings?: unknown): Reu
   if (at > 0 && job.steps[REUP_STEPS[at - 1]].status !== "done" && job.steps[REUP_STEPS[at - 1]].status !== "waiting") throw new Error(REUP_ERROR.NEED_STEP);
   if (settings) job.settings = reupJobSettings(job.preset, cleanReupSettings(settings, job.preset));
   clearFrom(job, step);
-  launch(job, step);
+  launch(job, step, step === "package" && job.steps.build.status === "done" ? "package" : undefined);
   return job;
 };
-const EXPORT_KEYS = ["aspect", "quality", "fps", "subtitles", "music", "natural", "logo", "logoCorner"] as const;
+const EXPORT_KEYS = ["aspect", "quality", "fps", "subtitles", "music", "natural", "logo", "logoCorner", "encoder", "highlights"] as const;
 export const exportReup = (id: string, settings: unknown): ReupJob => {
   const job = getReupJob(id);
   if (!job) throw new Error(REUP_ERROR.NO_JOB);
@@ -306,7 +342,7 @@ export const approveReupScript = (id: string, edited: unknown): ReupJob => {
   job.warnings = [];
   checkClaims(job, scriptClaimText(job.script));
   reupStep(job, "script", { status: "done", progress: 1 });
-  launch(job, "voice");
+  launch(job, "package");
   return job;
 };
 const writePackage = (job: ReupJob, pack: ReupPackage): void => {
@@ -323,8 +359,10 @@ const writePackage = (job: ReupJob, pack: ReupPackage): void => {
 export const cancelReup = (id: string): ReupJob | undefined => {
   const job = getReupJob(id);
   reupController(id)?.abort();
-  if (job?.status === "waiting-script") {
+  if (job?.status === "waiting-script" || job?.status === "running") {
     job.status = "cancelled";
+    REUP_STEPS.filter((step) => job.steps[step]?.status === "running").forEach((step) => reupStep(job, step, { status: "idle", message: REUP_LOG.CANCELLED }));
+    reupLog(job, REUP_LOG.CANCELLED);
     saveReupJob(job, true);
   }
   return job;

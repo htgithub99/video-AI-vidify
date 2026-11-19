@@ -58,7 +58,7 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
       seo={seo}
       busy={studio.running || studio.busy}
       seoBusy={packaging}
-      canGenerate={!!job.outputs.length && !studio.running}
+      canGenerate={job.steps.script.status === "done" && !studio.running}
       onGenerate={() => void studio.rerun("package")}
       lang={lang}
       thumbnails={thumbnails}

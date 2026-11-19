@@ -14,6 +14,7 @@ export const ReupReport: FC<{ report: Report; text: ReupTexts }> = ({ report, te
         <span className={S.REPORT_TITLE}>{text.REPORT}</span>
         <span className={cn(S.REPORT_BADGE, S.REPORT_BADGE_TONE[report.level])}>{text.REPORT_LEVEL[report.level]}</span>
       </div>
+      {report.gaps && <p className={S.HINT}>{text.SCORE(report.score)}</p>}
       <ul className={S.REPORT_LIST}>
         {report.notes.map((note) => (
           <li key={note.code} className={cn(S.REPORT_NOTE, S.REPORT_TONE[note.level])}>

@@ -25,7 +25,6 @@ export const SHORTS_CONSTANTS = {
   DEFAULT_CRF: "20",
   DEFAULT_PRESET: "veryfast",
   FAST_PRESET: "fast",
-  LIBX264: "libx264",
   AAC: "aac",
   LIBMP3LAME: "libmp3lame",
   FFMPEG_EXE: "ffmpeg.exe",

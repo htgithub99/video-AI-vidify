@@ -75,7 +75,6 @@ export const MOTION_VIDEO_CONSTANTS = {
   POLL_INTERVAL_MS: 1000,
   PREVIEW_WIDTH: 960,
 } as const;
-export const MOTION_GPU_ENCODERS = ["h264_nvenc", "h264_qsv", "h264_amf"] as const;
 export const MOTION_RENDER_CACHE = {
   VERSION: 1,
   FOLDER: "render-cache",

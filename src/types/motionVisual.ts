@@ -171,6 +171,8 @@ export interface MotionRemotionScene {
   reviewKey?: string;
   effects?: MotionRemotionEffect[];
   time?: string;
+  vary?: number;
+  crossing?: import("../lib/motionCrossingSites.js").MotionCrossing;
   weather?: string;
   declaredTime?: string;
   declaredWeather?: string;
@@ -206,6 +208,8 @@ export interface MotionTitleCard {
   title: string;
   subtitle?: string;
   seconds: number;
+  anchor?: import("../constants/highlightAnchor.js").HighlightAnchor;
+  lift?: number;
 }
 export interface MotionSceneLayer {
   id: string;
@@ -298,6 +302,7 @@ export interface MotionRemotionTimedScene extends Omit<MotionRemotionScene, "nod
 }
 export interface MotionRemotionSpec {
   renderer?: "html-canvas";
+  castMarks?: Record<string, Record<string, string>>;
   engine: "remotion";
   version: number;
   title: string;

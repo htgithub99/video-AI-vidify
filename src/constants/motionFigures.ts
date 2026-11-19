@@ -657,7 +657,7 @@ export const MOTION_FIGURES = {
     if (at == null && THING_FNS.indexOf(fn) >= 0) THING_FNS.some(function (other) { var hit = (CATALOG.words[other] || {})[word]; if (hit != null) at = hit; return hit != null; });
     var e = at == null ? null : CATALOG.entries[at], year = yearOf(), build = wordOf(o.build);
     if (!e || !inYears(e, year) || (build && e.builds && e.builds.indexOf(build) < 0)) return null;
-    var byBuild = build ? e.variants.filter(function (v) { return v.builds && v.builds.indexOf(build) >= 0; })[0] : null;
+    var byBuild = build ? e.variants.filter(function (v) { return v.builds && v.builds.indexOf(build) >= 0 && inYears(v, year); })[0] : null;
     var byYear = e.variants.filter(function (v) { return !v.builds && inYears(v, year); })[0];
     var kit = (byBuild || byYear || {}).kit;
     return kit ? [kit[0], kit[1], e.fit || 'stretch'] : null;
@@ -715,6 +715,56 @@ export const MOTION_FIGURES = {
   var shadeOf = function (hex, k) { var v = rgbOf(hex) || [128, 128, 128]; return 'rgb(' + v.map(function (n) { return Math.round(clamp(n * k, 0, 255)); }).join(',') + ')'; };
   // The scene's colour holds when it chose the build, or when the build is a modern one (its grey is then right).
   var bridgeColor = function (o, build) { return (o.build || build === 'concrete' || build === 'iron') && rgbOf(o.color) ? o.color : BRIDGE_COLORS[build]; };
+  var sideBridge = function (c, o, build, x, y, w, h) {
+    var base = bridgeColor(o, build), yr = num(+(window.__motionView || {}).year, 1900), x0 = x - w / 2, x1 = x + w / 2, water = y + h, lw = Math.max(1.2, h * 0.025);
+    var hump = build === 'stone' && yr < 1750 ? Math.min(h * 0.22, w * 0.035) : 0, deckAt = function (px) { var u = (px - x0) / w; return y - hump * Math.sin(Math.PI * clamp(u, 0, 1)); };
+    var path = function (pts) { var p = new Path2D(); pts.forEach(function (q, i) { if (i) p.lineTo(q[0], q[1]); else p.moveTo(q[0], q[1]); }); return p; };
+    var ink = function (p, width) { c.lineWidth = width || lw; c.strokeStyle = BRIDGE_INK; c.stroke(p); };
+    var under = function (top, bottom) { var g = c.createLinearGradient(0, top, 0, bottom); g.addColorStop(0, 'rgba(24,30,36,0.95)'); g.addColorStop(0.5, 'rgba(52,76,92,0.92)'); g.addColorStop(1, 'rgba(98,134,154,0.9)'); return g; };
+    var N = 32, deck = [];
+    for (var i = 0; i <= N; i++) { var px = x0 + (w * i) / N; deck.push([px, deckAt(px)]); }
+    c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+    if (o.railOnly) { c.beginPath(); deck.forEach(function (q, j) { if (j) c.lineTo(q[0], q[1] + lw); else c.moveTo(q[0], q[1] + lw); }); c.lineTo(x1, y - h * 4); c.lineTo(x0, y - h * 4); c.closePath(); c.clip(); }
+    if (build === 'stone') {
+      var spans = Math.max(2, Math.round(w / (h * 1.5))), pier = (w / spans) * 0.2, open = w / spans - pier, rail = Math.min(h * 0.32, w * 0.05), coping = Math.max(2, rail * 0.18);
+      var face = path(deck.concat([[x1, water + h * 0.06], [x0, water + h * 0.06]]));
+      var g = c.createLinearGradient(0, y - hump, 0, water); g.addColorStop(0, shadeOf(base, 1.06)); g.addColorStop(1, shadeOf(base, 0.8)); c.fillStyle = g; c.fill(face);
+      c.save(); c.clip(face); c.strokeStyle = shadeOf(base, 0.7); c.lineWidth = Math.max(0.6, lw * 0.4); c.globalAlpha = 0.5;
+      for (var r = 0, cy = y + h * 0.16; cy < water; cy += h * 0.16, r++) { c.beginPath(); c.moveTo(x0, cy); c.lineTo(x1, cy); c.stroke(); for (var jx = x0 + (r % 2) * h * 0.2; jx < x1; jx += h * 0.4) { c.beginPath(); c.moveTo(jx, cy); c.lineTo(jx, cy + h * 0.16); c.stroke(); } }
+      c.restore();
+      for (var k = 0; k < spans; k++) {
+        var ax = x0 + pier / 2 + k * (open + pier), half = open / 2, mid = ax + half, spring = water - Math.min(h * 0.35, half * 0.6), rise = Math.min(half, spring - deckAt(mid) - h * 0.14);
+        var arch = new Path2D(); arch.moveTo(ax, water + h * 0.06); arch.lineTo(ax, spring); arch.ellipse(mid, spring, half, Math.max(4, rise), 0, Math.PI, 0); arch.lineTo(ax + open, water + h * 0.06); arch.closePath();
+        c.fillStyle = under(spring - rise, water); c.fill(arch);
+        c.save(); c.clip(arch); c.strokeStyle = 'rgba(220,236,244,0.55)'; c.lineWidth = Math.max(1, lw * 0.6); for (var q = 0; q < 3; q++) { var ry = water - h * (0.05 + q * 0.06); c.beginPath(); c.moveTo(ax + open * (0.15 + q * 0.12), ry); c.lineTo(ax + open * (0.55 + q * 0.1), ry); c.stroke(); } c.restore();
+        var ring = new Path2D(); ring.ellipse(mid, spring, half + h * 0.06, Math.max(4, rise) + h * 0.06, 0, Math.PI, 0); c.lineWidth = h * 0.09; c.strokeStyle = shadeOf(base, 0.9); c.stroke(ring);
+        c.lineWidth = Math.max(0.6, lw * 0.45); c.strokeStyle = shadeOf(base, 0.6);
+        for (var v = 1; v < 9; v++) { var an = Math.PI + (Math.PI * v) / 9, cx1 = Math.cos(an), sy1 = Math.sin(an); c.beginPath(); c.moveTo(mid + cx1 * half, spring + sy1 * Math.max(4, rise)); c.lineTo(mid + cx1 * (half + h * 0.11), spring + sy1 * (Math.max(4, rise) + h * 0.11)); c.stroke(); }
+        ink(arch, lw * 0.9);
+      }
+      for (k = 0; k <= spans; k++) { var px2 = x0 + k * (open + pier), cw = pier * 0.8; if (k === 0 || k === spans) continue; var cut = path([[px2 - cw / 2, water + h * 0.06], [px2 - cw / 2, water - h * 0.32], [px2, water - h * 0.44], [px2 + cw / 2, water - h * 0.32], [px2 + cw / 2, water + h * 0.06]]); c.fillStyle = shadeOf(base, 0.86); c.fill(cut); ink(cut, lw * 0.7); }
+      ink(face);
+      [-1, 1].forEach(function (sd) { var ex = sd < 0 ? x0 : x1, far2 = ex + sd * h * 1.2, low = water - h * 0.12; var wing = path([[ex, deckAt(ex)], [far2, low], [far2, water + h * 0.06], [ex, water + h * 0.06]]); c.fillStyle = shadeOf(base, 0.9); c.fill(wing); ink(wing); var wr = path([[ex, deckAt(ex) - rail], [far2, low - rail * 0.7], [far2, low], [ex, deckAt(ex)]]); c.fillStyle = shadeOf(base, 0.97); c.fill(wr); ink(wr, lw * 0.8); });
+      var top = deck.map(function (q) { return [q[0], q[1] - rail]; });
+      var wall = path(deck.concat(top.slice().reverse())); c.fillStyle = shadeOf(base, 0.95); c.fill(wall); ink(wall);
+      var cap = path(top.map(function (q) { return [q[0], q[1] + coping]; }).concat(top.slice().reverse().map(function (q) { return [q[0], q[1] - coping * 0.4]; }))); c.fillStyle = shadeOf(base, 1.12); c.fill(cap); ink(cap, lw * 0.7);
+    } else {
+      var bents = Math.max(3, Math.round(w / (h * 1.1))), beam = Math.max(3, h * 0.13), hand = Math.min(h * 0.38, w * 0.05), wood = base, post = Math.max(2, h * 0.07);
+      for (var b2 = 0; b2 <= bents; b2++) {
+        var bx = x0 + (w * b2) / bents, foot = water + h * 0.12, top2 = y + beam;
+        [-1, 1].forEach(function (sd) { var p2 = path([[bx + sd * post * 0.3, top2], [bx + sd * post * 1.6, foot]]); c.lineWidth = post; c.strokeStyle = shadeOf(wood, 0.72); c.stroke(p2); });
+        if (b2 < bents) { var nx = x0 + (w * (b2 + 1)) / bents, my = (top2 + water) / 2; [[[bx, top2 + h * 0.08], [nx, my]], [[bx, my], [nx, top2 + h * 0.08]]].forEach(function (seg) { var p3 = path(seg); c.lineWidth = Math.max(1.2, post * 0.45); c.strokeStyle = shadeOf(wood, 0.62); c.stroke(p3); }); }
+        c.save(); c.globalAlpha = 0.45; c.strokeStyle = 'rgba(230,240,246,0.9)'; c.lineWidth = Math.max(1, lw * 0.6); c.beginPath(); c.ellipse(bx, water + h * 0.02, post * 2.2, post * 0.5, 0, 0, Math.PI * 2); c.stroke(); c.restore();
+      }
+      [-1, 1].forEach(function (sd) { var ex = sd < 0 ? x0 : x1, far3 = ex + sd * h * 1.3, low2 = water - h * 0.08, ramp = path([[ex, y], [far3, low2], [far3, low2 + beam], [ex, y + beam]]); c.fillStyle = shadeOf(wood, 0.82); c.fill(ramp); ink(ramp); var pr = path([[ex, y - hand], [far3, low2 - hand * 0.7]]); c.lineWidth = Math.max(1.5, post * 0.7); c.strokeStyle = shadeOf(wood, 0.7); c.stroke(pr); var pp = path([[far3, low2], [far3, low2 - hand * 0.7]]); c.stroke(pp); });
+      var stringer = path([[x0, y], [x1, y], [x1, y + beam], [x0, y + beam]]); c.fillStyle = shadeOf(wood, 0.82); c.fill(stringer); ink(stringer);
+      c.lineWidth = Math.max(0.6, lw * 0.45); c.strokeStyle = shadeOf(wood, 0.55);
+      for (var pk = x0 + beam; pk < x1; pk += beam * 1.1) { c.beginPath(); c.moveTo(pk, y + beam * 0.15); c.lineTo(pk, y + beam * 0.85); c.stroke(); }
+      for (b2 = 0; b2 <= bents * 2; b2++) { var hx = x0 + (w * b2) / (bents * 2), hp = path([[hx, y], [hx, y - hand]]); c.lineWidth = Math.max(1.5, post * 0.7); c.strokeStyle = shadeOf(wood, 0.7); c.stroke(hp); }
+      [hand, hand * 0.5].forEach(function (hh, i2) { var rl = path([[x0, y - hh], [x1, y - hh]]); c.lineWidth = Math.max(1.5, post * (i2 ? 0.45 : 0.7)); c.strokeStyle = shadeOf(wood, 0.7); c.stroke(rl); });
+    }
+    c.restore();
+  };
   var drawBridge = function (c, o, build, a, b, wa, wb, drop, rail) {
     var base = bridgeColor(o, build);
     // The deck's width runs sideways on the screen (as the scenes draw it): a bridge into the picture is a band from the
@@ -738,9 +788,11 @@ export const MOTION_FIGURES = {
       poly(face, shadeOf(base, 0.82));
       for (k = 0; k < piers; k++) {
         var t0 = (k + 0.12) / piers, t1 = (k + 0.88) / piers, arch = [];
-        for (var j = 0; j <= 12; j++) { t = t0 + (t1 - t0) * j / 12; var q = at(t, 1), d = dropAt(t); arch.push([q[0], q[1] + d - Math.sin(Math.PI * j / 12) * d * 0.72]); }
+        for (var j = 0; j <= 12; j++) { t = t0 + (t1 - t0) * j / 12; var q = at(t, 1), d = dropAt(t); arch.push([q[0], q[1] + d - Math.sin(Math.PI * j / 12) * d * 0.62]); }
         arch.push([at(t1, 1)[0], at(t1, 1)[1] + dropAt(t1)]);
-        poly(arch.concat([[at(t0, 1)[0], at(t0, 1)[1] + dropAt(t0)]]), 'rgba(18,22,30,0.82)');
+        var top = Math.min.apply(null, arch.map(function (q) { return q[1]; })), bottom = at(t0, 1)[1] + dropAt(t0), under = c.createLinearGradient(0, top, 0, bottom);
+        under.addColorStop(0, 'rgba(28,36,44,0.92)'); under.addColorStop(0.45, 'rgba(58,84,100,0.9)'); under.addColorStop(1, 'rgba(104,140,160,0.85)');
+        poly(arch.concat([[at(t0, 1)[0], at(t0, 1)[1] + dropAt(t0)]]), under);
       }
     } else if (build !== 'rope') {
       // Piles (wood) or piers (iron, concrete) from the deck down into the water.
@@ -810,10 +862,10 @@ export const MOTION_FIGURES = {
     try {
       if (kind === 'thought' || kind === 'inset') {
         // Grows in from its centre; the tail points at what it comes from (a head, or the spot it magnifies).
-        c.translate(x, y); c.scale(a, a); c.translate(-x, -y);
         var from = Array.isArray(o.from) ? [num(+o.from[0], x), num(+o.from[1], y + r * 2)] : null;
+        if (from && kind === 'inset') { var d = Math.hypot(from[0] - x, from[1] - y) || 1; c.globalAlpha *= a; c.beginPath(); c.moveTo(x + (from[0] - x) / d * r * a, y + (from[1] - y) / d * r * a); c.lineTo(from[0], from[1]); c.stroke(); c.beginPath(); c.arc(from[0], from[1], r * 0.12, 0, Math.PI * 2); c.stroke(); c.globalAlpha /= a; }
+        c.translate(x, y); c.scale(a, a); c.translate(-x, -y);
         if (from && kind === 'thought') for (var i = 0; i < 3; i++) { var t = 0.35 + i * 0.22, bx = x + (from[0] - x) * t, by = y + (from[1] - y) * t, br = r * (0.16 - i * 0.04); c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fillStyle = DEVICE_PAPER; c.fill(); c.stroke(); }
-        if (from && kind === 'inset') { var d = Math.hypot(from[0] - x, from[1] - y) || 1; c.beginPath(); c.moveTo(x + (from[0] - x) / d * r, y + (from[1] - y) / d * r); c.lineTo(from[0], from[1]); c.stroke(); c.beginPath(); c.arc(from[0], from[1], r * 0.12, 0, Math.PI * 2); c.stroke(); }
         var p = devicePath(kind, x, y, r), box = kind === 'inset' ? { x: x - r * 0.75, y: y - r * 0.75, w: r * 1.5, h: r * 1.5 } : { x: x - r * 1.1, y: y - r * 0.68, w: r * 2.2, h: r * 1.36 };
         // The centre and radius too (cx, cy, r): pictures drawn around the bubble's centre land inside it.
         box.cx = x; box.cy = y; box.r = r;
@@ -868,8 +920,8 @@ export const MOTION_FIGURES = {
       }
       if (kind === 'spotlight') {
         // The subject in light, the rest of the frame dimmed: drawn over everything but the header.
-        var g = c.createRadialGradient(x, y, r * 0.75, x, y, r * 1.6);
-        g.addColorStop(0, 'rgba(10,8,20,0)'); g.addColorStop(1, 'rgba(10,8,20,' + (0.45 * a).toFixed(3) + ')');
+        var g = c.createRadialGradient(x, y, r * 0.8, x, y, r * 1.7);
+        g.addColorStop(0, 'rgba(10,8,20,0)'); g.addColorStop(1, 'rgba(10,8,20,' + (num(+o.dim, 0.45) * a).toFixed(3) + ')');
         c.fillStyle = g; c.fillRect(x - 5000, y - 5000, 10000, 10000);
         return { box: { x: x - r, y: y - r, w: 2 * r, h: 2 * r } };
       }
@@ -932,6 +984,7 @@ export const MOTION_FIGURES = {
         return { box: boxOf('bridge', o), deck: a };
       }
       var x = num(+o.x, 0), y = num(+o.y, 0), h = num(+o.h, 0);
+      if ((build === 'stone' || build === 'wood') && h > 0) { asScene(function () { sideBridge(c, o, build, x, y, w, h); }); return { box: { x: x - w / 2, y: y - h * 0.4, w: w, h: h * 1.4 }, deck: [x, y] }; }
       if (build !== 'wood') { var drop = h > 0 ? h : w * 0.25; asScene(function () { drawBridge(c, o, build, [x - w / 2, y], [x + w / 2, y], Math.max(4, drop * 0.12), Math.max(4, drop * 0.12), drop, Math.min(drop * 0.5, w * 0.06)); }); return { box: { x: x - w / 2, y: y, w: w, h: h }, deck: [x, y] }; }
       var opt = Object.assign({}, o, { kind: 'bridge', width: w, height: h > 0 ? h : undefined });
       if (!o.build) delete opt.color;

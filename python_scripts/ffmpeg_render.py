@@ -89,6 +89,7 @@ class FFMPEG_CONSTANTS:
     KEY_EFFECTS = _CODE_TEXT.EFFECTS
     KEY_LIGHTING_EFFECT = _CODE_TEXT.LIGHTINGEFFECT
     KEY_MAX_SCENE_WORKERS = _CODE_TEXT.MAXSCENEWORKERS
+    KEY_VIDEO_ENCODE_ARGS = _CODE_TEXT.VIDEOENCODEARGS
     KEY_VIDEO_TRIM_START_SECONDS = _CODE_TEXT.VIDEOTRIMSTARTSECONDS
     KEY_VIDEO_TRIM_END_SECONDS = _CODE_TEXT.VIDEOTRIMENDSECONDS
     KEY_SCENE_CACHE_DIR = _CODE_TEXT.SCENECACHEDIR
@@ -255,7 +256,7 @@ def add_subtitle_input(command, subtitle_path, subtitle_input_index):
         return None
     command.extend([_CODE_TEXT.I, subtitle_path])
     return subtitle_input_index
-def add_subtitle_output(command, subtitle_path, subtitle_mode, subtitle_input_index):
+def add_subtitle_output(command, subtitle_path, subtitle_mode, subtitle_input_index, video_args):
     burn_subtitles = subtitle_mode in (
         FFMPEG_CONSTANTS.SUBTITLE_MODE_BURN_IN,
         FFMPEG_CONSTANTS.SUBTITLE_MODE_BOTH,
@@ -269,12 +270,7 @@ def add_subtitle_output(command, subtitle_path, subtitle_mode, subtitle_input_in
             [
                 _CODE_TEXT.VF,
                 create_subtitle_filter(subtitle_path),
-                _CODE_TEXT.C_V,
-                FFMPEG_CONSTANTS.LIBX264,
-                _CODE_TEXT.PRESET,
-                FFMPEG_CONSTANTS.SLOW,
-                _CODE_TEXT.PIX_FMT,
-                FFMPEG_CONSTANTS.YUV420P,
+                *video_args,
             ]
         )
     else:
@@ -1219,6 +1215,7 @@ def main():
         height = config.get(_CODE_TEXT.HEIGHT, FFMPEG_CONSTANTS.DEFAULT_OUTPUT_HEIGHT)
         fps = config.get(_CODE_TEXT.FPS, FFMPEG_CONSTANTS.DEFAULT_OUTPUT_FPS)
         bitrate = config.get(_CODE_TEXT.BITRATE, FFMPEG_CONSTANTS.DEFAULT_OUTPUT_BITRATE)
+        video_args = list(config.get(FFMPEG_CONSTANTS.KEY_VIDEO_ENCODE_ARGS) or [_CODE_TEXT.C_V, FFMPEG_CONSTANTS.LIBX264, _CODE_TEXT.B_V, bitrate, _CODE_TEXT.PRESET, FFMPEG_CONSTANTS.SLOW, _CODE_TEXT.PROFILE_V, FFMPEG_CONSTANTS.HIGH, _CODE_TEXT.LEVEL, _CODE_TEXT.VALUE_4_1, _CODE_TEXT.PIX_FMT, FFMPEG_CONSTANTS.YUV420P])
         finalOutputPath = config.get(_CODE_TEXT.FINALOUTPUTPATH)
         finalOutputUrl = config.get(_CODE_TEXT.FINALOUTPUTURL)
         scenes = config.get(_CODE_TEXT.SCENES, [])
@@ -1491,6 +1488,7 @@ def main():
                         _CODE_TEXT.HEIGHT: height,
                         _CODE_TEXT.FPS: fps,
                         _CODE_TEXT.BITRATE: bitrate,
+                        FFMPEG_CONSTANTS.KEY_VIDEO_ENCODE_ARGS: video_args,
                         _CODE_TEXT.VIDEOFILTER: video_filter,
                         _CODE_TEXT.AUDIOFILTER: af_effect,
                         _CODE_TEXT.HASAUDIO: bool(audioPath) or use_embedded_audio,
@@ -1511,18 +1509,7 @@ def main():
                     _CODE_TEXT.VALUE_0_V_0,
                     _CODE_TEXT.MAP,
                     audio_input_index,
-                    _CODE_TEXT.C_V,
-                    FFMPEG_CONSTANTS.LIBX264,
-                    _CODE_TEXT.B_V,
-                    bitrate,
-                    _CODE_TEXT.PRESET,
-                    FFMPEG_CONSTANTS.SLOW,
-                    _CODE_TEXT.PROFILE_V,
-                    FFMPEG_CONSTANTS.HIGH,
-                    _CODE_TEXT.LEVEL,
-                    _CODE_TEXT.VALUE_4_1,
-                    _CODE_TEXT.PIX_FMT,
-                    FFMPEG_CONSTANTS.YUV420P,
+                    *video_args,
                     _CODE_TEXT.C_A,
                     FFMPEG_CONSTANTS.AAC,
                     _CODE_TEXT.B_A,
@@ -1738,7 +1725,7 @@ def main():
                 mergeAudioCmd.extend([_CODE_TEXT.MAP, _CODE_TEXT.VALUE_0_V_0, _CODE_TEXT.MAP, _CODE_TEXT.VALUE_1_A_0, _CODE_TEXT.AF, _CODE_TEXT.LOUDNORM_I_16_TP_1_LRA_7])
             mergeAudioCmd.extend([_CODE_TEXT.C_A, FFMPEG_CONSTANTS.AAC, _CODE_TEXT.AR, _CODE_TEXT.VALUE_48000])
             if subtitle_input_index is not None:
-                add_subtitle_output(mergeAudioCmd, subtitle_path, subtitle_mode, subtitle_input_index)
+                add_subtitle_output(mergeAudioCmd, subtitle_path, subtitle_mode, subtitle_input_index, video_args)
             else:
                 mergeAudioCmd.extend([_CODE_TEXT.C_V, FFMPEG_CONSTANTS.COPY_CODEC])
             if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
@@ -1776,7 +1763,7 @@ def main():
                     normalizeAudioCmd.extend([_CODE_TEXT.MAP, _CODE_TEXT.VALUE_0_V_0, _CODE_TEXT.MAP, _CODE_TEXT.VALUE_0_A_0, _CODE_TEXT.AF, _CODE_TEXT.LOUDNORM_I_16_TP_1_LRA_7])
                 normalizeAudioCmd.extend([_CODE_TEXT.C_A, FFMPEG_CONSTANTS.AAC, _CODE_TEXT.AR, _CODE_TEXT.VALUE_48000])
                 if subtitle_input_index is not None:
-                    add_subtitle_output(normalizeAudioCmd, subtitle_path, subtitle_mode, subtitle_input_index)
+                    add_subtitle_output(normalizeAudioCmd, subtitle_path, subtitle_mode, subtitle_input_index, video_args)
                 else:
                     normalizeAudioCmd.extend([_CODE_TEXT.C_V, FFMPEG_CONSTANTS.COPY_CODEC])
                 normalizeAudioCmd.extend([_CODE_TEXT.T, str(expected_output_duration), finalOutputPath])
@@ -1784,7 +1771,7 @@ def main():
             else:
                 if subtitle_path:
                     subtitle_cmd = [ffmpegCmd, _CODE_TEXT.Y_6287C6, _CODE_TEXT.I, tempFinalPath, _CODE_TEXT.I, subtitle_path, _CODE_TEXT.MAP, _CODE_TEXT.VALUE_0_V_0]
-                    add_subtitle_output(subtitle_cmd, subtitle_path, subtitle_mode, 1)
+                    add_subtitle_output(subtitle_cmd, subtitle_path, subtitle_mode, 1, video_args)
                     subtitle_cmd.append(finalOutputPath)
                     subprocess.run(subtitle_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, cwd=tempDir)
                 else:

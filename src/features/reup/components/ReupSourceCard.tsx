@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { BookOpen, Captions, Clock, HardDrive, Image as ImageIcon, Monitor, PauseCircle, Rocket, RotateCcw, Volume2 } from "lucide-react";
+import { BookOpen, Captions, Clock, HardDrive, Image as ImageIcon, Monitor, PauseCircle, Play, Rocket, RotateCcw, Volume2 } from "lucide-react";
 import { StudioCard, StudioFieldset, StudioInput } from "../../../components/ui/Studio.js";
 import { Button } from "../../../components/ui/Button.js";
 import { MOTION_LANGUAGES } from "../../../constants/motionLanguages/index.js";
@@ -15,7 +15,7 @@ import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { REUP_LANGUAGES } from "../lib/reupSettings.js";
 import { REUP_LIMITS } from "../constants/reupConfig.js";
-import type { ReupCorner, ReupLanguage, ReupMusicChoice, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
+import type { ReupCorner, ReupHighlights, ReupLanguage, ReupMusicChoice, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
 import { ReupSelect, ReupTextArea, ReupTextField, ReupToggle, reupClock, type ReupOption } from "./ReupControls.js";
 const CORNERS: ReupCorner[] = ["tl", "tr", "bl", "br"];
 const SHORTS = [1, 2, 3, 4, 5];
@@ -111,6 +111,19 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
           <MotionSettingsGroup title={groups.VISUAL}>
             {!folder && <ReupSelect<string> label={text.LOGO} value={logo} options={["off", "crop", ...CORNERS].map((value) => ({ value, label: logoText[value] }))} onChange={(value) => patch(CORNERS.includes(value as ReupCorner) ? { logo: "blur", logoCorner: value as ReupCorner } : { logo: value as "off" | "crop" })} />}
             <ReupToggle label={motionText.SUBTITLES_MODE} icon={Captions} checked={settings.subtitles} on={motionText.SUBTITLES_ON} off={motionText.SUBTITLES_OFF} hint={motionText.SUBTITLES_HINT} onChange={(subtitles) => patch({ subtitles })} />
+            {!def.speech && (
+              <ReupSelect<ReupHighlights>
+                label={text.HIGHLIGHTS}
+                title={text.HIGHLIGHTS_HINT}
+                value={settings.highlights}
+                options={[
+                  { value: "off", label: text.HIGHLIGHTS_OFF },
+                  { value: "few", label: text.HIGHLIGHTS_FEW },
+                  { value: "normal", label: text.HIGHLIGHTS_NORMAL },
+                ]}
+                onChange={(highlights) => patch({ highlights })}
+              />
+            )}
             <ReupToggle label={text.STOP_SCRIPT} icon={PauseCircle} checked={settings.stopScript} on={text.STOP_ON} off={text.STOP_OFF} onChange={(stopScript) => patch({ stopScript })} />
           </MotionSettingsGroup>
           {def.speech && (
@@ -137,7 +150,12 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
                   {text.NEW_JOB}
                 </ActionBtn>
               )}
-              <ActionBtn icon={Rocket} onClick={studio.start} disabled={!source || studio.busy} className={S.ACTION_WIDE}>
+              {studio.resumeStep && (
+                <ActionBtn icon={Play} onClick={() => void studio.resume()} disabled={studio.busy} title={text.RESUME_HINT}>
+                  {text.RESUME}
+                </ActionBtn>
+              )}
+              <ActionBtn icon={Rocket} onClick={studio.start} disabled={!source || studio.busy} className={S.ACTION_WIDE} variant={studio.resumeStep ? "secondary" : "primary"}>
                 {text.START}
               </ActionBtn>
             </>

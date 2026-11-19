@@ -37,6 +37,9 @@ export interface MotionSpecItem {
   fade?: [number, number];
   at?: [number, number];
   burning?: boolean;
+  state?: "broken" | "collapsed";
+  shape?: "ring";
+  bank?: "near" | "far";
   heldBy?: string;
   hand?: "front" | "back";
   code?: string;
@@ -61,7 +64,7 @@ export interface MotionSpecDevice {
   zoom?: number;
   facing?: number;
   body?: "sun" | "moon";
-  groups?: { n: number; color?: string }[];
+  groups?: { n: number; color?: string; of?: string }[];
   w?: number;
   h?: number;
   items?: MotionSpecItem[];

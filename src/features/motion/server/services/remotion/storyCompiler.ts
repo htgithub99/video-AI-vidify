@@ -1,3 +1,7 @@
+import { motionStoryTimes } from "../../../../../lib/motionTimeline.js";
+import { motionSceneRepeats } from "../../../../../lib/motionSceneRepeat.js";
+import { motionCrossingSites } from "../../../../../lib/motionCrossingSites.js";
+import { motionCastMarks } from "../../../../../lib/motionCastMarks.js";
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionLanguage } from "../../../../../lib/motionLanguage.js";
 import { motionAnalysisEraYear } from "../../../../../lib/motionEra.js";
@@ -84,6 +88,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
   });
   const positions = new Map(timedLines.map((item, index) => [item.line.key, index]));
   const planned = script.beats.flatMap((beat) => state.scenes[beat.id] || []);
+  const times = motionStoryTimes(script.beats);
   let frame = 0;
   for (const [index, scene] of planned.entries()) {
     if (scene.composition && scene.aspect !== aspect) throw new Error(V.SCENES_REQUIRED);
@@ -104,6 +109,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     scenes.push({
       ...scene,
       sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))],
+      time: times.get(covered[0].line.beatId) || scene.time,
       startFrame: frame,
       endFrame,
       speaking,
@@ -113,12 +119,13 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     frame = endFrame;
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
+  scenes.splice(0, scenes.length, ...motionCrossingSites(motionSceneRepeats(scenes), script.beats));
   if (analysis)
     motionSceneOnScreen(
       scenes.map((scene) => ({ scene, beats: (scene.sourceBeatIds || []).map((id) => script.beats.find((beat) => beat.id === id)).filter((beat): beat is MotionBeat => !!beat) })),
       analysis,
     );
-  const timedScenes = analysis && state.renderer === RT_MAINTENANCE.HTML_CANVAS && analysis.chapters.length > 1 ? motionApplyChapterTitles(scenes, { beats: script.beats, chapters: analysis.chapters, places: analysis.places, fps, language: script.language }) : scenes;
+  const timedScenes = analysis && state.renderer === RT_MAINTENANCE.HTML_CANVAS && analysis.chapters.length > 1 ? motionApplyChapterTitles(scenes, { beats: script.beats, chapters: analysis.chapters, places: analysis.places, fps, language: script.language, aspect: opts.aspect, subtitles: opts.subtitles }) : scenes;
   const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {
     ...(state.renderer ? { renderer: state.renderer } : {}),
@@ -138,6 +145,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     proportion: motionProportionOf(settings),
     movement: motionMovementOf(settings),
     layout: motionLayoutOf(settings),
+    castMarks: motionCastMarks(analysis?.cast),
     assets: Object.fromEntries(Object.entries(state.assets).filter(([key]) => used.has(key))),
     scenes: timedScenes.map(compactTimedScene),
     subtitles,

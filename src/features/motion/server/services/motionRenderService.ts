@@ -1,4 +1,7 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
+import { HEAVY_JOB_TEXT, MEDIA_ENCODER } from "../../../../constants/mediaEncoder.js";
+import { detectMediaEncoders } from "../../../../server/utils/mediaEncoder.js";
+import { HEAVY_RENDER, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
 import { machineCpus } from "../../../../server/services/lowSpecPolicy.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
@@ -59,7 +62,6 @@ import {
   MOTION_TEXT_16_9,
   MOTION_TEXT_2,
   MOTION_TEXT_2D,
-  MOTION_TEXT_3,
   MOTION_TEXT_48000,
   MOTION_TEXT_AAC_2,
   MOTION_TEXT_ABORT,
@@ -77,7 +79,6 @@ import {
   MOTION_TEXT_CHROMIUM,
   MOTION_TEXT_CLOSE,
   MOTION_TEXT_COLORSPACE,
-  MOTION_TEXT_COLOR_C_BLACK_S_320X240_D_0_2,
   MOTION_TEXT_COLOR_PRIMARIES,
   MOTION_TEXT_COLOR_RANGE,
   MOTION_TEXT_COLOR_TRC,
@@ -110,7 +111,6 @@ import {
   MOTION_TEXT_FONT_RENDER_HINTING_NONE,
   MOTION_TEXT_FORCE_COLOR_PROFILE_SRGB,
   MOTION_TEXT_FRAMERATE,
-  MOTION_TEXT_FRAMES_V,
   MOTION_TEXT_G,
   MOTION_TEXT_GEN3D,
   MOTION_TEXT_GLOBAL_QUALITY,
@@ -126,7 +126,6 @@ import {
   MOTION_TEXT_IMAGE_JPEG,
   MOTION_TEXT_KHONG_CO_CANH_3D,
   MOTION_TEXT_KHONG_DUNG_DUOC_GPU_RENDER_SE_CHAM,
-  MOTION_TEXT_LAVFI,
   MOTION_TEXT_LIBX264,
   MOTION_TEXT_LOAD,
   MOTION_TEXT_LOGLEVEL,
@@ -140,7 +139,6 @@ import {
   MOTION_TEXT_MOVFLAGS,
   MOTION_TEXT_MUX,
   MOTION_TEXT_NFD,
-  MOTION_TEXT_NULL,
   MOTION_TEXT_NV12,
   MOTION_TEXT_P6,
   MOTION_TEXT_PAGE,
@@ -187,7 +185,7 @@ import {
   MOTION_TEXT_Y,
   MOTION_TEXT_YUV420P,
 } from "../../../../constants/motionRuntime.js";
-import { MOTION_ASPECT_BASE, MOTION_GPU_ENCODERS, MOTION_QUALITY_PRESETS, MOTION_RASTER, MOTION_RENDER_CACHE, MOTION_VIDEO_CONSTANTS, type MotionQualityPreset } from "../../../../constants/motionVideo.js";
+import { MOTION_ASPECT_BASE, MOTION_QUALITY_PRESETS, MOTION_RASTER, MOTION_RENDER_CACHE, MOTION_VIDEO_CONSTANTS, type MotionQualityPreset } from "../../../../constants/motionVideo.js";
 import { cloneJson } from "../../../../lib/jsonStringify.js";
 import { logger } from "../../../../lib/logger.js";
 import { MotionEncoderPreference, MotionJobStatus, MotionQuality, type MotionJobState, type MotionRenderOptions, type MotionResultItem, type MotionSpec } from "../../../../types/motionVideo.js";
@@ -197,7 +195,6 @@ import { getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory
 import { getFfmpegPath } from "../../../../server/services/shortsPreprocessService.js";
 const ABORTED = MOTION_TEXT_MOTION_RENDER_ABORTED;
 const jobs = new Map<string, MotionJobState & { controller: AbortController }>();
-let encoderCache: string[] | null = null;
 const runFfmpegCollect = (args: string[], signal?: AbortSignal, keep?: RegExp): Promise<{ code: number; stderr: string }> =>
   new Promise((resolve, reject) => {
     const child = spawn(getFfmpegPath(), args, { windowsHide: true });
@@ -259,16 +256,8 @@ export const probeMediaDuration = async (file: string): Promise<number> => {
   return m ? _.toNumber(m[1]) * 3600 + _.toNumber(m[2]) * 60 + _.toNumber(m[3]) : 0;
 };
 export const detectEncoders = async (): Promise<string[]> => {
-  if (encoderCache) return encoderCache;
-  const found: string[] = [];
-  for (const enc of [...MOTION_GPU_ENCODERS, MOTION_TEXT_LIBX264]) {
-    try {
-      const r = await runFfmpegCollect([MOTION_TEXT_HIDE_BANNER, MOTION_TEXT_LOGLEVEL, MOTION_TEXT_ERROR, MOTION_TEXT_F, MOTION_TEXT_LAVFI, MOTION_TEXT_I, MOTION_TEXT_COLOR_C_BLACK_S_320X240_D_0_2, MOTION_TEXT_FRAMES_V, MOTION_TEXT_3, MOTION_TEXT_C_V, enc, MOTION_TEXT_F, MOTION_TEXT_NULL, MOTION_TEXT_SYMBOL_33]);
-      if (r.code === 0) found.push(enc);
-    } catch {}
-  }
+  const found = (await detectMediaEncoders()).filter((encoder) => MEDIA_ENCODER.GPU.h264.includes(encoder) || encoder === MOTION_TEXT_LIBX264);
   if (!found.length) throw new Error(PRODUCTION.PREFLIGHT_FAILED);
-  encoderCache = found;
   return found;
 };
 const launchBrowser = async (): Promise<{ browser: Browser; label: string }> => {
@@ -762,7 +751,7 @@ export const startMotionRender = (spec: MotionRenderSpec, options: MotionRenderO
   const job = { id: randomUUID(), status: MotionJobStatus.QUEUED, progress: 0, framesDone: 0, framesTotal: 0, startedAt: Date.now(), log: [], controller: new AbortController() } as MotionJobState & { controller: AbortController };
   jobs.set(job.id, job);
   pushLog(job, MOTION_TEXT_DA_NHAN_YEU_CAU_RENDER);
-  void runJob(job, spec, options);
+  void runHeavyJob(HEAVY_RENDER, HEAVY_JOB_TEXT.LABEL(HEAVY_JOB_TEXT.SCREEN.MOTION, job.id.slice(0, 8)), () => runJob(job, spec, options), { signal: job.controller.signal, onWait: (holder) => pushLog(job, HEAVY_JOB_TEXT.WAIT(HEAVY_RENDER, holder)) }).catch(() => runJob(job, spec, options));
   return publicJob(job);
 };
 const publicJob = (job: MotionJobState & { controller?: AbortController }): MotionJobState => _.omit(job, [MOTION_TEXT_CONTROLLER]) as MotionJobState;

@@ -1256,9 +1256,9 @@ const clickSendButton = async (page: Page, button: Locator, signal?: AbortSignal
   await humanClick(page, button, CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS);
 };
 const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined, signal?: AbortSignal): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input, signal)).valid;
-const canRegenerateChatResponse = (error: unknown): boolean => {
+const canRegenerateChatResponse = (error: unknown, artifactType?: string): boolean => {
   const message = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
-  return message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR || message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR || isRecoverableChatRefusal(error) || isResponseTimeoutError(error);
+  return message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR || message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR || isRecoverableChatRefusal(error, artifactType) || isResponseTimeoutError(error);
 };
 const regenerateProviderError = async (page: Page, responseSelector: string, busySelector: string, artifactType: string, requestId: string, signal: AbortSignal | undefined, send: () => Promise<string>, onRegenerate?: (line: string) => void): Promise<string> => {
   let run = send;
@@ -1266,7 +1266,7 @@ const regenerateProviderError = async (page: Page, responseSelector: string, bus
     try {
       return await run();
     } catch (error) {
-      if (!canRegenerateChatResponse(error) || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
+      if (!canRegenerateChatResponse(error, artifactType) || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
       if (CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS > 0) await delayAsync(RECOVERY.RETRY_CLICK_COOLDOWN_MS * (attempt + 1));
       throwIfPlanningCancelled(signal);
       const snapshots = await getChatResponseSnapshots(page, responseSelector, artifactType).catch(() => []);
@@ -2302,13 +2302,13 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
         if (request.oneGeneration && request.artifactType?.startsWith(RT_MAINTENANCE.MOTION_HTML) && (request.submission?.attempted || isFinalChatResponseError(error))) {
           const completedFailure = isCompletedChatResponseError(error);
           if (request.submission && completedFailure) request.submission.completed = true;
-          if (!(canRegenerateChatResponse(error) && (completedFailure || request.submission?.completed))) {
+          if (!(canRegenerateChatResponse(error, request.artifactType) && (completedFailure || request.submission?.completed))) {
             const failure = request.submission?.attempted && !request.submission.completed ? uncertainChatSubmission(request.provider) : error instanceof Error ? error : new Error(String(error));
             throw Object.assign(failure, { [RECOVERY.COMPLETE]: true, ...(failure !== error ? { cause: error } : {}) });
           }
         }
         const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
-        const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || isRecoverableChatRefusal(error) || isResponseTimeoutError(error) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
+        const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || isRecoverableChatRefusal(error, request.artifactType) || isResponseTimeoutError(error) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
         if (!retryable) throw error;
         if (errorMessage === D.RETRY_EXHAUSTED && request.submission) request.submission.completed = true;
         const page = getProviderRooms(request.provider)?.get(roomKey);
@@ -2346,7 +2346,7 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
               if ((await aiOutage(retryError, request.provider)) || (retryError as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw retryError;
               request.submission!.completed = isCompletedChatResponseError(retryError);
               if (!request.submission!.completed) throw Object.assign(uncertainChatSubmission(request.provider), { [RECOVERY.COMPLETE]: true, cause: retryError });
-              if ((retryError as Error).message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !isRecoverableChatRefusal(retryError)) throw retryError;
+              if ((retryError as Error).message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !isRecoverableChatRefusal(retryError, request.artifactType)) throw retryError;
               lastError = retryError;
             }
           }

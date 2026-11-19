@@ -38,6 +38,11 @@ import { GenerateType, RenderAudioTrack, SubtitleCue, SubtitleMode } from "../..
 import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS, FFMPEG_RENDER_KEYS, PRODUCTION_AUDIO_CONFIG } from "../../constants/config.js";
 import { ASSETS_DIR_NAME, PROJECTS_DIR_NAME, REFACTOR_CONSTANTS, SAFE_PROJECT_ID_REGEX, SecurityConstants, VIDEOS_DIR_NAME } from "../../constants/index.js";
 import { jsonUtils } from "../../lib/json.js";
+import os from "os";
+import { HEAVY_JOB_TEXT, MEDIA_ENCODER } from "../../constants/mediaEncoder.js";
+import { isGpuEncoder, mediaEncodeArgs, pickMediaEncoder, withEncoderFallback } from "./mediaEncoder.js";
+import { HEAVY_RENDER, runHeavyJob } from "./heavyJobQueue.js";
+const sceneWorkers = (pixels: number, encoder: string): number => _.clamp(Math.min(Math.floor((os.freemem() - FFMPEG_RENDER_CONSTANTS.WORKER_RESERVE_BYTES) / (pixels * FFMPEG_RENDER_CONSTANTS.WORKER_BYTES_PER_PIXEL)), Math.floor(os.cpus().length / 2), isGpuEncoder(encoder) ? MEDIA_ENCODER.GPU_SESSIONS : FFMPEG_RENDER_CONSTANTS.MAX_SCENE_WORKERS), 1, FFMPEG_RENDER_CONSTANTS.MAX_SCENE_WORKERS);
 import { MEDIA_MIX_CONFIG } from "../../constants/loading.js";
 import { hasProductionAudioSource, isBlockedAudioSource } from "../../services/productionAudioService.js";
 const cleanupDirectory = (directoryPath: string): void => {
@@ -220,8 +225,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
       return assetPath ? { ...track, assetPath } : undefined;
     }),
   );
-  const maxSceneWorkers = _.gt(finalWidth, FFMPEG_RENDER_CONSTANTS.PARALLEL_RENDER_MAX_WIDTH) ? SecurityConstants.DEFAULT_AMOUNT : FFMPEG_RENDER_CONSTANTS.MAX_SCENE_WORKERS;
-  const config = {
+  const configFor = (encoder: string) => ({
     [FFMPEG_RENDER_KEYS.TEMP_DIR]: tempDir,
     [FFMPEG_RENDER_KEYS.FFMPEG_CMD]: fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD,
     [FFMPEG_RENDER_KEYS.WIDTH]: finalWidth,
@@ -232,7 +236,8 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
     [FFMPEG_RENDER_KEYS.FINAL_OUTPUT_URL]: finalOutputUrl,
     [FFMPEG_RENDER_KEYS.SCENES]: renderScenes,
     [FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_PATH]: globalAudioPath,
-    [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: options.safeProfile ? SecurityConstants.DEFAULT_AMOUNT : _.min([maxSceneWorkers, _.size(renderScenes)]),
+    [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: options.safeProfile ? SecurityConstants.DEFAULT_AMOUNT : _.min([sceneWorkers(finalWidth * finalHeight, encoder), _.size(renderScenes)]),
+    [FFMPEG_RENDER_KEYS.VIDEO_ENCODE_ARGS]: mediaEncodeArgs(encoder, { crf: 0, fps, bitrate, preset: FFMPEG_RENDER_CONSTANTS.ENCODE_PRESET }),
     [FFMPEG_RENDER_KEYS.VIDEO_TRIM_START_SECONDS]: options.preserveVideoAudio ? 0 : MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
     [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: options.preserveVideoAudio ? 0 : MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
     [FFMPEG_RENDER_KEYS.SUBTITLE_MODE]: options.subtitleMode || FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
@@ -241,12 +246,12 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
     autoMusicProfile: _.toString(options.autoMusicProfile),
     [FFMPEG_RENDER_KEYS.SAFE_PROFILE]: Boolean(options.safeProfile),
     [FFMPEG_RENDER_KEYS.SCENE_CACHE_DIR]: path.join(outputDir, FFMPEG_RENDER_CONSTANTS.SCENE_CACHE_DIR_NAME),
-  };
+  });
   const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);
-  fs.writeFileSync(configPath, jsonUtils.safeStringify(config, null, FFMPEG_RENDER_CONSTANTS.JSON_INDENT), FFMPEG_RENDER_CONSTANTS.ENCODING_UTF8);
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.SCRIPT_PATH);
-  try {
+  const runRenderer = async (encoder: string): Promise<string> => {
+    fs.writeFileSync(configPath, jsonUtils.safeStringify(configFor(encoder), null, FFMPEG_RENDER_CONSTANTS.JSON_INDENT), FFMPEG_RENDER_CONSTANTS.ENCODING_UTF8);
     const renderer = execFile(pyCmd, [scriptPath, configPath], { windowsHide: true, maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES, signal });
     const terminateRendererTree = (): void => {
       if (!renderer.pid || !_.isEqual(process.platform, SOURCE_TEXT_WIN32)) return;
@@ -280,11 +285,22 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
     });
     signal?.removeEventListener(SOURCE_TEXT_ABORT, terminateRendererTree);
     const result = parsePythonResult(stdout);
-    if (_.every([result, _.get(result, FFMPEG_RENDER_KEYS.SUCCESS)], Boolean)) {
-      cleanupDirectory(tempDir);
-      return _.toString(_.get(result, FFMPEG_RENDER_KEYS.URL));
-    }
+    if (_.every([result, _.get(result, FFMPEG_RENDER_KEYS.SUCCESS)], Boolean)) return _.toString(_.get(result, FFMPEG_RENDER_KEYS.URL));
     throw new Error(result ? _.toString(_.get(result, FFMPEG_RENDER_KEYS.ERROR)) : FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON);
+  };
+  try {
+    const url = await runHeavyJob(
+      HEAVY_RENDER,
+      HEAVY_JOB_TEXT.LABEL(HEAVY_JOB_TEXT.SCREEN.VIDEO, safeProjectId || finalOutputName),
+      async () => {
+        const encoder = await pickMediaEncoder("auto", "h264");
+        logger.log(HEAVY_JOB_TEXT.ENCODER(encoder));
+        return withEncoderFallback(encoder, runRenderer, (failed) => logger.warn(HEAVY_JOB_TEXT.GPU_FALLBACK(failed)), signal);
+      },
+      { signal, onWait: (holder) => logger.log(HEAVY_JOB_TEXT.WAIT(HEAVY_RENDER, holder)) },
+    );
+    cleanupDirectory(tempDir);
+    return url;
   } catch (err: any) {
     logger.error(FFMPEG_RENDER_CONSTANTS.LOG_ERROR_RENDER, err);
     cleanupDirectory(tempDir);

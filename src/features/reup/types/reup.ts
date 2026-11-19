@@ -4,7 +4,11 @@ export type ReupPresetStage = "ready" | "beta" | "later";
 export type ReupAspect = "16:9" | "9:16";
 export type ReupVertical = "blur" | "crop";
 export type ReupLanguage = "vi" | "en" | "ja" | "ko";
-export type ReupQuality = "draft" | "standard" | "high" | "ultra";
+export type ReupQuality = "auto" | "draft" | "standard" | "high" | "ultra";
+export type ReupHighlights = "off" | "few" | "normal";
+export type ReupEncoder = "auto" | "gpu" | "cpu";
+export type ReupValueBeat = "why" | "tip" | "compare" | "view";
+export type ReupMusicZoneKind = "hook" | "gap" | "sting" | "ending" | "bed";
 export type ReupNatural = "keep" | "low" | "off";
 export type ReupTitleOverlay = "off" | "hook" | "fixed";
 export type ReupLogo = "off" | "crop" | "blur";
@@ -28,11 +32,14 @@ export interface ReupStyle {
 }
 export type ReupMusicChoice = "off" | "library";
 export type ReupReportLevel = "ok" | "review" | "risk";
-export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual" | "naturalOff";
+export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual" | "naturalOff" | "coverage" | "describes";
+export type ReupScoreGap = "coverage" | "value" | "highlights" | "silence" | "shot" | "source" | "similar" | "angle";
 export interface ReupReport {
   level: ReupReportLevel;
   narrated: number;
   silentMax: number;
+  score: number;
+  gaps: ReupScoreGap[];
   notes: { code: ReupReportCode; level: ReupReportLevel; value?: string }[];
 }
 export interface ReupAiChoice {
@@ -64,6 +71,8 @@ export interface ReupSettings {
   cta: string;
   logoFile: string;
   quality: ReupQuality;
+  encoder: ReupEncoder;
+  highlights: ReupHighlights;
   fps: number;
   visionAi: ReupAiChoice;
   scriptAi: ReupAiChoice;
@@ -77,7 +86,11 @@ export interface ReupPresetRules {
   pauseSeconds: number;
   lufs: number;
   titleOverlay: ReupTitleOverlay;
-  chapters: boolean;
+  markEvery: number;
+  markMax: number;
+  markSeconds: number;
+  musicMode: "zones" | "bed" | "chapters" | "gaps";
+  narratedMin: number;
   kenBurns: boolean;
   captions: boolean;
   beforeAfter: boolean;
@@ -166,6 +179,13 @@ export interface ReupCue {
   moment?: string;
   text: string;
   textAlt?: string;
+  value?: ReupValueBeat;
+}
+export interface ReupMark {
+  cue: number;
+  label: string;
+  title: string;
+  sub?: string;
 }
 export interface ReupSection {
   id: string;
@@ -175,6 +195,7 @@ export interface ReupSection {
   cues?: ReupCue[];
   chapter?: string;
   callout?: string;
+  mark?: ReupMark;
 }
 export interface ReupOutputScript {
   id: string;
@@ -196,6 +217,10 @@ export interface ReupTrack {
 export interface ReupOutputResult {
   id: string;
   narrated?: number;
+  voiced?: number;
+  highlights?: number;
+  longestShot?: number;
+  sourceShare?: number;
   silentMax?: number;
   padding?: number;
   repeated?: boolean;

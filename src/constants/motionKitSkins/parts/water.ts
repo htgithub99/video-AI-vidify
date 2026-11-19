@@ -23,6 +23,7 @@ export const SKIN_PART_WATER = `(c, o, K) => {
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
   if (kind === "river" || kind === "sea") {
     const W = K.num(o.width, kind === "sea" ? 2600 : 10 * R), H = Math.max(8, K.num(o.height, kind === "sea" ? 400 : 1.2 * R));
+    c.translate(0, -H / 2);
     const top = [], n = Math.max(6, Math.round(W / (2.2 * R)));
     for (let i = 0; i <= n; i++) top.push([-W / 2 + (i / n) * W, (rnd(i + 5) - 0.5) * Math.min(0.12 * R, H * 0.06)]);
     const p = new Path2D(); top.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.lineTo(W / 2, H); p.lineTo(-W / 2, H); p.closePath();

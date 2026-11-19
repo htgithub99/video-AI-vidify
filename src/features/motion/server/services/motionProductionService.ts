@@ -1,6 +1,8 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { motionStepElapsedMs, motionStepSegment } from "../../../../lib/motionStepTime.js";
 import { motionProductionReport } from "../../../../lib/motionProductionReport.js";
+import { motionReviseNotesOf } from "./html/reviseNotes.js";
+import { MOTION_SCENE_SPEC } from "../../../../constants/motionSceneSpec.js";
 import { MOTION_PRODUCTION_REPORT as REPORT } from "../../../../constants/motionProductionReport.js";
 import { createMotionLogFilter } from "../../../../lib/motionLogText.js";
 import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
@@ -742,7 +744,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           input: record.input,
           visual: result.analysis?.visualSettings as Record<string, unknown> | undefined,
           steps: Object.fromEntries(Object.entries(record.steps).map(([name, task]) => [name, { seconds: motionStepElapsedMs(task) / 1000, retries: task.retries }])),
-          scenes: Object.values(result.script?.gen?.remotion?.scenes || {}).flat(),
+          scenes: Object.values(result.script?.gen?.remotion?.scenes || {})
+            .flat()
+            .map((scene) => ({ ...scene, revise: motionReviseNotesOf(scene.html?.hash) })),
+          labels: MOTION_SCENE_SPEC.REVISE_LABELS,
         });
         const reportFile = path.join(directory, REPORT.FOLDER, record.job.id + REPORT.EXT);
         fs.mkdirSync(path.dirname(reportFile), { recursive: true });

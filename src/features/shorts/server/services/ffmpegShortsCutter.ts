@@ -10,14 +10,11 @@ import {
   SOURCE_TEXT_2,
   SOURCE_TEXT_ABORT,
   SOURCE_TEXT_B_A,
-  SOURCE_TEXT_CRF,
   SOURCE_TEXT_C_A,
-  SOURCE_TEXT_C_V,
   SOURCE_TEXT_FASTSTART,
   SOURCE_TEXT_FILTER_COMPLEX,
   SOURCE_TEXT_I,
   SOURCE_TEXT_MOVFLAGS,
-  SOURCE_TEXT_PRESET,
   SOURCE_TEXT_Q_V,
   SOURCE_TEXT_SIGKILL,
   SOURCE_TEXT_SS,
@@ -36,7 +33,9 @@ import { HighlightClipItem, ShortsAspectRatio, ShortsReframeMode } from "../../.
 import { SHORTS_CONSTANTS, SHORTS_LOG_MESSAGES, SHORTS_REGEX, SHORTS_TEXTS } from "../../../../constants/shorts.js";
 import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { logger } from "../../../../lib/logger.js";
-type RenderShortClipParams = { sourceVideoPath: string; clip: HighlightClipItem; aspectRatio: ShortsAspectRatio; reframeMode: ShortsReframeMode; outputDirectory?: string; signal?: AbortSignal; onProgress?: (percent: number) => void };
+import { HEAVY_JOB_TEXT, MEDIA_ENCODER } from "../../../../constants/mediaEncoder.js";
+import { mediaEncodeArgs, withEncoderFallback } from "../../../../server/utils/mediaEncoder.js";
+type RenderShortClipParams = { sourceVideoPath: string; clip: HighlightClipItem; aspectRatio: ShortsAspectRatio; reframeMode: ShortsReframeMode; encoder?: string; outputDirectory?: string; signal?: AbortSignal; onProgress?: (percent: number) => void };
 const runProcessWithSignal = (cmd: string, args: string[], signal?: AbortSignal, maxBuffer: number = 20 * 1024 * 1024): Promise<{ stdout: string; stderr: string }> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -80,7 +79,7 @@ const buildFilterArgs = (aspectRatio: ShortsAspectRatio, reframeMode: ShortsRefr
   return [SOURCE_TEXT_VF, SOURCE_TEMPLATE_SCALE_FORCE_ORIGINAL_ASPECT_RATIO_DECREASE(`${SHORTS_CONSTANTS.SCALE_16_9_WIDTH}`, `${SHORTS_CONSTANTS.SCALE_16_9_HEIGHT}`, `${SHORTS_CONSTANTS.SCALE_16_9_WIDTH}`, `${SHORTS_CONSTANTS.SCALE_16_9_HEIGHT}`)];
 };
 export const renderSingleShortClip = async (params: RenderShortClipParams): Promise<{ videoPath: string; thumbnailPath: string }> => {
-  const { sourceVideoPath, clip, aspectRatio, reframeMode, outputDirectory, signal } = params;
+  const { sourceVideoPath, clip, aspectRatio, reframeMode, outputDirectory, signal, encoder = MEDIA_ENCODER.CPU.h264 } = params;
   if (signal?.aborted) {
     throw new Error(SHORTS_CONSTANTS.PROCESS_ABORTED);
   }
@@ -89,7 +88,7 @@ export const renderSingleShortClip = async (params: RenderShortClipParams): Prom
   }
   const outDir = outputDirectory || path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER, SHORTS_CONSTANTS.SHORTS_FOLDER);
   await fs.promises.mkdir(outDir, { recursive: true });
-  const safeTitle = _.slice(_.replace(_.toLower(clip.title || SOURCE_TEMPLATE_CLIP(`${clip.index}`)), SHORTS_REGEX.CLEAN_TITLE, SOURCE_TEXT_SYMBOL_25), 0, 30);
+  const safeTitle = _.replace(_.toLower(clip.title || SOURCE_TEMPLATE_CLIP(`${clip.index}`)), SHORTS_REGEX.CLEAN_TITLE, SOURCE_TEXT_SYMBOL_25).slice(0, 30);
   const outVideoName = SOURCE_TEMPLATE_SHORT_2(`${clip.index}`, `${safeTitle}`, `${Date.now()}`, `${SHORTS_CONSTANTS.EXT_MP4}`);
   const outThumbName = SOURCE_TEMPLATE_SHORT_2(`${clip.index}`, `${safeTitle}`, `${Date.now()}`, `${SHORTS_CONSTANTS.THUMB_SUFFIX}`);
   const outputVideoPath = path.join(outDir, outVideoName);
@@ -97,7 +96,7 @@ export const renderSingleShortClip = async (params: RenderShortClipParams): Prom
   const ffmpegCmd = getFfmpegPath();
   const duration = Math.max(1, clip.endTime - clip.startTime);
   const filterArgs = buildFilterArgs(aspectRatio, reframeMode);
-  const renderArgs = [
+  const renderArgs = (codec: string) => [
     SOURCE_TEXT_Y,
     SOURCE_TEXT_SS,
     `${clip.startTime}`,
@@ -106,12 +105,7 @@ export const renderSingleShortClip = async (params: RenderShortClipParams): Prom
     SOURCE_TEXT_I,
     sourceVideoPath,
     ...filterArgs,
-    SOURCE_TEXT_C_V,
-    SHORTS_CONSTANTS.LIBX264,
-    SOURCE_TEXT_PRESET,
-    SHORTS_CONSTANTS.DEFAULT_PRESET,
-    SOURCE_TEXT_CRF,
-    SHORTS_CONSTANTS.DEFAULT_CRF,
+    ...mediaEncodeArgs(codec, { crf: Number(SHORTS_CONSTANTS.DEFAULT_CRF), fps: MEDIA_ENCODER.DEFAULT_FPS, preset: SHORTS_CONSTANTS.DEFAULT_PRESET }),
     SOURCE_TEXT_C_A,
     SHORTS_CONSTANTS.AAC,
     SOURCE_TEXT_B_A,
@@ -121,7 +115,12 @@ export const renderSingleShortClip = async (params: RenderShortClipParams): Prom
     outputVideoPath,
   ];
   logger.log(SHORTS_LOG_MESSAGES.RENDERING_CLIP(clip.index, clip.startTime, clip.endTime));
-  await runProcessWithSignal(ffmpegCmd, renderArgs, signal, 20 * 1024 * 1024);
+  await withEncoderFallback(
+    encoder,
+    (codec) => runProcessWithSignal(ffmpegCmd, renderArgs(codec), signal, 20 * 1024 * 1024),
+    (codec) => logger.warn(HEAVY_JOB_TEXT.GPU_FALLBACK(codec)),
+    signal,
+  );
   if (signal?.aborted) {
     if (fs.existsSync(outputVideoPath)) {
       try {

@@ -2,6 +2,7 @@ import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { createHash } from "node:crypto";
 import { stringifyJson } from "./jsonStringify.js";
 import { MOTION_REMOTION_RENDER as R } from "../constants/motionRemotionRender.js";
+import { motionFigureRenderKey } from "./motionFigures.js";
 import type { MotionRemotionSpec } from "../types/motionVisual.js";
 const NON_VISUAL = new Set<string>([
   RT_MAINTENANCE.GENERATION,
@@ -22,7 +23,8 @@ const NON_VISUAL = new Set<string>([
   RT_MAINTENANCE.CONTINUITYKEY,
   RT_MAINTENANCE.REMOVEDOBJECTS,
 ]);
-const visualScene = (scene: MotionRemotionSpec["scenes"][number]) => (scene.html ? { id: scene.id, renderer: scene.renderer, startFrame: scene.startFrame, endFrame: scene.endFrame, htmlHash: scene.html.hash, seed: scene.html.seed, speaking: scene.speaking } : Object.fromEntries(Object.entries(scene).filter(([key]) => !NON_VISUAL.has(key))));
+const visualScene = (scene: MotionRemotionSpec["scenes"][number]) =>
+  scene.html ? { id: scene.id, renderer: scene.renderer, startFrame: scene.startFrame, endFrame: scene.endFrame, htmlHash: scene.html.hash, seed: scene.html.seed, speaking: scene.speaking, time: scene.time, vary: scene.vary, crossing: scene.crossing } : Object.fromEntries(Object.entries(scene).filter(([key]) => !NON_VISUAL.has(key)));
 export interface MotionRemotionSegment {
   index: number;
   start: number;
@@ -50,7 +52,7 @@ export const motionRemotionSegments = (spec: MotionRemotionSpec, encoding: { wid
       size = Math.ceil((to - from + 1) / parts);
     return Array.from({ length: parts }, (_, i) => [from + i * size, Math.min(to, from + (i + 1) * size - 1)] as [number, number]);
   });
-  const global = stringifyJson([R.SEGMENT_VERSION, spec.renderer, encoding, spec.version, spec.aspect, spec.fps, spec.width, spec.height, spec.motion, spec.profileId, spec.fontFamily, spec.renderBehavior, spec.resolvedSettings, total]);
+  const global = stringifyJson([R.SEGMENT_VERSION, motionFigureRenderKey({ profile: spec.profileId }), spec.castMarks, spec.renderer, encoding, spec.version, spec.aspect, spec.fps, spec.width, spec.height, spec.motion, spec.profileId, spec.fontFamily, spec.renderBehavior, spec.resolvedSettings, total]);
   return bounds.map(([from, to], index) => {
     const scenes = (spec.scenes || []).filter((scene) => scene.startFrame <= to && scene.endFrame > from).map(visualScene);
     const text = stringifyJson(scenes);

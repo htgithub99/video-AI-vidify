@@ -13,6 +13,8 @@ import { probeMediaDurationSeconds } from "../../../video-export/server/services
 import { reupClipSubtitles, reupSentences, reupSubChars } from "../../lib/reupSpeech.js";
 import type { ReupJob, ReupVoice } from "../../types/reup.js";
 import { reupJobDir } from "./reupJobStore.js";
+import { mapLanes } from "../../../../lib/concurrency.js";
+import { VOICE_LANES } from "../../../../constants/mediaEncoder.js";
 import { REUP_ABORTED, reupFfmpeg } from "./reupFfmpeg.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
@@ -46,8 +48,7 @@ const speak = async (jobId: string, sentences: string[], gaps: number[], voiceId
   const files = sentences.map((_s, i) => path.join(work, `${stem}_${i}.wav`));
   const list = path.join(work, `${stem}.txt`);
   try {
-    const seconds: number[] = [];
-    for (const [i, sentence] of sentences.entries()) seconds.push(await speakPiece(sentence, voiceId, files[i], log, signal));
+    const seconds = await mapLanes(sentences, isAi33Voice(voiceId) ? VOICE_LANES.AI33 : VOICE_LANES.VIENEU, (sentence, i) => speakPiece(sentence, voiceId, files[i], log, signal));
     if (files.length === 1) fs.copyFileSync(files[0], file);
     else if (!gaps.some((g) => g > 0)) {
       fs.writeFileSync(list, files.map((f) => `file '${f.replace(/\\/g, "/").replace(/'/g, "'\\''")}'`).join("\n"), "utf8");

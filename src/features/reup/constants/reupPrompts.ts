@@ -11,6 +11,9 @@ const VALUE = [
   "Add value beyond what is seen: every body section carries at least one line of explanation the footage alone does not give — why it is done this way, how the technique works, a practical tip, a comparison or a risk.",
   'Say such lines as general know-how ("usually", "a common way is", "the reason is"), never as facts about this person, place, time or result. Do not just describe the picture line by line.',
 ].join(" ");
+const VALUE_MARK = 'Set "value" on the cues that carry that extra value (why / tip / compare / view); leave it "" on lines that only follow the picture.';
+const MARKS = (n: number, lang: string, folder?: boolean): string =>
+  `On-screen highlights: give a "mark" to at most ${n} ${folder ? "chapters" : "body or ending sections"}, spread across the video, at a new part, day or step or a striking result. "label" is a short tag like "DAY 2", "STEP 3", "BEFORE", "AFTER" or a chapter number; "title" names what happens; "sub" is the place and time of day or one thing visible on screen. Write them in ${lang}. Only what the footage shows: no invented numbers, names or results. Use null for every other section.`;
 const STORY = [
   'Storytelling may add what the pictures cannot show: the person\'s motivation and feelings, their plan and goals, general context (season, weather, the kind of place) and rough sizes or distances said as estimates ("about 20 metres"). Call the person by a simple first name or a role and keep it the same all video; never a full name, nationality, age or family story.',
   "Never contradict the pictures. Never invent results or counts the viewer can check on screen (fish caught, days, buildings, animals), accidents, injuries, rescues or other dramatic events the footage does not show, or advice that would be unsafe if wrong. Describe only what can be seen or reasoned: no smells or tastes.",
@@ -44,7 +47,7 @@ export const REUP_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n"),
-  SCRIPT: (input: { map: ReupSceneMap; settings: ReupJobSettings; rules: string; kind: ReupOutputKind; count: number; duration: number; style: ReupStyle; bilingual?: boolean; folder?: boolean; share?: [number, number] }): string => {
+  SCRIPT: (input: { map: ReupSceneMap; settings: ReupJobSettings; rules: string; kind: ReupOutputKind; count: number; duration: number; style: ReupStyle; bilingual?: boolean; folder?: boolean; share?: [number, number]; marks: number }): string => {
     const s = input.settings;
     const share = input.folder ? undefined : input.share;
     const [wordsMin, wordsMax] = wordRange(s, share);
@@ -64,10 +67,11 @@ export const REUP_PROMPT = {
             return [`${g.id} [${mmss(g.start)}-${mmss(g.end)}] ${g.tags.join(",")}: ${g.what}`, ...lines].join("\n");
           })
           .join("\n");
-    const cue = `{"moment": moment id, "text": the words spoken while this moment is on screen (1-2 sentences)${input.bilingual ? `, "textAlt": the same in ${alt}` : ""}}`;
+    const cue = `{"moment": moment id, "text": the words spoken while this moment is on screen (1-2 sentences)${input.bilingual ? `, "textAlt": the same in ${alt}` : ""}, "value": "why"|"tip"|"compare"|"view"|"" (what this line adds beyond the picture)}`;
+    const mark = input.marks ? `, "mark": {"cue": index of the cue it opens on, "label": 1-3 words, "title": max 8 words, "sub": max 6 words${input.bilingual ? `, "labelAlt", "titleAlt", "subAlt": the same in ${alt}` : ""}} or null` : "";
     const shape = input.folder
-      ? `{"outputs": [{"title": [line1, line2], "sections": [{"role": "body"|"ending", "chapter": short chapter title or "" (only when a new chapter starts), "cues": [{"scene": segment id, "text": the words spoken while this picture is on screen (1-2 sentences)}]}]}]}`
-      : `{"outputs": [{"title": [line1, line2] (on-screen title, max 28 characters per line)${input.bilingual ? `, "titleAlt": [the same in ${alt}]` : ""}, "sections": [{"role": "hook"|"body"|"teaser"|"ending", "cues": [${cue}]}]}]}`;
+      ? `{"outputs": [{"title": [line1, line2], "sections": [{"role": "body"|"ending", "chapter": short chapter title or "" (only when a new chapter starts)${mark}, "cues": [{"scene": segment id, "text": the words spoken while this picture is on screen (1-2 sentences)}]}]}]}`
+      : `{"outputs": [{"title": [line1, line2] (on-screen title, max 28 characters per line)${input.bilingual ? `, "titleAlt": [the same in ${alt}]` : ""}, "sections": [{"role": "hook"|"body"|"teaser"|"ending"${mark}, "cues": [${cue}]}]}]}`;
     return [
       long
         ? `Write the voice-over for ONE ${input.folder ? "photo report" : "video"} (${s.targetSeconds >= 120 ? `${Math.round(s.targetSeconds / 60)}+ minutes` : `${s.targetSeconds} seconds`} on screen) built from real ${input.folder ? "photos and clips" : "footage"}.`
@@ -79,6 +83,8 @@ export const REUP_PROMPT = {
       s.hook || input.folder ? "" : "No separate hook section.",
       s.teasers ? "" : "No teaser lines.",
       VALUE,
+      input.folder ? "" : VALUE_MARK,
+      input.marks ? MARKS(input.marks, lang, input.folder) : "",
       angleLine(s.angle),
       `Scene map (timeline ${mmss(input.duration)}). Summary: ${input.map.summary}`,
       input.folder ? "" : "Scenes with their moments: moment id, time, pull (how strong on screen, 5 = best), ~seconds its picture lasts, ≤ words that fit, what is seen.",

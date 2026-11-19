@@ -46,7 +46,6 @@ import {
   VIDEO_EXPORT_TEXT_COLORBALANCE_RS_0_12_GS_0,
   VIDEO_EXPORT_TEXT_CONCAT,
   VIDEO_EXPORT_TEXT_COPY,
-  VIDEO_EXPORT_TEXT_CRF,
   VIDEO_EXPORT_TEXT_CURVES_VINTAGE_NOISE_ALLS_10_ALLF,
   VIDEO_EXPORT_TEXT_C_A,
   VIDEO_EXPORT_TEXT_C_V,
@@ -68,8 +67,6 @@ import {
   VIDEO_EXPORT_TEXT_MAP,
   VIDEO_EXPORT_TEXT_MOVFLAGS,
   VIDEO_EXPORT_TEXT_NOISE_ALLS_28_ALLF_T_U,
-  VIDEO_EXPORT_TEXT_PIX_FMT,
-  VIDEO_EXPORT_TEXT_PRESET,
   VIDEO_EXPORT_TEXT_R,
   VIDEO_EXPORT_TEXT_RGBASHIFT_RH_12_RV_3_GH,
   VIDEO_EXPORT_TEXT_S0,
@@ -96,12 +93,15 @@ import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { probeMediaDurationSeconds, probeMediaHasAudio, runFfmpeg, throwIfAborted } from "./videoExportFfmpegService.js";
 import { logger } from "../../../../lib/logger.js";
 import { computeVideoExportSlidePlan } from "../../lib/videoExportPlan.js";
-import { VIDEO_EXPORT_BITRATE_CRF, VIDEO_EXPORT_CODEC_MAP, VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_PREVIEW_DIMENSIONS, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_RESOLUTIONS, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
+import { VIDEO_EXPORT_BITRATE_CRF, VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_PREVIEW_DIMENSIONS, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_RESOLUTIONS, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
 import { ShortsReframeMode } from "../../../../types/shorts.js";
 import { VIDEO_EXPORT_SPEED } from "../../constants/videoExportSpeed.js";
+import { MEDIA_ENCODER, HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
+import { mediaEncodeArgs, pickMediaEncoder, isGpuEncoder, withEncoderFallback } from "../../../../server/utils/mediaEncoder.js";
+import { HEAVY_RENDER, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
 import { runVideoExportLanes, videoExportRenderLanes } from "../../lib/videoExportLanes.js";
 import { VIDEO_EXPORT_AI_CLIP_CONSTANTS, VIDEO_EXPORT_AI_CLIP_FILTERS, VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS } from "../../constants/videoExportAiClip.js";
-import { VideoExportAspectRatio, VideoExportConfig, VideoExportEffect, VideoExportJobStage, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../../types/videoExport.js";
+import { VideoExportAspectRatio, VideoExportCodec, VideoExportConfig, VideoExportEffect, VideoExportJobStage, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../../types/videoExport.js";
 export { VideoExportQuality };
 type EncodeProfile = { width: number; height: number; fps: number; preset: string; crf: string; codec: string };
 type VideoExportProgressHandler = (stage: VideoExportJobStage, percent: number, message: string) => void;
@@ -114,9 +114,11 @@ const resolveEncodeProfile = (config: VideoExportConfig, quality: VideoExportQua
   const dimensions = VIDEO_EXPORT_RESOLUTIONS[config.aspectRatio]?.[resolution] || VIDEO_EXPORT_RESOLUTIONS[config.aspectRatio][VideoExportResolution.RES_1080P];
   const fps = config.fps || VIDEO_EXPORT_CONSTANTS.FPS;
   const crf = VIDEO_EXPORT_BITRATE_CRF[config.bitrate] || VIDEO_EXPORT_CONSTANTS.CRF;
-  const codec = VIDEO_EXPORT_CODEC_MAP[config.codec] || VIDEO_EXPORT_CONSTANTS.VIDEO_CODEC;
-  return { ...dimensions, fps, preset: VIDEO_EXPORT_CONSTANTS.PRESET, crf, codec };
+  return { ...dimensions, fps, preset: VIDEO_EXPORT_CONSTANTS.PRESET, crf, codec: VIDEO_EXPORT_CONSTANTS.VIDEO_CODEC };
 };
+const videoArgs = (profile: EncodeProfile): string[] => mediaEncodeArgs(profile.codec, { crf: Number(profile.crf), fps: profile.fps, preset: profile.preset });
+const idrArgs = (profile: EncodeProfile): string[] => (MEDIA_ENCODER.FORCED_IDR.includes(profile.codec) ? [VIDEO_EXPORT_SPEED.FORCED_IDR, VIDEO_EXPORT_SPEED.FLAG_ON] : []);
+const muxTag = (profile: EncodeProfile): string[] => (profile.codec.startsWith("hevc") || profile.codec === MEDIA_ENCODER.CPU.hevc ? [...VIDEO_EXPORT_SPEED.HEVC_TAG] : []);
 const resolveEffect = (effect: VideoExportEffect, index: number): VideoExportEffect => (effect === VideoExportEffect.RANDOM ? VIDEO_EXPORT_CONSTANTS.EFFECT_CYCLE[index % VIDEO_EXPORT_CONSTANTS.EFFECT_CYCLE.length] : effect);
 const resolveTransition = (transition: VideoExportTransition, index: number): VideoExportTransition => (transition === VideoExportTransition.RANDOM ? VIDEO_EXPORT_CONSTANTS.TRANSITION_CYCLE[index % VIDEO_EXPORT_CONSTANTS.TRANSITION_CYCLE.length] : transition);
 const buildCoverFilter = (width: number, height: number): string => VIDEO_EXPORT_TEMPLATE_SCALE_FORCE_ORIGINAL_ASPECT_RATIO_INCREASE(`${width}`, `${height}`, `${width}`, `${height}`);
@@ -210,10 +212,10 @@ const buildVisualPostFilter = (effect: VideoExportEffect): string | null => {
   }
 };
 const buildSegmentArgs = (imagePath: string, effect: VideoExportEffect, seconds: number, profile: EncodeProfile, outputPath: string, isVertical916?: boolean, reframeMode?: ShortsReframeMode, extraEncodeArgs: string[] = []): string[] => {
-  const { width, height, fps, preset, crf } = profile;
+  const { width, height, fps } = profile;
   const frames = Math.max(1, Math.round(seconds * fps));
   const pixelFormat = VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT;
-  const encodeArgs = [VIDEO_EXPORT_TEXT_T, seconds.toFixed(3), VIDEO_EXPORT_TEXT_R, `${fps}`, VIDEO_EXPORT_TEXT_C_V, profile.codec, VIDEO_EXPORT_TEXT_PRESET, preset, VIDEO_EXPORT_TEXT_CRF, crf, VIDEO_EXPORT_TEXT_PIX_FMT, pixelFormat, ...extraEncodeArgs, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
+  const encodeArgs = [VIDEO_EXPORT_TEXT_T, seconds.toFixed(3), VIDEO_EXPORT_TEXT_R, `${fps}`, ...videoArgs(profile), ...extraEncodeArgs, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
   const actualEffect = isVertical916 && reframeMode === ShortsReframeMode.SMART_TRACKING && effect === VideoExportEffect.NONE ? VideoExportEffect.KEN_BURNS : effect;
   const visualFilter = buildVisualPostFilter(actualEffect);
   if (isVertical916 && (reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND) === ShortsReframeMode.BLUR_BACKGROUND) {
@@ -299,7 +301,7 @@ const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string
   return _.sum(individualDurations);
 };
 const escapeConcatPath = (filePath: string): string => _.replace(filePath, VIDEO_EXPORT_REGEX.CONCAT_QUOTE, VIDEO_EXPORT_TEXT_SYMBOL_16);
-const buildConcatMergeArgs = (listPath: string, audioPath: string, outputPath: string): string[] => [
+const buildConcatMergeArgs = (listPath: string, audioPath: string, outputPath: string, tag: string[] = []): string[] => [
   VIDEO_EXPORT_TEXT_F,
   VIDEO_EXPORT_TEXT_CONCAT,
   VIDEO_EXPORT_TEXT_SAFE,
@@ -314,6 +316,7 @@ const buildConcatMergeArgs = (listPath: string, audioPath: string, outputPath: s
   VIDEO_EXPORT_TEXT_1_A,
   VIDEO_EXPORT_TEXT_C_V,
   VIDEO_EXPORT_TEXT_COPY,
+  ...tag,
   VIDEO_EXPORT_TEXT_C_A,
   VIDEO_EXPORT_TEXT_COPY,
   VIDEO_EXPORT_TEXT_SHORTEST,
@@ -323,12 +326,12 @@ const buildConcatMergeArgs = (listPath: string, audioPath: string, outputPath: s
   outputPath,
 ];
 const buildAiClipNormalizeArgs = (clipPath: string, clipIndex: number, frames: number, transitionFrames: number, hasTransitions: boolean, config: VideoExportConfig, profile: EncodeProfile, outputPath: string): string[] => {
-  const { width, height, fps, preset, crf } = profile;
+  const { width, height, fps } = profile;
   const pixelFormat = VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT;
   const isVertical916 = config.aspectRatio === VideoExportAspectRatio.VERTICAL_9_16;
   const visualFilter = buildVisualPostFilter(resolveEffect(config.effect, clipIndex));
-  const keyframeArgs = hasTransitions ? [VIDEO_EXPORT_SPEED.FORCE_KEY_FRAMES, VIDEO_EXPORT_SPEED.KEYFRAMES(transitionFrames, frames - transitionFrames), VIDEO_EXPORT_SPEED.FORCED_IDR, VIDEO_EXPORT_SPEED.FLAG_ON] : [];
-  const encodeArgs = [VIDEO_EXPORT_SPEED.FRAMES_V, `${frames}`, VIDEO_EXPORT_TEXT_R, `${fps}`, VIDEO_EXPORT_TEXT_C_V, profile.codec, VIDEO_EXPORT_TEXT_PRESET, preset, VIDEO_EXPORT_TEXT_CRF, crf, VIDEO_EXPORT_TEXT_PIX_FMT, pixelFormat, ...keyframeArgs, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
+  const keyframeArgs = hasTransitions ? [VIDEO_EXPORT_SPEED.FORCE_KEY_FRAMES, VIDEO_EXPORT_SPEED.KEYFRAMES(transitionFrames, frames - transitionFrames), ...idrArgs(profile)] : [];
+  const encodeArgs = [VIDEO_EXPORT_SPEED.FRAMES_V, `${frames}`, VIDEO_EXPORT_TEXT_R, `${fps}`, ...videoArgs(profile), ...keyframeArgs, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
   if (isVertical916 && (config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND) === ShortsReframeMode.BLUR_BACKGROUND) {
     const postFilter = `${visualFilter ? VIDEO_EXPORT_TEMPLATE_SYMBOL_10(visualFilter) : ""},${VIDEO_EXPORT_AI_CLIP_FILTERS.FPS(fps)}`;
     const filterComplex = VIDEO_EXPORT_TEMPLATE_0_V_SCALE_FORCE_ORIGINAL_ASPECT(`${width}`, `${height}`, `${width}`, `${height}`, `${width}`, `${height}`, postFilter, `${pixelFormat}`);
@@ -391,9 +394,9 @@ const buildAiClipCycleXfadeArgs = (normalizedPaths: string[], clipFrames: number
     return VIDEO_EXPORT_TEMPLATE_S_XFADE_TRANSITION_DURATION_OFFSET(`${previousLabel}`, `${index}`, `${resolveTransition(transition, index - 1)}`, `${transitionSeconds.toFixed(3)}`, `${Math.max(0.05, cumulativeOffset).toFixed(3)}`, `${outputLabel}`);
   });
   const filter = _.join([...prepared, ...transitions], VIDEO_EXPORT_TEXT_SYMBOL_15);
-  return [...inputArgs, VIDEO_EXPORT_TEXT_FILTER_COMPLEX, filter, VIDEO_EXPORT_TEXT_MAP, VIDEO_EXPORT_TEXT_VOUT, VIDEO_EXPORT_TEXT_C_V, profile.codec, VIDEO_EXPORT_TEXT_PRESET, profile.preset, VIDEO_EXPORT_TEXT_CRF, profile.crf, VIDEO_EXPORT_TEXT_PIX_FMT, pixelFormat, VIDEO_EXPORT_TEXT_R, `${fps}`, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
+  return [...inputArgs, VIDEO_EXPORT_TEXT_FILTER_COMPLEX, filter, VIDEO_EXPORT_TEXT_MAP, VIDEO_EXPORT_TEXT_VOUT, ...videoArgs(profile), VIDEO_EXPORT_TEXT_R, `${fps}`, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
 };
-const buildAiClipSingleMuxArgs = (videoPath: string, audioPath: string, totalSeconds: number, outputPath: string): string[] => [
+const buildAiClipSingleMuxArgs = (videoPath: string, audioPath: string, totalSeconds: number, outputPath: string, tag: string[] = []): string[] => [
   VIDEO_EXPORT_TEXT_I,
   videoPath,
   VIDEO_EXPORT_TEXT_I,
@@ -404,6 +407,7 @@ const buildAiClipSingleMuxArgs = (videoPath: string, audioPath: string, totalSec
   VIDEO_EXPORT_TEXT_1_A,
   VIDEO_EXPORT_TEXT_C_V,
   VIDEO_EXPORT_TEXT_COPY,
+  ...tag,
   VIDEO_EXPORT_TEXT_C_A,
   VIDEO_EXPORT_TEXT_COPY,
   VIDEO_EXPORT_TEXT_T,
@@ -414,7 +418,7 @@ const buildAiClipSingleMuxArgs = (videoPath: string, audioPath: string, totalSec
   VIDEO_EXPORT_TEXT_Y,
   outputPath,
 ];
-const buildStreamLoopMuxArgs = (cycleVideoPath: string, audioPath: string, totalSeconds: number, outputPath: string): string[] => [
+const buildStreamLoopMuxArgs = (cycleVideoPath: string, audioPath: string, totalSeconds: number, outputPath: string, tag: string[] = []): string[] => [
   VIDEO_EXPORT_AI_CLIP_CONSTANTS.FFLAGS,
   VIDEO_EXPORT_AI_CLIP_CONSTANTS.GENPTS,
   VIDEO_EXPORT_AI_CLIP_CONSTANTS.STREAM_LOOP,
@@ -429,6 +433,7 @@ const buildStreamLoopMuxArgs = (cycleVideoPath: string, audioPath: string, total
   VIDEO_EXPORT_TEXT_1_A,
   VIDEO_EXPORT_TEXT_C_V,
   VIDEO_EXPORT_TEXT_COPY,
+  ...tag,
   VIDEO_EXPORT_TEXT_C_A,
   VIDEO_EXPORT_TEXT_COPY,
   VIDEO_EXPORT_TEXT_T,
@@ -488,13 +493,13 @@ const renderAiClipOutput = async (params: AiClipRenderParams): Promise<void> => 
   }
   throwIfAborted(signal);
   if (!needsLoopOrTransition) {
-    await runFfmpeg(buildAiClipSingleMuxArgs(normalizedPaths[0], finalAudioPath, totalSeconds, outputPath), { signal, onProgressSeconds: onLoopSeconds });
+    await runFfmpeg(buildAiClipSingleMuxArgs(normalizedPaths[0], finalAudioPath, totalSeconds, outputPath, muxTag(profile)), { signal, onProgressSeconds: onLoopSeconds });
     return;
   }
   const cycleVideoPath = path.join(workDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.CYCLE_VIDEO_FILE_NAME);
   await runFfmpeg(buildAiClipCycleXfadeArgs(normalizedPaths, clipFrames, transitionFrames, actualTransition, profile, cycleVideoPath), { signal });
   throwIfAborted(signal);
-  await runFfmpeg(buildStreamLoopMuxArgs(cycleVideoPath, finalAudioPath, totalSeconds, outputPath), { signal, onProgressSeconds: onLoopSeconds });
+  await runFfmpeg(buildStreamLoopMuxArgs(cycleVideoPath, finalAudioPath, totalSeconds, outputPath, muxTag(profile)), { signal, onProgressSeconds: onLoopSeconds });
 };
 const splitSegmentFrames = (totalSeconds: number, segmentCount: number, transitionFrames: number, fps: number): number[] => {
   const overlapFrames = (segmentCount - 1) * transitionFrames;
@@ -515,14 +520,7 @@ const buildTransitionArgs = (fromPath: string, fromFrames: number, toPath: strin
   VIDEO_EXPORT_SPEED.TRANSITION_FILTER(transitionFrames, profile.fps, VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT, transition, (transitionFrames / profile.fps).toFixed(6)),
   VIDEO_EXPORT_TEXT_MAP,
   VIDEO_EXPORT_SPEED.FILTER_OUTPUT,
-  VIDEO_EXPORT_TEXT_C_V,
-  profile.codec,
-  VIDEO_EXPORT_TEXT_PRESET,
-  profile.preset,
-  VIDEO_EXPORT_TEXT_CRF,
-  profile.crf,
-  VIDEO_EXPORT_TEXT_PIX_FMT,
-  VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT,
+  ...videoArgs(profile),
   VIDEO_EXPORT_TEXT_R,
   `${profile.fps}`,
   VIDEO_EXPORT_SPEED.THREADS,
@@ -555,10 +553,12 @@ const removePathSafely = async (targetPath: string): Promise<void> => {
   }
 };
 const toPercent = (base: number, weight: number, ratio: number): number => Math.round(base + weight * _.clamp(ratio, 0, 1));
-export const renderVideoExport = async (params: RenderVideoExportParams): Promise<{ durationSeconds: number }> => {
+export const renderVideoExport = (params: RenderVideoExportParams): Promise<{ durationSeconds: number }> =>
+  params.quality === VideoExportQuality.PREVIEW ? renderVideoExportNow(params) : runHeavyJob(HEAVY_RENDER, HEAVY_JOB_TEXT.LABEL(HEAVY_JOB_TEXT.SCREEN.EXPORT, path.basename(params.outputPath)), () => renderVideoExportNow(params), { signal: params.signal, onWait: (holder) => params.onProgress?.(VideoExportJobStage.PREPARING, 0, HEAVY_JOB_TEXT.WAIT(HEAVY_RENDER, holder)) });
+const renderVideoExportNow = async (params: RenderVideoExportParams): Promise<{ durationSeconds: number }> => {
   const { audioPaths, imagePaths, aiClipPaths = [], aiClipKeepAudio = [], config, outputPath, tempDir, quality, signal, onProgress } = params;
   const isPreview = quality === VideoExportQuality.PREVIEW;
-  const profile = resolveEncodeProfile(config, quality);
+  const base = resolveEncodeProfile(config, quality);
   const notify = (stage: VideoExportJobStage, percent: number, message: string) => onProgress?.(stage, _.clamp(percent, 0, 100), message);
   const audioWeight = VIDEO_EXPORT_CONSTANTS.PROGRESS_WEIGHT_AUDIO;
   const segmentWeight = VIDEO_EXPORT_CONSTANTS.PROGRESS_WEIGHT_SEGMENTS;
@@ -573,83 +573,91 @@ export const renderVideoExport = async (params: RenderVideoExportParams): Promis
     const totalSeconds = await prepareConcatenatedAudio(audioPaths, audioOutputPath, tempDir, signal, (ratio) => notify(VideoExportJobStage.AUDIO, toPercent(0, audioWeight, ratio), VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO));
     throwIfAborted(signal);
     if (!(totalSeconds > 0)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_AUDIO_DURATION);
-    if (!_.isEmpty(aiClipPaths)) {
-      await renderAiClipOutput({
-        clipPaths: aiClipPaths,
-        clipKeepAudio: aiClipKeepAudio,
-        audioPath: audioOutputPath,
-        totalSeconds,
-        config,
-        profile,
-        workDir: tempDir,
-        outputPath,
-        signal,
-        onNormalize: (index) => notify(VideoExportJobStage.SEGMENTS, toPercent(audioWeight, segmentWeight, index / aiClipPaths.length), VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_NORMALIZING(index + 1, aiClipPaths.length)),
-        onLoopSeconds: (seconds) => notify(VideoExportJobStage.MERGING, toPercent(audioWeight + segmentWeight, mergeWeight, seconds / totalSeconds), VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_LOOPING),
-      });
-      throwIfAborted(signal);
-      const aiDurationSeconds = (await probeMediaDurationSeconds(outputPath)) || totalSeconds;
-      notify(VideoExportJobStage.DONE, 100, VIDEO_EXPORT_SERVER_TEXTS.MSG_DONE);
-      completed = true;
-      return { durationSeconds: aiDurationSeconds };
-    }
-    const sourceImagePaths = isPreview ? _.take(imagePaths, VIDEO_EXPORT_CONSTANTS.PREVIEW_MAX_IMAGES) : imagePaths;
-    const planConfig = isPreview ? { ...config, slideMode: VideoExportSlideMode.EVEN } : config;
-    const plan = computeVideoExportSlidePlan(totalSeconds, sourceImagePaths.length, planConfig);
-    const isVertical916 = config.aspectRatio === VideoExportAspectRatio.VERTICAL_9_16;
-    const transitionFrames = plan.segmentCount > 1 ? Math.round(plan.transitionSeconds * profile.fps) : 0;
-    const segmentFrames = splitSegmentFrames(totalSeconds, plan.segmentCount, transitionFrames, profile.fps);
-    const hasTransitions = transitionFrames > 0;
-    const { lanes, threads } = videoExportRenderLanes(machineCpus(), os.freemem(), plan.segmentCount, profile.width * profile.height);
-    logger.log(VIDEO_EXPORT_SPEED.LANES_LOG(lanes, threads, plan.segmentCount));
-    const laneAbort = createLinkedAbort(signal);
-    const runLaneFfmpeg = (args: string[], onProgressSeconds?: (seconds: number) => void) =>
-      runFfmpeg(args, { signal: laneAbort.signal, onProgressSeconds }).catch((error) => {
-        laneAbort.abort();
-        throw error;
-      });
-    const totalUnits = plan.segmentCount + (hasTransitions ? plan.segmentCount - 1 : 0);
-    const unitProgress = _.times(totalUnits, _.constant(0));
-    let finishedUnits = 0;
-    const reportUnit = (unit: number, ratio: number, message: string) => {
-      unitProgress[unit] = _.clamp(ratio, 0, 1);
-      notify(VideoExportJobStage.SEGMENTS, toPercent(audioWeight, segmentWeight, _.sum(unitProgress) / totalUnits), message);
-    };
-    const segmentPaths = _.times(plan.segmentCount, (index) => buildPiecePath(tempDir, VIDEO_EXPORT_CONSTANTS.SEGMENT_PREFIX, index));
-    await runVideoExportLanes(segmentPaths, lanes, async (segmentPath, index) => {
-      const frames = segmentFrames[index];
-      const keyframeArgs = hasTransitions ? [VIDEO_EXPORT_SPEED.FORCE_KEY_FRAMES, VIDEO_EXPORT_SPEED.KEYFRAMES(transitionFrames, frames - transitionFrames), VIDEO_EXPORT_SPEED.FORCED_IDR, VIDEO_EXPORT_SPEED.FLAG_ON] : [];
-      const extraArgs = [VIDEO_EXPORT_SPEED.FRAMES_V, `${frames}`, VIDEO_EXPORT_SPEED.THREADS, `${threads}`, ...keyframeArgs];
-      const imagePath = sourceImagePaths[index % sourceImagePaths.length];
-      const seconds = frames / profile.fps;
-      await runLaneFfmpeg(buildSegmentArgs(imagePath, resolveEffect(config.effect, index), seconds, profile, segmentPath, isVertical916, config.reframeMode, extraArgs), (done) => reportUnit(index, done / seconds, VIDEO_EXPORT_SERVER_TEXTS.MSG_SEGMENTS(finishedUnits + 1, plan.segmentCount)));
-      finishedUnits += 1;
-      reportUnit(index, 1, VIDEO_EXPORT_SERVER_TEXTS.MSG_SEGMENTS(finishedUnits, plan.segmentCount));
-    });
-    throwIfAborted(signal);
-    let concatPaths = segmentPaths;
-    if (hasTransitions) {
-      const bodyPaths = _.times(plan.segmentCount, (index) => buildPiecePath(tempDir, VIDEO_EXPORT_SPEED.BODY_PREFIX, index));
-      const transitionPaths = _.times(plan.segmentCount - 1, (index) => buildPiecePath(tempDir, VIDEO_EXPORT_SPEED.TRANSITION_PREFIX, index));
-      let finishedTransitions = 0;
+    const render = async (profile: EncodeProfile): Promise<number> => {
+      if (!_.isEmpty(aiClipPaths)) {
+        await renderAiClipOutput({
+          clipPaths: aiClipPaths,
+          clipKeepAudio: aiClipKeepAudio,
+          audioPath: audioOutputPath,
+          totalSeconds,
+          config,
+          profile,
+          workDir: tempDir,
+          outputPath,
+          signal,
+          onNormalize: (index) => notify(VideoExportJobStage.SEGMENTS, toPercent(audioWeight, segmentWeight, index / aiClipPaths.length), VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_NORMALIZING(index + 1, aiClipPaths.length)),
+          onLoopSeconds: (seconds) => notify(VideoExportJobStage.MERGING, toPercent(audioWeight + segmentWeight, mergeWeight, seconds / totalSeconds), VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_LOOPING),
+        });
+        throwIfAborted(signal);
+        return (await probeMediaDurationSeconds(outputPath)) || totalSeconds;
+      }
+      const sourceImagePaths = isPreview ? _.take(imagePaths, VIDEO_EXPORT_CONSTANTS.PREVIEW_MAX_IMAGES) : imagePaths;
+      const planConfig = isPreview ? { ...config, slideMode: VideoExportSlideMode.EVEN } : config;
+      const plan = computeVideoExportSlidePlan(totalSeconds, sourceImagePaths.length, planConfig);
+      const isVertical916 = config.aspectRatio === VideoExportAspectRatio.VERTICAL_9_16;
+      const transitionFrames = plan.segmentCount > 1 ? Math.round(plan.transitionSeconds * profile.fps) : 0;
+      const segmentFrames = splitSegmentFrames(totalSeconds, plan.segmentCount, transitionFrames, profile.fps);
+      const hasTransitions = transitionFrames > 0;
+      const cpuPlan = videoExportRenderLanes(machineCpus(), os.freemem(), plan.segmentCount, profile.width * profile.height);
+      const { lanes, threads } = isGpuEncoder(profile.codec) ? { ...cpuPlan, lanes: Math.min(cpuPlan.lanes, MEDIA_ENCODER.GPU_SESSIONS) } : cpuPlan;
+      logger.log(VIDEO_EXPORT_SPEED.LANES_LOG(lanes, threads, plan.segmentCount));
+      const laneAbort = createLinkedAbort(signal);
+      const runLaneFfmpeg = (args: string[], onProgressSeconds?: (seconds: number) => void) =>
+        runFfmpeg(args, { signal: laneAbort.signal, onProgressSeconds }).catch((error) => {
+          laneAbort.abort();
+          throw error;
+        });
+      const totalUnits = plan.segmentCount + (hasTransitions ? plan.segmentCount - 1 : 0);
+      const unitProgress = _.times(totalUnits, _.constant(0));
+      let finishedUnits = 0;
+      const reportUnit = (unit: number, ratio: number, message: string) => {
+        unitProgress[unit] = _.clamp(ratio, 0, 1);
+        notify(VideoExportJobStage.SEGMENTS, toPercent(audioWeight, segmentWeight, _.sum(unitProgress) / totalUnits), message);
+      };
+      const segmentPaths = _.times(plan.segmentCount, (index) => buildPiecePath(tempDir, VIDEO_EXPORT_CONSTANTS.SEGMENT_PREFIX, index));
       await runVideoExportLanes(segmentPaths, lanes, async (segmentPath, index) => {
-        const startFrame = index > 0 ? transitionFrames : 0;
-        const endFrame = index < plan.segmentCount - 1 ? segmentFrames[index] - transitionFrames : segmentFrames[index];
-        await runLaneFfmpeg(buildPieceArgs(segmentPath, startFrame, endFrame - startFrame, profile.fps, bodyPaths[index]));
-        if (index >= plan.segmentCount - 1) return;
-        await runLaneFfmpeg(buildTransitionArgs(segmentPath, segmentFrames[index], segmentPaths[index + 1], transitionFrames, resolveTransition(config.transition, index), profile, threads, transitionPaths[index]));
-        finishedTransitions += 1;
-        reportUnit(plan.segmentCount + index, 1, VIDEO_EXPORT_SPEED.MSG_TRANSITIONS(finishedTransitions, plan.segmentCount - 1));
+        const frames = segmentFrames[index];
+        const keyframeArgs = hasTransitions ? [VIDEO_EXPORT_SPEED.FORCE_KEY_FRAMES, VIDEO_EXPORT_SPEED.KEYFRAMES(transitionFrames, frames - transitionFrames), ...idrArgs(profile)] : [];
+        const extraArgs = [VIDEO_EXPORT_SPEED.FRAMES_V, `${frames}`, VIDEO_EXPORT_SPEED.THREADS, `${threads}`, ...keyframeArgs];
+        const imagePath = sourceImagePaths[index % sourceImagePaths.length];
+        const seconds = frames / profile.fps;
+        await runLaneFfmpeg(buildSegmentArgs(imagePath, resolveEffect(config.effect, index), seconds, profile, segmentPath, isVertical916, config.reframeMode, extraArgs), (done) => reportUnit(index, done / seconds, VIDEO_EXPORT_SERVER_TEXTS.MSG_SEGMENTS(finishedUnits + 1, plan.segmentCount)));
+        finishedUnits += 1;
+        reportUnit(index, 1, VIDEO_EXPORT_SERVER_TEXTS.MSG_SEGMENTS(finishedUnits, plan.segmentCount));
       });
       throwIfAborted(signal);
-      concatPaths = _.flatMap(bodyPaths, (bodyPath, index) => (index < transitionPaths.length ? [bodyPath, transitionPaths[index]] : [bodyPath]));
-    }
-    notify(VideoExportJobStage.MERGING, audioWeight + segmentWeight, VIDEO_EXPORT_SERVER_TEXTS.MSG_MERGING);
-    const listPath = path.join(tempDir, hasTransitions ? VIDEO_EXPORT_SPEED.PIECES_FILE_NAME : VIDEO_EXPORT_CONSTANTS.CONCAT_LIST_FILE_NAME);
-    await writeConcatList(listPath, concatPaths);
-    await runFfmpeg(buildConcatMergeArgs(listPath, audioOutputPath, outputPath), { signal, onProgressSeconds: (seconds) => notify(VideoExportJobStage.MERGING, toPercent(audioWeight + segmentWeight, mergeWeight, seconds / totalSeconds), VIDEO_EXPORT_SERVER_TEXTS.MSG_MERGING) });
-    throwIfAborted(signal);
-    const durationSeconds = (await probeMediaDurationSeconds(outputPath)) || totalSeconds;
+      let concatPaths = segmentPaths;
+      if (hasTransitions) {
+        const bodyPaths = _.times(plan.segmentCount, (index) => buildPiecePath(tempDir, VIDEO_EXPORT_SPEED.BODY_PREFIX, index));
+        const transitionPaths = _.times(plan.segmentCount - 1, (index) => buildPiecePath(tempDir, VIDEO_EXPORT_SPEED.TRANSITION_PREFIX, index));
+        let finishedTransitions = 0;
+        await runVideoExportLanes(segmentPaths, lanes, async (segmentPath, index) => {
+          const startFrame = index > 0 ? transitionFrames : 0;
+          const endFrame = index < plan.segmentCount - 1 ? segmentFrames[index] - transitionFrames : segmentFrames[index];
+          await runLaneFfmpeg(buildPieceArgs(segmentPath, startFrame, endFrame - startFrame, profile.fps, bodyPaths[index]));
+          if (index >= plan.segmentCount - 1) return;
+          await runLaneFfmpeg(buildTransitionArgs(segmentPath, segmentFrames[index], segmentPaths[index + 1], transitionFrames, resolveTransition(config.transition, index), profile, threads, transitionPaths[index]));
+          finishedTransitions += 1;
+          reportUnit(plan.segmentCount + index, 1, VIDEO_EXPORT_SPEED.MSG_TRANSITIONS(finishedTransitions, plan.segmentCount - 1));
+        });
+        throwIfAborted(signal);
+        concatPaths = _.flatMap(bodyPaths, (bodyPath, index) => (index < transitionPaths.length ? [bodyPath, transitionPaths[index]] : [bodyPath]));
+      }
+      notify(VideoExportJobStage.MERGING, audioWeight + segmentWeight, VIDEO_EXPORT_SERVER_TEXTS.MSG_MERGING);
+      const listPath = path.join(tempDir, hasTransitions ? VIDEO_EXPORT_SPEED.PIECES_FILE_NAME : VIDEO_EXPORT_CONSTANTS.CONCAT_LIST_FILE_NAME);
+      await writeConcatList(listPath, concatPaths);
+      await runFfmpeg(buildConcatMergeArgs(listPath, audioOutputPath, outputPath, muxTag(profile)), { signal, onProgressSeconds: (seconds) => notify(VideoExportJobStage.MERGING, toPercent(audioWeight + segmentWeight, mergeWeight, seconds / totalSeconds), VIDEO_EXPORT_SERVER_TEXTS.MSG_MERGING) });
+      throwIfAborted(signal);
+      return (await probeMediaDurationSeconds(outputPath)) || totalSeconds;
+    };
+    const encoder = isPreview ? base.codec : await pickMediaEncoder("auto", config.codec === VideoExportCodec.HEVC ? "hevc" : "h264");
+    logger.log(HEAVY_JOB_TEXT.ENCODER(encoder));
+    const durationSeconds = await withEncoderFallback(
+      encoder,
+      (codec) => render({ ...base, codec }),
+      (codec) => logger.warn(HEAVY_JOB_TEXT.GPU_FALLBACK(codec)),
+      signal,
+    );
     notify(VideoExportJobStage.DONE, 100, VIDEO_EXPORT_SERVER_TEXTS.MSG_DONE);
     completed = true;
     return { durationSeconds };

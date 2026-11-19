@@ -105,7 +105,7 @@ const PROPS = [
     ledger 0.15 0.12, paperMoney 0.05 0.1, rosary 0.15 0.05, mask 0.14 0.1, mirror 0.14 0.1, doll 0.15 0.08, crown 0.1 0.12, skull 0.1 0.12,
     hourglass 0.12 0.06, medal 0.05 0.03, sewingNeedle 0.03 0.01, syringe 0.07 0.01, bandageRoll 0.05 0.05, medicineBag 0.15 0.2, herbBasket 0.12 0.2,
     talisman 0.1 0.05, jossPaper 0.1 0.08, firecrackers 0.2 0.05, paperLantern 0.25 0.18, kite 0.6 0.5 air, fireArrow 0.06 0.45 air, arrowVolley 0.6 3 air, arrow 0.06 0.45 air, bolt 0.06 0.25 air, thrownSpear 0.06 1.3 air,
-    cannonShot 0.08 0.25 air, slingStone 0.06 0.2 air,
+    cannonShot 0.08 0.25 air, slingStone 0.06 0.2 air, firePot 0.25 0.25 air,
     lock 0.05 0.04, threshingFlail 0.9 0.1, chain 0.05 0.6, rope 0.05 0.8, net 0.05 1, bundle 0.25 0.35, backpack 0.3 0.2, carryingPole 0.5 1.1,
     tray 0.05 0.3, teaSet 0.08 0.3, samovar 0.3 0.2, clock 0.15 0.15, calendar 0.2 0.15, wallPhone 0.15 0.08, candlestickPhone 0.18 0.06, radio 0.15 0.25,
     lute 0.4 0.15, corinthianHelmet 0.15 0.12, galeaHelmet 0.15 0.12, nasalHelmet 0.15 0.12, greatHelm 0.18 0.13, morionHelmet 0.15 0.18,
@@ -134,7 +134,7 @@ const PROPS = [
     clothRolls 0.4 0.8, potteryStack 0.5 0.6, cashRegister 0.2 0.25, vegetables 0.15 0.4, fruitBasket 0.2 0.3, winnowingBasket 0.05 0.4,
     palanquin 1 1.6, mat 0.02 1, prayerRug 0.02 0.8, telegraph 0.2 0.3, satelliteDish 1.2 1, loudspeaker 0.4 0.3, poster 0.5 0.4, maypole 3.6 0.6,
     menorah 0.4 0.3, flagPole 4.2 0.6, hitchingPost 0.8 1.2, supplyCrates 0.8 1.4, ammoBox 0.3 0.45, fieldTelephone 0.2 0.25, radioSet 0.35 0.4,
-    minefieldSign 0.9 0.4, tankTrap 0.8 1, caltrops 0.05 0.6, punjiSticks 0.4 1, foxhole 0.3 1.2, tunnelEntrance 0.4 1, crater 0.3 2,
+    minefieldSign 0.9 0.4, tankTrap 0.8 1, caltrops 0.05 0.6, punjiSticks 0.4 1, foxhole 0.3 1.2, ditch 0.35 3, milestone 0.9 0.4, tunnelEntrance 0.4 1, crater 0.3 2,
     brokenWheel 0.6 0.6, fallenBanner 0.1 1.6, scatteredWeapons 0.1 1.2, judgeTable 0.6 1.2, cangue 0.6 0.6, prisonCart 1.2 2, cage 1 1,
     shackles 0.05 0.3, mortarTube 0.5 0.3, planks 0.15 1.2, log 0.25 1.4, stump 0.3 0.45, rock 0.3 0.45, boulder 0.6 0.9, grass 0.2 0.3,
     reeds 0.6 0.4, flowers 0.2 0.3, lotus 0.2 0.3, bushes 0.6 1.4, mushroom 0.05 0.05, fallenLeaves 0.02 0.6, snowdrift 0.3 1.4, puddle 0.01 0.8,
@@ -154,4 +154,4 @@ export const motionObjectPlace = (kind: string | undefined, pose?: string): Moti
   if (!size) return undefined;
   return size.place === "air" && (pose === "parked" || pose === "launch") ? "ground" : size.place;
 };
-export const MOTION_AIR_DISTANCE = { near: 0.6, mid: 0.2, far: 0.07 } as const;
+export const MOTION_AIR_DISTANCE = { near: 1, mid: 0.4, far: 0.15 } as const;

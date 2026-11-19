@@ -7,23 +7,38 @@ import { motionLayoutOf } from "./motionLayout.js";
 import { motionSceneInteractPairs } from "./motionSceneBlueprint.js";
 import { motionIsSpecPage, motionSceneSpecOf } from "./motionSceneSpec.js";
 import { MOTION_SCENE_ENGINE } from "../constants/motionSceneEngine.js";
-import { MOTION_SCENE_SPEC as S } from "../constants/motionSceneSpec.js";
-export type MotionFigureScene = { shot?: string; kind?: string; sceneTemplate?: string };
-export type MotionFigureRender = { profile?: string; proportion?: string; layout?: string; movement?: string; year?: number; scene?: MotionFigureScene };
-export const motionFigureRenderOf = (spec: { profileId?: string; proportion?: string; layout?: string; movement?: string; eraYear?: number } | undefined, scene?: MotionFigureScene): MotionFigureRender => ({
+import { MOTION_SCENE_REVISE as R, MOTION_SCENE_SPEC as S } from "../constants/motionSceneSpec.js";
+import { motionHtmlRequired } from "./motionHtmlQuality.js";
+import type { MotionCrossing } from "./motionCrossingSites.js";
+export type MotionFigureScene = { shot?: string; kind?: string; sceneTemplate?: string; text?: string; time?: string; vary?: number; crossing?: MotionCrossing; html?: { language?: string } };
+export type MotionFigureRender = { profile?: string; proportion?: string; layout?: string; movement?: string; year?: number; cast?: Record<string, Record<string, string>>; scene?: MotionFigureScene };
+export const motionFigureRenderOf = (spec: { profileId?: string; proportion?: string; layout?: string; movement?: string; eraYear?: number; castMarks?: Record<string, Record<string, string>> } | undefined, scene?: MotionFigureScene): MotionFigureRender => ({
   year: spec?.eraYear,
+  cast: spec?.castMarks,
   profile: spec?.profileId,
   proportion: spec?.proportion,
   movement: spec?.movement,
   layout: motionLayoutOf({ layout: spec?.layout }),
-  scene: scene && { shot: scene.shot, kind: scene.kind, sceneTemplate: scene.sceneTemplate },
+  scene: scene && { shot: scene.shot, kind: scene.kind, sceneTemplate: scene.sceneTemplate, text: scene.text, time: scene.time, vary: scene.vary, crossing: scene.crossing, html: scene.html?.language ? { language: scene.html.language } : undefined },
 });
-export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `kit:${render?.profile || ""}:${render?.proportion || ""}|${motionLayoutOf({ layout: render?.layout })}|${motionMovementOf({ profileId: render?.profile, movement: render?.movement })}|r${F.RENDER_REVISION}e${S.ENGINE}`;
+export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `kit:${render?.profile || ""}:${render?.proportion || ""}|${motionLayoutOf({ layout: render?.layout })}|${motionMovementOf({ profileId: render?.profile, movement: render?.movement })}|r${F.RENDER_REVISION}e${S.ENGINE}v${R.REVISION}`;
 export const motionFigureView = (render: MotionFigureRender | undefined, focus?: string) => {
   const style = render?.profile ? F.STYLES[motionDrawStyle(render.profile).kitLook] || null : null;
   const movement = motionMovementOf({ profileId: render?.profile, movement: render?.movement });
   const pairs = motionSceneInteractPairs(render?.scene?.sceneTemplate);
-  return { style, layout: motionLayoutOf({ layout: render?.layout }), scene: { shot: render?.scene?.shot, kind: render?.scene?.kind }, profile: render?.profile, focus: focus ? [focus] : [], ...(pairs.length ? { pairs } : {}), movement, ...(Number.isFinite(render?.year) ? { year: render!.year } : {}) };
+  const scene = render?.scene;
+  return {
+    style,
+    layout: motionLayoutOf({ layout: render?.layout }),
+    scene: { shot: scene?.shot, kind: scene?.kind, text: scene?.text, time: scene?.time, vary: scene?.vary, language: scene?.html?.language, required: motionHtmlRequired(scene?.sceneTemplate).map((r) => r.id) },
+    profile: render?.profile,
+    focus: focus ? [focus] : [],
+    ...(pairs.length ? { pairs } : {}),
+    ...(render?.cast ? { cast: render.cast } : {}),
+    ...(scene?.crossing ? { crossing: scene.crossing } : {}),
+    movement,
+    ...(Number.isFinite(render?.year) ? { year: render!.year } : {}),
+  };
 };
 const CATALOG_JSON = JSON.stringify(MOTION_CATALOG_RUNTIME).replace(/</g, "\\u003c");
 const VOCAB_JSON = JSON.stringify(MOTION_FIGURE_VOCAB_RUNTIME).replace(/</g, "\\u003c");

@@ -312,9 +312,6 @@ export const VIDEO_EXPORT_TEXT_NOISE_ALLS_28_ALLF_T_U = "noise=alls=28:allf=t+u,
 export const VIDEO_EXPORT_TEXT_T = "-t" as const;
 export const VIDEO_EXPORT_TEXT_R = "-r" as const;
 export const VIDEO_EXPORT_TEXT_C_V = "-c:v" as const;
-export const VIDEO_EXPORT_TEXT_PRESET = "-preset" as const;
-export const VIDEO_EXPORT_TEXT_CRF = "-crf" as const;
-export const VIDEO_EXPORT_TEXT_PIX_FMT = "-pix_fmt" as const;
 export const VIDEO_EXPORT_TEXT_AN = "-an" as const;
 export const VIDEO_EXPORT_TEXT_Y = "-y" as const;
 export const VIDEO_EXPORT_TEMPLATE_SYMBOL_10 = (value0: string): string => "," + value0;

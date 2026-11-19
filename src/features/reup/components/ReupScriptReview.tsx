@@ -61,6 +61,16 @@ export const ReupScriptReview: FC<{ studio: ReupStudio }> = ({ studio }) => {
                   </span>
                   <span>{text.WORDS(words(section.text))}</span>
                 </div>
+                {section.mark && (
+                  <label className={S.FIELD}>
+                    <span className={S.FIELD_LABEL}>
+                      {text.MARK}
+                      {section.mark.label ? ` · ${section.mark.label}` : ""}
+                      {section.mark.sub ? ` · ${section.mark.sub}` : ""}
+                    </span>
+                    <StudioInput className={S.INPUT} value={section.mark.title} maxLength={70} onChange={(e) => edit((d) => void (d.outputs[o].sections[i].mark!.title = e.target.value))} />
+                  </label>
+                )}
                 {output.speech ? (
                   <>
                     <p className={S.HINT}>{section.text}</p>

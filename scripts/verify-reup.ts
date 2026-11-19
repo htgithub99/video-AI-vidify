@@ -19,6 +19,11 @@ import { cleanScenePart, mergeSceneParts, reupBadRanges, reupMoments, reupSheetB
 import { cleanReupSettings } from "../src/features/reup/lib/reupSettings.js";
 import { ReupFootageLedger, mergeSpans, reupNearScenes, reupPacing, reupSectionSeconds, spanLength } from "../src/features/reup/lib/reupTimeline.js";
 import { reupAlignCues, reupClipSubtitles, reupKaraokeAss, reupPhrases, reupSentences, reupShotPieces, reupSubChars, reupSubtitleAss, reupSubtitleLines, reupSubtitleTimes } from "../src/features/reup/lib/reupSpeech.js";
+import { reupHighlightAss, reupHighlightCount, reupPickHighlights } from "../src/features/reup/lib/reupHighlights.js";
+import { pickHighlightAnchor, highlightColumn } from "../src/lib/highlightAnchor.js";
+import _ from "lodash";
+import { reupMusicZones } from "../src/features/reup/lib/reupMusicZones.js";
+import { reupAssSlice } from "../src/features/reup/lib/reupSpeech.js";
 import type { ReupJob, ReupShot } from "../src/features/reup/types/reup.js";
 let passed = 0;
 const check = (name: string, fn: () => void) => {
@@ -123,7 +128,12 @@ check("policy report: narration share, silence, reused source, echoed script and
   const past = { ...job, id: "old", createdAt: 1, outputs: [] };
   const echoed = reupReport({ ...job, settings: { ...job.settings, angle: "x" }, rights: "licensed", outputs: [{ ...job.outputs[0], narrated: 30, silentMax: 20 }] }, [past]);
   assert.equal(echoed.level, "risk");
-  assert.deepEqual(echoed.notes.map((n) => `${n.code}:${n.level}`), ["narration:risk", "silence:review", "sourceReused:risk", "similar:risk", "titleReused:review", "licensed:ok"]);
+  assert.deepEqual(echoed.notes.map((n) => `${n.code}:${n.level}`), ["narration:risk", "silence:review", "sourceReused:risk", "coverage:review", "similar:risk", "titleReused:review", "licensed:ok"]);
+  assert.ok(echoed.score <= 45 && echoed.gaps[0] === "coverage", `transform score: ${echoed.score} ${echoed.gaps}`);
+  assert.deepEqual([clean.score, clean.gaps], [90, ["highlights"]], "only the highlights are missing");
+  const cue = (text: string, value?: "why") => ({ segment: "s1", text, ...(value ? { value } : {}) });
+  const described = reupReport({ ...job, outputs: [{ ...job.outputs[0], highlights: 2 }], script: { outputs: [{ id: "o1", kind: "long", title: [], sections: [{ id: "h", role: "hook", text: "", shots: [], cues: [cue("look")] }, { id: "a", role: "body", text: "", shots: [], cues: [cue("he saws"), cue("dry wood burns cleaner", "why")] }, { id: "b", role: "body", text: "", shots: [], cues: [cue("he sits")] }, { id: "c", role: "ending", text: "", shots: [], cues: [cue("night falls")] }] }] } }, []);
+  assert.deepEqual(described.notes.find((n) => n.code === "describes"), { code: "describes", level: "review", value: "3, 4" }, "body and ending sections without a value beat are named; the hook is not");
   assert.ok(reupTextSimilarity(words, "a completely different story about a boat on a quiet lake at dawn") < 0.05);
 });
 check("claims: numbers not in the scene map are flagged, backed ones pass", () => {
@@ -229,6 +239,32 @@ check("folder timeline: a shot crossing items splits at the border", () => {
   const items = [0, 5, 10].map((start, i) => ({ id: `m${i + 1}`, path: `${i}.jpg`, name: "", type: "photo" as const, start, end: start + 5, width: 4, height: 3, hasAudio: false }));
   assert.deepEqual(reupShotPieces(items, { start: 3, end: 11 }).map((p) => [p.item.id, p.from, p.to]), [["m1", 3, 5], ["m2", 0, 5], ["m3", 0, 1]]);
 });
+check("highlights: few and spaced, never over the opening title, sized to the video; music zones by type; ASS sliced per part", () => {
+  const rules = { markEvery: 120, markMax: 6, markSeconds: 3.5 };
+  assert.equal(reupHighlightCount(600, "few", rules), 5);
+  assert.equal(reupHighlightCount(600, "normal", rules), 6);
+  assert.equal(reupHighlightCount(600, "off", rules), 0);
+  const mark = (title: string) => ({ cue: 0, label: "DAY 1", title, sub: "Evening" });
+  const spots = [1, 30, 45, 200, 210, 400].map((at) => ({ at, until: at + 20, mark: mark(`t${at}`) }));
+  assert.deepEqual(reupPickHighlights(spots, { total: 600, mode: "few", rules, title: "hook" }).map((e) => e.start), [30, 200, 400], "skips the title's first seconds and keeps ≥ 60 s apart");
+  const ass = reupHighlightAss(reupPickHighlights(spots, { total: 600, mode: "few", rules, title: "off" }), { width: 1920, height: 1080, anchor: "bl" });
+  assert.ok(/Style: M,Playfair Display,/.test(ass) && /\\an1\\fad\(400,400\)/.test(ass) && /DAY 1/.test(ass) && /\\i1\}Evening/.test(ass), ass);
+  assert.match(reupHighlightAss([{ start: 1, end: 3, mark: mark("x") }], { width: 1920, height: 1080, anchor: "mr" }), /\\an6\\fad\(400,400\)\\move\(1872,540,1834,540,/, "right side slides in from the right edge");
+  const seeds = _.range(40).map((i) => pickHighlightAnchor({ seed: `job${i}`, avoid: ["bc"] }));
+  assert.ok(new Set(seeds).size >= 4 && !seeds.includes("bc"), `videos get different spots, never an avoided one: ${seeds}`);
+  assert.equal(pickHighlightAnchor({ seed: "a", avoid: [] }), pickHighlightAnchor({ seed: "a", avoid: [] }), "one video keeps one spot");
+  assert.ok(_.range(20).every((i) => highlightColumn(pickHighlightAnchor({ seed: `s${i}`, subjectX: 0.2 })) === 2), "subject on the left → text on the right");
+  assert.equal(reupAssSlice(ass, 100, 300).split("\n").filter((l) => l.startsWith("Dialogue")).length, 1);
+  assert.match(reupAssSlice(ass, 198, 300), /Dialogue: 0,0:00:02\.00,0:00:05\.50,/);
+  assert.equal(reupAssSlice(ass, 500, 600), "");
+  assert.match(reupAssSlice(ass, 201, 300), /Dialogue: 0,0:00:00\.00,0:00:02\.50,M,,0,0,0,,\{\\an1\\fad\(0,400\)\\pos\(86,972\)\}/, "an event carried into the next part keeps its place without replaying the slide-in");
+  const sections = [{ start: 0, end: 15, role: "hook" as const }, { start: 15, end: 200, role: "body" as const }, { start: 200, end: 240, role: "ending" as const }];
+  const zones = reupMusicZones({ mode: "zones", total: 240, sections, silences: [[60, 70], [100, 103]], stings: [120], chapters: [] });
+  assert.deepEqual(zones.map((z) => [z.kind, z.start, z.end]), [["hook", 0, 15], ["gap", 60.4, 69.6], ["sting", 119.5, 125], ["ending", 210, 240]], "ending music only for its last 30 s");
+  assert.deepEqual(reupMusicZones({ mode: "bed", total: 50, sections, silences: [], stings: [], chapters: [] }).map((z) => [z.start, z.end]), [[0, 50]]);
+  assert.deepEqual(reupMusicZones({ mode: "chapters", total: 100, sections, silences: [], stings: [], chapters: [0, 40] }).map((z) => [z.start, z.end]), [[0, 38], [40, 100]], "a 2 s rest before each chapter");
+  assert.deepEqual(reupMusicZones({ mode: "gaps", total: 100, sections, silences: [[10, 30]], stings: [96.8], chapters: [] }).map((z) => z.kind), ["gap", "ending"]);
+});
 check("karaoke: words light up in turn, lines break at pauses", () => {
   const ass = reupKaraokeAss([{ w: "hello", s: 0, e: 0.4 }, { w: "world", s: 0.5, e: 1 }, { w: "again", s: 2.5, e: 3 }], { width: 1080, height: 1920, font: "Arial", color: "#ff3b30", perLine: 4, gap: 0.6 });
   assert.match(ass, /PlayResX: 1080/);
@@ -276,14 +312,17 @@ const media = async () => {
   assert.ok(outputs[0].duration > 18.5 && outputs[0].duration < 20, `16 s of narration + at most 15% silent filler, not padded to the 46 s target: ${outputs[0].duration}`);
   assert.ok(outputs[0].narrated === 16 && outputs[0].padding! <= 2.9 && outputs[0].silentMax! <= 8.3, JSON.stringify(outputs[0]));
   assert.ok(logs.some((l) => /ngắn hơn độ dài đích/.test(l)), "the shortfall is reported");
-  const ass = fs.readFileSync(path.join(path.dirname(path.dirname(outputs[0].file)), "sections", "o1", "subs.ass"), "utf8");
-  const shown = ass.split("\n").filter((l) => l.startsWith("Dialogue:"));
-  assert.ok(shown.length >= 2 && /,S,,0,0,0,,x$/.test(shown[0]) && shown[1].startsWith("Dialogue: 0,0:00:"), `narration subtitles burned in, second section shifted: ${shown.join(" | ")}`);
+  const partsDir = path.join(path.dirname(path.dirname(outputs[0].file)), "sections", "o1");
+  const shown = ["part_01_1.mp4.o0.ass", "part_02_1.mp4.o0.ass"].map((f) => fs.readFileSync(path.join(partsDir, f), "utf8").split("\n").filter((l) => l.startsWith("Dialogue:")));
+  assert.ok(/,S,,0,0,0,,x$/.test(shown[0][0]) && shown[1][0].startsWith("Dialogue: 0,0:00:00.00,") && /,y$/.test(shown[1][0]), `narration subtitles burned per part, each part's times start at 0: ${shown.flat().join(" | ")}`);
   const probe = spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=codec_type,width,height", "-of", "csv=p=0", outputs[0].file]).stdout.toString();
-  assert.match(probe, /1920,1080/);
+  assert.match(probe, /1280,720/, "auto quality: a 360p source is built at 720p");
+  const again: string[] = [];
+  await buildReupJob(job, (t) => again.push(t), () => {});
+  assert.ok(again.some((l) => /Dùng lại 2\/2 phần/.test(l)), `unchanged parts are reused on re-export: ${again.join(" | ")}`);
   assert.match(probe, /audio/);
   // Music library: tracks found by "Reup BGM X" or an A…H folder, looped with crossfades and faded to the video's length.
-  const { reupMusicDir, reupTrackPreset, reupTracks, reupMusicBed } = await import("../src/features/reup/server/services/reupMusicService.js");
+  const { reupMusicDir, reupTrackPreset, reupTracks, reupMusicBed, reupZonedMusicBed } = await import("../src/features/reup/server/services/reupMusicService.js");
   assert.equal(reupTrackPreset("Reup BGM G - Cabin Americana (1).mp3"), "G");
   assert.equal(reupTrackPreset(path.join("h", "riff.mp3")), "H");
   assert.equal(reupTrackPreset("random song.mp3"), undefined);
@@ -296,6 +335,10 @@ const media = async () => {
     const bed = await reupMusicBed(song, 50, tmp);
     const bedSeconds = Number(spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", bed]).stdout.toString());
     assert.ok(Math.abs(bedSeconds - 50) < 0.2, `a 20 s track looped to 50 s: ${bedSeconds}`);
+    const zoned = await reupZonedMusicBed(song, [{ start: 0, end: 8, kind: "hook" }, { start: 20, end: 45, kind: "gap" }, { start: 52, end: 60, kind: "ending" }], 60, tmp);
+    const zonedSeconds = Number(spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", zoned!]).stdout.toString());
+    const level = (from: number, to: number) => Number(/mean_volume: (-?[\d.]+)/.exec(spawnSync("ffmpeg", ["-hide_banner", "-ss", String(from), "-t", String(to - from), "-i", zoned!, "-af", "volumedetect", "-f", "null", "-"]).stderr.toString())?.[1] ?? -99);
+    assert.ok(Math.abs(zonedSeconds - 60) < 0.3 && level(2, 6) > -40 && level(10, 18) < -60 && level(25, 40) > -40 && level(54, 58) > -40 && level(25, 40) - level(2, 6) > 3 && Math.abs(level(2, 6) - -24) < 3, `music only in its zones, about -24 LUFS and +4 dB in gaps (hook, a 25 s gap looped, ending): ${zonedSeconds} ${[level(2, 6), level(10, 18), level(25, 40), level(54, 58)]}`);
   } finally {
     fs.rmSync(songFile, { force: true });
   }
@@ -309,7 +352,7 @@ const media = async () => {
   const short: ReupJob = { ...job, id: id + "-b", preset: "B", settings: reupJobSettings("B", reupPresetDefaults("B")), outputs: [], script: { outputs: [{ id: "o1", kind: "short", title: ["CROCODILE", "UNDER THE FALLS"], sections: [{ id: "h", role: "hook", text: "x", shots: [{ start: 300, end: 330 }] }] }] } };
   const vertical = await buildReupJob(short, (t) => logs.push(t), () => {});
   const vprobe = spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", vertical[0].file]).stdout.toString();
-  assert.match(vprobe, /1080,1920/);
+  assert.match(vprobe, /720,1280/);
   const loud = spawnSync("ffmpeg", ["-hide_banner", "-i", vertical[0].file, "-af", "ebur128", "-f", "null", "-"]).stderr.toString();
   const integrated = Number(/I:\s+(-?[\d.]+) LUFS\s*\n\s*Threshold/.exec(loud.slice(loud.lastIndexOf("Summary")))?.[1]);
   assert.ok(Math.abs(integrated - -14) < 2.5, `shorts loudness ${integrated}`);
@@ -356,7 +399,7 @@ const media2 = async () => {
   d.voices = { a: { ...voice("a.wav", 8), cues: [0, 3] }, b: voice("b.wav", 9) };
   const dOut = await buildReupJob(d, () => {}, () => {});
   const dDur = Number(/\n([\d.]+)\s*$/.exec(probe(dOut[0].file))?.[1]);
-  assert.ok(Math.abs(dDur - (2.5 + 8.2 + 9.2)) < 0.6, `photo report = chapter card + voices: ${dDur}`);
+  assert.ok(Math.abs(dDur - (8.2 + 9.2)) < 0.6, `photo report = voices, no chapter card any more: ${dDur}`);
   d.outputs = dOut;
   d.package = { options: [{ title: "Hội cựu chiến binh", description: "Phóng sự ảnh.", hashtags: ["#cuuchienbinh"], tags: ["phóng sự"], seoScore: 70 }], thumbs: [], frames: [], pinned: "", aiDisclosure: false };
   assert.deepEqual(reupSeoPack(d)?.chapters.map((c) => c.t), [0], "chapter marks from the edited video feed the SEO card");

@@ -1490,7 +1490,6 @@ export const SOURCE_TEMPLATE_SCALE_FORCE_ORIGINAL_ASPECT_RATIO_DECREASE = (value
 export const SOURCE_TEMPLATE_SHORT_2 = (value0: string, value1: string, value2: string, value3: string): string => "short_" + value0 + "_" + value1 + "_" + value2 + value3;
 export const SOURCE_TEXT_SS = "-ss" as const;
 export const SOURCE_TEXT_C_V = "-c:v" as const;
-export const SOURCE_TEXT_PRESET = "-preset" as const;
 export const SOURCE_TEXT_CRF = "-crf" as const;
 export const SOURCE_TEXT_C_A = "-c:a" as const;
 export const SOURCE_TEXT_MOVFLAGS = "-movflags" as const;

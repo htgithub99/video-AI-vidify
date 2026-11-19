@@ -26,8 +26,8 @@ const STAGES: { steps: ReupStepId[]; label: keyof ReupStudio["text"] }[] = [
   { steps: ["source"], label: "STEP_SOURCE" },
   { steps: ["scenes"], label: "STEP_SCENES" },
   { steps: ["script"], label: "STEP_SCRIPT" },
-  { steps: ["voice", "build"], label: "STEP_EXPORT" },
   { steps: ["package"], label: "STEP_PACKAGE" },
+  { steps: ["voice", "build"], label: "STEP_EXPORT" },
 ];
 const AiBlock: FC<{ studio: ReupStudio; field: "visionAi" | "scriptAi"; title: string; note: string; lang: Lang }> = ({ studio, field, title, note, lang }) => {
   const ai = studio.settings[field];

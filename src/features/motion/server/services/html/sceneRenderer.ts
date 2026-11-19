@@ -1,3 +1,5 @@
+import { MOTION_SCENE_SPEC } from "../../../../../constants/motionSceneSpec.js";
+import { motionReviseNoted } from "./reviseNotes.js";
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -144,6 +146,8 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
         };
         opts.signal.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
         const blankScenes = new Set<string>();
+        const revised = new Set<string>();
+        let opened = Date.now();
         try {
           fs.mkdirSync(path.dirname(segment.output), { recursive: true });
           for (let frame = segment.start; frame <= segment.end; frame++) {
@@ -151,6 +155,7 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
             active = spec.scenes.find((scene) => frame >= scene.startFrame && frame < scene.endFrame);
             if (!active?.html) throw new Error(RT_MAINTENANCE.THIEU_TAI_LIEU_HTML_CUA_CANH_CAN_XUAT);
             if (current !== active.html.hash) {
+              opened = Date.now();
               await runtime?.close();
               runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec, active as MotionFigureScene));
               current = active.html.hash;
@@ -158,6 +163,13 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
             const subtitle = spec.subtitles.find((item) => frame / spec.fps >= item.start && frame / spec.fps < item.end);
             const input = { ...motionHtmlFrame(spec, active, frame, opts.width, opts.height, RT_MAINTENANCE.EXPORT), format, quality: R.JPEG_QUALITY };
             let image = await runtime!.render(input, subtitle?.text, spec.fontFamily);
+            if (!revised.has(active.id)) {
+              revised.add(active.id);
+              const notes = await runtime!.notes();
+              motionReviseNoted(active.html.hash, notes);
+              if (Date.now() - opened > MOTION_SCENE_SPEC.SLOW_MS) opts.log?.(MOTION_SCENE_SPEC.SLOW_LOG(active.id, Date.now() - opened));
+              if (notes.length) opts.log?.(MOTION_SCENE_SPEC.REVISE_LOG(active.id, notes, MOTION_SCENE_SPEC.REVISE_LABELS));
+            }
             const blankBytes = (opts.width || spec.width) * (opts.height || spec.height) * R.BLANK_BYTES_PER_PIXEL[format];
             for (let retry = 0; retry < MOTION_HTML_QUALITY.BLANK.RETRIES && image.length < blankBytes && !blankScenes.has(active.id); retry++) {
               opts.log?.(MOTION_HTML_QUALITY.BLANK.LOG(active.id, frame, retry + 1));

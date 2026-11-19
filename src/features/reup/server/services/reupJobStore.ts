@@ -6,7 +6,7 @@ import { deleteOutputEntries, type OutputDeleteResult } from "../../../../server
 import { logger } from "../../../../lib/logger.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
 import { REUP_DIR, REUP_LIMITS, REUP_STEPS } from "../../constants/reupConfig.js";
-import { reupPresetRules } from "../../constants/reupPresets.js";
+import { reupPresetDefaults, reupPresetRules } from "../../constants/reupPresets.js";
 import { reupStripToolNotes } from "../../lib/reupSeo.js";
 import { reupMusicChoice } from "../../lib/reupSettings.js";
 import { REUP_LOG } from "../../constants/reupServerText.js";
@@ -58,7 +58,7 @@ export const getReupJob = (id: string): ReupJob | undefined => {
   if (job.package && !job.package.options) job.package = undefined;
   for (const option of job.package?.options || []) option.description = reupStripToolNotes(option.description || "");
   job.rights ||= "licensed";
-  job.settings = { ...reupPresetRules(job.preset), ...job.settings, angle: job.settings.angle ?? "", music: reupMusicChoice(job.settings.music, (job.settings as { musicMood?: string }).musicMood, "off") };
+  job.settings = { ...reupPresetRules(job.preset), ...job.settings, angle: job.settings.angle ?? "", encoder: job.settings.encoder ?? "auto", highlights: job.settings.highlights ?? reupPresetDefaults(job.preset).highlights, music: reupMusicChoice(job.settings.music, (job.settings as { musicMood?: string }).musicMood, "off") };
   if (job.status === "running") {
     for (const step of REUP_STEPS) if (job.steps[step]?.status === "running") job.steps[step] = { ...job.steps[step], status: "error", message: REUP_LOG.INTERRUPTED };
     job.status = "error";

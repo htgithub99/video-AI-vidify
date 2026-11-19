@@ -50,7 +50,7 @@ const POSES = [
   "sleep",
 ];
 const EXPRESSIONS = ["calm", "happy", "worried", "scared", "angry", "stern", "grave", "sad", "sleep", "shout", "surprised", "dead"];
-const HOLDS = ["spear", "pike", "staff", "flag", "pitchfork", "sword", "sabre", "katana", "axe", "club", "torch", "hammer", "pickaxe", "shovel", "oar", "bowl", "bucket", "sickle", "hoe", "net", "cup", "bow", "crossbow", "musket", "rifle", "smg", "pistol", "shield", "lantern", "scroll", "letter", "book", "basket", "sack", "bundle", "box", "baby", "bread"];
+const HOLDS = ["spear", "pike", "staff", "flag", "pitchfork", "sword", "sabre", "katana", "axe", "club", "torch", "hammer", "pickaxe", "shovel", "oar", "bowl", "bucket", "sickle", "hoe", "net", "cup", "bow", "crossbow", "musket", "rifle", "smg", "pistol", "shield", "lantern", "scroll", "letter", "book", "basket", "sack", "bundle", "box", "baby", "bread", "horn", "drum"];
 const HEADS = ["kettle", "nasal", "coif", "hood", "veil", "cap", "steppe", "crown", "crownHelmet", "turban", "leafhat", "conical", "highland", "peaked", "beret", "tophat", "bicorne", "tricorne", "shako", "pickelhaube", "adrian", "brodie", "stahlhelm", "m1", "modern", "pith", "roman", "greek", "samurai", "headband", "helmet", "hat", "none"];
 const OUTFITS = ["peasant", "levy", "soldier", "officer", "king", "noble", "monk", "scholar", "merchant", "worker", "sailor"];
 const REGIONS = ["europe", "eastAsia", "japan", "vietnam", "middleEast", "southAsia", "africa", "steppe", "americas"];
@@ -259,6 +259,8 @@ const PERSON: MotionFigureVocabFn = {
   },
   valueAs: {
     pose: {
+      nod: "talk",
+      nodding: "talk",
       sitting: "sit",
       seated: "sit",
       standing: "stand",
@@ -387,6 +389,13 @@ const PERSON: MotionFigureVocabFn = {
       mouthopen: "shout",
     },
     hold: {
+      warHorn: "horn",
+      warhorn: "horn",
+      trumpet: "horn",
+      bugle: "horn",
+      oxhorn: "horn",
+      wardrum: "drum",
+      warDrum: "drum",
       banner: "flag",
       standard: "flag",
       pennant: "flag",

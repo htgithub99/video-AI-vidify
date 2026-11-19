@@ -73,7 +73,12 @@ export const pickReupFolderController = async (_req: Request, res: Response): Pr
   }
 };
 export const listReupJobsController = (_req: Request, res: Response): void => {
-  res.json({ success: true, jobs: listReupJobs().map((job) => ({ id: job.id, name: job.source.name, preset: job.preset, status: job.status, updatedAt: job.updatedAt, outputs: job.outputs.map(({ id, url, duration, width, height }) => ({ id, url, duration, width, height })), packageDir: job.packageDir })) });
+  res.json({
+    success: true,
+    jobs: listReupJobs()
+      .filter((job) => job.outputs.length > 0)
+      .map((job) => ({ id: job.id, name: job.source.name, preset: job.preset, status: job.status, updatedAt: job.updatedAt, outputs: job.outputs.map(({ id, url, duration, width, height }) => ({ id, url, duration, width, height })), packageDir: job.packageDir })),
+  });
 };
 export const deleteReupJobsController = async (req: Request, res: Response): Promise<void> => {
   try {

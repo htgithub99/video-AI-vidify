@@ -20,6 +20,7 @@ import { buildRemotionScenes } from "./remotion/scenePipeline.js";
 import { compileRemotionStory } from "./remotion/storyCompiler.js";
 import { motionEditorialContext } from "./motionEditorialContextService.js";
 import { MOTION_SOUND_CONFIG as SOUND } from "../../../../constants/motionSound.js";
+import { MOTION_DURATION_DRIFT as DRIFT } from "../../../../constants/motionTimeline.js";
 import { normalizeSoundCues } from "../../../../lib/motionSound.js";
 import { buildMotionSoundTrack, mixMotionSoundAudio } from "./motionSoundMixService.js";
 import { normalizeMotionReferences } from "../../../../lib/motionReference.js";
@@ -621,7 +622,9 @@ export const compileMotionStoryInput = async (body: Record<string, any>) => {
   compiled.spec = applyMotionRenderBehavior(compiled.spec, behavior);
   if (previewOnly) return { success: true, spec: compiled.spec, sfxCues: compiled.sfxCues, starts: compiled.starts, missing: compiled.missing, sfxId: undefined, audioPreviewId: undefined, soundSelections: [], voiceStale };
   const duration = compiled.spec.duration || 1,
-    voiceId = voiceTrack?.audioId || (!voiceStale && body?.audioId ? path.basename(String(body.audioId)) : undefined);
+    target = _.sumBy(analysis?.chapters || [], (chapter) => chapter.targetSeconds || 0);
+  if (target > 0 && Math.abs(duration - target) / target > DRIFT.SHARE) logger.warn(DRIFT.LOG(duration, target));
+  const voiceId = voiceTrack?.audioId || (!voiceStale && body?.audioId ? path.basename(String(body.audioId)) : undefined);
   let sound: Awaited<ReturnType<typeof buildMotionSoundTrack>> = { selections: [] },
     audioPreviewId: string | undefined;
   if (body?.sfx === true)

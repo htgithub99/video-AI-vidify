@@ -587,6 +587,7 @@ class RuntimeText:
     EFFECTS = 'effects'
     LIGHTINGEFFECT = 'lightingEffect'
     MAXSCENEWORKERS = 'maxSceneWorkers'
+    VIDEOENCODEARGS = 'videoEncodeArgs'
     VIDEOTRIMSTARTSECONDS = 'videoTrimStartSeconds'
     VIDEOTRIMENDSECONDS = 'videoTrimEndSeconds'
     SCENECACHEDIR = 'sceneCacheDir'

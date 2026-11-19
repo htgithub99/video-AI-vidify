@@ -2,7 +2,7 @@ import { motionLibraryPart, type MotionLibraryPart } from "./common.js";
 const props = [
   { id: "dao", from: 100, to: 1900, names: ["vietSabre", "machete", "broadsabre"] },
   { id: "sewingNeedle", names: ["needle", "needleAndThread"] },
-  { id: "moat", to: 1700, names: ["ditch", "castleMoat"], fit: "ground" as const },
+  { id: "moat", to: 1700, names: ["castleMoat"], fit: "ground" as const },
   { id: "wheatField", names: ["grainField", "barleyField"], fit: "ground" as const },
   { id: "cornField", names: ["maizeField"], fit: "ground" as const },
   { id: "irrigationCanal", names: ["canal", "irrigationDitch"], fit: "ground" as const },

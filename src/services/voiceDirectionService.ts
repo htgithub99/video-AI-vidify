@@ -4,6 +4,8 @@ import _ from "lodash";
 import { API_ROUTES, AUTO_GENERATOR_CONSTANTS, SecurityConstants, VOICE_DIRECTION_CONFIG } from "../constants";
 import { delayAsync, safeSystemFetch } from "../lib/shared-utils";
 import { VoiceArc, VoiceDirection } from "../types";
+import { mapLanes } from "../lib/concurrency.js";
+import { VOICE_LANES } from "../constants/mediaEncoder.js";
 interface DirectedVoiceOptions {
   text: string;
   voiceArc: VoiceArc;
@@ -62,15 +64,9 @@ const mergeVoiceChunks = async (chunks: Array<{ audioBase64: string }>, signal?:
 };
 export const generateDirectedVoice = async ({ text, voiceArc, basePayload, signal }: DirectedVoiceOptions): Promise<{ audioBase64: string; provider: string }> => {
   const narrationSegments = splitNarrationForVoiceArc(text);
-  const chunks: Array<{ audioBase64: string }> = [];
-  let provider = _.toString(_.get(basePayload, SOURCE_TEXT_PROVIDER));
-  for (let index = 0; index < narrationSegments.length; index++) {
-    const directionKey = _.get(VOICE_ARC_ORDER, index, _.last(VOICE_ARC_ORDER));
-    const direction = voiceArc[directionKey];
-    const chunk = await requestVoiceChunk(narrationSegments[index], direction, basePayload, signal);
-    chunks.push({ audioBase64: chunk.audioBase64 });
-    provider = chunk.provider || provider;
-  }
+  const results = await mapLanes(narrationSegments, VOICE_LANES.SEGMENTS, (segment, index) => requestVoiceChunk(segment, voiceArc[_.get(VOICE_ARC_ORDER, index, _.last(VOICE_ARC_ORDER))!], basePayload, signal));
+  const chunks = results.map((chunk) => ({ audioBase64: chunk.audioBase64 }));
+  const provider = _.findLast(results, (chunk) => !!chunk.provider)?.provider || _.toString(_.get(basePayload, SOURCE_TEXT_PROVIDER));
   if (_.isEqual(_.size(chunks), 1)) return { audioBase64: chunks[0].audioBase64, provider };
   const audioBase64 = await mergeVoiceChunks(chunks, signal);
   return { audioBase64, provider };

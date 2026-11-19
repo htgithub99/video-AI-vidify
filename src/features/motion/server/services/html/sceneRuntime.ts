@@ -90,6 +90,7 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
       }
     };
     return {
+      notes: (): Promise<[string, string][]> => page.evaluate(() => ((window as any).__motionNotes || []) as [string, string][]).catch(() => []),
       async render(input: MotionHtmlFrameInput, subtitle = "", fontFamily: string = RT_MAINTENANCE.ARIAL): Promise<Buffer> {
         const blank = (error: unknown) => {
           if (!RT_MAINTENANCE.CANVAS_BLANK_FRAME_RE.test(String((error as Error)?.message))) throw error;

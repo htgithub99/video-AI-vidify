@@ -59,12 +59,12 @@ export const reupAlignCues = (cues: string[], words: ReupWord[], total: number):
 };
 export const reupItemAt = (items: ReupMediaItem[], t: number): ReupMediaItem | undefined => items.find((it) => t >= it.start && t < it.end) || (t >= (_.last(items)?.end ?? 0) ? _.last(items) : undefined);
 export const reupShotPieces = (items: ReupMediaItem[], shot: ReupShot): { item: ReupMediaItem; from: number; to: number }[] => items.filter((it) => it.end > shot.start + 0.01 && it.start < shot.end - 0.01).map((it) => ({ item: it, from: _.round(Math.max(shot.start, it.start) - it.start, 3), to: _.round(Math.min(shot.end, it.end) - it.start, 3) }));
-const assTime = (s: number): string => {
+export const reupAssTime = (s: number): string => {
   const cs = Math.max(0, Math.round(s * 100));
   return `${Math.floor(cs / 360000)}:${String(Math.floor(cs / 6000) % 60).padStart(2, "0")}:${String(Math.floor(cs / 100) % 60).padStart(2, "0")}.${String(cs % 100).padStart(2, "0")}`;
 };
-const assColor = (hex: string): string => `&H00${hex.slice(5, 7)}${hex.slice(3, 5)}${hex.slice(1, 3)}`.toUpperCase();
-const assHead = (width: number, height: number, style: string): string[] => [
+export const reupAssColor = (hex: string): string => `&H00${hex.slice(5, 7)}${hex.slice(3, 5)}${hex.slice(1, 3)}`.toUpperCase();
+export const reupAssHead = (width: number, height: number, style: string | string[]): string[] => [
   "[Script Info]",
   "ScriptType: v4.00+",
   `PlayResX: ${width}`,
@@ -73,12 +73,12 @@ const assHead = (width: number, height: number, style: string): string[] => [
   "",
   "[V4+ Styles]",
   "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-  `Style: ${style}`,
+  ...[style].flat().map((one) => `Style: ${one}`),
   "",
   "[Events]",
   "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
 ];
-const assText = (text: string): string =>
+export const reupAssText = (text: string): string =>
   text
     .replace(/[{}\\]/g, "")
     .replace(/\s+/g, " ")
@@ -163,8 +163,8 @@ export const reupSubtitleAss = (lines: ReupSubLine[], opt: { width: number; heig
   const bottom = Math.round(opt.height * (opt.lift ?? (opt.height > opt.width ? T.SUB_BOTTOM_VERTICAL : T.SUB_BOTTOM)));
   const outline = Math.max(1, _.round(opt.height * T.SUB_OUTLINE, 1));
   const shadow = _.round(opt.height * T.SUB_SHADOW, 1);
-  const head = assHead(opt.width, opt.height, `S,${opt.font},${size},&H00FFFFFF,&H00FFFFFF,&H1A000000,&H8C000000,-1,0,0,0,100,100,0,0,1,${outline},${shadow},2,${side},${side},${bottom},1`);
-  const events = lines.filter((l) => l.end > l.start && assText(l.text)).map((l) => `Dialogue: 0,${assTime(l.start)},${assTime(l.end)},S,,0,0,0,,${assText(l.text)}`);
+  const head = reupAssHead(opt.width, opt.height, `S,${opt.font},${size},&H00FFFFFF,&H00FFFFFF,&H1A000000,&H8C000000,-1,0,0,0,100,100,0,0,1,${outline},${shadow},2,${side},${side},${bottom},1`);
+  const events = lines.filter((l) => l.end > l.start && reupAssText(l.text)).map((l) => `Dialogue: 0,${reupAssTime(l.start)},${reupAssTime(l.end)},S,,0,0,0,,${reupAssText(l.text)}`);
   return [...head, ...events, ""].join("\n");
 };
 export const reupKaraokeAss = (words: (ReupWord & { cut?: boolean })[], opt: { width: number; height: number; font: string; color: string; perLine: number; gap: number }): string => {
@@ -175,7 +175,7 @@ export const reupKaraokeAss = (words: (ReupWord & { cut?: boolean })[], opt: { w
     if (!line || line.length >= opt.perLine || w.cut || w.s - words[i - 1].e > opt.gap) lines.push([w]);
     else line.push(w);
   });
-  const head = assHead(opt.width, opt.height, `K,${opt.font},${size},${assColor(opt.color)},&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,${Math.round(size * 0.09)},${Math.round(size * 0.05)},2,40,40,${Math.round(opt.height * 0.2)},1`);
+  const head = reupAssHead(opt.width, opt.height, `K,${opt.font},${size},${reupAssColor(opt.color)},&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,${Math.round(size * 0.09)},${Math.round(size * 0.05)},2,40,40,${Math.round(opt.height * 0.2)},1`);
   const events = lines.map((line) => {
     const start = line[0].s;
     const text = line
@@ -187,7 +187,29 @@ export const reupKaraokeAss = (words: (ReupWord & { cut?: boolean })[], opt: { w
             .replace(/[{}\\]/g, "")}`,
       )
       .join(" ");
-    return `Dialogue: 0,${assTime(start)},${assTime(_.last(line)!.e + 0.15)},K,,0,0,0,,${text}`;
+    return `Dialogue: 0,${reupAssTime(start)},${reupAssTime(_.last(line)!.e + 0.15)},K,,0,0,0,,${text}`;
   });
   return [...head, ...events, ""].join("\n");
+};
+const ASS_TIME = /^(\d+):(\d{2}):(\d{2})\.(\d{2})$/;
+const fromAssTime = (t: string): number => {
+  const m = ASS_TIME.exec(t.trim());
+  return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 100 : 0;
+};
+export const reupAssSlice = (ass: string, from: number, to: number): string => {
+  const lines = ass.split("\n");
+  const events = lines.indexOf("[Events]");
+  const head = lines.slice(0, events + 2);
+  const body = lines.slice(events + 2).flatMap((line) => {
+    const parts = line.split(",");
+    if (!line.startsWith("Dialogue:") || parts.length < 10) return [];
+    const start = fromAssTime(parts[1]);
+    const end = fromAssTime(parts[2]);
+    if (end <= from || start >= to) return [];
+    parts[1] = reupAssTime(Math.max(0, start - from));
+    parts[2] = reupAssTime(Math.min(to, end) - from);
+    const shifted = parts.join(",");
+    return [start < from ? shifted.replace(/\\move\(([^,]+),([^,]+),([^,]+),([^,)]+)[^)]*\)/, "\\pos($3,$4)").replace(/\\fad\((\d+),(\d+)\)/, "\\fad(0,$2)") : shifted];
+  });
+  return body.length ? [...head, ...body, ""].join("\n") : "";
 };

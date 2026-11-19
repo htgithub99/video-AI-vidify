@@ -1,9 +1,11 @@
 import { MOTION_MASTER as M } from "./motionMasterScale.js";
 import { MOTION_AIR_DISTANCE, MOTION_OBJECT_SIZE as Z } from "./motionObjectSize.js";
+import { MOTION_SCENE_REVISE } from "./motionSceneSpec.js";
 export const MOTION_SCENE_ENGINE = String.raw`(function () {
 const MASTER_STD = ${JSON.stringify({ SHOTS: M.SHOTS, GENRE: M.GENRE, PORTRAIT_WIDTH: M.PORTRAIT_WIDTH, THING: M.THING, LEAST_SCALE: M.LEAST_SCALE })};
 const SIZE_STD = ${JSON.stringify(Z)};
 const AIR_DIST = ${JSON.stringify(MOTION_AIR_DISTANCE)};
+const REVISE = ${JSON.stringify(MOTION_SCENE_REVISE)};
 const AIR_TILT = 25 * Math.PI / 180;
 const S = window.__motionSpec || { items: [] };
 const FW = (S.frame && +S.frame[0]) || 1280, FH = (S.frame && +S.frame[1]) || 720;
@@ -65,18 +67,69 @@ function backdrop(t) {
   for (let i = 0; i < 46; i++) { const k = rnd(11, i), y = H0 + ((FH + 20) - H0) * k * k, x = rnd(13, i) * (FW + 60) - 30, w = 30 + 120 * k; ctx.lineWidth = 1 + 2.5 * k; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y + 1); ctx.stroke(); }
   ctx.restore();
   // Water bands (river / lake) across the ground.
-  (S.water || []).forEach((w, i) => { if (!isFinite(+w.y)) return; K.scenery(ctx, { kind: w.kind || 'river', x: FW / 2, y: +w.y + (+w.h || 60) / 2, width: (FW + 120), height: +w.h || 60, r: (+w.h || 60) / 2, seed: i + 1, t }); });
+  (S.water || []).forEach((w, i) => { if (!isFinite(+w.y)) return; if (w.into) return riverInto(w.into, i, t); if (w.kind === 'moat' || w.kind === 'ravine' || w.kind === 'road') return bandAcross(w, i, t); K.scenery(ctx, { kind: w.kind || 'river', x: FW / 2, y: +w.y + (+w.h || 60) / 2, width: (FW + 120), height: +w.h || 60, r: (+w.h || 60) / 2, seed: i + 1, t }); });
   (S.scatter || []).forEach((s, j) => {
     const area = Array.isArray(s.area) ? s.area : [0, H0 + 8, FW, FH];
     for (let i = 0; i < (s.count || 0); i++) {
       const k = rnd(29 + j, i), y = area[1] + (area[3] - area[1]) * k * k, x = area[0] + rnd(31 + j, i) * (area[2] - area[0]), r = 4 + 34 * ((y - H0) / (FH - H0));
+      const sp = STRIP.on && C_STAND.indexOf(STRIP.on.kind) < 0 && stripAt(y);
+      if (sp && Math.abs(x - sp.c) < sp.half * (s.kind === 'reeds' ? REVISE.CROSS.EDGE : 1) + r) continue;
       if (s.kind === 'stuckArrow') { ctx.save(); ctx.translate(x, y); ctx.rotate(-0.5 + rnd(37, i) * 0.6); ctx.strokeStyle = '#4a3a28'; ctx.lineWidth = Math.max(1.5, r * 0.08); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -r * 1.4); ctx.stroke(); ctx.fillStyle = '#e8e2d2'; ctx.beginPath(); ctx.moveTo(0, -r * 1.4); ctx.lineTo(-r * 0.18, -r * 1.15); ctx.lineTo(0, -r * 1.22); ctx.lineTo(r * 0.18, -r * 1.15); ctx.closePath(); ctx.fill(); ctx.restore(); continue; }
       K.scenery(ctx, { kind: s.kind, x, y, r, seed: i + j * 7, t });
     }
   });
 }
+function gapPaint(kind, a, b, i, t, wide) {
+  const yr = +VIEW.year || 1300, poly = () => { ctx.beginPath(); a.forEach((q, j) => (j ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); b.slice().reverse().forEach((q) => ctx.lineTo(q[0], q[1])); ctx.closePath(); };
+  const edge = (col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; [a, b].forEach((side) => { ctx.beginPath(); side.forEach((q, j) => (j ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.stroke(); }); };
+  const lerpPt = (k, f) => { const n = a.length - 1, j = Math.min(n, Math.round(k * n)); return [a[j][0] + (b[j][0] - a[j][0]) * f, a[j][1] + (b[j][1] - a[j][1]) * f]; };
+  ctx.save(); poly();
+  const top = Math.min(a[0][1], b[0][1]), bot = Math.max(a[a.length - 1][1], b[b.length - 1][1]), g = ctx.createLinearGradient(0, top, 0, bot);
+  if (kind === 'ravine') { g.addColorStop(0, '#5a5048'); g.addColorStop(1, '#241e1a'); }
+  else if (kind === 'road') { const c = yr >= 1900 ? ['#6a6a6a', '#4a4a4c'] : yr >= 1600 && yr < 1930 ? ['#9a8e80', '#7a6e62'] : yr >= -300 && yr < 500 ? ['#a49a8a', '#857a6a'] : ['#b89c72', '#9a7e56']; g.addColorStop(0, c[0]); g.addColorStop(1, c[1]); }
+  else { g.addColorStop(0, '#9fc0cf'); g.addColorStop(0.5, '#6f9ab0'); g.addColorStop(1, '#5a879e'); }
+  ctx.fillStyle = g; ctx.fill();
+  ctx.save(); ctx.clip(); ctx.lineCap = 'round';
+  if (kind === 'ravine') { ctx.fillStyle = 'rgba(20,16,12,0.35)'; for (let k = 0; k < 18; k++) { const p = lerpPt(rnd(81 + i, k), rnd(83 + i, k) < 0.5 ? 0.08 : 0.92), r0 = 3 + 10 * rnd(85, k) * (wide ? 1 : 0.6); ctx.beginPath(); ctx.ellipse(p[0], p[1], r0 * 1.6, r0, 0, 0, Math.PI * 2); ctx.fill(); } }
+  else if (kind === 'road') {
+    ctx.strokeStyle = 'rgba(40,30,20,0.25)';
+    if (yr >= 1920) { ctx.strokeStyle = 'rgba(240,236,220,0.85)'; for (let k = 0; k < 40; k += 2) { const p0 = lerpPt(k / 40, 0.5), p1 = lerpPt((k + 1) / 40, 0.5); ctx.lineWidth = Math.max(1, (p0[1] - H0) * 0.012); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); } }
+    else if (yr >= 1600 || (yr >= -300 && yr < 500)) { for (let k = 0; k < 60; k++) { const p = lerpPt(rnd(87 + i, k), rnd(89 + i, k)), r0 = Math.max(1.5, (p[1] - H0) * 0.02); ctx.lineWidth = 1; ctx.strokeRect(p[0] - r0, p[1] - r0 * 0.5, r0 * 2, r0); } }
+    else { [0.3, 0.7].forEach((f) => { ctx.beginPath(); for (let k = 0; k <= 30; k++) { const p = lerpPt(k / 30, f); if (k) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); } ctx.lineWidth = 2; ctx.stroke(); }); }
+  } else {
+    ctx.strokeStyle = 'rgba(235,245,250,0.7)';
+    for (let k = 0; k < 26; k++) { const f = rnd(73 + i, k), p = lerpPt(Math.pow(rnd(71 + i, k), 1.2), 0.15 + 0.7 * f), q = lerpPt(Math.pow(rnd(71 + i, k), 1.2), 0.15 + 0.7 * f + 0.1), len = Math.max(4, Math.abs(q[0] - p[0]) + (p[1] - H0) * 0.08), dx = ((t * 18 + k * 13) % 40) - 20; ctx.lineWidth = Math.max(1, (p[1] - H0) * 0.006); ctx.beginPath(); ctx.moveTo(p[0] - len / 2 + dx * 0.1, p[1]); ctx.lineTo(p[0] + len / 2 + dx * 0.1, p[1]); ctx.stroke(); }
+  }
+  ctx.restore();
+  edge(kind === 'moat' ? 'rgba(120,112,100,0.9)' : kind === 'road' ? 'rgba(80,64,44,0.35)' : kind === 'ravine' ? 'rgba(40,32,26,0.8)' : 'rgba(60,48,36,0.55)', kind === 'moat' ? 4 : 2);
+  ctx.restore();
+}
+function riverInto(r, i, t) {
+  const ys = [];
+  for (let y = H0; y <= FH + 30; y += 6) ys.push(y);
+  const at = ys.map((y) => stripAt(y));
+  gapPaint(r.kind || 'river', ys.map((y, j) => [at[j].c - at[j].half, y]), ys.map((y, j) => [at[j].c + at[j].half, y]), i, t, true);
+}
+function bandAcross(w, i, t) {
+  const xs = [], y0 = +w.y, y1 = +w.y + (+w.h || 60);
+  for (let x = -20; x <= FW + 20; x += 20) xs.push(x);
+  gapPaint(w.kind, xs.map((x) => [x, y0]), xs.map((x) => [x, y1]), i, t, false);
+}
 const RES = {};
 const SPARE = document.createElement('canvas').getContext('2d');
+let PERSON_H = 0, DUR = 10;
+const personR = (h) => { if (!PERSON_H) { const q = quiet(() => K.person(SPARE, { x: 0, y: 1000, r: 100, pose: 'stand', noShadow: true })); PERSON_H = q && +q.height > 0 ? +q.height / 100 : 7.4; } return h / PERSON_H; };
+const mountOf = (kind, h) => { const real = SIZE_STD[kind] || SIZE_STD.horse, man = h / REVISE.RIDER; return { h: man * real.h, w: man * real.l, r: personR(man) }; };
+const FEARFUL = (q) => !!q && (q.pose === 'cower' || q.pose === 'huddle' || q.expression === 'scared');
+const FEAR_AT = {};
+const fearStart = (it) => { if (FEAR_AT[it.id] == null) { const k = FEARFUL(it.look) ? null : keysOf(it).filter((q) => isFinite(+q.at)).sort((a, b) => a.at - b.at).find(FEARFUL); FEAR_AT[it.id] = k ? +k.at : 0; } return FEAR_AT[it.id]; };
+function trembleOf(it, o, front, t) {
+  const T = REVISE.TREMBLE, lead = it.id === S.focus;
+  if (it.fn !== 'person' || !FEARFUL(o) || (!lead && (front >= T.GROUP || +o.h < FH * T.NEAR))) return 0;
+  const since = t - fearStart(it) * DUR;
+  return T.AMP * (since < T.FULL ? 1 : clamp(1 - (since - T.FULL) / T.FADE, lead ? T.REST : 0, 1));
+}
+const mountAt = (it, p) => { const k = (it.mountKeys || []).filter((q) => +q.at <= p).pop(); return k ? Object.assign({}, it.mountLook || {}, { pose: k.pose }) : null; };
 const quiet = (f) => { const mk = window.motionMark; window.motionMark = null; try { return f(); } finally { window.motionMark = mk; } };
 const hipDrop = (o) => { const r = quiet(() => FIG.person(SPARE, Object.assign({}, o, { mark: undefined, y: 1000 }))); return r && isFinite(r.hip) ? 1000 - r.hip : 0; };
 // Kinds that are walls drawn along a length: from/to give the length (at least two pieces long for a wagon fort).
@@ -92,16 +145,43 @@ function wallPiece(it, o, lo, hi) {
   }
   return FIG.wall(ctx, Object.assign({}, o, { kind: it.kind || 'wall', x: mid, w: Math.max(len, o.h * 0.6) }));
 }
+function ringWall(it, o) {
+  const a = +it.from, b = +it.to, cx = (a + b) / 2, rx = Math.abs(b - a) / 2, ry = rx * 0.24, step = o.h * (it.kind === 'wagonFort' ? 1.7 : 1.2), n = Math.max(6, Math.round((Math.PI * (rx + ry)) / step)), gaps = Array.isArray(it.gaps) ? it.gaps : [];
+  const pts = [];
+  for (let i = 0; i < n; i++) { const th = (i / n) * Math.PI * 2, sn = Math.sin(th); pts.push({ x: cx + rx * Math.cos(th), y: +o.y - ry + ry * sn, k: 1 - 0.18 * (1 - sn) / 2, front: sn > 0 }); }
+  let res = null;
+  pts.sort((u, v) => u.y - v.y).forEach((q) => {
+    if (q.front && gaps.some((g) => q.x > +g[0] && q.x < +g[1])) return;
+    const opt = Object.assign({}, o, { x: q.x, y: q.y, h: o.h * q.k, mark: res ? undefined : o.mark });
+    const r = it.kind === 'wagonFort' ? FIG.vehicle(ctx, Object.assign(opt, { kind: 'wagon', w: undefined })) : FIG.wall(ctx, Object.assign(opt, { kind: it.kind || 'wall', w: step * q.k * 0.95 }));
+    res = res || r;
+  });
+  return res;
+}
+function damaged(it, o) {
+  const fallen = it.state === 'collapsed', y = +o.y, f = (+o.facing || 1) < 0 ? -1 : 1;
+  ctx.save();
+  if (fallen) { ctx.beginPath(); ctx.rect(-FW, y - +o.h * 0.5, FW * 3, FH * 2); ctx.clip(); }
+  const res = FIG[it.fn] ? FIG[it.fn](ctx, Object.assign({}, o, fallen ? {} : { angle: f * 0.16 })) : null;
+  ctx.restore();
+  const b = res && res.box, w = b ? b.w : +o.h, x0 = b ? b.x : +o.x - w / 2, tone = it.fn === 'building' || it.fn === 'wall' ? '#8a8478' : '#5a4030';
+  ctx.save(); ctx.fillStyle = tone; ctx.strokeStyle = '#2a2522'; ctx.lineWidth = Math.max(1, +o.h * 0.012);
+  for (let i = 0; i < (fallen ? 14 : 5); i++) { const px = x0 + rnd(61, i) * w, pw = +o.h * (0.06 + 0.1 * rnd(63, i)), ph = pw * 0.35, py = fallen && i % 2 ? y - +o.h * (0.5 - 0.04 * rnd(69, i)) : y - ph * 0.5 + rnd(67, i) * +o.h * 0.04; ctx.save(); ctx.translate(px, py); ctx.rotate((rnd(65, i) - 0.5) * 1.4); ctx.fillRect(-pw / 2, -ph / 2, pw, ph); ctx.strokeRect(-pw / 2, -ph / 2, pw, ph); ctx.restore(); }
+  ctx.restore();
+  return res;
+}
 function drawOne(it, st, o, t, first) {
   if (it.mount) {
-    const fix = null, ml = st.mount || it.mountLook || {};
-    const rider = Object.assign({ pose: 'ride' }, o, { mark: undefined, x: undefined, y: undefined, h: undefined, w: undefined });
-    const hh = o.h, ww = hh * 1.35;
-    const r = FIG.animal(ctx, Object.assign({ mark: o.mark, kind: fix ? fix[0] : it.mount, x: o.x, y: o.y, h: hh, w: ww, facing: o.facing, seed: o.seed, pose: st.moving ? 'run' : 'stand', distance: st.moving ? o.distance : undefined, rider }, fix ? fix[1] : {}, ml, fix ? { kind: fix[0] } : {}));
-    return r && r.rider ? Object.assign({ box: r.box }, r.rider) : r;
+    const m = mountOf(it.mount, o.h), ml = st.mount || it.mountLook || {};
+    const rider = Object.assign({ pose: 'ride' }, o, { mark: undefined, x: undefined, y: undefined, h: undefined, w: undefined, r: m.r });
+    const r = FIG.animal(ctx, Object.assign({ mark: o.mark, kind: it.mount, x: o.x, y: o.y, h: m.h, w: m.w, facing: o.facing, seed: o.seed, pose: st.moving ? 'run' : 'stand', distance: st.moving ? o.distance : undefined, rider }, ml));
+    if (!r || !r.rider) return r;
+    const b = r.box || { x: o.x - m.w / 2, y: o.y - m.h, w: m.w, h: m.h }, top = Math.min(b.y, isFinite(+r.rider.top) ? +r.rider.top : b.y);
+    return Object.assign({}, r.rider, { box: { x: b.x, y: top, w: b.w, h: b.y + b.h - top } });
   }
-  if (it.fn === 'bridge') return FIG.bridge(ctx, Object.assign({}, o, { w: +it.w || +st.w || o.h * ASPECT.bridge, build: o.build || undefined }));
+  if (it.fn === 'bridge') return FIG.bridge(ctx, Object.assign({}, o, { w: +it.w || +st.w || o.h * ASPECT.bridge, build: o.build || undefined }, Array.isArray(it.from) && Array.isArray(it.to) ? { from: it.from, to: it.to } : {}, it.railOnly ? { railOnly: true, mark: undefined } : {}));
   if (it.fn === 'wall' || WALLS.indexOf(it.kind) >= 0) {
+    if (it.shape === 'ring' && isFinite(+it.from) && isFinite(+it.to)) return ringWall(it, o);
     const a = isFinite(+it.from) ? +it.from : o.x - (o.w || o.h * 3) / 2, b = isFinite(+it.to) ? +it.to : o.x + (o.w || o.h * 3) / 2;
     // The open stretches ("gaps": a breach, an opening in a wagon fort) split the wall into pieces drawn one by one.
     let pieces = [[Math.min(a, b), Math.max(a, b)]];
@@ -110,22 +190,25 @@ function drawOne(it, st, o, t, first) {
     pieces.forEach(([lo, hi], k) => { const q = wallPiece(it, Object.assign({}, o, { mark: k ? undefined : o.mark }), lo, hi); res = res || q; });
     return res;
   }
-  const res = FIG[it.fn] ? FIG[it.fn](ctx, o) : null;
+  const res = it.state && it.fn !== 'person' && it.fn !== 'animal' ? damaged(it, o) : FIG[it.fn] ? FIG[it.fn](ctx, o) : null;
   if (it.burning && res && res.box) K.effect(ctx, { kind: 'burning', x: res.box.x + res.box.w / 2, y: res.box.y + res.box.h * 0.35, r: res.box.h * 0.5, t, seed: 1 });
   return res;
 }
 function drawItem(it, p, t) {
   const st = stateAt(it, p);
   if (it.fn === 'sticker') return drawSticker(it, st, p, t);
+  if (it.mountKeys) st.mount = mountAt(it, p) || st.mount;
   if (!isFinite(+st.x) || !isFinite(+st.y) || !(+st.h > 0)) return;
   if (it.at && (p < it.at[0] || p > it.at[1])) return;
+  if (it.anchor) { RES[it.id] = Object.assign({}, it.anchor, { box: it.anchor }); return; }
   const look = Object.assign({}, st);
   ['x', 'y', 'h', 'w', 'facing', 'moving', 'distance', 'mount'].forEach((k) => delete look[k]);
   let x = +st.x, y = +st.y;
   const real = it.kind && SIZE_STD[it.kind];
   // A prop in flight lies along its way, as long as its real length against its height (never stood up like a spear).
   const flying = it.fn === 'prop' && real && real.place === 'air';
-  const h = +st.h, w = +st.w || (flying ? h * (real.l / real.h) : h * (ASPECT[it.fn] || 1) * (it.mount ? 1.35 : 1));
+  const lands = it.fn === 'prop' && !it.heldBy && REVISE.HURLED.indexOf(it.kind) >= 0 && keysOf(it).filter((q) => isFinite(+q.y)).length > 1 ? Math.max(...keysOf(it).filter((q) => isFinite(+q.y)).map((q) => +q.y)) : 0;
+  const h = lands > H0 ? +st.h * clamp((+st.y - H0) / (lands - H0), REVISE.HURL_MIN, 1) : +st.h, w = +st.w || (flying ? h * (real.l / real.h) : it.mount ? mountOf(it.mount, h).w : h * (ASPECT[it.fn] || 1));
   let facing = (+st.facing || 1) < 0 ? -1 : 1;
   // A thing flying on its way turns to where it goes: it faces its way across, its nose follows the climb or the dive
   // (an aircraft at most AIR_TILT; anything shot or thrown — arrow, bolt, spear, shot, stone, rocket, missile — freely).
@@ -151,11 +234,13 @@ function drawItem(it, p, t) {
     members.push({ i, row, x: n > 1 ? x - gw / 2 + ((col + 0.5 + (row % 2) * 0.35) / cols) * gw + (rnd(41, i) - 0.5) * gw * 0.06 : x, y: y - k * depth, s: s * (n > 1 ? 0.95 + 0.1 * rnd(43, i) : 1) });
   }
   members.sort((a, b) => a.y - b.y);
-  members.forEach((m) => {
+  members.forEach((m, j) => {
     const o = Object.assign({}, look, { mark: it.id, x: m.x, y: m.y, h: h * m.s, w: +st.w > 0 || it.fn === 'person' || it.fn === 'animal' || it.mount || flying ? w * m.s : undefined, facing, seed: 3 + m.i * 5 + it.id.length, distance: st.distance + ((m.i * 0.618) % 1) * 1.3 * h * m.s });
     if (it.kind) o.kind = it.kind;
     if ((it.fn === 'person' || it.fn === 'animal') && st.moving && (!o.pose || o.pose === 'stand' || o.pose === 'walk')) o.pose = o.pose === 'walk' ? 'walk' : 'run';
     if (seat && it.fn === 'person') { o.pose = o.pose || 'sit'; o.y = seat.y + hipDrop(o) + seat.h * 0.06; }
+    if (it.fn === 'person') { o.tremble = trembleOf(it, o, members.length - 1 - j, t); o.trembleHz = REVISE.TREMBLE.HZ; }
+    if (it.fn === 'person' && n > 1) { ['top', 'pants'].forEach((k, q) => { if (HEX.test(String(o[k] || ''))) o[k] = mix(o[k], rnd(47 + q, m.i) > 0.5 ? '#ffffff' : '#000000', rnd(53 + q, m.i) * REVISE.CROWD.TONE); }); if (!look.hairColor) o.hairColor = REVISE.CROWD.HAIR[Math.floor(rnd(59, m.i) * REVISE.CROWD.HAIR.length)]; }
     const r = drawOne(it, st, o, t, !m.i);
     if (!m.i) RES[it.id] = Object.assign({ x: o.x, y: o.y, h: o.h, w: o.w, facing, look }, r || {});
   });
@@ -175,6 +260,43 @@ function drawSticker(it, st, p, t) {
   if (window.motionMark) window.motionMark(ctx, it.id, -w / 2, who ? -h / 2 : -h, w, h);
   try { f(ctx, w, h, t, p); } catch (e) {}
   ctx.restore();
+}
+const wetAt = (x, y) => { const st = stripAt(y); if (st && STRIP.on && REVISE.CROSS.STAND.indexOf(STRIP.on.kind) < 0) return Math.abs(x - st.c) < st.half; return (S.water || []).some((w) => !w.into && REVISE.TRAIL.WET.indexOf(w.kind || 'river') >= 0 && y > +w.y + 2 && y < +w.y + (+w.h || 60) - 2); };
+const footOfMover = (it, st) => { const h = +st.h || +it.h || 60, body = it.mount ? mountOf(it.mount, h).w : h * 0.4, f = (+st.facing || 1) < 0 ? -1 : 1; return { x: +st.x - f * body * REVISE.TRAIL.BEHIND, y: +st.y, h, f }; };
+function liveEffects(p) {
+  const T = REVISE.TRAIL, out = [], led = new Set();
+  (S.effects || []).forEach((e) => {
+    if (!e.of) return out.push(e);
+    const it = S.items.find((q) => q.id === e.of);
+    if (!it) return;
+    const st = stateAt(it, p);
+    if (!st.moving) return;
+    const ft = footOfMover(it, st), wet = wetAt(+st.x, +st.y);
+    led.add(it.id);
+    if (wet) out.push({ kind: 'splash', x: 2 * +st.x - ft.x, y: ft.y, r: ft.h * T.SPLASH, facing: ft.f });
+    out.push(Object.assign({}, e, { x: ft.x, y: ft.y, kind: wet ? 'splash' : e.kind === 'splash' ? 'dustTrail' : e.kind, r: wet ? ft.h * T.SPLASH : clamp(+e.r || ft.h * T.R, ft.h * T.MIN, ft.h * T.MAX), facing: ft.f, at: undefined }));
+  });
+  S.items.forEach((it) => {
+    if (led.has(it.id) || !(it.fn === 'person' || it.fn === 'animal') || it.deck || !moves(it)) return;
+    const st = stateAt(it, p);
+    if (!st.moving || !wetAt(+st.x, +st.y)) return;
+    const ft = footOfMover(it, st);
+    const body = it.mount ? mountOf(it.mount, ft.h).w : ft.h * 0.4;
+    [-0.3, 0.3].forEach((k) => out.push({ kind: 'splash', x: +st.x + k * body * ft.f, y: ft.y, r: ft.h * T.SPLASH, facing: ft.f }));
+  });
+  return out;
+}
+function trails() {
+  const T = REVISE.TRAIL, movers = S.items.filter((it) => (it.fn === 'person' || it.fn === 'animal' || it.fn === 'vehicle') && moves(it) && +it.h > 0);
+  if (!movers.length) return;
+  (S.effects || []).forEach((e) => {
+    if (T.KINDS.indexOf(e.kind) < 0 || !isFinite(+e.x) || !isFinite(+e.y)) return;
+    const at = e.at ? [+e.at[0], (+e.at[0] + +e.at[1]) / 2, +e.at[1]] : [0, 0.25, 0.5, 0.75, 1];
+    const best = movers.map((m) => ({ m, d: Math.min(...at.map((q) => { const st = stateAt(m, q); return Math.hypot(+st.x - +e.x, (+st.y - +e.y) * 1.5); })) })).sort((a, b) => a.d - b.d)[0];
+    if (!best || best.d > Math.max(+best.m.h * T.NEAR, (+e.r || 40) * 1.5)) return;
+    e.of = best.m.id;
+    note('trail', best.m.id);
+  });
 }
 function effects(list, p, t) {
   (list || []).forEach((e, i) => { if (e.at && (p < e.at[0] || p > e.at[1])) return; const r = +e.r || 40; K.effect(ctx, { kind: e.kind, x: +e.x, y: +e.y, r, width: r * 3, height: r * 2, t, seed: i + 1, facing: e.facing }); });
@@ -248,8 +370,10 @@ function devices(p, t, layer, toFrame, zoom) {
       // Closer than the master shot, or the given place off the head: beside the head, on the side with more room.
       if (head && (zoom > 1.02 || !isFinite(+d.x))) { const side = head[0] < FW / 2 ? 1 : -1; x = head[0] + side * r * 1.5; y = head[1] - r * 1.25; }
       x = clamp(x, FW * TITLE_SAFE + r, FW * (1 - TITLE_SAFE) - r); y = clamp(y, FH * TITLE_SAFE + r, FH * 0.84 - r);
+      if (hitsKey({ x: x - r * 1.6, y: y - r * 1.05, w: r * 3.2, h: r * 2.1 }, toFrame)) { const spot = freeSpot(r * 3.2, r * 2.1, toFrame, [x, y]); if (spot) { x = spot.x + r * 1.6; y = spot.y + r * 1.05; } }
       const from = head && head[0] > 0 && head[0] < FW && head[1] > 0 && head[1] < FH ? head : undefined;
-      FIG.device(ctx, { kind: 'thought', x, y, r, from, appear }, () => { quiet(() => (d.items || []).forEach((it) => drawItem(Object.assign({}, it, { x: x + (+it.x || 0), y: y + (it.y != null ? +it.y : r * 0.45), keys: undefined }, inBubble(it, x)), p, t))); });
+      const cy = d.fitted ? y : y + r * 0.45;
+      FIG.device(ctx, { kind: 'thought', x, y, r, from, appear }, () => { quiet(() => (d.items || []).forEach((it) => drawItem(Object.assign({}, it, { x: x + (+it.x || 0), y: d.fitted ? cy + +it.y : y + (it.y != null ? +it.y : r * 0.45), keys: undefined }, inBubble(it, x)), p, t))); });
       return;
     }
     if (d.kind === 'inset') {
@@ -260,6 +384,7 @@ function devices(p, t, layer, toFrame, zoom) {
       const handAt = who.hand || [who.x, who.y - who.h * 0.5], small = (S.items || []).filter((it) => it.fn === 'prop' && it.kind && !it.group && +it.h > 0 && +it.h < (who.h || 200) * 0.35 && RES[it.id] && Math.hypot(RES[it.id].x - handAt[0], RES[it.id].y - handAt[1]) < (who.h || 200) * 0.7)[0];
       const held = String((who.look && who.look.hold) || ''), hold = small ? small.kind : LONG_HELD.test(held) ? '' : held;
       const part = d.part === 'head' || !hold ? 'head' : 'item';
+      if (part === 'item' && !quiet(() => FIG.prop(SPARE, { kind: hold, x: 50, y: 100, h: 60, facing: 1 }))) { note('inset', d.of); return; }
       if (part === 'head') {
         // A face already large in this shot needs no close-up of itself.
         if (!who.head || (who.h || 0) * zoom > FH * 0.55) return;
@@ -276,11 +401,96 @@ function devices(p, t, layer, toFrame, zoom) {
     const at = who ? [who.x, who.y - who.h * 0.6] : [+d.x || FW / 2, +d.y || FH / 2];
     const r = +d.r || (who ? who.h * 0.35 : 60);
     if (d.kind === 'speed') { if (!who) return; FIG.device(ctx, { kind: 'speed', x: who.x - (who.facing || 1) * (who.w || who.h * 0.5) * 0.5, y: who.y - who.h * 0.45, r: who.h * 0.4, facing: who.facing || 1, t }); return; }
-    if (d.kind === 'spotlight') { const s = who ? [who.x, who.y - who.h * 0.5] : at; FIG.device(ctx, { kind: 'spotlight', x: s[0], y: s[1], r: who ? who.h * 0.8 : r }); return; }
-    if (d.kind === 'count') { FIG.device(ctx, { kind: 'count', x: clamp(+d.x || 60, FW * TITLE_SAFE, FW * 0.6), y: clamp(+d.y || 60, FH * TITLE_SAFE, FH * 0.6), w: Math.min(+d.w || 320, FW * 0.4), h: Math.min(+d.h || 140, FH * 0.3), groups: d.groups || [], appear }); return; }
+    if (d.kind === 'spotlight') { spotlight(d, who, p, toFrame, zoom); return; }
+    if (d.kind === 'count') { countCard(d, d.at ? smooth(d.at[0], d.at[0] + 0.1, p) : smooth(0, 0.1, p), toFrame); return; }
     if (d.kind === 'time') { FIG.device(ctx, { kind: 'time', x: +d.x || FW / 2, y: +d.y || FH * 0.28, r: Math.min(+d.r || 220, FH * 0.35), body: d.body || 'sun', progress: p }); return; }
     FIG.device(ctx, { kind: d.kind, x: at[0], y: at[1], r, facing: d.facing || (who && who.facing) || 1, t, appear });
   });
+}
+function boxOf(r) { return r.box || { x: r.x - (r.w || r.h * 0.42) / 2, y: r.y - r.h, w: r.w || r.h * 0.42, h: r.h }; }
+function inFrame(b, toFrame) { const a = toFrame(b.x, b.y), c = toFrame(b.x + b.w, b.y + b.h); return { x: a[0], y: a[1], w: c[0] - a[0], h: c[1] - a[1] }; }
+function spotlight(d, who, p, toFrame, zoom) {
+  const SP = REVISE.SPOT;
+  if (!who) return;
+  const b = inFrame(boxOf(who), toFrame), cx = b.x + b.w / 2, cy = b.y + b.h / 2, size = Math.max(b.w, b.h);
+  if (size < FH * SP.LEAST || cx < -FW * SP.EDGE || cx > FW * (1 + SP.EDGE) || cy < 0 || cy > FH) { note('spot', d.of); return; }
+  const soft = d.at ? smooth(d.at[0], d.at[0] + SP.SOFT, p) * (1 - smooth(d.at[1] - SP.SOFT, d.at[1], p)) : smooth(0, SP.SOFT, p);
+  FIG.device(ctx, { kind: 'spotlight', x: cx, y: cy, r: Math.max(size * 0.6, FH * SP.MIN), dim: S.time === 'night' ? SP.NIGHT : SP.DIM, appear: soft });
+}
+const busyBoxes = (toFrame) => S.items.filter((it) => RES[it.id] && (it.fn === 'person' || it.fn === 'animal' || isKey(it))).map((it) => Object.assign(inFrame(boxOf(RES[it.id]), toFrame), { key: isKey(it) }));
+const hitsKey = (b, toFrame) => busyBoxes(toFrame).some((q) => q.key && Math.min(b.x + b.w, q.x + q.w) > Math.max(b.x, q.x) && Math.min(b.y + b.h, q.y + q.h) > Math.max(b.y, q.y));
+function freeSpot(w, h, toFrame, hint) {
+  const F = REVISE.FREE, pad = FH * F.PAD, busy = busyBoxes(toFrame);
+  let best = null;
+  for (let y = pad; y + h <= FH * 0.66; y += FH * F.STEP / 2) for (let x = pad; x + w <= FW - pad; x += FW * F.STEP / 2) {
+    let cover = 0, hit = false;
+    busy.forEach((b) => { const ix = Math.max(0, Math.min(x + w, b.x + b.w) - Math.max(x, b.x)), iy = Math.max(0, Math.min(y + h, b.y + b.h) - Math.max(y, b.y)); cover += ix * iy; if (b.key && ix * iy > 0) hit = true; });
+    if (hit || cover > w * h * F.COVER * 5) continue;
+    const score = cover + (hint ? Math.hypot(x + w / 2 - hint[0], y + h / 2 - hint[1]) * w * 0.02 : 0);
+    if (!best || score < best.score) best = { x, y, score };
+  }
+  return best;
+}
+function skySpot(w, h, toFrame) {
+  const pad = FH * 0.04, sky = toFrame(0, H0)[1], sk = S.sky || {}, sun = sk.sun === false ? null : toFrame(isFinite(+sk.sunX) ? +sk.sunX : FW * 0.84, H0 * 0.3);
+  const busy = S.items.filter((it) => RES[it.id] && it.fn !== 'wall').map((it) => Object.assign(inFrame(boxOf(RES[it.id]), toFrame), { key: isKey(it) })).concat(sun ? [{ x: sun[0] - FH * 0.08, y: sun[1] - FH * 0.08, w: FH * 0.16, h: FH * 0.16, key: true }] : []);
+  const lead = RES[S.focus] && inFrame(boxOf(RES[S.focus]), toFrame), side = lead ? (lead.x + lead.w / 2 < FW / 2 ? 1 : -1) : 0;
+  let best = null;
+  for (let y = pad; y + h <= FH * 0.6; y += FH * 0.02) for (let x = pad; x + w <= FW - pad; x += FW * 0.02) {
+    let cover = 0, hit = false;
+    busy.forEach((b) => { const a = Math.max(0, Math.min(x + w, b.x + b.w) - Math.max(x, b.x)) * Math.max(0, Math.min(y + h, b.y + b.h) - Math.max(y, b.y)); cover += a; if (b.key && a > 0) hit = true; });
+    if (hit || cover > w * h * REVISE.COUNT.COVER) continue;
+    const score = cover * 6 + Math.max(0, y + h - sky) * w * 3 + (side ? ((side > 0 ? FW - x - w : x) / FW) * w * h * 0.8 : 0) + y * w * 0.2;
+    if (!best || score < best.score) best = { x, y, score };
+  }
+  return best;
+}
+const NICE = (v) => { const e = Math.pow(10, Math.floor(Math.log10(Math.max(1, v)))); return (REVISE.COUNT.ROUND.find((k) => k * e >= v) || 10) * e; };
+const NUMBER_FONT = "'Cinzel', 'Trajan Pro', 'Book Antiqua', 'Palatino Linotype', Palatino, Georgia, serif";
+function countCard(d, appear, toFrame) {
+  const C = REVISE.COUNT, groups = (d.groups || []).map((g) => Object.assign({}, g, { it: S.items.find((it) => it.id === g.of) })).filter((g) => g.it);
+  if (!groups.length) return;
+  const most = Math.max(...groups.map((g) => +g.n)), each = most > C.ALL ? NICE(most / C.MAX) : 1, fmt = (n) => { try { return new Intl.NumberFormat(SCENE.language || undefined).format(n); } catch (e) { return String(n); } };
+  const layout = (fh) => {
+    const gap = fh * 1.2, font = Math.round(Math.max(FH * 0.03, fh * 0.6)), small = Math.round(Math.max(FH * 0.019, fh * 0.4));
+    const blocks = groups.map((g) => {
+      const one = +g.n === 1, n = one ? 1 : Math.max(1, Math.round(+g.n / each)), rider = !!g.it.mount, size = fh * (one ? 1.25 : 1) * (rider ? REVISE.RIDER : 1);
+      const cw = rider ? mountOf(g.it.mount, size).w * 1.08 : size * ASPECT.person * 1.75, cols = one ? 1 : Math.min(n, Math.ceil(n / Math.ceil(n / C.ROW))), rows = Math.ceil(n / cols), step = size * 0.55;
+      return { g, n, cols, rows, size, cw, step, w: Math.max(cols * cw + (rows > 1 ? cw * 0.5 : 0), font * 3), h: size + (rows - 1) * step };
+    });
+    const top = Math.max(...blocks.map((b) => b.h)), legend = each > 1 ? small * 1.8 : 0;
+    return { fh, gap, font, small, blocks, top, legend, W: blocks.reduce((a, b) => a + b.w, 0) + gap * (blocks.length - 1), H: top + font * 1.5 + legend };
+  };
+  let L = layout(FH * C.SIZE);
+  if (L.W > FW * C.WIDE) L = layout((FH * C.SIZE * FW * C.WIDE) / L.W);
+  const { fh, gap, font, small, blocks, top, legend, W, H } = L, ink = '#2e2620', pad = fh * 0.8;
+  const spot = skySpot(W + pad * 2, H + pad * 2, toFrame);
+  if (!spot) { note('count', 'space'); return; }
+  const k = clamp(appear, 0, 1), x0 = spot.x + pad, y0 = spot.y + pad;
+  const figure = (it, x, y, h) => quiet(() => drawOne(it, stateAt(it, 0), Object.assign({}, stateAt(it, 0), { x, y, h, w: it.mount ? mountOf(it.mount, h).w : h * ASPECT.person, facing: 1, seed: 3, mark: undefined, tremble: 0, expression: 'calm', noShadow: true }), 0, false));
+  const text = (str, x, y) => { ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, ctx.measureText('0').width * 0.35); ctx.strokeStyle = 'rgba(250,244,230,0.9)'; ctx.strokeText(str, x, y); ctx.fillText(str, x, y); };
+  ctx.save(); ctx.globalAlpha *= clamp(k * 2.5, 0, 1);
+  ctx.save(); ctx.translate(x0 + W / 2, y0 + H / 2); ctx.scale(1, (H + pad * 2) / (W + pad * 2));
+  const R = (W + pad * 2) * 0.6, glow = ctx.createRadialGradient(0, 0, 0, 0, 0, R); glow.addColorStop(0, 'rgba(250,244,230,0.6)'); glow.addColorStop(0.55, 'rgba(250,244,230,0.38)'); glow.addColorStop(1, 'rgba(250,244,230,0)');
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  const base = y0 + top;
+  let bx = x0;
+  blocks.forEach((b) => {
+    const shown = Math.ceil(b.n * k), left = bx + (b.w - b.cols * b.cw - (b.rows > 1 ? b.cw * 0.5 : 0)) / 2;
+    ctx.save(); ctx.fillStyle = 'rgba(46,38,32,0.16)'; ctx.beginPath(); ctx.ellipse(bx + b.w / 2, base + fh * 0.04, b.w * 0.52, fh * 0.12, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    for (let row = b.rows - 1; row >= 0; row--) for (let col = 0; col < b.cols; col++) { const i = row * b.cols + col; if (i >= shown) continue; figure(b.g.it, left + (col + 0.5 + (row % 2) * 0.5) * b.cw, base - row * b.step, b.size); }
+    ctx.font = '800 ' + font + 'px ' + NUMBER_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = ink;
+    text(fmt(b.n > 1 ? Math.round(+b.g.n * (1 - Math.pow(1 - k, 3))) : +b.g.n), bx + b.w / 2, base + font * 1.25);
+    bx += b.w + gap;
+  });
+  if (legend) {
+    const ly = y0 + H, it = blocks.find((b) => b.n > 1).g.it, label = '= ' + fmt(each);
+    ctx.font = '600 ' + small + 'px ' + NUMBER_FONT; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(46,38,32,0.85)';
+    const sz = small * 1.5 * (it.mount ? REVISE.RIDER : 1), fw = it.mount ? mountOf(it.mount, sz).w : sz * ASPECT.person * 1.6, tw = ctx.measureText(label).width, lx = x0 + W / 2 - (fw + small * 0.4 + tw) / 2;
+    figure(it, lx + fw / 2, ly + small * 0.15, sz);
+    text(label, lx + fw + small * 0.4, ly);
+  }
+  ctx.restore();
 }
 const LABEL_HALF = 0.95;
 // Names that are water, not towns: written along the river / inside the water, never as a dotted place.
@@ -420,15 +630,15 @@ function paint(p, t, inner) {
   if (S.map) return chart(p, t);
   if (S.interior) room(); else backdrop(t);
   const items = order(p), far = H0 + (FH - H0) * 0.22, split = isFinite(+(S.haze && S.haze.frontOf)) ? +S.haze.frontOf : H0 + (FH - H0) * 0.55;
-  const yOf = (it) => +stateAt(it, p).y || 0, fx = (list) => { if (FX) effects(list, p, t); };
-  fx((S.effects || []).filter((e) => (+e.y || 0) < far));
+  const yOf = (it) => +stateAt(it, p).y || 0, fx = (list) => { if (FX) effects(list, p, t); }, live = liveEffects(p);
+  fx(live.filter((e) => (+e.y || 0) < far));
   items.filter((it) => yOf(it) < far).forEach((it) => drawItem(it, p, t));
   if (!S.interior) veil();
-  fx((S.effects || []).filter((e) => (+e.y || 0) >= far && (+e.y || 0) < split));
+  fx(live.filter((e) => (+e.y || 0) >= far && (+e.y || 0) < split));
   items.filter((it) => yOf(it) >= far && yOf(it) < split).forEach((it) => drawItem(it, p, t));
   if (FX) haze(p, t);
   // Smoke and dust near the front stay behind the near figures, so they never hide who the scene is about.
-  fx((S.effects || []).filter((e) => (+e.y || 0) >= split));
+  fx(live.filter((e) => (+e.y || 0) >= split));
   items.filter((it) => yOf(it) >= split).forEach((it) => drawItem(it, p, t));
   (S.items || []).filter((it) => it.heldBy).forEach((it) => drawItem(it, p, t));
   if (!inner && !S.map) devices(p, t, 'scene');
@@ -494,12 +704,12 @@ PROBE.width = 900; PROBE.height = 520;
 function footOf(it) {
   const look = it.look || {}, key = [it.fn, it.kind || '', it.mount || '', look.pose || '', look.hold || '', look.cape ? 1 : 0, look.robe ? 1 : 0, look.shield || ''].join('|');
   if (FOOT[key] != null) return FOOT[key];
-  let ratio = (ASPECT[it.fn] || 1) * (it.mount ? 1.35 : 1);
+  let ratio = it.mount ? mountOf(it.mount, 1).w : ASPECT[it.fn] || 1;
   try {
     const pc = PROBE.getContext('2d'), h = 200;
     pc.setTransform(1, 0, 0, 1, 0, 0); pc.clearRect(0, 0, PROBE.width, PROBE.height);
     quiet(() => {
-      if (it.mount) FIG.animal(pc, { kind: it.mount, x: 450, y: 470, h, w: h * 1.35, facing: 1, rider: Object.assign({ pose: 'ride' }, look), noShadow: true });
+      if (it.mount) { const m = mountOf(it.mount, h); FIG.animal(pc, { kind: it.mount, x: 450, y: 470, h: m.h, w: m.w, facing: 1, rider: Object.assign({ pose: 'ride' }, look, { r: m.r }), noShadow: true }); }
       else if (FIG[it.fn]) FIG[it.fn](pc, Object.assign({}, look, { kind: it.kind, x: 450, y: 470, h, w: it.fn === 'person' || it.fn === 'animal' ? h * (ASPECT[it.fn] || 1) : undefined, facing: 1, noShadow: true }));
     });
     const d = pc.getImageData(0, 0, PROBE.width, PROBE.height).data;
@@ -517,12 +727,373 @@ function moveDepth(it, k) {
   if (isFinite(+it.w)) it.w = +it.w * k;
   keysOf(it).forEach((q) => { if (isFinite(+q.y)) q.y = Y(+q.y); if (isFinite(+q.h)) q.h = +q.h * k; });
 }
+const SCENE = VIEW.scene || {}, TEXT = String(SCENE.text || '').toLowerCase();
+const REQUIRED = (Array.isArray(SCENE.required) ? SCENE.required : []).map(idOf);
+const NOTES = (window.__motionNotes = []);
+const note = (kind, id) => { if (!NOTES.some((q) => q[0] === kind && q[1] === id)) NOTES.push([kind, id]); };
+const said = (words) => words.some((w) => TEXT.indexOf(w) >= 0);
+const isKey = (it) => it.id === S.focus || !!it.focal || REQUIRED.indexOf(idOf(it.id)) >= 0;
+const sameMount = (a, b) => a === b || (REVISE.HORSES.indexOf(a) >= 0 && REVISE.HORSES.indexOf(b) >= 0);
+const LIGHT_OF = { day: ['fireflies'], dawn: ['fireflies'], dusk: [], night: ['rays', 'heat'] };
+function retime() {
+  const want = SCENE.time;
+  if (!want || want === S.time || !SKY[want]) return;
+  note('time', S.time + '>' + want);
+  S.time = want;
+  const off = LIGHT_OF[want] || [];
+  S.effects = (S.effects || []).filter((e) => off.indexOf(e.kind) < 0);
+  S.devices = (S.devices || []).filter((d) => d.kind !== 'time' || (d.body === 'moon') === (want === 'night'));
+}
+function mergeMounts() {
+  S.items.filter((it) => it.fn === 'person' && it.mount && +it.h > 0).forEach((r) => {
+    const a = stateAt(r, 0);
+    const twin = S.items.find((q) => q.fn === 'animal' && !q.mount && !q.on && sameMount(q.kind || 'horse', r.mount) && !!q.group === !!r.group && (() => { const b = stateAt(q, 0); return Math.abs(+b.x - +a.x) < +r.h * REVISE.MOUNT_NEAR && Math.abs(+b.y - +a.y) < Math.max(12, +r.h * REVISE.MOUNT_DEPTH); })());
+    if (!twin) return;
+    const look = Object.assign({}, twin.look || {});
+    delete look.pose;
+    r.mountLook = Object.assign(look, r.mountLook || {});
+    const poses = keysOf(twin).filter((k) => isFinite(+k.at) && k.pose).map((k) => ({ at: +k.at, pose: REVISE.MOUNT_POSES.indexOf(k.pose) >= 0 ? k.pose : undefined }));
+    if (twin.look && REVISE.MOUNT_POSES.indexOf(twin.look.pose) >= 0 && !poses.some((k) => k.at <= 0)) poses.unshift({ at: 0, pose: twin.look.pose });
+    if (poses.some((k) => k.pose)) r.mountKeys = poses.sort((u, v) => u.at - v.at);
+    if (twin.focal || S.focus === twin.id) { r.focal = true; S.focus = r.id; }
+    (S.devices || []).forEach((d) => { if (d.of === twin.id) d.of = r.id; });
+    S.items = S.items.filter((q) => q !== twin && q.heldBy !== twin.id);
+    note('mount', twin.id);
+  });
+}
+function dryFlags() {
+  const water = (S.water || []).filter((w) => isFinite(+w.y)), shore = FH * REVISE.WET_SHORE;
+  const soaked = S.ground === 'snow' || said(REVISE.WORDS.WET), wetAt = (y) => soaked || water.some((w) => y >= +w.y - shore && y <= +w.y + (+w.h || 60) + shore);
+  S.items.forEach((it) => {
+    const looks = [it.look, it.mountLook].concat(keysOf(it)).filter(Boolean);
+    if (!looks.some((q) => q.wet) || wetAt(+stateAt(it, 0).y)) return;
+    looks.forEach((q) => delete q.wet);
+    note('wet', it.id);
+  });
+}
+function oneDevice(d, i, list) {
+  if (d.kind === 'spotlight') return list.findIndex((q) => q.kind === 'spotlight') === i && !!d.of;
+  if (d.kind === 'thought') return fitBubble(d);
+  if (d.kind === 'count') return tieCount(d);
+  return true;
+}
+function bubbleSpan(list) {
+  const box = list.map((it) => { const w = +it.w || (it.mount ? mountOf(it.mount, +it.h).w : +it.h * (ASPECT[it.fn] || 1)), x = isFinite(+it.from) ? (+it.from + +it.to) / 2 : +it.x || 0, ww = isFinite(+it.from) ? Math.abs(+it.to - +it.from) : w, y = isFinite(+it.y) ? +it.y : 0; return [x - ww / 2, y - +it.h, x + ww / 2, y]; });
+  return box.reduce((a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])]);
+}
+function fitBubble(d) {
+  const B = REVISE.BUBBLE, r = Math.min(+d.r || 100, FH * 0.2), main = (it) => B.MAIN.indexOf(it.fn) >= 0;
+  let items = (d.items || []).filter((it) => +it.h > 0);
+  if (!items.some(main)) { note('bubble', d.of || ''); return false; }
+  const scaleOf = (list) => { const b = bubbleSpan(list); return { b, s: Math.min((B.FILL * 2.5 * r) / Math.max(1, b[2] - b[0]), (B.FILL * 1.56 * r) / Math.max(1, b[3] - b[1])) }; };
+  items = items.filter((it) => main(it) || +it.h * scaleOf(items).s >= B.LEAST * r);
+  const f = scaleOf(items), cx = (f.b[0] + f.b[2]) / 2, cy = (f.b[1] + f.b[3]) / 2, X = (v) => (+v - cx) * f.s;
+  d.items = items.map((it) => Object.assign({}, it, { x: X(isFinite(+it.x) ? it.x : cx), y: (+it.y - cy) * f.s, h: +it.h * f.s, w: isFinite(+it.w) ? +it.w * f.s : undefined }, isFinite(+it.from) ? { from: X(it.from), to: X(it.to) } : {}, Array.isArray(it.gaps) ? { gaps: it.gaps.map((g) => [X(g[0]), X(g[1])]) } : {}));
+  const end = Math.max(...d.items.filter(main).map((it) => Math.min(it.at ? +it.at[1] : 1, it.fade ? +it.fade[1] : 1)));
+  d.at = [d.at ? +d.at[0] : 0, Math.min(d.at ? +d.at[1] : 1, end)];
+  d.fitted = true;
+  return d.at[1] - d.at[0] > 0.08;
+}
+function tieCount(d) {
+  const color = (c) => String(c || '').toLowerCase();
+  const groups = (d.groups || []).filter((g) => +g.n > 0).map((g) => { const tone = (it) => it.fn === 'person' && !!g.color && color((it.look || {}).top) === color(g.color), of = S.items.find((it) => it.fn === 'person' && it.id === g.of) || S.items.find((it) => tone(it) && (+g.n > 1) === !!it.group) || S.items.find(tone); return of ? Object.assign({}, g, { of: of.id }) : null; });
+  if (!groups.length || groups.some((g) => !g)) { note('count', ''); return false; }
+  d.groups = groups;
+  return true;
+}
+function scaleRiders() {
+  const small = (it) => REVISE.SMALL_BUILD.indexOf(String((it.look || {}).build || '')) >= 0;
+  const stand = S.items.filter((it) => it.fn === 'person' && !it.mount && +it.h > 0 && +it.y > H0 + 8 && !small(it) && (it.look || {}).pose !== 'sit' && (it.look || {}).pose !== 'lie');
+  S.items.filter((it) => it.fn === 'person' && it.mount && +it.h > 0 && +it.y > H0 + 8).forEach((r) => {
+    const q = stand.filter((p) => Math.abs(+p.y - +r.y) <= Math.max(24, (+p.y - H0) * REVISE.PEOPLE_DEPTH)).sort((a, b) => Math.abs(+a.y - +r.y) - Math.abs(+b.y - +r.y))[0];
+    if (!q) return;
+    const want = (+q.h * (+r.y - H0)) / (+q.y - H0) * REVISE.RIDER, k = +r.h / want;
+    if (Math.abs(k - 1) <= REVISE.PEOPLE_BAND) return;
+    const f = want / +r.h;
+    r.h = want; keysOf(r).forEach((p) => { if (isFinite(+p.h)) p.h = +p.h * f; });
+    note('rider', r.id);
+  });
+  const named = stand.filter((it) => !it.group);
+  named.forEach((q) => {
+    if (q.id === S.focus) return;
+    const peers = named.filter((p) => p !== q && Math.abs(+p.y - +q.y) <= Math.max(24, (+p.y - H0) * REVISE.PEOPLE_DEPTH)).map((p) => (+p.h * (+q.y - H0)) / (+p.y - H0)).sort((a, b) => a - b);
+    if (peers.length < 2) return;
+    const med = peers[peers.length >> 1], f = med / +q.h;
+    if (Math.abs(f - 1) <= REVISE.PEOPLE_BAND) return;
+    q.h = med; keysOf(q).forEach((p) => { if (isFinite(+p.h)) p.h = +p.h * f; });
+    note('person', q.id);
+  });
+}
+const STRIP = { on: null }, C_STAND = REVISE.CROSS.STAND;
+const stripAt = (y) => { const r = STRIP.on; if (!r) return null; const C = REVISE.CROSS, k = Math.pow(Math.max(0, (y - H0) / Math.max(1, r.base - H0)), C.GROW), half = Math.min(FW * C.BOTTOM / 2, Math.max(r.wide * C.FAR_MIN, (r.wide / 2) * k)); return { c: r.x + Math.sin((y - H0) / 90) * half * C.BEND, half }; };
+function crossing(water, bridges) {
+  const site = VIEW.crossing, C = REVISE.CROSS;
+  const band = site && water.find((w) => C.KINDS.indexOf(w.kind || 'river') >= 0);
+  if (!band) return;
+  const b0 = bridges.filter((b) => +b.y >= +band.y - 4 && +b.y <= +band.y + +band.h + 4)[0];
+  if (!b0 && +band.y + +band.h < H0 + (FH - H0) * C.NEAR) return;
+  const base = b0 ? +b0.y + (+b0.h || 0) : H0 + (FH - H0) * C.BASE, over = C.KINDS.indexOf(site.over) >= 0 && band.kind !== 'stream' ? site.over : band.kind || 'river';
+  band.into = { x: clamp(+site.x, C.X_RANGE[0], C.X_RANGE[1]) * FW, base, wide: clamp(+site.wide, C.WIDE_RANGE[0], C.WIDE_RANGE[1]) * FW, kind: over };
+  STRIP.on = band.into;
+  const deck = [];
+  bridges.forEach((b) => {
+    const span = (+b.w || +b.h * 4) / 2, ox = +b.x;
+    S.items.filter((it) => (it.fn === 'person' || it.fn === 'animal') && !it.heldBy && Math.abs(+stateAt(it, 0).x - ox) < span && Math.abs(+stateAt(it, 0).y - +b.y) < Math.max(20, +b.h * 0.4)).forEach((it) => deck.push([it, b, clamp((+stateAt(it, 0).x - ox) / Math.max(1, span), -1, 1)]));
+    const st = stripAt(+b.y);
+    b.x = st.c; b.w = st.half * 2 * C.SPAN; b.h = Math.min(+b.h || b.w * C.BRIDGE_H, b.w * C.BRIDGE_H);
+    if (site.build) b.look = Object.assign({}, b.look || {}, { build: site.build });
+    b.z = +b.y;
+    note('bridge', b.id);
+  });
+  const fighters = bridges.length && told(bridges[0], REVISE.WORDS.ON_DECK) ? S.items.filter((it) => it.fn === 'person' && !it.heldBy && !deck.some((d) => d[0] === it) && C.POSES.indexOf(String((it.look || {}).pose || '')) >= 0) : [];
+  if (fighters.length && !deck.length) {
+    const b = bridges[0];
+    fighters.sort((u, v) => Math.abs(+u.x - +b.x) - Math.abs(+v.x - +b.x)).slice(0, C.FILE).forEach((it, k, list) => { const f = (+b.y - H0) / Math.max(1, +it.y - H0); moveDepth(it, f); deck.push([it, b, ((k + 0.5) / list.length - 0.5) * 1.5]); note('deck', it.id); });
+  }
+  deck.forEach(([it, b, off]) => {
+    const x = +b.x + (it.group ? 0 : clamp(off, -1, 1) * (+b.w / 2) * 0.75), dx = x - +stateAt(it, 0).x, dy = +b.y + +b.h * REVISE.DECK_SINK - +stateAt(it, 0).y;
+    it.x = +it.x + dx; it.y = +it.y + dy; keysOf(it).forEach((q) => { if (isFinite(+q.x)) q.x = +q.x + dx; if (isFinite(+q.y)) q.y = +q.y + dy; });
+    if (it.group) { it.group.width = Math.min(+it.group.width || +b.w, +b.w * 0.7); it.group.rows = 1; }
+    it.deck = b.id; it.z = +b.y + 0.005;
+  });
+  bridges.forEach((b) => { if (deck.some((d) => d[1] === b) && (b.look || {}).build !== 'iron' && (b.look || {}).build !== 'concrete') S.items.push({ id: b.id + '__rail', fn: 'bridge', x: b.x, y: b.y, w: b.w, h: b.h, look: b.look, railOnly: true, z: +b.y + 0.01 }); });
+  outOfStrip();
+}
+function outOfStrip() {
+  const site = VIEW.crossing, C = REVISE.CROSS, r = STRIP.on, bridges = S.items.some((it) => it.fn === 'bridge');
+  if (!r) return;
+  const stand = C.STAND.indexOf(r.kind) >= 0, boats = C.BOATS.indexOf(r.kind) >= 0, far = site.near === 'left' ? 'right' : 'left';
+  const sideOf = (it) => { const reg = it.fn === 'person' && it.look && it.look.region; if (reg && site.sides && site.sides[reg]) return site.sides[reg]; if (it.bank) return it.bank === 'far' ? far : site.near; return told(it, REVISE.WORDS.ACROSS) ? far : null; };
+  S.items = S.items.filter((it) => {
+    if (it.fn === 'bridge' || it.deck || it.heldBy || it.fn === 'sticker' || it.anchor || !isFinite(+it.y) || +stateAt(it, 0).y <= H0 + 2) return true;
+    const s0 = stateAt(it, 0), st = stripAt(+s0.y), wet = (SIZE_STD[it.kind] || {}).place === 'water' || /swim|wade|row/.test(String((it.look || {}).pose || ''));
+    if (wet) { if (!boats) { if (isKey(it)) return true; note('water', it.id); return false; } const dx = st.c + clamp(+s0.x - st.c, -st.half * 0.7, st.half * 0.7) - +s0.x; if (dx) { it.x = +it.x + dx; keysOf(it).forEach((q) => { if (isFinite(+q.x)) q.x = +q.x + dx; }); note('bank', it.id); } return true; }
+    if (stand) return true;
+    const one = it.fn === 'person' || it.fn === 'animal' ? +it.h * footOf(it) : +it.w || +it.h * (ASPECT[it.fn] || 0.5) || 0;
+    let body = it.group && +it.group.width ? +it.group.width : one;
+    const want = sideOf(it), now = +s0.x < st.c ? 'left' : 'right';
+    let x = +s0.x;
+    const roomOf = (sd) => (sd === 'left' ? st.c - st.half : FW - (st.c + st.half));
+    if (want && want !== now && roomOf(want) >= Math.min(body, one * 1.2)) { x = 2 * st.c - x; note('side', it.id); }
+    const room = roomOf(+x < st.c ? 'left' : 'right');
+    if (it.group && body > room * 0.95 && room > one) { const k = (room * 0.95) / body; it.group.width = body * k; it.group.count = Math.max(1, Math.round(+it.group.count * k)); body = it.group.width; note('crowd', it.id); }
+    const need = st.half + body / 2;
+    const at = x < st.c ? 'left' : 'right';
+    if (Math.abs(x - st.c) < need) { x = st.c + (at === 'left' ? -need : need); note('bank', it.id); }
+    if (!moves(it) && (x - body / 2 < 0 || x + body / 2 > FW)) { x = clamp(x, body / 2, FW - body / 2); if (Math.abs(x - st.c) < need * 0.9) { if (isKey(it) || it.fn === 'person') return true; note('water', it.id); return false; } }
+    const dx = x - +s0.x;
+    if (dx) { it.x = +it.x + dx; keysOf(it).forEach((q) => { if (isFinite(+q.x)) q.x = +q.x + dx; }); }
+    const path = keysOf(it).filter((q) => isFinite(+q.x) && isFinite(+q.y)), sideAt = (q) => (+q.x < stripAt(+q.y).c ? 'left' : 'right');
+    const fords = path.length > 1 && sideAt(path[0]) !== sideAt(path[path.length - 1]) && (!bridges || said(REVISE.WORDS.FORD));
+    if (fords) { it.fords = true; note('ford', it.id); }
+    else path.forEach((q) => { const sq = stripAt(+q.y), nq = sq.half + body / 2; if (Math.abs(+q.x - sq.c) < nq) q.x = sq.c + ((x < st.c ? 'left' : 'right') === 'left' ? -nq : nq); });
+    return true;
+  });
+  (S.effects || []).forEach((e) => { if (!isFinite(+e.x) || !isFinite(+e.y) || +e.y <= H0) return; const st = stripAt(+e.y), r0 = (+e.r || 0) * 0.5; if (e.kind === 'splash') { if (boats) e.x = st.c + clamp(+e.x - st.c, -st.half * 0.7, st.half * 0.7); return; } if (stand || Math.abs(+e.x - st.c) >= st.half + r0) return; e.x = st.c + (+e.x < st.c ? -1 : 1) * (st.half + r0); });
+}
+function onBanks() {
+  const water = (S.water || []).filter((w) => isFinite(+w.y) && +w.h > 0);
+  if (!water.length || S.interior) return;
+  const margin = FH * REVISE.WATER_MARGIN;
+  const bridges = S.items.filter((it) => it.fn === 'bridge');
+  crossing(water, bridges);
+  water.forEach((w) => { if (!w.into && +w.y + +w.h > FH * REVISE.NEAR_BANK && +w.y < FH * REVISE.NEAR_BANK - FH * 0.04) { w.h = FH * REVISE.NEAR_BANK - +w.y; note('shore', ''); } });
+  const across = (it) => told(it, REVISE.WORDS.ACROSS);
+  const afloat = (it) => (SIZE_STD[it.kind] || {}).place === 'water' || /swim|wade|row/.test(String((it.look || {}).pose || '')) || (it.deck && bridges.some((b) => b.id === it.deck)) || it.fn === 'bridge' || it.fn === 'wall' || it.heldBy || it.fn === 'sticker';
+  S.items = S.items.filter((it) => {
+    const y = +stateAt(it, 0).y, y1 = +stateAt(it, 1).y, inside = (w, v) => v > +w.y + 2 && v < +w.y + +w.h - 2;
+    if (afloat(it) || !isFinite(y)) return true;
+    const band = water.find((w) => !w.into && inside(w, y) && inside(w, y1));
+    if (!band) return true;
+    const onBridge = bridges.some((b) => { const half = (+b.w || +b.h * 4) / 2; return Math.abs(+it.x - +b.x) < half && Math.abs(y - +b.y) < +b.h * 0.6; });
+    if (onBridge) return true;
+    const far = +band.y - 2, nearY = +band.y + +band.h + margin, to = (it.bank ? it.bank === 'far' : across(it)) && far > H0 + 6 ? far : nearY;
+    if (to >= FH - 4 || to <= H0 + 2) { if (isKey(it) || it.fn === 'person') return true; note('water', it.id); return false; }
+    moveDepth(it, (to - H0) / Math.max(1, y - H0));
+    note('bank', it.id);
+    return true;
+  });
+}
+const HEX = /^#[0-9a-f]{6}$/i;
+const rgbOf = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function factions() {
+  const F = REVISE.FACTION, sides = {};
+  S.items.filter((it) => it.fn === 'person' && it.look && it.look.region && HEX.test(String(it.look.top || ''))).forEach((it) => (sides[it.look.region] = sides[it.look.region] || []).push(it));
+  const names = Object.keys(sides);
+  if (names.length < 2) return;
+  const avg = (list) => { const c = list.map((it) => rgbOf(it.look.top)); return [0, 1, 2].map((k) => c.reduce((a, v) => a + v[k], 0) / c.length); };
+  for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) {
+    const a = avg(sides[names[i]]), b = avg(sides[names[j]]);
+    if (Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) >= F.NEAR) continue;
+    const lead = [names[i], names[j]].sort()[1], tint = F.TINT[lead];
+    if (!tint) continue;
+    const tone = (look) => { if (!look) return; ['top', 'headColor', 'shieldColor'].forEach((k) => { if (HEX.test(String(look[k] || ''))) look[k] = mix(look[k], tint, F.MIX); }); };
+    sides[lead].forEach((it) => { tone(it.look); keysOf(it).forEach(tone); });
+    note('faction', lead);
+  }
+}
+function crowds() {
+  const C = REVISE.CROWD, gs = S.items.filter((it) => it.group && +it.group.count > 1 && it.fn === 'person' && +it.h > 0 && isFinite(+it.x) && !moves(it));
+  for (let i = 0; i < gs.length; i++) for (let j = 0; j < gs.length; j++) {
+    const a = gs[i], b = gs[j], wa = +a.group.width || +a.h, wb = +b.group.width || +b.h;
+    if (a === b || isKey(b) || Math.abs(+a.y - +b.y) > C.DEPTH * Math.max(+a.h, +b.h) || wb > wa || (wb === wa && j < i)) continue;
+    const over = Math.min(+a.x + wa / 2, +b.x + wb / 2) - Math.max(+a.x - wa / 2, +b.x - wb / 2);
+    if (over <= C.OVERLAP * wb) continue;
+    const dir = +b.x >= +a.x ? 1 : -1, room = dir > 0 ? FW - (+b.x + wb / 2) : +b.x - wb / 2;
+    if (room >= over) { b.x = +b.x + dir * over; note('crowd', b.id); continue; }
+    const keep = Math.max(0, wb - over + room), k = keep / wb;
+    b.x = +b.x + dir * (room + (wb - keep) / 2);
+    b.group.width = keep;
+    b.group.count = Math.max(1, Math.round(+b.group.count * k));
+    if (keep < +b.h * 0.5) b.__drop = true;
+    note('crowd', b.id);
+  }
+  S.items = S.items.filter((it) => !it.__drop);
+}
+function varyFar() {
+  if (!SCENE.vary) return;
+  const far = H0 + (FH - H0) * REVISE.REPEAT.FAR, m = (v) => FW - +v;
+  S.items.forEach((it) => {
+    if (isKey(it) || moves(it) || !(+it.y < far)) return;
+    if (isFinite(+it.x)) it.x = m(it.x);
+    if (isFinite(+it.from) && isFinite(+it.to)) { const a = m(it.to), b = m(it.from); it.from = a; it.to = b; }
+    if (Array.isArray(it.gaps)) it.gaps = it.gaps.map((g) => [m(g[1]), m(g[0])]);
+    it.facing = -(+it.facing || 1);
+  });
+  (S.effects || []).forEach((e) => { if (+e.y < far && isFinite(+e.x)) e.x = m(e.x); });
+  note('vary', '');
+}
+function castMarks() {
+  const marks = VIEW.cast || {};
+  S.items.forEach((it) => {
+    const m = marks[it.id], look = it.look;
+    if (!m || !look || it.fn !== 'person') return;
+    if (look.cape === true && m.cape) look.cape = m.cape;
+    if (m.trim && !look.trim) look.trim = m.trim;
+  });
+}
+const told = (it, list) => { const words = [it.kind || ''].concat(String(it.id || '').toLowerCase().split(/[^a-z]+/)).filter((w) => w.length > 2).map((w) => w.toLowerCase()); return list.some((c) => { let i = TEXT.indexOf(c); while (i >= 0) { const win = TEXT.slice(Math.max(0, i - 60), i + c.length + 60); if (words.some((w) => win.indexOf(w) >= 0)) return true; i = TEXT.indexOf(c, i + 1); } return false; }); };
+function heldTwins() {
+  const H = REVISE.HELD, word = (it) => [it.kind || ''].concat(String(it.id || '').split(/[^A-Za-z]+/)).filter(Boolean);
+  const wants = (it) => { const out = []; word(it).forEach((w) => { const k = Object.keys(H.KIND).find((q) => q.toLowerCase() === w.toLowerCase()); if (k) out.push(['hold', H.KIND[k]]); const v = Object.keys(H.WORN).find((q) => q.toLowerCase() === w.toLowerCase()); if (v) out.push(['worn', H.WORN[v]]); const part = Object.keys(H.PART).find((q) => q.toLowerCase() === w.toLowerCase()); if (part) out.push(['hold', H.PART[part]]); }); return out; };
+  const has = (p, want) => [p.look || {}].concat(keysOf(p)).some((q) => (want[0] === 'hold' ? want[1].indexOf(String(q.hold || '')) >= 0 : !!q[want[1]] || (want[1] === 'shield' && String(q.hold || '') === 'shield')));
+  const near = (p, it) => H.TIMES.some((t) => { const a = stateAt(p, t), b = stateAt(it, t), h = +a.h || +p.h, half = ((p.group && +p.group.width) || 0) / 2 + h * H.NEAR_X; return Math.abs(+b.x - +a.x) <= half && +b.y >= +a.y - h && +b.y <= +a.y + h * H.NEAR_FOOT; });
+  const people = S.items.filter((p) => p.fn === 'person' && +p.h > 0);
+  S.items.filter((it) => it.fn === 'prop' && !it.group).forEach((it) => {
+    const list = wants(it);
+    if (!list.length) return;
+    const owner = people.find((p) => p.id === it.heldBy);
+    if (it.heldBy && !(owner && list.some((w) => has(owner, w)))) return;
+    if (moves(it)) {
+      const k = keysOf(it).filter((q) => isFinite(+q.x)).sort((a, b) => a.at - b.at), from = people.find((p) => list.some((w) => w[0] === 'hold' && has(p, w)) && near(p, Object.assign({}, it, { keys: [] })));
+      if (!from || !k.length) return;
+      const at = Math.max(0, +k[0].at), ks = keysOf(from);
+      if (!ks.some((q) => +q.at <= 0)) ks.unshift({ at: 0 });
+      ks.push({ at, hold: 'none' });
+      from.keys = ks.sort((a, b) => a.at - b.at);
+      note('held', from.id);
+      return;
+    }
+    if (!owner && told(it, REVISE.WORDS.APART)) return;
+    const by = owner || people.find((p) => list.some((w) => has(p, w)) && near(p, it));
+    if (!by) return;
+    (S.devices || []).forEach((d) => { if (d.of === it.id) d.of = by.id; });
+    if (S.focus === it.id) S.focus = by.id;
+    if (it.focal) by.focal = true;
+    it.__twin = true;
+    note('held', it.id);
+  });
+  S.items = S.items.filter((q) => !q.__twin && !S.items.some((o) => o.__twin && q.heldBy === o.id));
+}
+function openings() {
+  const walls = S.items.filter((w) => (w.fn === 'wall' || WALLS.indexOf(w.kind) >= 0) && +w.h > 0);
+  S.items.filter((it) => it.fn === 'prop' && new RegExp(REVISE.OPENING, 'i').test(String(it.id || '')) && isFinite(+it.x) && isFinite(+it.y)).forEach((it) => {
+    const x = +it.x, wall = walls.filter((w) => Math.abs(+w.y - +it.y) < Math.max(+w.h, +it.h || 0) * 1.5).sort((a, b) => Math.abs(+a.y - +it.y) - Math.abs(+b.y - +it.y))[0];
+    const wh = wall ? +wall.h : +it.h || 40, lo = wall && isFinite(+wall.from) ? Math.min(+wall.from, +wall.to) : -Infinity, hi = wall && isFinite(+wall.from) ? Math.max(+wall.from, +wall.to) : Infinity;
+    if (!wall) { it.__twin = true; note('gap', it.id); return; }
+    let gap = (wall.gaps || []).find((g) => x >= +g[0] - wh && x <= +g[1] + wh);
+    if (!gap && x > lo && x < hi) { gap = [x - wh * 0.8, x + wh * 0.8]; wall.gaps = (wall.gaps || []).concat([gap]); }
+    const g0 = gap ? +gap[0] : x - wh * 0.8, g1 = gap ? +gap[1] : x + wh * 0.8, y = +wall.y;
+    it.anchor = { x: g0, y: y - wh, w: g1 - g0, h: wh };
+    note('gap', it.id);
+  });
+  S.items = S.items.filter((q) => !q.__twin);
+}
+function wrecks() {
+  const D = REVISE.DEBRIS, wreck = new RegExp(D.WRECK, 'i'), debris = S.items.filter((it) => it.fn === 'prop' && D.KINDS.indexOf(it.kind) >= 0 && !moves(it));
+  S.items.filter((it) => (it.fn === 'vehicle' || it.fn === 'wall' || it.fn === 'building') && !it.state && +it.h > 0 && isFinite(+it.x)).forEach((it) => {
+    const by = debris.filter((d) => !d.__twin && Math.abs(+d.x - +it.x) <= +it.h * D.NEAR + (isFinite(+it.from) ? Math.abs(+it.to - +it.from) / 2 : 0) && Math.abs(+d.y - +it.y) <= +it.h * D.DEPTH + 20);
+    if (!wreck.test(String(it.id || '')) && !(by.length && told(it, REVISE.WORDS.SMASH))) return;
+    it.state = 'broken';
+    by.forEach((d) => { d.__twin = true; (S.devices || []).forEach((q) => { if (q.of === d.id) q.of = it.id; }); if (S.focus === d.id) S.focus = it.id; });
+    note('wreck', it.id);
+  });
+  S.items = S.items.filter((q) => !q.__twin);
+}
+function regionKinds() {
+  const people = S.items.filter((p) => p.fn === 'person' && p.look && p.look.region && +p.h > 0 && isFinite(+p.x));
+  S.items.filter((it) => it.fn === 'building' && +it.h > 0 && isFinite(+it.x)).forEach((it) => {
+    const near = people.filter((p) => Math.abs(+p.x - +it.x) <= +it.h * REVISE.REGION_NEAR + ((p.group && +p.group.width) || 0) / 2 && Math.abs(+p.y - +it.y) <= Math.max(+it.h, +p.h) * 0.6);
+    const regions = near.map((p) => p.look.region).filter((r, i, a) => a.indexOf(r) === i);
+    const to = regions.length === 1 && (REVISE.REGION_KIND[regions[0]] || {})[it.kind];
+    if (!to) return;
+    it.kind = to;
+    note('region', it.id);
+  });
+}
+function revise() {
+  retime();
+  castMarks();
+  varyFar();
+  mergeMounts();
+  heldTwins();
+  trails();
+  openings();
+  wrecks();
+  regionKinds();
+  dryFlags();
+  factions();
+  S.devices = (S.devices || []).filter(oneDevice);
+  if (said(REVISE.WORDS.SMASH) && !S.items.some((it) => it.state || it.burning)) note('story', 'smash');
+}
+function separate() {
+  const named = S.items.filter((it) => (it.fn === 'person' || it.fn === 'animal') && !it.group && !it.on && !it.deck && !it.heldBy && +it.h > 0 && isFinite(+it.x));
+  const SAMPLE = [0, 0.25, 0.5, 0.75, 1], at = (it, p) => stateAt(it, p);
+  const shift = (it, dx) => { it.x = +it.x + dx; keysOf(it).forEach((q) => { if (isFinite(+q.x)) q.x = +q.x + dx; }); };
+  const order = named.slice().sort((a, b) => +a.x - +b.x);
+  const rank = (it) => (it.id === S.focus ? 3 : PAIRS.some((p) => p[0] === idOf(it.id) || p[1] === idOf(it.id)) ? 2 : 1);
+  for (let pass = 0; pass < 24; pass++) {
+    let moved = false;
+    for (let i = 0; i < order.length; i++) for (let j = i + 1; j < order.length; j++) {
+      const a = order[i], b = order[j];
+      let worst = 0;
+      SAMPLE.forEach((p) => {
+        const sa = at(a, p), sb = at(b, p);
+        if (Math.abs(+sa.y - +sb.y) > 0.1 * Math.max(+sa.h, +sb.h)) return;
+        const wa = +sa.h * footOf(a), wb = +sb.h * footOf(b), allow = paired(a, b) ? PAIR_OVERLAP : NAMED_OVERLAP;
+        const need = (wa + wb) / 2 - allow * Math.min(wa, wb) - Math.abs(+sa.x - +sb.x);
+        if (need > worst) worst = need;
+      });
+      if (worst <= 0.5) continue;
+      moved = true;
+      // Apart along their order (each half the way, inside the frame for people who stand still); no room: the less
+      // important one a little further back.
+      const left = +a.x <= +b.x ? a : b, right = left === a ? b : a;
+      const roomL = moves(left) ? worst : Math.max(0, +left.x - +left.h * footOf(left) / 2), roomR = moves(right) ? worst : Math.max(0, FW - +right.x - +right.h * footOf(right) / 2);
+      const dl = Math.min(worst / 2 + Math.max(0, worst / 2 - roomR), roomL), dr = Math.min(worst - dl, roomR);
+      shift(left, -dl); shift(right, dr);
+      if (dl + dr < worst - 0.5) { const back = rank(a) <= rank(b) ? a : b; if (+back.y - H0 > 40) moveDepth(back, 0.86); }
+    }
+    if (!moved) break;
+  }
+}
 function stage() {
   if (S.map || !Array.isArray(S.items)) return;
   // 1. Only real things.
   const dropped = new Set();
-  S.items = S.items.filter((it) => { const keep = !(THINGS.indexOf(it.fn) >= 0 && ABSTRACT.test(String(it.id || '')) && !it.focal); if (!keep) dropped.add(it.id); return keep; });
+  S.items = S.items.filter((it) => { const keep = !(THINGS.indexOf(it.fn) >= 0 && ABSTRACT.test(String(it.id || '')) && !it.focal && !new RegExp(REVISE.OPENING, 'i').test(String(it.id || ''))); if (!keep) dropped.add(it.id); return keep; });
   S.items = S.items.filter((it) => !(it.heldBy && dropped.has(it.heldBy)));
+  revise();
   // 1b. Things in flight: a resting kind flying across the frame (no one holds it) becomes its in-flight kind.
   // An arrow leaving a crossbowman is a bolt.
   S.items.forEach((it) => {
@@ -600,34 +1171,43 @@ function stage() {
     S.__master = s;
   }
   // 3b. Real sizes (SIZE_STD, the table the server checks new scenes with): a thing far off its real size against a person
-  // at its depth is set to it, so old scenes are right too (a whetstone the size of a tray, a barrel taller than a man).
+  // at its depth is set to it, so old scenes are right too. A long thin thing is measured along its longest drawn side.
   // A thing in the air is sized by its distance when the scene gives one, else left as drawn; it is never put down.
   if (!S.interior) {
-    const ppl = S.items.filter((it) => it.fn === 'person' && +it.h > 0 && +it.y > H0 + 4).map((it) => ({ y: +it.y, h: +it.h / (it.mount ? 1.35 : 1) }));
-    // No one in the scene: the focal thing sets the scale (a person at its depth from its real size); it is not resized.
+    const ppl = S.items.filter((it) => it.fn === 'person' && +it.h > 0 && +it.y > H0 + 4).map((it) => ({ y: +it.y, h: +it.h / (it.mount ? REVISE.RIDER : 1) }));
     const ref = !ppl.length && focal && focal.fn !== 'person' && SIZE_STD[focal.kind] && +focal.h > 0 && +focal.y > H0 + 4 ? { y: +focal.y, h: +focal.h / SIZE_STD[focal.kind].h } : null;
     const near = (y) => { if (ref) return (ref.h * (y - H0)) / (ref.y - H0); const q = ppl.filter((p) => Math.abs(p.y - y) <= Math.max(24, (p.y - H0) * 0.25)).sort((a, b) => Math.abs(a.y - y) - Math.abs(b.y - y))[0]; return q ? (q.h * (y - H0)) / (q.y - H0) : undefined; };
     const leadPerson = Math.max(0, ...ppl.map((p) => p.h)) || base * target;
-    const LOOSE = /^(rock|boulder|log|stump|bush|bushes|haystack|woodpile|campfire|bonfirePit|grass|reeds|flowers)$/;
+    const LOOSE = /^(rock|boulder|log|stump|bush|bushes|haystack|woodpile|campfire|bonfirePit|grass|reeds|flowers)$/, HOLE = new RegExp(REVISE.HOLE);
+    const scaleBy = (it, f) => { it.h = +it.h * f; if (isFinite(+it.w)) it.w = +it.w * f; keysOf(it).forEach((q) => { if (isFinite(+q.h)) q.h = +q.h * f; }); };
     S.items.forEach((it) => {
       const real = it.kind && SIZE_STD[it.kind];
-      if (!real || it.fn === 'person' || it.fn === 'sticker' || it.heldBy || !(+it.h > 0) || it === focal) return;
+      if (!real || it.fn === 'person' || it.fn === 'sticker' || it.heldBy || !(+it.h > 0) || it === focal || HOLE.test(it.kind)) return;
       const air = real.place === 'air' && !/parked|launch/.test(String((it.look || {}).pose || ''));
       const shot = air && !it.dist && it.fn === 'prop' && SHOT.test(it.kind);
+      const long = !air && it.fn === 'prop' && Math.max(real.h, real.l) >= REVISE.LONG * Math.min(real.h, real.l), side = (q) => (long ? Math.max(real.h, real.l) : real.h) * q;
       let want;
       if (air && !shot) want = it.dist && AIR_DIST[it.dist] ? leadPerson * real.h * AIR_DIST[it.dist] : undefined;
       else if (real.place === 'held' || shot) {
-        // A small thing of the hand stands where a hand is (not on the ground): sized against the person closest to it;
-        // so is a thing just shot or thrown (an arrow, a bolt, a stone) against whoever is closest to where it starts.
         const st = { x: isFinite(+it.x) ? +it.x : (keysOf(it)[0] || {}).x, y: isFinite(+it.y) ? +it.y : (keysOf(it)[0] || {}).y };
         const by = S.items.filter((o) => o.fn === 'person' && +o.h > 0 && isFinite(+o.x)).sort((a, b) => Math.hypot(+a.x - st.x, +a.y - st.y) - Math.hypot(+b.x - st.x, +b.y - st.y))[0];
-        want = by ? (+by.h / (by.mount ? 1.35 : 1)) * real.h * (shot ? SHOT_READABLE : 1) : undefined;
-      } else { const y = isFinite(+it.y) ? +it.y : (keysOf(it)[0] || {}).y; want = isFinite(+y) && +y > H0 + 4 ? (near(+y) || undefined) && near(+y) * real.h : undefined; }
+        want = by ? side(+by.h / (by.mount ? REVISE.RIDER : 1)) * (shot ? SHOT_READABLE : 1) : undefined;
+      } else { const y = isFinite(+it.y) ? +it.y : (keysOf(it)[0] || {}).y, q = isFinite(+y) && +y > H0 + 4 ? near(+y) : undefined; want = q ? side(q) : undefined; }
       if (!want) return;
-      const tol = LOOSE.test(it.kind) || it.fn === 'tree' ? 2.5 : real.place === 'held' ? 1.4 : 1.6, k = +it.h / want;
-      if (k > tol || k < 1 / tol) { const f = want / +it.h; it.h = want; if (isFinite(+it.w)) it.w = +it.w * f; keysOf(it).forEach((q) => { if (isFinite(+q.h)) q.h = +q.h * f; }); }
+      const drawn = long ? +it.h * Math.max(1, footOf(it)) : +it.h, tol = LOOSE.test(it.kind) || it.fn === 'tree' ? 2.5 : real.place === 'held' ? 1.4 : 1.6, k = drawn / want;
+      if (k > tol || k < 1 / tol) scaleBy(it, want / drawn);
+    });
+    S.items = S.items.filter((it) => {
+      const real = it.kind && SIZE_STD[it.kind];
+      if (!real || it.fn === 'person' || it.fn === 'sticker' || it.heldBy || it.group || !(+it.h > 0) || HOLE.test(it.kind)) return true;
+      const shot = it.fn === 'prop' && SHOT.test(it.kind), longest = shot ? +it.h * real.l / real.h : +it.h * Math.max(1, footOf(it)), M = REVISE.MIN_SIDE, least = FH * (shot ? M.SHOT : isKey(it) ? M.KEY : M.THING);
+      if (longest >= least) return true;
+      if (isKey(it) || shot) { scaleBy(it, least / longest); return true; }
+      note('tiny', it.id);
+      return false;
     });
   }
+  scaleRiders();
   // 4. Room for everyone. Groups first (their width and rows), then named people apart from each other.
   const room = (it) => +it.h * footOf(it) * (VIEW.movement === 'cutout' ? HOP_ROOM : 1);
   S.items.forEach((it) => {
@@ -655,35 +1235,10 @@ function stage() {
     const wide = +it.h * footOf(it), most = THING_WIDE * personAt(+it.y);
     if (wide > most) { const k = most / wide; it.h = +it.h * k; if (isFinite(+it.w)) it.w = +it.w * k; keysOf(it).forEach((q) => { if (isFinite(+q.h)) q.h = +q.h * k; }); }
   });
-  const named = S.items.filter((it) => (it.fn === 'person' || it.fn === 'animal') && !it.group && !it.on && !it.heldBy && +it.h > 0 && isFinite(+it.x));
-  const SAMPLE = [0, 0.25, 0.5, 0.75, 1], at = (it, p) => stateAt(it, p);
-  const shift = (it, dx) => { it.x = +it.x + dx; keysOf(it).forEach((q) => { if (isFinite(+q.x)) q.x = +q.x + dx; }); };
-  const order = named.slice().sort((a, b) => +a.x - +b.x);
-  const rank = (it) => (it.id === S.focus ? 3 : PAIRS.some((p) => p[0] === idOf(it.id) || p[1] === idOf(it.id)) ? 2 : 1);
-  for (let pass = 0; pass < 24; pass++) {
-    let moved = false;
-    for (let i = 0; i < order.length; i++) for (let j = i + 1; j < order.length; j++) {
-      const a = order[i], b = order[j];
-      let worst = 0;
-      SAMPLE.forEach((p) => {
-        const sa = at(a, p), sb = at(b, p);
-        if (Math.abs(+sa.y - +sb.y) > 0.1 * Math.max(+sa.h, +sb.h)) return;
-        const wa = +sa.h * footOf(a), wb = +sb.h * footOf(b), allow = paired(a, b) ? PAIR_OVERLAP : NAMED_OVERLAP;
-        const need = (wa + wb) / 2 - allow * Math.min(wa, wb) - Math.abs(+sa.x - +sb.x);
-        if (need > worst) worst = need;
-      });
-      if (worst <= 0.5) continue;
-      moved = true;
-      // Apart along their order (each half the way, inside the frame for people who stand still); no room: the less
-      // important one a little further back.
-      const left = +a.x <= +b.x ? a : b, right = left === a ? b : a;
-      const roomL = moves(left) ? worst : Math.max(0, +left.x - +left.h * footOf(left) / 2), roomR = moves(right) ? worst : Math.max(0, FW - +right.x - +right.h * footOf(right) / 2);
-      const dl = Math.min(worst / 2 + Math.max(0, worst / 2 - roomR), roomL), dr = Math.min(worst - dl, roomR);
-      shift(left, -dl); shift(right, dr);
-      if (dl + dr < worst - 0.5) { const back = rank(a) <= rank(b) ? a : b; if (+back.y - H0 > 40) moveDepth(back, 0.86); }
-    }
-    if (!moved) break;
-  }
+  separate();
+  crowds();
+  onBanks();
+  if (STRIP.on) { separate(); outOfStrip(); }
 }
 stage();
 let FX = true;
@@ -696,8 +1251,8 @@ window.motionScene = { ready: Promise.resolve(), renderAt: async function (input
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#d9d2c2'; ctx.fillRect(0, 0, width, height);
   ctx.save(); ctx.translate((width - FW * sc) / 2, (height - FH * sc) / 2); ctx.scale(sc, sc);
   if (K && K.time) K.time(t);
+  DUR = dur;
   paint(p, t, false);
-  if (!S.map) devices(p, t, 'final');
   // Over the frame, outside the camera: the finishing light, the overlay devices placed by the current shot, a headline.
   const T = ctx.getTransform(), hk = window.__motionViewHooks;
   ctx.restore();
@@ -706,7 +1261,9 @@ window.motionScene = { ready: Promise.resolve(), renderAt: async function (input
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate((width - FW * sc) / 2, (height - FH * sc) / 2); ctx.scale(sc, sc);
     const B = ctx.getTransform(), BI = B.inverse(), zoom = Math.hypot(T.a, T.b) / Math.max(1e-6, Math.hypot(B.a, B.b));
     const toFrame = (x, y) => { const q = BI.transformPoint(T.transformPoint(new DOMPoint(x, y))); return [q.x, q.y]; };
-    if (!S.map) { finish(); devices(p, t, 'over', toFrame, zoom); }
+    if (!S.map) { finish(); devices(p, t, 'final', toFrame, zoom); devices(p, t, 'over', toFrame, zoom); }
+    const fr = !S.map && RES[S.focus] && inFrame(boxOf(RES[S.focus]), toFrame);
+    window.__motionFocusBox = fr ? { x: fr.x / FW, y: fr.y / FH, w: fr.w / FW, h: fr.h / FH } : null;
     if (S.headline) headline(S.headline);
     ctx.restore();
   } finally { if (hk) hk.screen--; }

@@ -2,6 +2,7 @@ import { MOTION_PRODUCTION_REPORT as R } from "../constants/motionProductionRepo
 interface MotionReportScene {
   id: string;
   html?: { attempts?: number; warnings?: string[]; notes?: string[]; fallback?: boolean };
+  revise?: [string, string][];
 }
 interface MotionReportInput {
   id: string;
@@ -9,6 +10,7 @@ interface MotionReportInput {
   visual?: Record<string, unknown>;
   steps: Record<string, { seconds: number; retries?: number }>;
   scenes: MotionReportScene[];
+  labels?: Record<string, string>;
 }
 const sceneState = (scene: MotionReportScene): string => (scene.html?.fallback ? R.STATE.FALLBACK : (scene.html?.attempts || 1) > 1 ? R.STATE.REDRAWN : scene.html?.warnings?.length ? R.STATE.WARNED : R.STATE.FIRST);
 const shown = (value: unknown): string => (value === undefined || value === null || value === "" ? "-" : typeof value === "object" ? JSON.stringify(value) : String(value));
@@ -37,9 +39,13 @@ export const motionProductionReport = (data: MotionReportInput): { text: string;
     "",
     R.SCENES,
     R.SCENE_HEAD,
-    ...scenes.map((scene) => R.SCENE_ROW(scene.id, scene.html?.attempts || 1, sceneState(scene), [...(scene.html?.warnings || []), ...(scene.html?.notes || [])].join("; ").replace(/\|/g, "/"))),
+    ...scenes.map((scene) => R.SCENE_ROW(scene.id, scene.html?.attempts || 1, sceneState(scene), [...(scene.html?.warnings || []), ...(scene.html?.notes || []), ...(scene.revise?.length ? [R.REVISED(scene.revise, data.labels || {})] : [])].join("; ").replace(/\|/g, "/"))),
     "",
     summary,
+    R.REVISED_TOTAL(
+      scenes.flatMap((scene) => scene.revise || []),
+      data.labels || {},
+    ),
     "",
   ].join("\n");
   return { text, summary };

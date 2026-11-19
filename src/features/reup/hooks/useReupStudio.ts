@@ -7,7 +7,7 @@ import { jsonUtils } from "../../../lib/json.js";
 import type { Lang } from "../../../lib/lang.js";
 import type { MotionVoiceChannels } from "../../../types/motionVideo.js";
 import { motionRequest } from "../../motion/components/motionApi.js";
-import { REUP_LIMITS, REUP_STORAGE, REUP_URL } from "../constants/reupConfig.js";
+import { REUP_LIMITS, REUP_STEPS, REUP_STORAGE, REUP_URL } from "../constants/reupConfig.js";
 import { REUP_DEFAULT_PRESET, reupPreset, reupPresetDefaults } from "../constants/reupPresets.js";
 import { reupTexts } from "../constants/reupTexts.js";
 import { cleanReupSettings } from "../lib/reupSettings.js";
@@ -159,6 +159,8 @@ export const useReupStudio = (lang: Lang) => {
   }, [act, rights, preset, settings, source, text]);
   const cancel = useCallback(() => job && act(REUP_URL.CANCEL, { jobId: job.id }), [act, job]);
   const rerun = useCallback((step: ReupStepId) => job && act(REUP_URL.RERUN, { jobId: job.id, step, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
+  const resumeStep = job && (job.status === "cancelled" || job.status === "error") ? REUP_STEPS.find((step, i) => job.steps[step]?.status !== "done" && job.steps[step]?.status !== "waiting" && (i === 0 || ["done", "waiting"].includes(job.steps[REUP_STEPS[i - 1]]?.status))) : undefined;
+  const resume = useCallback(() => resumeStep && rerun(resumeStep), [resumeStep, rerun]);
   const exportVideo = useCallback(() => job && act(REUP_URL.EXPORT, { jobId: job.id, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
   const approveScript = useCallback((script: ReupScript) => job && act(REUP_URL.APPROVE_SCRIPT, { jobId: job.id, script }), [act, job]);
   const saveVideo = useCallback(async (jobId: string, outputId: string) => {
@@ -171,6 +173,6 @@ export const useReupStudio = (lang: Lang) => {
   }, []);
   const newJob = useCallback(() => setJob(null), []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
-  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, rerun, exportVideo, approveScript, saveVideo, newJob };
+  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, resume, resumeStep, rerun, exportVideo, approveScript, saveVideo, newJob };
 };
 export type ReupStudio = ReturnType<typeof useReupStudio>;
