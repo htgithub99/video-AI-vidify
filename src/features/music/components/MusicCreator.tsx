@@ -176,6 +176,8 @@ const SunoParameterAnalysisDetails = ({ analysis, texts }: { analysis?: SunoPara
   );
 };
 type SunoDownloadFormat = "mp3" | "wav";
+/** Download choice: AI picks 1 take per song, take 1 of each song without AI, or both takes. */
+type SunoDownloadPick = "curated" | "first" | "all";
 type ResultViewMode = "lyrics" | "seo" | "split";
 const formatPlaylistTimestamp = (seconds: number): string => {
   const wholeSeconds = Math.max(0, Math.round(seconds));
@@ -249,7 +251,9 @@ interface PersistedMusicCreatorState {
   sunoPendingPlaylist?: { songIds: string[]; playlistName: string; sourceTitle: string; testOnly: boolean; resumeGeneration?: boolean } | null;
   curatedDownloadedTracks?: CuratedDownloadedTrack[];
   sunoDownloadFormat?: SunoDownloadFormat;
+  /** Older saves: false meant "take 1 without AI". */
   sunoEvaluateTracks?: boolean;
+  sunoDownloadPick?: SunoDownloadPick;
   sunoInspo?: string;
   sunoSettings?: SunoSettings;
   sunoSettingsAnalysis?: SunoSettingsAnalysis;
@@ -603,7 +607,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const [downloadPlaylistUrl, setDownloadPlaylistUrl] = useState(initialState.downloadPlaylistUrl || MUSIC_CREATOR_RUNTIME.EMPTY);
   const [sunoTrackIds, setSunoTrackIds] = useState<string[]>(initialState.sunoTrackIds || []);
   const [sunoDownloadFormat, setSunoDownloadFormat] = useState<SunoDownloadFormat>(initialState.sunoDownloadFormat || SOURCE_TEXT_WAV);
-  const [sunoEvaluateTracks, setSunoEvaluateTracks] = useState(initialState.sunoEvaluateTracks ?? true);
+  const [sunoDownloadPick, setSunoDownloadPick] = useState<SunoDownloadPick>(initialState.sunoDownloadPick || (initialState.sunoEvaluateTracks === false ? "first" : "curated"));
+  const sunoEvaluateTracks = sunoDownloadPick === "curated";
   const [isDownloadingSuno, setIsDownloadingSuno] = useState(false);
   const [sunoDownloadError, setSunoDownloadError] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const { copiedKey: copiedPlaylistKey, copyText: copyPlaylist } = useClipboardFeedback({ language: currentLang });
@@ -669,7 +674,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         sunoPendingPlaylist,
         curatedDownloadedTracks,
         sunoDownloadFormat,
-        sunoEvaluateTracks,
+        sunoDownloadPick,
         sunoInspo,
         sunoSettings,
         sunoSettingsAnalysis,
@@ -707,7 +712,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     sunoPendingPlaylist,
     curatedDownloadedTracks,
     sunoDownloadFormat,
-    sunoEvaluateTracks,
+    sunoDownloadPick,
     sunoInspo,
     sunoSettings,
     sunoSettingsAnalysis,
@@ -1198,7 +1203,9 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
           tracks,
           maxTracks: isTestPlaylistDownload ? 1 : undefined,
           playlistUrl: activePlaylistUrl,
-          songTitles: _.map(songs, SOURCE_TEXT_TITLE),
+          // A pasted playlist of another project is named from Suno, not from this screen's songs.
+          songTitles: !requestedPlaylistUrl || requestedPlaylistUrl === _.trim(sunoPlaylistUrl) ? _.map(songs, SOURCE_TEXT_TITLE) : [],
+          keepAllTakes: !isTestPlaylistDownload && sunoDownloadPick === "all",
           format: sunoDownloadFormat,
           evaluateTracks: isTestPlaylistDownload ? false : sunoEvaluateTracks,
           style,
@@ -2127,13 +2134,18 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             </div>
             <StudioSegmentedControl>
               <Tooltip content={texts.SUNO_EVALUATE_ON_TOOLTIP} align={SOURCE_TEXT_CENTER}>
-                <StudioSegmentButton selected={sunoEvaluateTracks} onClick={() => setSunoEvaluateTracks(true)} disabled={isBusy}>
+                <StudioSegmentButton selected={sunoDownloadPick === "curated"} onClick={() => setSunoDownloadPick("curated")} disabled={isBusy}>
                   <Sparkles className={cn(SRT.SOURCE_TEXT_W_3_H_3_SHRINK_0)} />
                   <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_EVALUATE_ON}</span>
                 </StudioSegmentButton>
               </Tooltip>
+              <Tooltip content={texts.SUNO_PICK_FIRST_TOOLTIP} align={SOURCE_TEXT_CENTER}>
+                <StudioSegmentButton selected={sunoDownloadPick === "first"} onClick={() => setSunoDownloadPick("first")} disabled={isBusy}>
+                  <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_PICK_FIRST}</span>
+                </StudioSegmentButton>
+              </Tooltip>
               <Tooltip content={texts.SUNO_EVALUATE_OFF_TOOLTIP} align={SOURCE_TEXT_CENTER}>
-                <StudioSegmentButton selected={!sunoEvaluateTracks} onClick={() => setSunoEvaluateTracks(false)} disabled={isBusy}>
+                <StudioSegmentButton selected={sunoDownloadPick === "all"} onClick={() => setSunoDownloadPick("all")} disabled={isBusy}>
                   <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{texts.SUNO_EVALUATE_OFF}</span>
                 </StudioSegmentButton>
               </Tooltip>

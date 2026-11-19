@@ -937,7 +937,18 @@ const continueSunoCreation = async (checkpoint: SunoCreationCheckpoint, runId: s
     }, 2000);
   }
 };
-export const getSunoPlaylistSongIds = async (playlistUrl: string): Promise<string[]> => {
+/** Song titles Suno lists for a playlist's clips (id → title), empty when the payload has none. */
+const playlistClipTitles = (payload: any): Record<string, string> => {
+  const titles: Record<string, string> = {};
+  for (const item of [..._.castArray(payload?.playlist_clips || []), ..._.castArray(payload?.playlist?.playlist_clips || []), ..._.castArray(payload?.playlist?.clips || []), ..._.castArray(payload?.clips || [])]) {
+    const id = item?.clip_id || item?.clipId || item?.clip?.id || item?.clip?.clip_id || item?.id;
+    const title = _.trim(_.toString(item?.clip?.title || item?.title));
+    if (id && title && !titles[id]) titles[id] = title;
+  }
+  return titles;
+};
+/** Clips of a pasted playlist with the titles Suno gives them (title is empty when only the page could be read). */
+export const getSunoPlaylistTracks = async (playlistUrl: string): Promise<{ songId: string; title: string }[]> => {
   const normalizedUrl = _.trim(playlistUrl);
   if (!SUNO_AUTOMATION_PATTERNS.VALID_PLAYLIST_URL.test(normalizedUrl)) {
     throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
@@ -948,8 +959,9 @@ export const getSunoPlaylistSongIds = async (playlistUrl: string): Promise<strin
     if (response?.ok) {
       const payload = await response.json().catch(() => null);
       const songIds = playlistClipIds(payload);
+      const titles = playlistClipTitles(payload);
       await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_API_RESPONSE, { playlistId, status: response.status, trackCount: songIds.length });
-      if (!_.isEmpty(songIds)) return songIds;
+      if (!_.isEmpty(songIds)) return _.map(songIds, (songId) => ({ songId, title: titles[songId] || "" }));
     }
   }
   let browser: any;
@@ -972,7 +984,7 @@ export const getSunoPlaylistSongIds = async (playlistUrl: string): Promise<strin
     await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.PLAYLIST_VERIFY_WAIT_MS);
     const songIds = _.uniq(await collectSongIds(page));
     if (_.isEmpty(songIds)) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
-    return songIds;
+    return _.map(songIds, (songId) => ({ songId, title: "" }));
   } finally {
     await closeSunoChrome(page);
     await settleSunoBrowserClose(async () => {

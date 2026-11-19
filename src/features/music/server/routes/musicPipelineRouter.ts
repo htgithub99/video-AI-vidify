@@ -57,7 +57,7 @@ import {
   type MusicDownloadSelection,
 } from "../services/musicDownloadCheckpointService.js";
 import { CHAT_ROOM_RECOVERY, CHROME_BACKUP } from "../../../../constants/chromeBackup.js";
-import { cancelActiveSunoCreation, createSunoPlaylist, downloadSunoTracksToFolder, getSunoPlaylistSongIds, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
+import { cancelActiveSunoCreation, createSunoPlaylist, downloadSunoTracksToFolder, getSunoPlaylistTracks, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
 import { sunoCreationReporter } from "../services/sunoCreationProgress.js";
 import { musicDownloadReporter } from "../services/musicDownloadProgress.js";
 import type { MusicDownloadProgress, MusicUploadProgress } from "../../../../types/musicDownloadProgress.js";
@@ -1099,13 +1099,14 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
     let tracks = _.map(_.castArray(req.body?.tracks || []), (track) => ({ songId: _.trim(_.toString(track?.songId)), title: _.trim(_.toString(track?.title)) }));
     if (_.isEmpty(tracks)) {
       await writeSunoCuratedLog(SOURCE_TEXT_PLAYLIST_TRACKS_RECOVERY_STARTED, { evaluationRunId });
-      const recoveredSongIds = await getSunoPlaylistSongIds(_.toString(req.body?.playlistUrl));
-      await writeSunoCuratedLog(SOURCE_TEXT_PLAYLIST_TRACKS_RECOVERED, { evaluationRunId, trackCount: recoveredSongIds.length });
+      const recovered = await getSunoPlaylistTracks(_.toString(req.body?.playlistUrl));
+      await writeSunoCuratedLog(SOURCE_TEXT_PLAYLIST_TRACKS_RECOVERED, { evaluationRunId, trackCount: recovered.length });
+      // Titles sent by the screen belong to its own project; a pasted playlist of another project is named by what Suno calls each song.
       const songTitles = _.map(_.castArray(req.body?.songTitles || []), (title) => _.trim(_.toString(title)));
-      tracks = _.map(recoveredSongIds, (songId, index) => {
+      tracks = _.map(recovered, ({ songId }, index) => {
         const songIndex = Math.floor(index / 2);
         const songNumber = songIndex + 1;
-        const title = songTitles[songIndex] || MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.DEFAULT_TRACK_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${songNumber}`));
+        const title = songTitles[songIndex] || recovered[songIndex * 2]?.title || recovered[index]?.title || MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.DEFAULT_TRACK_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${songNumber}`));
         return { songId, title: SUNO_AUTOMATION_TEXTS.formatSongVariantTitle(songNumber, title, (index % 2) + 1) };
       });
     }
@@ -1117,7 +1118,8 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
     }
     const audioCacheKey = createMusicEvaluationAudioCacheKey(_.toString(req.body?.playlistUrl), candidateIds);
-    if (!shouldEvaluateTracks) {
+    // Without AI curation: "first" keeps take 1 of each song, "all" (keepAllTakes) saves both takes.
+    if (!shouldEvaluateTracks && req.body?.keepAllTakes !== true) {
       tracks = req.body?.maxTracks === 1 ? _.take(tracks, 1) : _.flatMap(_.chunk(tracks, SUNO_AUTOMATION_CONFIG.MIN_TRACKS_PER_PROMPT), (pair) => _.take(pair, 1));
     }
     const downloadFormat = _.toLower(_.trim(_.toString(req.body?.format))) as typeof SUNO_AUTOMATION_CONFIG.FORMAT_MP3 | typeof SUNO_AUTOMATION_CONFIG.FORMAT_WAV;
@@ -1177,7 +1179,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         cumulativeSeconds += durationSeconds;
         return result;
       });
-      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, expectedDownloadCount: checkpoint.selectedTracks.length, downloadedCount: downloadedPaths.length, curatedTracks, success: true });
+      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, folderPath: downloadFolder, expectedDownloadCount: checkpoint.selectedTracks.length, downloadedCount: downloadedPaths.length, curatedTracks, success: true });
       await deleteMusicDownloadCheckpoint(checkpoint.key);
       await deleteMusicEvaluationCheckpoint(checkpoint.key);
       await deleteMusicEvaluationAudio(audioCacheKey).catch(() => undefined);
@@ -1292,7 +1294,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       }
     }
     const downloadedPaths = await downloadSunoTracksToFolder(tracks, _.toString(req.body?.folderPath), format, downloadAbortController.signal, evaluationRunId, sourceWavPaths ? { sourceWavPaths } : undefined);
-    await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, trackCount: downloadedPaths.length, format, success: true });
+    await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, trackCount: downloadedPaths.length, format, folderPath: _.toString(req.body?.folderPath), success: true });
     return report.finish({ success: true, downloadedPaths, downloadedTracks: tracks });
   } catch (error) {
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_FAILED, { evaluationRunId, ...musicErrorDetails(error) });
