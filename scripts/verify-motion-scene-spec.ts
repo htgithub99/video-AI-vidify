@@ -515,6 +515,30 @@ try {
     assert.equal(at("king").look.cape, "#2a3a6a", "a named man keeps his own cloak colour from the cast");
   }
   {
+    const scene = (sticker: boolean) =>
+      ({
+        version: 1,
+        horizon: 300,
+        time: "day",
+        ground: "dirt",
+        items: [person("you", 420, { y: 640, h: 200 }), person("stranger", 640, { y: 640, h: 200, focal: true, look: { pose: "point" } }), ...(sticker ? [{ id: "palm", fn: "sticker", w: 46, h: 54, heldBy: "stranger", hand: "front", code: "c.fillStyle='#c99b78';c.fillRect(8,8,30,38);" }] : [])],
+        devices: [{ kind: "inset", of: "stranger", part: "hand", r: 100 }],
+      }) as unknown as MotionSceneSpec;
+    for (const sticker of [false, true]) {
+      const tab = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      await tab.setContent(motionHtmlFigures(motionSceneSpecPage(scene(sticker)), { profile: "cutout", layout: "wide", year: 1241, scene: { text: "He shoves his burnt palm at you." } }));
+      const notes = await tab.evaluate(async () => {
+        const w = window as any;
+        await w.motionScene.ready;
+        await w.motionScene.renderAt({ mode: "export", width: 1280, height: 720, time: 5, progress: 0.8, duration: 6, motionEnabled: true, cameraEnabled: false, sceneEffectsEnabled: true, seed: "x", speaking: [] });
+        return w.__motionNotes as [string, string][];
+      });
+      await tab.screenshot({ path: path.join(out, `inset-hand-${sticker ? "sticker" : "empty"}.png`) });
+      await tab.close();
+      assert.equal(notes.some(([k, id]) => k === "inset" && id === "stranger"), !sticker, sticker ? "the held sticker is shown large in the close-up" : "an empty hand gets no close-up, never the face in its place");
+    }
+  }
+  {
     const tall = {
       version: 1,
       frame: [720, 1280],

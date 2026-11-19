@@ -14,6 +14,7 @@ import { REUP_PRESETS, reupPreset } from "../constants/reupPresets.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { REUP_LANGUAGES } from "../lib/reupSettings.js";
+import { reupLengthAdvice } from "../lib/reupAdvice.js";
 import { REUP_LIMITS } from "../constants/reupConfig.js";
 import type { ReupCorner, ReupHighlights, ReupLanguage, ReupMusicChoice, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
 import { ReupSelect, ReupTextArea, ReupTextField, ReupToggle, reupClock, type ReupOption } from "./ReupControls.js";
@@ -27,6 +28,7 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
   const groups = MOTION_SETTINGS_TEXT[ui];
   const locked = running || studio.busy;
   const folder = def.source === "folder";
+  const advice = source && !def.speech ? reupLengthAdvice(def, settings, source.duration) : undefined;
   const languages: ReupOption<ReupLanguage>[] = REUP_LANGUAGES.map((code) => ({ value: code, label: MOTION_LANGUAGES[code].label[ui] }));
   const channels: ReupOption<string>[] = [{ value: "", label: voiceText.NO_CHANNEL }, ...studio.voiceChannels.channels.map((c) => ({ value: c.id, label: c.name }))];
   const logo = settings.logo === "blur" ? settings.logoCorner : settings.logo;
@@ -71,6 +73,8 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
         ) : (
           <p className={S.HINT}>{text.NO_SOURCE}</p>
         )}
+        {advice && <p className={S.HINT_WARN}>{text.LENGTH_ADVICE(reupClock(advice.need), reupClock(advice.usable), advice.suggest ? reupClock(advice.suggest) : "")}</p>}
+        {source && studio.reused > 0 && <p className={S.HINT_WARN}>{text.SOURCE_REUSED(studio.reused)}</p>}
         <StudioFieldset disabled={locked} className={S.GROUPS}>
           <MotionSettingsGroup title={groups.CONTENT}>
             <ReupSelect<ReupRights | ""> label={text.LICENSE} title={text.LICENSE_HINT} value={studio.rights} options={(["", "own", "licensed"] as const).map((value) => ({ value, label: text.RIGHTS[value] }))} onChange={studio.setRights} />

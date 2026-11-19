@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { REUP_NARRATION } from "../constants/reupConfig.js";
+import { REUP_FILL, REUP_NARRATION } from "../constants/reupConfig.js";
 import type { ReupBadRange, ReupSegment, ReupShot } from "../types/reup.js";
 const EPS = 0.05;
 const round = (n: number): number => Math.round(n * 100) / 100;
@@ -43,6 +43,8 @@ export interface ReupPlannedSection {
   seconds: number;
   repeated: boolean;
   filled: number;
+  scenes: number;
+  shrunk: number;
 }
 export class ReupFootageLedger {
   private used: ReupShot[] = [];
@@ -60,17 +62,18 @@ export class ReupFootageLedger {
     this.used = mergeSpans([...this.used, { start: shot.start - guard, end: shot.end + guard }]);
     return shot;
   }
-  private cut(spans: ReupShot[], seconds: number, hook: boolean, out: ReupShot[], opts: { piece?: number; jump?: number; shortest?: number } = {}): number {
+  private cut(spans: ReupShot[], seconds: number, hook: boolean, out: ReupShot[], opts: { piece?: number; jump?: number; shortest?: number; seen?: Set<number> } = {}): number {
     let left = seconds;
     const piece = opts.piece ?? (hook ? this.opts.hookCut : this.opts.maxShot);
     const jump = opts.jump ?? (hook ? 3 : 2);
     const shortest = opts.shortest ?? (hook ? Math.min(this.opts.minShot, this.opts.hookCut) : this.opts.minShot);
-    for (const wanted of spans) {
+    for (const [at, wanted] of spans.entries()) {
       for (const span of this.free([wanted])) {
         let cursor = span.start;
         while (left > EPS && span.end - cursor > EPS) {
           const len = Math.min(piece, left, span.end - cursor);
           if (len < shortest - EPS && left > len + EPS) break;
+          opts.seen?.add(at);
           out.push(this.take({ start: cursor, end: cursor + len }));
           left -= len;
           cursor += len * jump;
@@ -93,30 +96,36 @@ export class ReupFootageLedger {
     }
     return { covered, repeated: true };
   }
-  plan(wanted: ReupShot[], seconds: number, hook: boolean, near: ReupShot[], fill: boolean): ReupPlannedSection {
+  private finish(shots: ReupShot[], covered: number, seconds: number, filled: number, scenes: number, shrink: number): ReupPlannedSection {
+    const missing = seconds - covered;
+    if (missing > EPS && missing <= shrink + EPS && covered > EPS) return { shots, seconds: round(covered), repeated: false, filled: round(filled), scenes, shrunk: round(missing) };
+    const again = this.repeat(shots, covered, seconds);
+    return { shots, seconds: round(Math.min(seconds, again.covered)), repeated: again.repeated, filled: round(filled), scenes, shrunk: 0 };
+  }
+  plan(wanted: ReupShot[], seconds: number, hook: boolean, fills: ReupShot[], fill: boolean, shrink = 0): ReupPlannedSection {
     const shots: ReupShot[] = [];
     let covered = this.cut(wanted, seconds, hook, shots);
     let filled = 0;
+    const seen = new Set<number>();
     if (covered < seconds - EPS && fill) {
       const before = covered;
-      covered += this.cut(near, seconds - covered, hook, shots);
+      covered += this.cut(fills, seconds - covered, hook, shots, { seen });
       filled = covered - before;
     }
-    const again = this.repeat(shots, covered, seconds);
-    return { shots, seconds: round(Math.min(seconds, again.covered)), repeated: again.repeated, filled: round(filled) };
+    return this.finish(shots, covered, seconds, filled, seen.size, shrink);
   }
-  planCue(at: number, scene: ReupShot, seconds: number, near: ReupShot[], piece: number, shortest = this.opts.minShot): ReupPlannedSection {
+  planCue(at: number, scene: ReupShot, seconds: number, fills: ReupShot[], piece: number, shortest = this.opts.minShot, shrink = 0, jump = 1.25): ReupPlannedSection {
     const shots: ReupShot[] = [];
     const from = _.clamp(at, scene.start, scene.end);
-    let covered = this.cut([{ start: from, end: scene.end }], seconds, false, shots, { piece, jump: 1.25, shortest });
+    let covered = this.cut([{ start: from, end: scene.end }], seconds, false, shots, { piece, jump, shortest });
     let filled = 0;
+    const seen = new Set<number>();
     if (covered < seconds - EPS) {
       const before = covered;
-      covered += this.cut(near, seconds - covered, false, shots, { piece, jump: 1.25, shortest });
+      covered += this.cut(fills, seconds - covered, false, shots, { piece, jump: 1.25, shortest, seen });
       filled = covered - before;
     }
-    const again = this.repeat(shots, covered, seconds);
-    return { shots, seconds: round(Math.min(seconds, again.covered)), repeated: again.repeated, filled: round(filled) };
+    return this.finish(shots, covered, seconds, filled, seen.size, shrink);
   }
 }
 export const reupNearScenes = (segments: ReupSegment[], ids: string[], depth = 2): ReupShot[] => {
@@ -154,4 +163,23 @@ export const reupSectionSeconds = (voice: number[], roles: string[], pause: numb
 export const reupPacing = (natural: string, hasAudio = true): { share: [number, number]; cueGap: number; tailMax: number } => {
   const p = natural !== "off" && hasAudio ? REUP_NARRATION.sound : REUP_NARRATION.silent;
   return { share: [...p.share] as [number, number], cueGap: p.cueGap, tailMax: p.tailMax };
+};
+const stageOf = (g: ReupSegment): string => (g.tags.includes("after") ? "after" : g.tags.includes("before") ? "before" : "");
+export const reupFillScenes = (segments: ReupSegment[], ids: string[], opts: { hook?: boolean; stage?: boolean; ahead?: number; avoid?: ReupShot[] } = {}): ReupShot[] => {
+  const own = segments.filter((g) => ids.includes(g.id));
+  if (!own.length) return [];
+  const stages = new Set(own.map(stageOf).filter(Boolean));
+  const fits = (g: ReupSegment) => !ids.includes(g.id) && (!opts.stage || !stages.size || !stageOf(g) || stages.has(stageOf(g)));
+  const near = reupNearScenes(segments, ids).filter((shot) => {
+    const g = segments.find((x) => x.start === shot.start);
+    return !!g && fits(g);
+  });
+  const until = (_.max(own.map((g) => g.end)) || 0) + (opts.ahead ?? REUP_FILL.AHEAD);
+  const mid = _.mean(own.map((g) => (g.start + g.end) / 2));
+  const span = Math.max(1, (_.last(segments)?.end || 1) - (segments[0]?.start || 0));
+  const rest = _.sortBy(
+    segments.filter((g) => fits(g) && !near.some((n) => n.start === g.start) && (opts.hook || g.start <= until)),
+    (g) => Math.abs((g.start + g.end) / 2 - mid) / span - g.value * REUP_FILL.VALUE_WEIGHT + (opts.avoid?.length && spanLength(subtractSpans([g], opts.avoid)) < (g.end - g.start) * (1 - REUP_FILL.USED_SHARE) ? REUP_FILL.USED_PENALTY : 0),
+  );
+  return [...near, ...rest.map((g) => ({ start: g.start, end: g.end }))];
 };

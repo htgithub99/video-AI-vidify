@@ -1,4 +1,4 @@
-import type { ReupCommentaryEnding, ReupCommentaryHook, ReupCommentaryVoice } from "../types/reup.js";
+import type { ReupCommentaryEnding, ReupCommentaryHook, ReupCommentaryShape, ReupCommentaryVoice } from "../types/reup.js";
 export const REUP_COMMENTARY = {
   VOICES: {
     expert: "Narrator: a seasoned practitioner. Explain what is being done, why it works, and what a beginner would get wrong.",
@@ -16,8 +16,15 @@ export const REUP_COMMENTARY = {
     tease: "Opening: one surprising moment from the middle, not explained yet.",
   } satisfies Record<ReupCommentaryHook, string>,
   ENDINGS: { question: "Ending: one question to the viewer that invites a comment.", lesson: "Ending: the one practical lesson from this work.", reflection: "Ending: a short reflection on the effort and the result.", next: "Ending: tease what could come next, without promising anything specific." } satisfies Record<ReupCommentaryEnding, string>,
+  SHAPES: {
+    byStep: "Structure: follow the work step by step; each body section opens with the question that step answers.",
+    byProblem: "Structure: build the body sections around the problems met on the way and how each one is solved (still in time order).",
+    bySkill: "Structure: each body section centres on one skill or technique — why it matters and how it is done right (still in time order).",
+    byChange: "Structure: keep coming back to the gap between before and after — what was there, what replaces it and why the change works.",
+  } satisfies Record<ReupCommentaryShape, string>,
   HISTORY: 8,
 } as const;
 export const REUP_COMMENTARY_VOICES = Object.keys(REUP_COMMENTARY.VOICES) as ReupCommentaryVoice[];
 export const REUP_COMMENTARY_HOOKS = Object.keys(REUP_COMMENTARY.HOOKS) as ReupCommentaryHook[];
 export const REUP_COMMENTARY_ENDINGS = Object.keys(REUP_COMMENTARY.ENDINGS) as ReupCommentaryEnding[];
+export const REUP_COMMENTARY_SHAPES = Object.keys(REUP_COMMENTARY.SHAPES) as ReupCommentaryShape[];

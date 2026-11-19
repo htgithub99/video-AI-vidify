@@ -4,16 +4,17 @@ import { runInMotionAiSession, runMotionAi, type MotionAiImage } from "../../../
 import { isChatAttachmentError } from "../../../../server/services/chatSubmissionRecovery.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../../../constants/cinematicConstants.js";
 import type { MotionAiExecution } from "../../../../types/motionVideo.js";
-import { REUP_FOLDER, REUP_HIGHLIGHT, REUP_MOMENT, REUP_OVERLAY, REUP_UPLOAD } from "../../constants/reupConfig.js";
+import { REUP_FOLDER, REUP_HIGHLIGHT, REUP_MOMENT, REUP_OVERLAY, REUP_REVIEW, REUP_SPANS, REUP_UPLOAD } from "../../constants/reupConfig.js";
+import { reupTalkShare } from "../../lib/reupTalk.js";
 import { reupHighlightCount } from "../../lib/reupHighlights.js";
-import { REUP_ARTIFACT, REUP_PROMPT } from "../../constants/reupPrompts.js";
+import { REUP_ARTIFACT, REUP_FIX, REUP_PROMPT } from "../../constants/reupPrompts.js";
 import { REUP_ERROR, REUP_LOG } from "../../constants/reupServerText.js";
 import { reupPreset } from "../../constants/reupPresets.js";
 import { reupStripToolNotes } from "../../lib/reupSeo.js";
-import { reupPacing } from "../../lib/reupTimeline.js";
+import { reupIssueScore, reupNarrationShare, reupNeedsRevision, reupPastText, reupScriptReview, reupUnits, reupWordBudget, type ReupScriptIssues } from "../../lib/reupScriptReview.js";
 import { cleanScenePart, mergeSceneParts, reupMoments, reupSheetBatches, reupSheetSpan, reupUploadLimit, type ReupScenePart } from "../../lib/reupSceneMap.js";
 import type { MotionSeoOption } from "../../../../types/motionVideo.js";
-import type { ReupAiChoice, ReupCue, ReupMark, ReupValueBeat, ReupFrame, ReupJob, ReupMoment, ReupOutputScript, ReupPackage, ReupSceneMap, ReupScript, ReupSection, ReupSectionRole, ReupSegment, ReupSheet, ReupThumbIdea, ReupTranscript } from "../../types/reup.js";
+import type { ReupAiChoice, ReupCue, ReupMark, ReupValueBeat, ReupFrame, ReupJob, ReupMoment, ReupOutputScript, ReupPackage, ReupSceneMap, ReupScript, ReupSection, ReupSectionRole, ReupSegment, ReupSheet, ReupShot, ReupThumbIdea, ReupTranscript } from "../../types/reup.js";
 import { learnReupUploadLimit, readReupUploadLimits } from "./reupJobStore.js";
 import { cropReupSheet } from "./reupMediaService.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
@@ -177,7 +178,8 @@ const cleanCueSections = (raw: any, map: ReupSceneMap, outputIndex: number): Reu
       const text = line(cue?.text, 600);
       if (!segment || !text || used.has(segment.id)) return [];
       used.add(segment.id);
-      return [{ segment: segment.id, text }];
+      const value = VALUES.includes(cue?.value) ? (cue.value as ReupValueBeat) : undefined;
+      return [{ segment: segment.id, text, ...(value ? { value } : {}) }];
     });
     if (!cues.length) return [];
     const chapter = line(section?.chapter, 60);
@@ -192,7 +194,32 @@ const cleanSpeechSections = (raw: any, transcript: ReupTranscript, outputIndex: 
     .flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []))
     .map((p, i) => ({ id: `o${outputIndex + 1}_${p.id}`, role: (i ? "body" : "hook") as ReupSection["role"], text: p.text, shots: [{ start: _.round(Math.max(0, p.start - REUP_OVERLAY.CUT_PAD), 2), end: _.round(Math.min(duration, p.end + REUP_OVERLAY.CUT_PAD), 2) }], ...(calls.get(p.id) ? { callout: calls.get(p.id) } : {}) }));
 };
-export const writeReupScript = async (job: ReupJob, log: Log, signal?: AbortSignal): Promise<ReupScript> => {
+const scriptUnits = (script: ReupScript, lang: ReupScript["outputs"][number]["lang"]): number => _.sumBy(script.outputs, (o) => (o.lang === lang && !o.speech ? reupUnits(o.sections.map((x) => x.text).join(" "), lang!) : 0));
+const pastSpeechLines = (past: ReupScript[]): string[] => _.uniq(past.flatMap((sc) => sc.outputs.filter((o) => o.speech).flatMap((o) => [...o.title, o.cta || "", ...o.sections.map((x) => x.callout || "")])).filter(Boolean)).slice(0, REUP_REVIEW.QUOTES);
+const fixesOf = (issues: ReupScriptIssues, kind: ReupOutputScript["kind"]): string[] => {
+  const label = (id: string) => REUP_FIX.LABEL(kind, Math.max(0, Number(/^o(\d+)/.exec(id)?.[1] || 1) - 1));
+  return [
+    ...issues.short.map((x) => (x.output.includes("_") ? REUP_FIX.SHORT_ALT(label(x.output), x.output.split("_")[1], x.have, x.need, x.unit) : REUP_FIX.SHORT(label(x.output), x.have, x.need, x.aim, x.unit, x.sections))),
+    ...issues.repeats.map((x) => (x.other ? REUP_FIX.TWIN(label(x.output), label(x.other), x.sentences) : REUP_FIX.REPEAT(label(x.output), x.sentences))),
+    ...issues.bare.map((x) => REUP_FIX.BARE(label(x.output), x.sections)),
+    ...issues.long.map((x) => REUP_FIX.LONG(label(x.output), x.sections)),
+  ];
+};
+const issueSummary = (issues: ReupScriptIssues): string[] => [
+  ...issues.short.map((x) => REUP_LOG.REVISE_SHORT(x.have, x.need)),
+  ...(issues.repeats.length
+    ? [
+        REUP_LOG.REVISE_REPEAT(
+          _.sumBy(issues.repeats, (x) => x.sentences.length),
+          Math.round(issues.similar * 100),
+        ),
+      ]
+    : []),
+  ...(issues.bare.length ? [REUP_LOG.REVISE_BARE(_.sumBy(issues.bare, (x) => x.sections.length))] : []),
+  ...(issues.long.length ? [REUP_LOG.REVISE_LONG(_.sumBy(issues.long, (x) => x.sections.length))] : []),
+];
+export const writeReupScript = async (job: ReupJob, history: { scripts: ReupScript[]; used: ReupShot[] }, log: Log, signal?: AbortSignal): Promise<ReupScript> => {
+  const past = history.scripts;
   const preset = reupPreset(job.preset);
   const map = job.sceneMap!;
   const s = job.settings;
@@ -200,7 +227,7 @@ export const writeReupScript = async (job: ReupJob, log: Log, signal?: AbortSign
   const exec = reupExec(s.scriptAi);
   if (preset.speech) {
     if (!job.transcript?.phrases.length) throw new Error(REUP_ERROR.NO_SPEECH);
-    const raw = await runMotionAi(REUP_PROMPT.SPEECH({ transcript: job.transcript, map, settings: s, rules: preset.rules, count }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
+    const raw = await runMotionAi(REUP_PROMPT.SPEECH({ transcript: job.transcript, map, settings: s, rules: preset.rules, count, avoid: pastSpeechLines(past) }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
     const outputs: ReupOutputScript[] = _.castArray(raw?.outputs || [])
       .slice(0, count)
       .map((o: any, i: number) => ({ id: `o${i + 1}`, kind: preset.kind, speech: true, lang: s.language, title: titleOf(o?.title), cta: line(o?.cta || s.cta, 80), sections: cleanSpeechSections(o, job.transcript!, i, job.source.duration) }))
@@ -209,21 +236,81 @@ export const writeReupScript = async (job: ReupJob, log: Log, signal?: AbortSign
     return { outputs };
   }
   const folder = preset.source === "folder";
-  const share = folder ? undefined : reupPacing(s.natural, job.source.hasAudio).share;
+  const hasAudio = job.source.hasAudio;
   const marks = reupHighlightCount(preset.kind === "long" ? s.targetSeconds : s.targetSeconds * count, s.highlights, s);
-  const raw = await runMotionAi(REUP_PROMPT.SCRIPT({ map, settings: s, rules: preset.rules, kind: preset.kind, count, duration: job.source.duration, style: job.style!, bilingual: preset.bilingual, folder, share, marks }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
   const alt = s.languageAlt;
-  const outputs: ReupOutputScript[] = _.castArray(raw?.outputs || [])
-    .slice(0, count)
-    .flatMap((output: any, i: number) => {
-      const main: ReupOutputScript = { id: `o${i + 1}`, kind: preset.kind, lang: s.language, title: titleOf(output?.title), sections: folder ? cleanCueSections(output, map, i) : cleanMomentSections(output, map, i) };
-      if (!preset.bilingual) return [main];
-      const second: ReupOutputScript = { id: `o${i + 1}_${alt}`, kind: preset.kind, lang: alt, title: titleOf(output?.titleAlt), sections: cleanMomentSections(output, map, i, true) };
-      return [main, second];
-    })
-    .filter((output: ReupOutputScript) => output.sections.length);
-  if (!outputs.length) throw new Error(REUP_ERROR.NO_SCRIPT);
-  return { outputs };
+  const talkPhrases = s.keepTalk && !folder ? job.transcript?.phrases || [] : [];
+  const talk = reupTalkShare(talkPhrases, s.targetSeconds);
+  const budget = reupWordBudget(s, s.language, { folder, hasAudio, talk });
+  const prompt = REUP_PROMPT.SCRIPT({
+    map,
+    settings: s,
+    rules: preset.rules,
+    kind: preset.kind,
+    count,
+    duration: job.source.duration,
+    style: job.style!,
+    bilingual: preset.bilingual,
+    folder,
+    share: folder ? undefined : reupNarrationShare(s, hasAudio, talk),
+    marks,
+    budget,
+    budgetAlt: preset.bilingual ? reupWordBudget(s, alt, { folder, hasAudio, talk }) : undefined,
+    past: reupPastText(past.slice(0, REUP_REVIEW.PAST_RUNS), s.language),
+    talk: talkPhrases,
+    used: history.used.slice(0, REUP_SPANS.PROMPT_MAX),
+  });
+  const parse = (raw: any): ReupScript => ({
+    outputs: _.castArray(raw?.outputs || [])
+      .slice(0, count)
+      .flatMap((output: any, i: number) => {
+        const main: ReupOutputScript = { id: `o${i + 1}`, kind: preset.kind, lang: s.language, title: titleOf(output?.title), sections: folder ? cleanCueSections(output, map, i) : cleanMomentSections(output, map, i) };
+        if (!preset.bilingual) return [main];
+        const second: ReupOutputScript = { id: `o${i + 1}_${alt}`, kind: preset.kind, lang: alt, title: titleOf(output?.titleAlt), sections: cleanMomentSections(output, map, i, true) };
+        return [main, second];
+      })
+      .filter((output: ReupOutputScript) => output.sections.length),
+  });
+  const raw = await runMotionAi(prompt, REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
+  const first = parse(raw);
+  if (!first.outputs.length) throw new Error(REUP_ERROR.NO_SCRIPT);
+  const review = {
+    settings: s,
+    folder,
+    hasAudio,
+    talk,
+    scenes: folder ? Object.fromEntries(map.segments.map((g) => [g.id, g.end - g.start])) : undefined,
+    past: past
+      .map((sc) =>
+        sc.outputs
+          .filter((o) => !o.speech && o.lang === s.language)
+          .flatMap((o) => o.sections.map((x) => x.text))
+          .join(" "),
+      )
+      .filter(Boolean),
+  };
+  const issues = reupScriptReview(first, review);
+  if (!reupNeedsRevision(issues)) return first;
+  log(REUP_LOG.REVISE_START(issueSummary(issues)));
+  try {
+    const draft = { outputs: _.castArray(raw?.outputs || []).slice(0, count) };
+    const next = parse(await runMotionAi(REUP_PROMPT.REVISE({ base: prompt, draft, fixes: fixesOf(issues, preset.kind), alt: preset.bilingual ? alt : undefined }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log)));
+    const after = reupScriptReview(next, review);
+    if (next.outputs.length === first.outputs.length && reupIssueScore(after) < reupIssueScore(issues)) {
+      const words: [number, number] = [scriptUnits(first, s.language), scriptUnits(next, s.language)];
+      const rewritten = Math.max(0, _.sumBy(issues.repeats, (x) => x.sentences.length) - _.sumBy(after.repeats, (x) => x.sentences.length));
+      const valued = Math.max(0, _.sumBy(issues.bare, (x) => x.sections.length) - _.sumBy(after.bare, (x) => x.sections.length));
+      log(REUP_LOG.REVISED(words[0], words[1], rewritten, valued));
+      after.short.forEach((x) => log(REUP_LOG.STILL_SHORT(x.have, x.need), "warn"));
+      return { ...next, revision: { ...(words[1] > words[0] ? { words } : {}), ...(rewritten ? { rewritten } : {}), ...(valued ? { valued } : {}) } };
+    }
+    log(REUP_LOG.REVISE_KEPT, "warn");
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    log(REUP_LOG.REVISE_FAILED(String((error as Error)?.message || error)), "warn");
+  }
+  issues.short.forEach((x) => log(REUP_LOG.STILL_SHORT(x.have, x.need), "warn"));
+  return first;
 };
 export const reupCandidateTimes = (map: ReupSceneMap, limit: number): number[] => {
   const strong = _.orderBy(map.segments, ["value"], ["desc"]).map((s) => _.round((s.start + s.end) / 2, 1));
@@ -235,17 +322,29 @@ const clip = (value: unknown, length: number): string => _.truncate(_.trim(Strin
 export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file: string })[], past: { titles: string[]; layouts: string[] }, log: Log, signal?: AbortSignal): Promise<ReupPackage> => {
   const s = job.settings;
   const choice = REUP_UPLOAD.NO_VISION.includes(s.scriptAi.provider) && s.scriptAi.mode !== REUP_UPLOAD.API_MODE ? s.visionAi : s.scriptAi;
-  const room = s.thumbnail ? Math.min(frames.length, reupUploadLimit(choice.provider, choice.mode, readReupUploadLimits())) : 0;
-  const sent = frames.slice(0, room);
+  let room = s.thumbnail ? Math.min(frames.length, REUP_UPLOAD.PACKAGE_FRAMES, reupUploadLimit(choice.provider, choice.mode, readReupUploadLimits())) : 0;
   const narration = _.truncate((job.script?.outputs || []).flatMap((o) => o.sections.map((x) => x.text)).join(" "), { length: 2500 });
-  const raw = await runMotionAi(
-    REUP_PROMPT.PACKAGE({ map: job.sceneMap!, script: narration, settings: s, frames: sent.map((f) => f.time), options: s.seoOptions, thumbnail: s.thumbnail, pastTitles: past.titles, pastLayouts: past.layouts }),
-    REUP_ARTIFACT.PACKAGE,
-    reupExec(choice),
-    signal,
-    aiLog(log),
-    sent.map((f, i) => ({ name: `frame_${i + 1}.jpg`, mimeType: "image/jpeg", path: f.file })),
-  );
+  const ask = (sent: typeof frames) =>
+    runMotionAi(
+      REUP_PROMPT.PACKAGE({ map: job.sceneMap!, script: narration, settings: s, frames: sent.map((f) => f.time), options: s.seoOptions, thumbnail: s.thumbnail && sent.length > 0, pastTitles: past.titles, pastLayouts: past.layouts }),
+      REUP_ARTIFACT.PACKAGE,
+      reupExec(choice),
+      signal,
+      aiLog(log),
+      sent.map((f, i) => ({ name: `frame_${i + 1}.jpg`, mimeType: "image/jpeg", path: f.file })),
+    );
+  let raw: any;
+  for (;;) {
+    try {
+      raw = await ask(frames.slice(0, room));
+      break;
+    } catch (error) {
+      if (signal?.aborted || !room || (error as Error)?.message !== CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR) throw error;
+      const next = Math.floor(room / 2);
+      log(REUP_LOG.PACKAGE_REFUSED(choice.provider, room, next));
+      room = next;
+    }
+  }
   const nearest = (t: unknown): number | undefined => {
     const n = Number(t);
     if (!Number.isFinite(n) || !frames.length) return undefined;

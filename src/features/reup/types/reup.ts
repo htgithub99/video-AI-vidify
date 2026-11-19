@@ -24,15 +24,17 @@ export type ReupRights = "own" | "licensed";
 export type ReupCommentaryVoice = "expert" | "storyteller" | "analyst" | "curious" | "wry" | "coach";
 export type ReupCommentaryHook = "result" | "question" | "contrast" | "stakes" | "tease";
 export type ReupCommentaryEnding = "question" | "lesson" | "reflection" | "next";
+export type ReupCommentaryShape = "byStep" | "byProblem" | "bySkill" | "byChange";
 export interface ReupStyle {
   voice: ReupCommentaryVoice;
   hook?: ReupCommentaryHook;
   ending: ReupCommentaryEnding;
+  shape?: ReupCommentaryShape;
   track?: string;
 }
 export type ReupMusicChoice = "off" | "library";
 export type ReupReportLevel = "ok" | "review" | "risk";
-export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual" | "naturalOff" | "coverage" | "describes";
+export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual" | "naturalOff" | "coverage" | "describes" | "extended" | "rewritten" | "overlap";
 export type ReupScoreGap = "coverage" | "value" | "highlights" | "silence" | "shot" | "source" | "similar" | "angle";
 export interface ReupReport {
   level: ReupReportLevel;
@@ -105,6 +107,8 @@ export interface ReupPresetRules {
   voices: ReupCommentaryVoice[];
   hooks: ReupCommentaryHook[];
   endings: ReupCommentaryEnding[];
+  shapes: ReupCommentaryShape[];
+  keepTalk: boolean;
 }
 export type ReupJobSettings = ReupSettings & ReupPresetRules;
 export interface ReupMediaItem {
@@ -206,8 +210,14 @@ export interface ReupOutputScript {
   speech?: boolean;
   cta?: string;
 }
+export interface ReupScriptRevision {
+  words?: [number, number];
+  rewritten?: number;
+  valued?: number;
+}
 export interface ReupScript {
   outputs: ReupOutputScript[];
+  revision?: ReupScriptRevision;
 }
 export interface ReupTrack {
   name: string;
@@ -224,6 +234,8 @@ export interface ReupOutputResult {
   silentMax?: number;
   padding?: number;
   repeated?: boolean;
+  talk?: number;
+  spans?: [number, number][];
   chapters?: { t: number; title: string }[];
   file: string;
   url: string;

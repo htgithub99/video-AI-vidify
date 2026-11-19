@@ -3,7 +3,7 @@ import type { Page } from "playwright";
 import { CHAT_ROOM_RECOVERY as C } from "../../constants/chromeBackup.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/cinematicConstants.js";
 import { REUP_ARTIFACT } from "../../features/reup/constants/reupPrompts.js";
-const REFUSAL_FINAL: readonly string[] = [REUP_ARTIFACT.SCENES];
+const REFUSAL_FINAL: readonly string[] = [REUP_ARTIFACT.SCENES, REUP_ARTIFACT.PACKAGE];
 export const isRecoverableChatRefusal = (error: unknown, artifactType?: string): boolean => {
   if (artifactType && REFUSAL_FINAL.includes(artifactType)) return false;
   const failure = error as { message?: string; diagnostics?: { lastCandidate?: string } } | undefined;

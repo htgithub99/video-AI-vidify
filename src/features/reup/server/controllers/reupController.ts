@@ -7,13 +7,16 @@ import { pickVideoExportFolder } from "../../../video-export/server/services/vid
 import { REUP_ERROR } from "../../constants/reupServerText.js";
 import type { ReupJob, ReupStepId } from "../../types/reup.js";
 import { deleteReupJobs, getReupJob, listReupJobs } from "../services/reupJobStore.js";
-import { inspectReupSource, reupFrame } from "../services/reupMediaService.js";
+import { inspectReupSource, reupFingerprint, reupFrame } from "../services/reupMediaService.js";
+import { reupSourceReuses } from "../../lib/reupAdvice.js";
 import { approveReupScript, cancelReup, exportReup, rerunReup, startReup } from "../services/reupPipeline.js";
 const fail = (res: Response, status: number, error: unknown): void => void res.status(status).json({ success: false, error: String((error as Error)?.message || error) });
 const view = (job: ReupJob) => ({ ...job, sheets: job.sheets.map(({ file: _file, ...sheet }) => sheet), voices: undefined, transcript: job.transcript ? { text: job.transcript.text, words: [], phrases: [] } : undefined });
 export const inspectReupSourceController = async (req: Request, res: Response): Promise<void> => {
   try {
-    res.json({ success: true, source: await inspectReupSource(String(req.body?.path || "")) });
+    const source = await inspectReupSource(String(req.body?.path || ""));
+    const fingerprint = await reupFingerprint(source).catch(() => undefined);
+    res.json({ success: true, source, reused: reupSourceReuses({ fingerprint, source }, listReupJobs()) });
   } catch (error) {
     fail(res, 400, error);
   }

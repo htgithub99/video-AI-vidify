@@ -15,10 +15,13 @@ import { REUP_COMMENTARY } from "../../constants/reupCommentary.js";
 import { pickReupStyle, reupPickTrack } from "../../lib/reupCommentary.js";
 import { reupMusicDir, reupTracks } from "./reupMusicService.js";
 import { reupReport } from "../../lib/reupCompliance.js";
+import { reupLengthAdvice, reupSameSource, reupSourceReuses, reupUsableSeconds } from "../../lib/reupAdvice.js";
+import { mergeSpans, spanLength } from "../../lib/reupTimeline.js";
+import { reupTalkPhrases } from "../../lib/reupTalk.js";
 import { reupUnbackedClaims } from "../../lib/reupFacts.js";
 import { reupSeoChapters } from "../../lib/reupSeo.js";
 import { cleanReupSettings } from "../../lib/reupSettings.js";
-import type { ReupJob, ReupPackage, ReupPresetId, ReupRights, ReupScript, ReupStepId } from "../../types/reup.js";
+import type { ReupJob, ReupPackage, ReupPresetId, ReupRights, ReupScript, ReupShot, ReupStepId } from "../../types/reup.js";
 import { buildReupSceneMap, reupCandidateTimes, withReupAi, writeReupPackage, writeReupScript } from "./reupAiService.js";
 import { buildReupJob } from "./reupBuildService.js";
 import { REUP_ABORTED, isReupAbort } from "./reupFfmpeg.js";
@@ -62,8 +65,14 @@ const heavy = <T>(job: ReupJob, kind: string, step: string, signal: AbortSignal,
     throw signal.aborted ? new Error(REUP_ABORTED) : error;
   });
 const pastRuns = (job: ReupJob): ReupJob[] => listReupJobs(REUP_COMMENTARY.HISTORY * 6).filter((p) => p.id !== job.id && p.createdAt < job.createdAt);
+const finishedRuns = (job: ReupJob): ReupJob[] => pastRuns(job).filter((p) => p.outputs.length > 0);
+const usedSpans = (job: ReupJob): ReupShot[] => {
+  const same = finishedRuns(job).filter((p) => reupSameSource(job, p));
+  const spans = mergeSpans(same.flatMap((p) => p.outputs.flatMap((o) => (o.spans || []).map(([start, end]) => ({ start, end })))));
+  return spans;
+};
 const checkPolicy = (job: ReupJob): void => {
-  job.report = reupReport(job, pastRuns(job));
+  job.report = reupReport(job, finishedRuns(job));
   const flagged = job.report.notes.filter((n) => n.level !== "ok" && REUP_REPORT_ITEM[n.code]).map((n) => REUP_REPORT_ITEM[n.code]!(n.value || ""));
   reupLog(job, REUP_LOG.REPORT(REUP_REPORT_LEVEL_NAME[job.report.level], flagged.length ? flagged : [REUP_REPORT_ITEM.narration!(String(Math.round(job.report.narrated * 100)))]), job.report.level === "ok" ? "info" : "warn");
 };
@@ -94,13 +103,31 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       reupLog(job, REUP_LOG.PROXY);
     } else reupLog(job, REUP_LOG.SOURCE(job.source.duration, job.source.width, job.source.height, job.source.hasAudio));
     job.fingerprint = await reupFingerprint(job.source);
+    const reused = reupSourceReuses(job, finishedRuns(job));
+    if (reused) reupLog(job, REUP_LOG.SOURCE_REUSED(reused), "warn");
     const speech = preset.speech
       ? transcribeReupSource(job.id, job.source, job.settings.language, signal, (line) => line && reupLog(job, line)).then((t) => {
           job.transcript = t;
           reupLog(job, REUP_LOG.ASR(t.words.length, t.phrases.length));
           if (!t.phrases.length) throw new Error(REUP_ERROR.NO_SPEECH);
         })
-      : Promise.resolve();
+      : job.settings.keepTalk && job.source.hasAudio && job.settings.natural !== "off"
+        ? transcribeReupSource(job.id, job.source, "", signal, (line) => line && reupLog(job, line))
+            .then((t) => {
+              job.transcript = { ...t, phrases: reupTalkPhrases(t.phrases) };
+              reupLog(
+                job,
+                REUP_LOG.TALK(
+                  job.transcript.phrases.length,
+                  _.sumBy(job.transcript.phrases, (p) => p.end - p.start),
+                ),
+              );
+            })
+            .catch((error) => {
+              if (signal.aborted) throw error;
+              reupLog(job, REUP_LOG.TALK_FAILED(String((error as Error)?.message || error)), "warn");
+            })
+        : Promise.resolve();
     const [sheets, quality] = await Promise.all([makeReupSheets(job.id, job.source, job.settings.sheetInterval, signal, () => reupLog(job, REUP_LOG.FONT_MISSING, "warn")), measureReupQuality(job.source, job.settings.darkLevel, job.settings.blurLevel, signal)]);
     job.sheets = sheets;
     job.bad = quality.bad;
@@ -114,6 +141,9 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       ),
     );
     await speech;
+    const usable = preset.speech ? _.sumBy(job.transcript?.phrases || [], (p) => p.end - p.start) : reupUsableSeconds(job.source, job.bad);
+    const advice = reupLengthAdvice(preset, job.settings, usable);
+    if (advice) reupLog(job, preset.speech ? REUP_LOG.SPEECH_ADVICE(advice.need, advice.usable) : REUP_LOG.LENGTH_ADVICE(advice.need, advice.usable, advice.suggest), "warn");
     return "next";
   },
   scenes: async (job, signal) => {
@@ -128,11 +158,15 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
   script: async (job, signal) => {
     if (!job.style) {
       job.style = pickReupStyle(job.settings, _.compact(pastRuns(job).map((p) => p.style)).slice(0, REUP_COMMENTARY.HISTORY), job.id);
-      reupLog(job, REUP_LOG.STYLE(REUP_STYLE_NAME[job.style.voice], job.style.hook ? REUP_STYLE_NAME[job.style.hook] : "", REUP_STYLE_NAME[job.style.ending]));
+      reupLog(job, REUP_LOG.STYLE(REUP_STYLE_NAME[job.style.voice], job.style.hook ? REUP_STYLE_NAME[job.style.hook] : "", REUP_STYLE_NAME[job.style.ending], job.style.shape ? REUP_STYLE_NAME[job.style.shape] : ""));
     }
     job.script = await withReupAi(
       job,
-      () => writeReupScript(job, (t, l) => reupLog(job, t, l), signal),
+      () => {
+        const used = usedSpans(job);
+        if (used.length) reupLog(job, REUP_LOG.USED_SPANS(finishedRuns(job).filter((p) => reupSameSource(job, p)).length, spanLength(used)));
+        return writeReupScript(job, { scripts: _.compact(finishedRuns(job).map((p) => p.script)), used }, (t, l) => reupLog(job, t, l), signal);
+      },
       (t) => reupLog(job, t),
       signal,
     );
@@ -185,6 +219,7 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     job.outputs = await heavy(job, HEAVY_RENDER, REUP_STEP_NAME.build, signal, () =>
       buildReupJob(
         job,
+        usedSpans(job),
         (t, l) => reupLog(job, t, l),
         (p) => reupStep(job, "build", { progress: p }),
         signal,

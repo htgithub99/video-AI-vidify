@@ -247,10 +247,13 @@ function drawItem(it, p, t) {
   ctx.restore();
 }
 const STICK = {};
+const stickerFn = (it) => {
+  if (STICK[it.id] === undefined) { try { STICK[it.id] = new Function('c', 'w', 'h', 't', 'p', it.code || ''); } catch (e) { STICK[it.id] = null; } }
+  return STICK[it.id];
+};
 function drawSticker(it, st, p, t) {
   if (it.at && (p < it.at[0] || p > it.at[1])) return;
-  let f = STICK[it.id];
-  if (f === undefined) { try { f = STICK[it.id] = new Function('c', 'w', 'h', 't', 'p', it.code || ''); } catch (e) { f = STICK[it.id] = null; } }
+  const f = stickerFn(it);
   if (!f) return;
   const who = it.heldBy && RES[it.heldBy], w = +st.w || +st.h || 40, h = +st.h || w;
   let x, y;
@@ -258,6 +261,7 @@ function drawSticker(it, st, p, t) {
   else { x = +st.x; y = +st.y; if (!isFinite(x) || !isFinite(y)) return; }
   ctx.save(); ctx.translate(x, y); if ((+st.facing || 1) < 0) ctx.scale(-1, 1);
   if (window.motionMark) window.motionMark(ctx, it.id, -w / 2, who ? -h / 2 : -h, w, h);
+  ctx.translate(-w / 2, who ? -h / 2 : -h);
   try { f(ctx, w, h, t, p); } catch (e) {}
   ctx.restore();
 }
@@ -357,9 +361,26 @@ function inBubble(it, x) {
   if (Array.isArray(it.gaps)) out.gaps = it.gaps.map((g) => [x + +g[0], x + +g[1]]);
   return out;
 }
+let PLACED = [];
+const inBox = (q, b, m) => q[0] > b.x - m && q[0] < b.x + b.w + m && q[1] > b.y - m && q[1] < b.y + b.h + m;
+const lineHits = (a, b, box, m) => { for (let i = 1; i < REVISE.INSET.SAMPLES; i++) { const k = i / REVISE.INSET.SAMPLES; if (inBox([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k], box, m)) return true; } return false; };
+const nearLine = (c, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], k = clamp(((c[0] - a[0]) * dx + (c[1] - a[1]) * dy) / Math.max(1e-6, dx * dx + dy * dy), 0, 1); return Math.hypot(c[0] - a[0] - dx * k, c[1] - a[1] - dy * k); };
+function insetSpot(r, from, toFrame, fallback) {
+  const I = REVISE.INSET, gap = r * I.GAP, lo = FW * TITLE_SAFE + r, hi = FW * (1 - TITLE_SAFE) - r, spots = [];
+  I.ROWS.forEach((row, k) => { const y = FH * TITLE_SAFE + r * row; for (let i = 0; i < I.COLS; i++) spots.push([lo + ((hi - lo) * i) / (I.COLS - 1), y, k ? r * I.LOW : 0]); });
+  const ok = (c) => {
+    const box = { x: c[0] - r, y: c[1] - r, w: r * 2, h: r * 2 };
+    if (hitsKey(box, toFrame)) return false;
+    return PLACED.every((q) => !(Math.min(box.x + box.w, q.box.x + q.box.w) + gap > Math.max(box.x, q.box.x) && Math.min(box.y + box.h, q.box.y + q.box.h) + gap > Math.max(box.y, q.box.y)) && !lineHits(from, c, q.box, gap) && !(q.tail && nearLine(c, q.tail[0], q.tail[1]) < r + gap));
+  };
+  const cost = (c) => Math.hypot(c[0] - from[0], c[1] - from[1]) + c[2];
+  const free = spots.filter(ok);
+  return free.length ? free.reduce((a, b) => (cost(b) < cost(a) ? b : a)).slice(0, 2) : fallback;
+}
 function devices(p, t, layer, toFrame, zoom) {
   const over = layer === 'over';
-  const list = (S.devices || []).filter((d) => !(d.at && (p < d.at[0] || p > d.at[1])) && (OVERLAY.indexOf(d.kind) >= 0) === over && (d.kind === 'spotlight') === (layer === 'final'));
+  if (over) PLACED = [];
+  const list = (S.devices || []).filter((d) => !(d.at && (p < d.at[0] || p > d.at[1])) && (OVERLAY.indexOf(d.kind) >= 0) === over && (d.kind === 'spotlight') === (layer === 'final')).sort((a, b) => (a.kind === 'inset') - (b.kind === 'inset'));
   (over ? list.slice(0, OVERLAY_MAX) : list).forEach((d) => {
     const appear = d.at ? smooth(d.at[0], d.at[0] + 0.06, p) : 1, who = d.of && RES[d.of];
     const headAt = who && who.head ? who.head : who ? [who.x, who.y - who.h * 0.9] : null;
@@ -373,29 +394,36 @@ function devices(p, t, layer, toFrame, zoom) {
       if (hitsKey({ x: x - r * 1.6, y: y - r * 1.05, w: r * 3.2, h: r * 2.1 }, toFrame)) { const spot = freeSpot(r * 3.2, r * 2.1, toFrame, [x, y]); if (spot) { x = spot.x + r * 1.6; y = spot.y + r * 1.05; } }
       const from = head && head[0] > 0 && head[0] < FW && head[1] > 0 && head[1] < FH ? head : undefined;
       const cy = d.fitted ? y : y + r * 0.45;
+      PLACED.push({ box: { x: x - r * 1.6, y: y - r * 1.05, w: r * 3.2, h: r * 2.1 }, tail: from ? [from, [x, y]] : null, r });
       FIG.device(ctx, { kind: 'thought', x, y, r, from, appear }, () => { quiet(() => (d.items || []).forEach((it) => drawItem(Object.assign({}, it, { x: x + (+it.x || 0), y: d.fitted ? cy + +it.y : y + (it.y != null ? +it.y : r * 0.45), keys: undefined }, inBubble(it, x)), p, t))); });
       return;
     }
     if (d.kind === 'inset') {
       if (!who) return;
-      const r = Math.min(+d.r || 110, FH * 0.2), lead = toFrame(who.x, who.y - who.h * 0.5), x = lead[0] > FW / 2 ? FW * TITLE_SAFE + r : FW * (1 - TITLE_SAFE) - r, y = FH * TITLE_SAFE + r;
+      const bubble = PLACED.find((q) => q.r), r = Math.min(+d.r || 110, Math.min(FW, FH) * REVISE.INSET.R_MAX, bubble ? bubble.r * REVISE.INSET.UNDER_THOUGHT : Infinity), lead = toFrame(who.x, who.y - who.h * 0.5), corner = [lead[0] > FW / 2 ? FW * TITLE_SAFE + r : FW * (1 - TITLE_SAFE) - r, FH * TITLE_SAFE + r];
       // The thing to show: a small loose thing the scene puts at this person's hand (a whetstone, a letter), else a small
       // thing they hold; long things (weapons, poles) read well in the shot itself and get no close-up.
       const handAt = who.hand || [who.x, who.y - who.h * 0.5], small = (S.items || []).filter((it) => it.fn === 'prop' && it.kind && !it.group && +it.h > 0 && +it.h < (who.h || 200) * 0.35 && RES[it.id] && Math.hypot(RES[it.id].x - handAt[0], RES[it.id].y - handAt[1]) < (who.h || 200) * 0.7)[0];
       const held = String((who.look && who.look.hold) || ''), hold = small ? small.kind : LONG_HELD.test(held) ? '' : held;
-      const part = d.part === 'head' || !hold ? 'head' : 'item';
-      if (part === 'item' && !quiet(() => FIG.prop(SPARE, { kind: hold, x: 50, y: 100, h: 60, facing: 1 }))) { note('inset', d.of); return; }
+      const sticker = (S.items || []).find((it) => it.fn === 'sticker' && it.heldBy === d.of && stickerFn(it));
+      const part = d.part === 'head' ? 'head' : sticker ? 'sticker' : hold ? 'item' : '';
+      if (!part || (part === 'item' && !quiet(() => FIG.prop(SPARE, { kind: hold, x: 50, y: 100, h: 60, facing: 1 })))) { note('inset', d.of); return; }
+      if (part === 'head' && (!who.head || (who.h || 0) * zoom > FH * 0.55)) return;
+      const from = part === 'head' ? toFrame(who.head[0], who.head[1]) : who.hand ? toFrame(who.hand[0], who.hand[1]) : lead, [x, y] = insetSpot(r, from, toFrame, corner);
+      PLACED.push({ box: { x: x - r, y: y - r, w: r * 2, h: r * 2 }, tail: [from, [x, y]] });
+      if (part === 'sticker') {
+        const w = +sticker.w || +sticker.h || 40, h = +sticker.h || w, k = (r * REVISE.INSET.FILL) / Math.max(w, h), f = stickerFn(sticker);
+        FIG.device(ctx, { kind: 'inset', x, y, r, from, appear }, (c) => { c.save(); c.translate(x, y); c.scale(k, k); c.translate(-w / 2, -h / 2); try { f(c, w, h, t, p); } catch (e) {} c.restore(); });
+        return;
+      }
       if (part === 'head') {
-        // A face already large in this shot needs no close-up of itself.
-        if (!who.head || (who.h || 0) * zoom > FH * 0.55) return;
         const z = Math.max(1.5, +d.zoom || 3), pt = who.head;
-        FIG.device(ctx, { kind: 'inset', x, y, r, from: toFrame(pt[0], pt[1]), appear }, (c) => { c.save(); c.translate(x, y); c.scale(z, z); c.translate(-pt[0], -pt[1]); quiet(() => paint(p, t, true)); c.restore(); });
+        FIG.device(ctx, { kind: 'inset', x, y, r, from, appear }, (c) => { c.save(); c.translate(x, y); c.scale(z, z); c.translate(-pt[0], -pt[1]); quiet(() => paint(p, t, true)); c.restore(); });
         return;
       }
       // The thing in the hand, drawn large on its own (a whetstone, a letter, a seal): what a zoomed picture of a small
       // hand could not show. A thing the library has no drawing for is no close-up.
-      const hand = who.hand ? toFrame(who.hand[0], who.hand[1]) : lead;
-      FIG.device(ctx, { kind: 'inset', x, y, r, from: hand, appear }, (c) => { quiet(() => FIG.prop(c, { kind: hold, x, y: y + r * 0.45, h: r * 1.1, facing: 1 })); });
+      FIG.device(ctx, { kind: 'inset', x, y, r, from, appear }, (c) => { quiet(() => FIG.prop(c, { kind: hold, x, y: y + r * 0.45, h: r * 1.1, facing: 1 })); });
       return;
     }
     const at = who ? [who.x, who.y - who.h * 0.6] : [+d.x || FW / 2, +d.y || FH / 2];

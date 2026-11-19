@@ -1,22 +1,32 @@
 import _ from "lodash";
-import type { ReupJob, ReupReport, ReupReportLevel, ReupScoreGap } from "../types/reup.js";
+import { REUP_NARRATION, REUP_SPANS } from "../constants/reupConfig.js";
+import { mergeSpans, spanLength, subtractSpans } from "./reupTimeline.js";
+import { reupSameSource } from "./reupAdvice.js";
+import type { ReupOutputResult, ReupJob, ReupReport, ReupReportLevel, ReupScoreGap } from "../types/reup.js";
 export const REUP_CHECK = { NARRATED_RISK: 0.35, NARRATED_REVIEW: 0.5, SILENT_REVIEW: 12, SILENT_OK: 8, PADDING_REVIEW: 0.45, SIMILAR_REVIEW: 0.2, SIMILAR_RISK: 0.4, NGRAM: 3, VALUE_MIN: 0.6 } as const;
 export const REUP_SCORE: Record<ReupScoreGap, number> = { coverage: 25, value: 20, highlights: 10, silence: 5, shot: 5, source: 10, similar: 15, angle: 10 };
 export const REUP_SCORE_LIMIT = { SHOT_OK: 12, SHOT_SPAN: 18, SHARE_HIGH: 0.85, SHARE_FACTOR: 0.6 } as const;
 const RANK: Record<ReupReportLevel, number> = { ok: 0, review: 1, risk: 2 };
-const grams = (text: string): Set<string> => {
+const NO_SPACES = /[\u3040-\u30ff\u3400-\u9fff]/;
+export const reupTextGrams = (text: string): Set<string> => {
   const words = text
     .toLowerCase()
     .normalize("NFC")
     .replace(/[^\p{L}\p{N}\s]+/gu, " ")
     .split(/\s+/)
     .filter(Boolean);
-  const units = words.length * 4 < text.length ? [...text.replace(/\s+/g, "")] : words;
+  const units = NO_SPACES.test(text) ? [...text.replace(/[\s\p{P}\p{S}]+/gu, "")] : words;
   return new Set(_.range(Math.max(0, units.length - REUP_CHECK.NGRAM + 1)).map((i) => units.slice(i, i + REUP_CHECK.NGRAM).join(" ")));
 };
+const spansOf = (outputs: ReupOutputResult[]) => mergeSpans(outputs.flatMap((o) => (o.spans || []).map(([start, end]) => ({ start, end }))));
+export const reupSpanOverlap = (mine: ReupOutputResult[], past: ReupOutputResult[]): number => {
+  const own = spansOf(mine);
+  const length = spanLength(own);
+  return length ? _.round(1 - spanLength(subtractSpans(own, spansOf(past))) / length, 2) : 0;
+};
 export const reupTextSimilarity = (a: string, b: string): number => {
-  const x = grams(a);
-  const y = grams(b);
+  const x = reupTextGrams(a);
+  const y = reupTextGrams(b);
   if (!x.size || !y.size) return 0;
   let both = 0;
   x.forEach((g) => y.has(g) && both++);
@@ -38,13 +48,19 @@ export const reupReport = (job: ReupJob, past: ReupJob[]): ReupReport => {
   if (job.outputs.some((o) => o.repeated)) add("repeated", "review");
   if (!speech && job.settings.natural === "off" && job.source?.hasAudio && job.source.kind === "video") add("naturalOff", "ok");
   const others = past.filter((p) => p.id !== job.id);
-  const sameSource = others.filter((p) => job.fingerprint && p.fingerprint === job.fingerprint);
+  const sameSource = others.filter((p) => p.outputs.length > 0 && reupSameSource(job, p));
   if (sameSource.length) add("sourceReused", job.rights === "own" ? "review" : "risk", sameSource.length);
-  const voiced = total ? _.sumBy(job.outputs, (o) => o.voiced ?? o.narrated ?? o.duration) / total : 0;
-  const coverage = speech || !job.settings.narratedMin ? 1 : Math.min(1, voiced / job.settings.narratedMin);
+  const overlap = reupSpanOverlap(
+    job.outputs,
+    sameSource.flatMap((p) => p.outputs),
+  );
+  if (overlap >= REUP_SPANS.OVERLAP_REVIEW) add("overlap", "review", Math.round(overlap * 100));
+  const voiced = total ? _.sumBy(job.outputs, (o) => (o.voiced ?? o.narrated ?? o.duration) + (o.talk || 0)) / total : 0;
+  const coverage = speech || !job.settings.narratedMin ? 1 : Math.min(1, voiced / Math.max(0.01, job.settings.narratedMin - REUP_NARRATION.COVER_SLACK));
   if (coverage < 1) add("coverage", "review", `${Math.round(voiced * 100)}|${Math.round(job.settings.narratedMin * 100)}`);
-  const cued = (job.script?.outputs || []).filter((o) => !o.speech && o.lang === job.script?.outputs[0].lang).flatMap((o) => o.sections.flatMap((s, i) => (s.role !== "hook" && s.cues?.length ? [{ s, n: i + 1 }] : [])));
-  const bare = cued.flatMap(({ s, n }) => (s.cues!.some((c) => c.value) ? [] : [n]));
+  const written = (job.script?.outputs || []).filter((o) => !o.speech && o.lang === job.script?.outputs[0].lang);
+  const cued = written.flatMap((o, k) => (o.kind === "short" ? (o.sections.some((s) => s.cues?.length) ? [{ cues: o.sections.flatMap((s) => s.cues || []), n: `#${k + 1}` }] : []) : o.sections.flatMap((s, i) => (s.role === "body" && s.cues?.length ? [{ cues: s.cues, n: String(i + 1) }] : []))));
+  const bare = cued.flatMap(({ cues, n }) => (cues.some((c) => c.value) ? [] : [n]));
   const value = speech || !cued.length ? 1 : 1 - bare.length / cued.length;
   if (bare.length && value < 1) add("describes", value < REUP_CHECK.VALUE_MIN ? "review" : "ok", bare.join(", "));
   const text = scriptText(job);
@@ -54,6 +70,9 @@ export const reupReport = (job: ReupJob, past: ReupJob[]): ReupReport => {
   const echoed = titles(job).filter((t) => used.has(t));
   if (echoed.length) add("titleReused", "review", echoed.length);
   if (!speech && !job.settings.angle.trim()) add("noAngle", "review");
+  const revision = job.script?.revision;
+  if (revision?.words) add("extended", "ok", revision.words.join("|"));
+  if (revision?.rewritten) add("rewritten", "ok", revision.rewritten);
   if (job.rights === "licensed") add("licensed", "ok");
   if (job.rights === "licensed" && job.script?.outputs.some((o) => o.kind === "short" && !o.speech)) add("shortsLicensed", "review");
   if (job.outputs.length > 1 && new Set(job.script?.outputs.map((o) => o.lang)).size > 1) add("bilingual", "review");

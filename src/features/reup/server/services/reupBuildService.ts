@@ -4,7 +4,7 @@ import path from "path";
 import { createHash } from "crypto";
 import _ from "lodash";
 import { probeMediaDurationSeconds } from "../../../video-export/server/services/videoExportFfmpegService.js";
-import { REUP_BUILD, REUP_DIR, REUP_HIGHLIGHT, REUP_MOMENT, REUP_MUSIC_ZONE, REUP_OVERLAY, REUP_TEXT } from "../../constants/reupConfig.js";
+import { REUP_BUILD, REUP_DIR, REUP_FOLDER, REUP_HIGHLIGHT, REUP_HOLD, REUP_MOMENT, REUP_MUSIC_ZONE, REUP_NARRATION, REUP_OVERLAY, REUP_TEXT } from "../../constants/reupConfig.js";
 import { REUP_LOG } from "../../constants/reupServerText.js";
 import { reupPreset } from "../../constants/reupPresets.js";
 import { reupTracks, reupZonedMusicBed } from "./reupMusicService.js";
@@ -17,7 +17,8 @@ import type { HighlightAnchor } from "../../../../constants/highlightAnchor.js";
 import { runLanes } from "../../../../lib/concurrency.js";
 import { getStaticResourcePath } from "../../../../server/utils/paths.js";
 import { HEAVY_JOB_TEXT, MEDIA_ENCODER } from "../../../../constants/mediaEncoder.js";
-import { ReupFootageLedger, reupNearScenes, reupPacing, reupSectionSeconds } from "../../lib/reupTimeline.js";
+import { ReupFootageLedger, mergeSpans, reupFillScenes, reupPacing, reupSectionSeconds, type ReupPlannedSection } from "../../lib/reupTimeline.js";
+import { reupHeardTalk, reupTalkTail } from "../../lib/reupTalk.js";
 import { reupMoments } from "../../lib/reupSceneMap.js";
 import type { ReupJob, ReupJobSettings, ReupOutputResult, ReupOutputScript, ReupSegment, ReupSettings, ReupShot, ReupWord } from "../../types/reup.js";
 import { reupFfmpeg, reupFilterValue, reupFont, reupFontFor } from "./reupFfmpeg.js";
@@ -308,7 +309,7 @@ const stepTimer = (log: Log, label: string, media?: number) => {
   const started = Date.now();
   return () => log(HEAVY_JOB_TEXT.STEP(label, (Date.now() - started) / 1000, media));
 };
-export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number) => void, signal?: AbortSignal): Promise<ReupOutputResult[]> => {
+export const buildReupJob = async (job: ReupJob, used: ReupShot[], log: Log, progress: (p: number) => void, signal?: AbortSignal): Promise<ReupOutputResult[]> => {
   const s = job.settings;
   const preset = reupPreset(job.preset);
   const map = job.sceneMap!;
@@ -333,6 +334,7 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
     let words: number[] = [];
     let padding = 0;
     let repeated = false;
+    let talkHeard: number[] = [];
     if (output.speech) {
       planned = output.sections.map((sec, i) => ({ pieces: piecesOf(job, sec.shots[0], i), seconds: sec.shots[0].end - sec.shots[0].start }));
       spoken = planned.map((p) => p.seconds);
@@ -350,7 +352,7 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
         s.pauseSeconds,
         target,
         moments ? pacing.tailMax : REUP_BUILD.TAIL_MAX,
-        moments ? 1 - pacing.share[0] : REUP_BUILD.SILENT_SHARE,
+        moments ? 1 - Math.max(pacing.share[0], s.narratedMin - REUP_NARRATION.COVER_SLACK) : REUP_BUILD.SILENT_SHARE,
         fill,
       );
       spoken = voices;
@@ -359,31 +361,64 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
       if (target && timing.short > 1) log(REUP_LOG.SHORT_TARGET(timing.short), "warn");
       const moment = new Map(map.segments.flatMap((g) => reupMoments(g).map((m) => [m.id, m] as const)));
       const scene = new Map(map.segments.map((g) => [g.id, g]));
+      const label = outputs.length > 1 ? REUP_LOG.OUTPUT_LABEL(oi + 1) : "";
+      const report = (i: number, plans: ReupPlannedSection[]): void => {
+        const filled = _.sumBy(plans, "filled");
+        const shrunk = _.sumBy(plans, "shrunk");
+        if (filled > 1) log(REUP_LOG.FILLED(label, i + 1, filled, _.sumBy(plans, "scenes")));
+        if (shrunk > 0.5) log(REUP_LOG.SHRUNK(label, i + 1, shrunk));
+        if (plans.some((p) => p.repeated)) log(REUP_LOG.REPEATED(label, i + 1), "warn");
+        repeated ||= plans.some((p) => p.repeated);
+        padding = Math.max(0, padding - shrunk);
+      };
+      const fills = (ids: string[], hook: boolean) => reupFillScenes(map.segments, ids, { hook, stage: s.beforeAfter, avoid: used });
+      const talk = s.keepTalk && footage ? job.transcript?.phrases || [] : [];
+      const atOf = (cue: { moment?: string }, g: ReupSegment): number => Math.max(g.start, (moment.get(cue.moment || "")?.t ?? g.start) - REUP_MOMENT.LEAD);
       planned = output.sections.map((sec, i) => {
         const starts = sec.cues?.length ? job.voices![sec.id].cues || sec.cues.map((_c, k) => (k * voices[i]) / sec.cues!.length) : [];
         const cueSeconds = (k: number, end: number): number => Math.max(0.6, (k + 1 < starts.length ? starts[k + 1] : end) - (k ? starts[k] : 0));
         const done = (pieces: Piece[]): PlannedSection => ({ pieces, seconds: _.sumBy(pieces, "len"), chapter: sec.chapter });
         if (sec.cues?.length && footage) {
-          const shots = sec.cues.flatMap((cue, k) => {
+          const last = sec.cues.length - 1;
+          const lastScene = scene.get(sec.cues[last].segment);
+          const lastStart = last ? starts[last] : 0;
+          const lastAt = lastScene ? atOf(sec.cues[last], lastScene) : 0;
+          const reach = lastScene && talk.length && sec.role !== "hook" ? reupTalkTail(talk, lastScene, lastAt, lastAt + voices[i] - lastStart) : undefined;
+          const spoke = reach !== undefined && lastStart + reach > timing.seconds[i];
+          if (spoke) timing.seconds[i] = _.round(lastStart + reach!, 2);
+          const tail = spoke ? 0 : Math.max(0, timing.seconds[i] - voices[i] - s.pauseSeconds);
+          const plans = sec.cues.flatMap((cue, k) => {
             const g = scene.get(cue.segment);
             if (!g) return [];
-            const at = Math.max(g.start, (moment.get(cue.moment || "")?.t ?? g.start) - REUP_MOMENT.LEAD);
-            const plan = ledger(lang).planCue(at, g, cueSeconds(k, timing.seconds[i]), reupNearScenes(map.segments, [g.id]), REUP_BUILD.CUE_SHOT, REUP_BUILD.CUE_MIN);
-            if (plan.filled > 1) log(REUP_LOG.FILLED(i + 1, plan.filled));
-            if (plan.repeated) log(REUP_LOG.REPEATED(i + 1), "warn");
-            repeated ||= plan.repeated;
-            return plan.shots;
+            const seconds = cueSeconds(k, timing.seconds[i]);
+            const whole = spoke && k === last;
+            return [ledger(lang).planCue(atOf(cue, g), g, seconds, fills([g.id], sec.role === "hook"), whole ? seconds : REUP_BUILD.CUE_SHOT, REUP_BUILD.CUE_MIN, k === last ? tail : 0, whole ? 1 : undefined)];
           });
-          return done(shots.flatMap((shot, k) => piecesOf(job, shot, i * 100 + k)));
+          report(i, plans);
+          return done(plans.flatMap((plan) => plan.shots).flatMap((shot, k) => piecesOf(job, shot, i * 100 + k)));
         }
-        if (sec.cues?.length) return done(_.compact(sec.cues.map((cue, k) => cuePiece(job, cue.segment, cueSeconds(k, timing.seconds[i]), i * 100 + k))));
+        if (sec.cues?.length) {
+          const pieces = _.compact(sec.cues.map((cue, k) => cuePiece(job, cue.segment, cueSeconds(k, timing.seconds[i]), i * 100 + k)));
+          const held = _.max(pieces.filter((p) => p.still).map((p) => p.len)) || 0;
+          if (held > REUP_FOLDER.PHOTO_SECONDS * REUP_HOLD.LONG_HOLD) log(REUP_LOG.HOLD_LONG(label, i + 1, held), "warn");
+          return done(pieces);
+        }
         const ids = map.segments.filter((g) => sec.shots.some((shot) => shot.start < g.end && shot.end > g.start)).map((g) => g.id);
-        const plan = ledger(lang).plan(sec.shots, timing.seconds[i], sec.role === "hook", reupNearScenes(map.segments, ids), fill);
-        if (plan.filled > 1) log(REUP_LOG.FILLED(i + 1, plan.filled));
-        if (plan.repeated) log(REUP_LOG.REPEATED(i + 1), "warn");
-        repeated ||= plan.repeated;
+        const plan = ledger(lang).plan(sec.shots, timing.seconds[i], sec.role === "hook", fills(ids, sec.role === "hook"), fill, Math.max(0, timing.seconds[i] - voices[i] - s.pauseSeconds));
+        report(i, [plan]);
         return done(plan.shots.flatMap((shot, k) => piecesOf(job, shot, i * 100 + k)));
       });
+      if (talk.length) {
+        talkHeard = planned.map((plan, i) =>
+          reupHeardTalk(
+            talk,
+            plan.pieces.filter((p) => !p.still),
+            voices[i],
+          ),
+        );
+        const heard = _.sum(talkHeard);
+        if (heard > 0) log(REUP_LOG.TALK_HEARD(label, talkHeard.filter((x) => x > 0).length, heard));
+      }
     }
     const total = _.sumBy(planned, "seconds");
     const sectionStarts = planned.reduce<number[]>((acc, _p, i) => [...acc, i ? acc[i - 1] + planned[i - 1].seconds : 0], []);
@@ -503,7 +538,8 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
     const duration = await probeMediaDurationSeconds(final);
     const chapters = planned.flatMap((plan, i) => (plan.chapter ? [{ t: _.round(sectionStarts[i], 1), title: plan.chapter }] : []));
     const narrated = _.round(Math.min(duration, _.sum(words)), 1);
-    const silentMax = _.round(_.max(planned.map((plan, i) => Math.max(0, plan.seconds - (spoken[i] || 0)))) || 0, 1);
+    const silentMax = _.round(_.max(planned.map((plan, i) => Math.max(0, plan.seconds - (spoken[i] || 0) - (talkHeard[i] || 0)))) || 0, 1);
+    const spans = job.source.kind === "video" ? mergeSpans(planned.flatMap((p) => p.pieces.filter((x) => !x.still).map((x) => ({ start: x.seek, end: x.seek + x.len - (x.hold || 0) })))).map((x) => [_.round(x.start, 1), _.round(x.end, 1)] as [number, number]) : [];
     results.push({
       id: output.id,
       file: final,
@@ -519,6 +555,8 @@ export const buildReupJob = async (job: ReupJob, log: Log, progress: (p: number)
       silentMax,
       padding: _.round(padding, 1),
       repeated,
+      ...(_.sum(talkHeard) > 0 ? { talk: _.round(_.sum(talkHeard), 1) } : {}),
+      ...(spans.length ? { spans } : {}),
       ...(chapters.length ? { chapters } : {}),
     });
     log(REUP_LOG.BUILD_DONE(name, duration));

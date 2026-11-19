@@ -19,6 +19,7 @@ export const MOTION_SCENE_REVISE = {
   BUBBLE: { FILL: 0.7, LEAST: 0.14, MAIN: ["person", "animal", "vehicle", "building"] },
   COUNT: { MAX: 10, ALL: 12, ROW: 5, ROUND: [1, 2, 5], SIZE: 0.066, WIDE: 0.4, COVER: 0.08 },
   FREE: { PAD: 0.04, STEP: 0.08, COVER: 0.02 },
+  INSET: { COLS: 9, ROWS: [1, 2.4], LOW: 1.5, GAP: 0.15, SAMPLES: 24, R_MAX: 0.13, FILL: 1.2, UNDER_THOUGHT: 0.8 },
   CROWD: { TONE: 0.08, OVERLAP: 0.3, DEPTH: 0.1, HAIR: ["#2a1e16", "#3b2a1e", "#4a3526", "#5c4632", "#6e5a44"] },
   DECK_SINK: -0.12,
   REPEAT: { CELL: 0.125, SAME: 0.55, FAR: 0.22 },
@@ -132,7 +133,7 @@ export const MOTION_SCENE_REVISE = {
 } as const;
 export const MOTION_SCENE_SPEC = {
   VERSION: 1,
-  ENGINE: 5,
+  ENGINE: 8,
   WIDTH: 1280,
   HEIGHT: 720,
   FNS: ["person", "animal", "vehicle", "building", "prop", "tree", "wall", "bridge", "sticker"] as const,

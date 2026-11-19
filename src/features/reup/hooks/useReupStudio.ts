@@ -36,6 +36,7 @@ export const useReupStudio = (lang: Lang) => {
   const [presetSettings, setPresetSettings] = useState<Partial<Record<ReupPresetId, ReupSettings>>>({});
   const [sourcePath, setSourcePath] = useState("");
   const [source, setSource] = useState<ReupSource | null>(null);
+  const [reused, setReused] = useState(0);
   const [rights, setRights] = useState<ReupRights | "">("");
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<ReupJob | null>(null);
@@ -70,9 +71,12 @@ export const useReupStudio = (lang: Lang) => {
     setSourcePath(path);
     setBusy(true);
     try {
-      setSource((await motionRequest<{ source: ReupSource }>(REUP_URL.SOURCE, { path })).source);
+      const res = await motionRequest<{ source: ReupSource; reused?: number }>(REUP_URL.SOURCE, { path });
+      setSource(res.source);
+      setReused(res.reused || 0);
     } catch (error) {
       setSource(null);
+      setReused(0);
       toast.error(errorText(error));
     } finally {
       setBusy(false);
@@ -99,7 +103,11 @@ export const useReupStudio = (lang: Lang) => {
       if (saved.sourcePath) setSourcePath(saved.sourcePath);
       if (saved.rights === "own" || saved.rights === "licensed") setRights(saved.rights);
       if (saved.jobId) await openJob(saved.jobId);
-      else if (saved.sourcePath) await motionRequest<{ source: ReupSource }>(REUP_URL.SOURCE, { path: saved.sourcePath }).then((r) => setSource(r.source), _.noop);
+      else if (saved.sourcePath)
+        await motionRequest<{ source: ReupSource; reused?: number }>(REUP_URL.SOURCE, { path: saved.sourcePath }).then((r) => {
+          setSource(r.source);
+          setReused(r.reused || 0);
+        }, _.noop);
       setLoaded(true);
     })();
     void reloadVoiceChannels();
@@ -173,6 +181,6 @@ export const useReupStudio = (lang: Lang) => {
   }, []);
   const newJob = useCallback(() => setJob(null), []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
-  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, resume, resumeStep, rerun, exportVideo, approveScript, saveVideo, newJob };
+  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, reused, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, resume, resumeStep, rerun, exportVideo, approveScript, saveVideo, newJob };
 };
 export type ReupStudio = ReturnType<typeof useReupStudio>;

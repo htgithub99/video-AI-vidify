@@ -1,10 +1,12 @@
 import { reupMoments } from "../lib/reupSceneMap.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { REUP_COMMENTARY } from "./reupCommentary.js";
-import type { ReupJobSettings, ReupMediaItem, ReupOutputKind, ReupSceneMap, ReupStyle, ReupTranscript } from "../types/reup.js";
+import { reupHoldWords, type ReupPastText, type ReupWordBudget } from "../lib/reupScriptReview.js";
+import { reupTalkQuote } from "../lib/reupTalk.js";
+import type { ReupJobSettings, ReupMediaItem, ReupOutputKind, ReupSceneMap, ReupShot, ReupStyle, ReupTranscript } from "../types/reup.js";
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 export const REUP_ARTIFACT = { SCENES: "reup-scene-map", SCRIPT: "reup-script", PACKAGE: "reup-package" } as const;
 const LANG_NAME = { en: "English", vi: "Vietnamese", ja: "Japanese", ko: "Korean" } as const;
-const LANG_UNIT = { en: { factor: 1, unit: "words" }, vi: { factor: 1.65, unit: "words (Vietnamese syllables)" }, ja: { factor: 3.2, unit: "Japanese characters" }, ko: { factor: 1, unit: "words" } } as const;
 const itemsLine = (items: ReupMediaItem[]): string => items.map((it) => `${it.id} ${it.type} "${it.name}" ${Math.round(it.start)}-${Math.round(it.end)}s`).join("; ");
 const TRUTH = "Describe only what is visible. Never invent numbers, days, catches, animals, names or results that the images do not show. Missing is fine, wrong is not.";
 const VALUE = [
@@ -12,6 +14,18 @@ const VALUE = [
   'Say such lines as general know-how ("usually", "a common way is", "the reason is"), never as facts about this person, place, time or result. Do not just describe the picture line by line.',
 ].join(" ");
 const VALUE_MARK = 'Set "value" on the cues that carry that extra value (why / tip / compare / view); leave it "" on lines that only follow the picture.';
+const VALUE_FOLDER = "Add meaning beyond what is seen: every chapter carries at least one line of context — what the moment meant to the people in it, why it mattered, or the channel's view — said with care and never beyond what the photos support.";
+const VALUE_MARK_FOLDER = 'Set "value" to "why" or "view" on the cues that carry that context; leave it "" on lines that only describe the picture.';
+const quoted = (items: string[]): string => items.map((t) => `"${t}"`).join("; ");
+const TALK_MARK = "🗣";
+const TALK = `Moments marked ${TALK_MARK} have the builder explaining on camera in their own words; that sound stays in the video. Do not talk over them: close a section on the moment just before one, with a short line, so the builder's words play in the pause after it. Never translate or repeat what the builder says.`;
+const usedLine = (used?: ReupShot[]): string => (used?.length ? `Earlier videos from this same source already used these stretches: ${used.map((u) => `${mmss(u.start)}-${mmss(u.end)}`).join(", ")}. Prefer other moments; never build a short or a section mainly from them.` : "");
+const pastLine = (past?: ReupPastText): string =>
+  past && past.openings.length + past.closings.length + past.phrases.length
+    ? ["This channel's recent videos must not sound alike. Do not reuse these lines, phrases or their sentence patterns; say the same kind of thing in fresh words.", past.openings.length ? `Recent openings: ${quoted(past.openings)}.` : "", past.closings.length ? `Recent closings: ${quoted(past.closings)}.` : "", past.phrases.length ? `Phrases used again and again: ${quoted(past.phrases)}.` : ""]
+        .filter(Boolean)
+        .join(" ")
+    : "";
 const MARKS = (n: number, lang: string, folder?: boolean): string =>
   `On-screen highlights: give a "mark" to at most ${n} ${folder ? "chapters" : "body or ending sections"}, spread across the video, at a new part, day or step or a striking result. "label" is a short tag like "DAY 2", "STEP 3", "BEFORE", "AFTER" or a chapter number; "title" names what happens; "sub" is the place and time of day or one thing visible on screen. Write them in ${lang}. Only what the footage shows: no invented numbers, names or results. Use null for every other section.`;
 const STORY = [
@@ -29,8 +43,7 @@ const CRAFT = [
   "- If the scene map shows a setback (damage, storm, failure, repair), build a section around it. End with a callback to the opening promise.",
 ].join("\n");
 const angleLine = (angle: string): string => (angle.trim() ? `The channel's own knowledge and viewpoint (from the creator; weave it in naturally in at least two places, in your own words): ${angle.trim()}` : "");
-const styleLines = (style: ReupStyle): string[] => [REUP_COMMENTARY.VOICES[style.voice], style.hook ? REUP_COMMENTARY.HOOKS[style.hook] : "", REUP_COMMENTARY.ENDINGS[style.ending]];
-const wordRange = (s: Pick<ReupJobSettings, "targetSeconds" | "wordsPerSecond" | "language">, share: [number, number] = [1, 1]): [number, number] => [Math.round(s.targetSeconds * share[0] * s.wordsPerSecond[0] * LANG_UNIT[s.language].factor), Math.round(s.targetSeconds * share[1] * s.wordsPerSecond[1] * LANG_UNIT[s.language].factor)];
+const styleLines = (style: ReupStyle): string[] => [REUP_COMMENTARY.VOICES[style.voice], style.hook ? REUP_COMMENTARY.HOOKS[style.hook] : "", style.shape ? REUP_COMMENTARY.SHAPES[style.shape] : "", REUP_COMMENTARY.ENDINGS[style.ending]];
 export const REUP_PROMPT = {
   SCENES: (input: { sheets: { index: number; start: number; interval: number; count: number; cols: number }[]; duration: number; part: number; parts: number; bad: string; language: ReupJobSettings["language"]; items?: ReupMediaItem[]; photoSeconds?: number }): string =>
     [
@@ -47,22 +60,23 @@ export const REUP_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n"),
-  SCRIPT: (input: { map: ReupSceneMap; settings: ReupJobSettings; rules: string; kind: ReupOutputKind; count: number; duration: number; style: ReupStyle; bilingual?: boolean; folder?: boolean; share?: [number, number]; marks: number }): string => {
+  SCRIPT: (input: { map: ReupSceneMap; settings: ReupJobSettings; rules: string; kind: ReupOutputKind; count: number; duration: number; style: ReupStyle; bilingual?: boolean; folder?: boolean; share?: [number, number]; marks: number; budget: ReupWordBudget; budgetAlt?: ReupWordBudget; past?: ReupPastText; talk?: ReupTranscript["phrases"]; used?: ReupShot[] }): string => {
     const s = input.settings;
     const share = input.folder ? undefined : input.share;
-    const [wordsMin, wordsMax] = wordRange(s, share);
+    const budget = input.budget;
     const lang = LANG_NAME[s.language];
     const alt = LANG_NAME[s.languageAlt];
     const long = input.kind === "long";
-    const rate = ((s.wordsPerSecond[0] + s.wordsPerSecond[1]) / 2) * LANG_UNIT[s.language].factor * (share?.[1] ?? 1);
+    const rate = budget.rate;
     const scenes = input.folder
-      ? input.map.segments.map((g) => `${g.id} [${mmss(g.start)}-${mmss(g.end)}] v${g.value} ${g.tags.join(",")}: ${g.what}`).join("\n")
+      ? input.map.segments.map((g) => `${g.id} [${mmss(g.start)}-${mmss(g.end)}] v${g.value} ${g.tags.join(",")} ≤${reupHoldWords(g.end - g.start, rate)}: ${g.what}`).join("\n")
       : input.map.segments
           .map((g) => {
             const moments = reupMoments(g);
             const lines = moments.map((m, k) => {
               const seen = (moments[k + 1]?.t ?? g.end) - m.t;
-              return `  ${m.id} ${mmss(m.t)} p${m.pull} ~${Math.max(1, Math.round(seen))}s ≤${Math.max(3, Math.round(seen * rate))}: ${m.what}`;
+              const said = input.talk?.length ? reupTalkQuote(input.talk, m.t, m.t + seen) : undefined;
+              return `  ${m.id} ${mmss(m.t)} p${m.pull} ~${Math.max(1, Math.round(seen))}s ≤${Math.max(3, Math.round(seen * rate))}: ${m.what}${said ? ` ${TALK_MARK}"${said}…"` : ""}`;
             });
             return [`${g.id} [${mmss(g.start)}-${mmss(g.end)}] ${g.tags.join(",")}: ${g.what}`, ...lines].join("\n");
           })
@@ -70,22 +84,23 @@ export const REUP_PROMPT = {
     const cue = `{"moment": moment id, "text": the words spoken while this moment is on screen (1-2 sentences)${input.bilingual ? `, "textAlt": the same in ${alt}` : ""}, "value": "why"|"tip"|"compare"|"view"|"" (what this line adds beyond the picture)}`;
     const mark = input.marks ? `, "mark": {"cue": index of the cue it opens on, "label": 1-3 words, "title": max 8 words, "sub": max 6 words${input.bilingual ? `, "labelAlt", "titleAlt", "subAlt": the same in ${alt}` : ""}} or null` : "";
     const shape = input.folder
-      ? `{"outputs": [{"title": [line1, line2], "sections": [{"role": "body"|"ending", "chapter": short chapter title or "" (only when a new chapter starts)${mark}, "cues": [{"scene": segment id, "text": the words spoken while this picture is on screen (1-2 sentences)}]}]}]}`
+      ? `{"outputs": [{"title": [line1, line2], "sections": [{"role": "body"|"ending", "chapter": short chapter title or "" (only when a new chapter starts)${mark}, "cues": [{"scene": segment id, "text": the words spoken while this picture is on screen (1-2 sentences), "value": "why"|"view"|""}]}]}]}`
       : `{"outputs": [{"title": [line1, line2] (on-screen title, max 28 characters per line)${input.bilingual ? `, "titleAlt": [the same in ${alt}]` : ""}, "sections": [{"role": "hook"|"body"|"teaser"|"ending"${mark}, "cues": [${cue}]}]}]}`;
     return [
       long
         ? `Write the voice-over for ONE ${input.folder ? "photo report" : "video"} (${s.targetSeconds >= 120 ? `${Math.round(s.targetSeconds / 60)}+ minutes` : `${s.targetSeconds} seconds`} on screen) built from real ${input.folder ? "photos and clips" : "footage"}.`
         : `Write ${input.count} separate vertical shorts (${s.targetSeconds} seconds each) cut from a real source video. Each short uses different scenes.`,
-      `Narration language: ${lang}${input.bilingual ? ` and, for every line, a natural ${alt} version` : ""}. Target ${wordsMin}-${wordsMax} ${LANG_UNIT[s.language].unit} ${long ? "in total" : "per short"}, aim for about ${Math.round((wordsMin + wordsMax) / 2)} — the narration must fit the length, not run over it. ${input.folder ? "Warm, clear, formal register." : "Natural spoken style; short sentences."}`,
+      `Narration language: ${lang}${input.bilingual ? ` and, for every line, a natural ${alt} version` : ""}. Target ${budget.min}-${budget.max} ${budget.unit} ${long ? "in total" : "per short"}, aim for about ${budget.aim}${input.budgetAlt ? ` (the ${alt} lines: ${input.budgetAlt.min}-${input.budgetAlt.max} ${input.budgetAlt.unit})` : ""}. Stay inside this range: below it the video ends up shorter than planned, above it the voice runs over the pictures. Reach it with lines worth hearing, never filler. ${input.folder ? "Warm, clear, formal register." : "Natural spoken style; short sentences."}`,
       share ? `Words cover about ${Math.round(share[0] * 100)}-${Math.round(share[1] * 100)}% of the time; between lines the footage and its own sound carry the story. Do not talk over every second.` : "",
       input.rules,
       ...styleLines(input.style),
       s.hook || input.folder ? "" : "No separate hook section.",
       s.teasers ? "" : "No teaser lines.",
-      VALUE,
-      input.folder ? "" : VALUE_MARK,
+      input.folder ? VALUE_FOLDER : VALUE,
+      input.folder ? VALUE_MARK_FOLDER : VALUE_MARK,
       input.marks ? MARKS(input.marks, lang, input.folder) : "",
       angleLine(s.angle),
+      pastLine(input.past),
       `Scene map (timeline ${mmss(input.duration)}). Summary: ${input.map.summary}`,
       input.folder ? "" : "Scenes with their moments: moment id, time, pull (how strong on screen, 5 = best), ~seconds its picture lasts, ≤ words that fit, what is seen.",
       scenes,
@@ -97,14 +112,16 @@ export const REUP_PROMPT = {
             "Keep each cue within its moment's word limit; if a cue needs more, its picture runs on into the same scene — then do not use the next moment of that scene. Each moment at most once in the whole video. Skip weak moments (low pull) freely.",
             "Body cues follow the timeline. The hook is one short line over each of 3-6 of the strongest moments from anywhere; a teaser is one line over a strong later moment that no other cue uses.",
           ].join(" "),
-      input.folder ? `${TRUTH} Every sentence must match the scenes listed for its section.` : `${STORY}\n${CRAFT}`,
+      input.folder ? `${TRUTH} Every sentence must match the scenes listed for its section. Keep the words for each scene within its ≤ limit, so no photo stays on screen too long.` : `${STORY}\n${CRAFT}`,
+      input.talk?.length ? TALK : "",
+      usedLine(input.used),
       `Return JSON: ${shape}.`,
       long ? `Exactly one output. Sections in story order${input.folder ? "; every scene used at most once, in a sensible order" : ""}.` : `Exactly ${input.count} outputs; each has 1-3 sections.`,
     ]
       .filter(Boolean)
       .join("\n");
   },
-  SPEECH: (input: { transcript: ReupTranscript; map: ReupSceneMap; settings: ReupJobSettings; rules: string; count: number }): string => {
+  SPEECH: (input: { transcript: ReupTranscript; map: ReupSceneMap; settings: ReupJobSettings; rules: string; count: number; avoid?: string[] }): string => {
     const s = input.settings;
     return [
       `Cut ${input.count} vertical promo clip${input.count > 1 ? "s" : ""} (${s.targetSeconds} seconds each, never above 60) from a real video where a person talks. Keep the speaker's own words: pick phrases by id, in the order they should play.`,
@@ -115,11 +132,24 @@ export const REUP_PROMPT = {
       "Phrases (id [start-end] text):",
       input.transcript.phrases.map((p) => `${p.id} [${p.start.toFixed(1)}-${p.end.toFixed(1)}] ${p.text}`).join("\n"),
       `Language of hook, callouts and CTA: ${LANG_NAME[s.language]}. ${TRUTH} Do not change the speaker's words.`,
+      input.avoid?.length ? `This channel's recent clips used these hook, callout and CTA lines — write new ones with a different pattern: ${quoted(input.avoid)}.` : "",
       `Return JSON: {"outputs": [{"title": [POV hook line 1, line 2] (max 24 characters each), "phrases": [phrase ids in play order, total ≈ ${s.targetSeconds} s], "callouts": [{"phrase": phrase id, "text": max 5 words}] (0-4), "cta": short call to action}]}.`,
     ]
       .filter(Boolean)
       .join("\n");
   },
+  REVISE: (input: { base: string; draft: unknown; fixes: string[]; alt?: ReupJobSettings["language"] }): string =>
+    [
+      input.base,
+      "",
+      `Your draft of this script: ${stringifyJson(input.draft)}`,
+      "Revise the draft and return the WHOLE script again in exactly the same JSON shape. Keep every good line and its moment or scene id; change only what this list asks:",
+      ...input.fixes.map((f) => `- ${f}`),
+      input.alt ? `Keep every changed or added line's "textAlt" (${LANG_NAME[input.alt]}) in step with it.` : "",
+      "Added lines must be worth hearing: a reason, how it works, a tip, a comparison or a risk tied to what is on screen — never filler and never a repeat of the picture. Respect each moment's word limit; to add words, use moments not used yet.",
+    ]
+      .filter(Boolean)
+      .join("\n"),
   PACKAGE: (input: { map: ReupSceneMap; script: string; settings: ReupJobSettings; frames: number[]; options: number; thumbnail: boolean; pastTitles: string[]; pastLayouts: string[] }): string =>
     [
       `Prepare YouTube SEO for a narrated video made from real footage. Write everything in ${LANG_NAME[input.settings.language]}.`,
@@ -135,4 +165,13 @@ export const REUP_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n"),
+} as const;
+export const REUP_FIX = {
+  LABEL: (kind: ReupOutputKind, index: number): string => (kind === "long" ? "The video" : `Short ${index + 1}`),
+  SHORT: (label: string, have: number, need: number, aim: number, unit: string, sections: number[]): string => `${label} has ${have} ${unit}; it needs at least ${need} (aim for about ${aim}). Add lines mainly in sections ${sections.join(", ")} (counted from 1).`,
+  SHORT_ALT: (label: string, lang: string, have: number, need: number, unit: string): string => `${label}: the ${LANG_NAME[lang as keyof typeof LANG_NAME] || lang} lines have ${have} ${unit}; they need at least ${need}. Lengthen both languages together, saying the same thing.`,
+  REPEAT: (label: string, sentences: string[]): string => `${label}: these sentences repeat this channel's earlier videos — keep the idea, use new wording and a different sentence pattern: ${quoted(sentences)}.`,
+  TWIN: (label: string, other: string, sentences: string[]): string => `${label} repeats ${other}; rewrite these so each short says its own thing: ${quoted(sentences)}.`,
+  LONG: (label: string, sections: { n: number; have: number; cap: number }[]): string => `${label}: ${sections.map((x) => `section ${x.n} has ${x.have} words for photos that hold about ${x.cap}`).join("; ")} — shorten those lines (or add the next photos to the section) so no photo stays on screen too long.`,
+  BARE: (label: string, sections: number[]): string => `${label}: sections ${sections.join(", ")} only describe the picture — give each one line of why, how, a tip, a comparison or the channel's view.`,
 } as const;

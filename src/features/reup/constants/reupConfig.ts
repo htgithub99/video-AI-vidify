@@ -25,6 +25,7 @@ export const REUP_UPLOAD = {
   API_MODE: AiPlanningExecutionMode.ApiOnly as string,
   FALLBACK_BATCH: 1,
   CHAT_SHEETS: 1,
+  PACKAGE_FRAMES: 4,
   NO_VISION: [AiPlanningFallbackProvider.DeepSeekChat] as string[],
   HALVINGS: 3,
 } as const;
@@ -171,7 +172,13 @@ export const REUP_MUSIC_ZONE = {
   REUSE_PENALTY: 6,
 } as const;
 export const REUP_MUSIC = { DIR: "reup-music", EXT: /\.(mp3|wav|m4a|flac|ogg)$/i, NAME: /reup[\s_-]*bgm[\s_-]*([a-h])(?![a-z])/i, CROSSFADE: 3, FADE_IN: 2, FADE_OUT: 4 } as const;
-export const REUP_NARRATION = { sound: { share: [0.55, 0.7] as [number, number], cueGap: 1.2, tailMax: 10 }, silent: { share: [0.72, 0.82] as [number, number], cueGap: 0.8, tailMax: 6 } } as const;
+export const REUP_NARRATION = { sound: { share: [0.55, 0.7] as [number, number], cueGap: 1.2, tailMax: 10 }, silent: { share: [0.72, 0.82] as [number, number], cueGap: 0.8, tailMax: 6 }, HEADROOM: 0.1, SHARE_MAX: 0.88, COVER_SLACK: 0.04, SHORT_OK: 0.9 } as const;
+export const REUP_LANG_UNIT = { en: { factor: 1, unit: "words" }, vi: { factor: 1.65, unit: "words (Vietnamese syllables)" }, ja: { factor: 3.2, unit: "Japanese characters" }, ko: { factor: 1, unit: "words" } } as const;
+export const REUP_REVIEW = { PAST_RUNS: 5, PHRASES: 10, PHRASE_RUNS: 2, PHRASE_LETTERS: 12, GRAMS: [4, 3], SENTENCE_UNITS: 6, SENTENCE_OVERLAP: 0.5, QUOTES: 12, REWRITE_MIN: 3, EXTEND_SECTIONS: 4, SHORT_WEIGHT: 10 } as const;
+export const REUP_FILL = { AHEAD: 90, VALUE_WEIGHT: 0.04, USED_PENALTY: 1, USED_SHARE: 0.5 } as const;
+export const REUP_TALK = { MIN_WORDS: 3, REACH: 3, TAIL_MAX: 10, PAD: 0.3, SHARE_MAX: 0.1, QUOTE_WORDS: 8, HEARD_MIN: 0.6, SECTION_SECONDS: 60 } as const;
+export const REUP_HOLD = { FOLDER_FACTOR: 2, LONG_HOLD: 3, OVER: 1.3 } as const;
+export const REUP_SPANS = { OVERLAP_REVIEW: 0.5, PROMPT_MAX: 20 } as const;
 export const REUP_MOMENT = { MAX: 4, MIN_GAP: 2, END_GAP: 0.5, EVEN_STEP: 10, LEAD: 0.4, APART: 15 } as const;
 export const REUP_FINGERPRINT_BYTES = 4 * 1024 * 1024;
-export const REUP_LIMITS = { ANGLE_MIN: 20, LOGS: 400, TEXT: 4000, NOTE: 800, PATH: 1024, FRAMES: 10, POLL_MS: 1200, BROWSER_CLOSE_TRIES: 3, BROWSER_CLOSE_WAIT_MS: 3000 } as const;
+export const REUP_LIMITS = { ANGLE_MIN: 20, LOGS: 400, TEXT: 4000, NOTE: 800, PATH: 1024, FRAMES: 10, POLL_MS: 1200, BROWSER_CLOSE_TRIES: 3, BROWSER_CLOSE_WAIT_MS: 3000, TARGET_SOURCE: { long: 0.6, short: 0.5, folder: 1, speech: 0.9 }, FOLDER_OVERLAP: 0.7 } as const;

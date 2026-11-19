@@ -11,7 +11,7 @@ const leastRecent = <T extends string>(options: readonly T[], used: (T | undefin
   const pool = options.filter((o) => age(o) === best);
   return pool[seed % pool.length];
 };
-export const pickReupStyle = (rules: Pick<ReupPresetRules, "voices" | "hooks" | "endings" | "hook">, history: ReupStyle[], seedText: string): ReupStyle => {
+export const pickReupStyle = (rules: Pick<ReupPresetRules, "voices" | "hooks" | "endings" | "hook"> & Partial<Pick<ReupPresetRules, "shapes">>, history: ReupStyle[], seedText: string): ReupStyle => {
   const seed = seedOf(seedText);
   const voices = rules.voices.length ? rules.voices : REUP_COMMENTARY_VOICES;
   const hooks = rules.hooks.length ? rules.hooks : REUP_COMMENTARY_HOOKS;
@@ -36,6 +36,15 @@ export const pickReupStyle = (rules: Pick<ReupPresetRules, "voices" | "hooks" | 
       history.map((h) => h.ending),
       seed >>> 5,
     ),
+    ...(rules.shapes?.length
+      ? {
+          shape: leastRecent(
+            rules.shapes,
+            history.map((h) => h.shape),
+            seed >>> 9,
+          ),
+        }
+      : {}),
   };
 };
 export const reupPickTrack = (tracks: string[], history: ReupStyle[], seedText: string): string | undefined =>
