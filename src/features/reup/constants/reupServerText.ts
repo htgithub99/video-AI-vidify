@@ -8,6 +8,7 @@ export const REUP_LOG = {
   FOLDER: (photos: number, clips: number, seconds: number): string => `Thư mục: ${photos} ảnh, ${clips} clip · dòng thời gian ${mmss(seconds)}`,
   PROXY: "Đã tạo bản xem nhanh của thư mục",
   BROWSER_CLOSED: "Xong các bước AI (bản đồ cảnh, kịch bản, SEO & thumbnail) – đã đóng Chrome để dành RAM cho bước giọng đọc và dựng video",
+  BROWSER_KEPT: "Chrome đang được màn khác dùng (còn phòng chat AI mở) nên chưa đóng – bước giọng đọc và dựng vẫn chạy bình thường",
   ASR: (words: number, phrases: number): string => `Nhận giọng: ${words} từ, ${phrases} cụm`,
   CREDITS: (chars: number): string => `ai33: khoảng ${chars} credit (ước tính theo số ký tự đã gửi)`,
   SPEECH_ONLY: "Loại E dùng chính lời nói trong video, không tạo giọng đọc",

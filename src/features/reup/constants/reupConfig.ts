@@ -174,4 +174,4 @@ export const REUP_MUSIC = { DIR: "reup-music", EXT: /\.(mp3|wav|m4a|flac|ogg)$/i
 export const REUP_NARRATION = { sound: { share: [0.55, 0.7] as [number, number], cueGap: 1.2, tailMax: 10 }, silent: { share: [0.72, 0.82] as [number, number], cueGap: 0.8, tailMax: 6 } } as const;
 export const REUP_MOMENT = { MAX: 4, MIN_GAP: 2, END_GAP: 0.5, EVEN_STEP: 10, LEAD: 0.4, APART: 15 } as const;
 export const REUP_FINGERPRINT_BYTES = 4 * 1024 * 1024;
-export const REUP_LIMITS = { ANGLE_MIN: 20, LOGS: 400, TEXT: 4000, NOTE: 800, PATH: 1024, FRAMES: 10, POLL_MS: 1200 } as const;
+export const REUP_LIMITS = { ANGLE_MIN: 20, LOGS: 400, TEXT: 4000, NOTE: 800, PATH: 1024, FRAMES: 10, POLL_MS: 1200, BROWSER_CLOSE_TRIES: 3, BROWSER_CLOSE_WAIT_MS: 3000 } as const;

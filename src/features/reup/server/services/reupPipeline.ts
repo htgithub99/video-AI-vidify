@@ -26,8 +26,8 @@ import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils
 import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
 import { getReupJob, listReupJobs, reupController, reupEmptySteps, reupFileUrl, reupJobDir, reupLog, reupStep, saveReupJob, setReupController } from "./reupJobStore.js";
 import { inspectReupSource, makeReupProxy, reupFingerprint, makeReupSheets, measureReupQuality, reupFrame, transcribeReupSource } from "./reupMediaService.js";
-import { closeChatBrowserIfIdle } from "../../../../server/services/chatUiPlanningService.js";
 import { voiceReupJob } from "./reupVoiceService.js";
+import { closeMotionStandaloneBrowser } from "../../../motion/server/services/motionStoryService.js";
 const clearFrom = (job: ReupJob, step: ReupStepId): void => {
   const at = REUP_STEPS.indexOf(step);
   const before = (id: ReupStepId) => at <= REUP_STEPS.indexOf(id);
@@ -73,6 +73,14 @@ const checkClaims = (job: ReupJob, text: string): void => {
   if (claims.length) reupLog(job, REUP_LOG.CLAIM(claims.join(", ")), "warn");
 };
 const scriptClaimText = (script: ReupScript): string => script.outputs.flatMap((o) => [...o.title, o.cta || "", ...o.sections.flatMap((s) => (o.speech ? [s.callout || ""] : [s.text]))]).join("\n");
+const closeReupBrowser = async (job: ReupJob, signal: AbortSignal): Promise<void> => {
+  for (let attempt = 0; attempt < REUP_LIMITS.BROWSER_CLOSE_TRIES; attempt++) {
+    if (signal.aborted) return;
+    if (await closeMotionStandaloneBrowser().catch(() => false)) return reupLog(job, REUP_LOG.BROWSER_CLOSED);
+    await new Promise((resolve) => setTimeout(resolve, REUP_LIMITS.BROWSER_CLOSE_WAIT_MS));
+  }
+  reupLog(job, REUP_LOG.BROWSER_KEPT);
+};
 const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promise<"next" | "stop">> = {
   source: async (job, signal) => {
     const preset = reupPreset(job.preset);
@@ -209,7 +217,7 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       checkPolicy(job);
       writePackage(job, job.package);
     }
-    if (await closeChatBrowserIfIdle()) reupLog(job, REUP_LOG.BROWSER_CLOSED);
+    await closeReupBrowser(job, signal);
     return "next";
   },
 };
