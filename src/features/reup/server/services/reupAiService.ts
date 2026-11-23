@@ -408,10 +408,11 @@ export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file
     const ai = ask.ai && scene && !stray.length ? { scene, refs: refs.length ? refs : chosen, ...(ask.look ? { look: ask.look } : {}) } : undefined;
     const layout = ask.ai && !ai ? reupThumbFallback(ask.kind!) : ask.layout;
     const want = reupThumbLines(layout, ask.kind);
-    return { layout, ...(ask.kind ? { kind: ask.kind } : {}), ...(ai ? { ai } : {}), frames: chosen.length ? chosen : [frames[i % frames.length].time], lines: want && !lines.length && options[0] ? [clip(options[0].title, 24)] : lines.slice(0, want) };
+    const short = ai && ask.kind !== "signature" && lines.join(" ").split(/\s+/).length > REUP_THUMBS.AI.WORDS ? lines.slice(0, 1) : lines;
+    return { layout, ...(ask.kind ? { kind: ask.kind } : {}), ...(ai ? { ai } : {}), frames: chosen.length ? chosen : [frames[i % frames.length].time], lines: want && !short.length && options[0] ? [clip(options[0].title, 24)] : short.slice(0, want) };
   });
   const spots = reupThumbSpots(
-    drafts.map((d) => ({ layout: d.layout, lines: d.lines.length })),
+    drafts.map((d) => ({ layout: d.layout, lines: d.lines.length, kind: d.kind })),
     drafts.map((d) => focusAt(d.frames[0])),
     past.spots,
     job.id,

@@ -20,7 +20,8 @@ export const REUP_LOG = {
   THUMB_AI_FAILED: (n: number, kind: string, reason: string): string => `Thumbnail ${n} (${THUMB_CONCEPT_TEXT.vi[kind as keyof typeof THUMB_CONCEPT_TEXT.vi] || kind}): chưa tạo được ảnh AI (${reason}) – dùng khung hình thật cho kiểu này`,
   THUMB_AI_DONE: (made: number, total: number): string => `Thumbnail AI: xong ${made}/${total} ảnh`,
   THUMB_AI_EMPTY: "AI không trả ảnh",
-  WATERMARK: (corner: string, hidden: boolean): string => `Nguồn có chữ/logo cố định ở ${REUP_LOG_CORNER[corner] || corner}: thumbnail đã tự cắt bỏ góc này${hidden ? "" : "; trong video vẫn còn – bật Che logo ở góc này nếu muốn ẩn"}`,
+  WATERMARK: (corner: string, video: "auto" | "hidden" | "other"): string =>
+    `Nguồn có chữ/logo cố định ở ${REUP_LOG_CORNER[corner] || corner}: thumbnail đã tự cắt bỏ góc này; ${video === "auto" ? "khi dựng video sẽ tự làm mờ góc này (Che logo đang tắt, cấu hình giữ nguyên)" : video === "hidden" ? "trong video đã được che theo cấu hình Che logo" : "Che logo đang chọn góc khác – đổi sang góc này nếu muốn ẩn trong video"}`,
   QUALITY: (count: number, seconds: number): string => (count ? `Bỏ qua ${count} đoạn tối/mờ (${Math.round(seconds)} giây)` : "Không có đoạn tối/mờ cần bỏ"),
   QUALITY_NO_BLUR: "Bản ffmpeg này không đo được độ mờ — chỉ lọc đoạn tối",
   FONT_MISSING: "Không tìm thấy font để in mốc giờ/tiêu đề — bỏ phần chữ trên hình",
@@ -89,6 +90,7 @@ export const REUP_LOG = {
 } as const;
 export const REUP_ERROR = {
   NO_AI_THUMB: "Thumbnail này không phải ảnh AI",
+  STYLE_IMAGE: "Ảnh mẫu không hợp lệ (cần PNG/JPG/WebP dưới 15 MB)",
   NO_SOURCE: "Không tìm thấy file video nguồn",
   NO_VIDEO: "File không đọc được hình (không phải video?)",
   NO_MEDIA: "Thư mục không có ảnh hoặc clip đọc được",

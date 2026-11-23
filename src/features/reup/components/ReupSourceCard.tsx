@@ -17,6 +17,7 @@ import { REUP_LANGUAGES } from "../lib/reupSettings.js";
 import { reupLengthAdvice } from "../lib/reupAdvice.js";
 import { REUP_LIMITS } from "../constants/reupConfig.js";
 import type { ReupCorner, ReupHighlights, ReupLanguage, ReupMusicChoice, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
+import { ReupStyleRefs } from "./ReupStyleRefs.js";
 import { ReupSelect, ReupTextArea, ReupTextField, ReupToggle, reupClock, type ReupOption } from "./ReupControls.js";
 const CORNERS: ReupCorner[] = ["tl", "tr", "bl", "br"];
 export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionText: MotionVideoTexts }> = ({ studio, ui, motionText }) => {
@@ -125,6 +126,7 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
               onChange={(highlights) => patch({ highlights })}
             />
             <ReupTextField label={text.LOGO_FILE} value={settings.logoFile} onChange={(logoFile) => patch({ logoFile })} />
+            <ReupStyleRefs studio={studio} disabled={locked} />
             <ReupToggle label={text.STOP_SCRIPT} icon={PauseCircle} checked={settings.stopScript} on={text.STOP_ON} off={text.STOP_OFF} onChange={(stopScript) => patch({ stopScript })} />
           </MotionSettingsGroup>
         </StudioFieldset>

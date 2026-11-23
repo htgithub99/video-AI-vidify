@@ -27,6 +27,7 @@ export const REUP_BASE_SETTINGS: ReupSettings = {
   angle: "",
   sourceLink: "",
   logoFile: "",
+  thumbStyles: [],
   quality: "auto",
   encoder: "auto",
   highlights: "few",

@@ -83,7 +83,7 @@ const checkPolicy = (job: ReupJob): void => {
 };
 const scriptWords = (script: ReupScript): number => _.sumBy(script.outputs, (o) => _.sumBy(o.sections, (s) => s.text.split(/\s+/).filter(Boolean).length));
 const checkClaims = (job: ReupJob, text: string, shown = text): void => {
-  const claims = reupUnbackedClaims(text, job.sceneMap!);
+  const claims = reupUnbackedClaims(text, job.sceneMap!, `${job.source.name} ${job.settings.angle}`);
   const stray = reupStrayWords(
     shown,
     reupUsedEvidence(
@@ -96,13 +96,13 @@ const checkClaims = (job: ReupJob, text: string, shown = text): void => {
 };
 const scriptShownText = (script: ReupScript): string => script.outputs.flatMap((o) => [...o.title, ...o.sections.flatMap((x) => [...(x.marks || []), ...(x.mark ? [x.mark] : [])].flatMap((m) => [m.label, m.title, m.sub || ""]))]).join("\n");
 const scriptClaimText = (script: ReupScript): string => script.outputs.flatMap((o) => [...o.title, ...o.sections.map((s) => s.text)]).join("\n");
-const closeReupBrowser = async (job: ReupJob, signal: AbortSignal): Promise<void> => {
+const closeReupBrowser = async (job: ReupJob, signal: AbortSignal, quiet = false): Promise<void> => {
   for (let attempt = 0; attempt < REUP_LIMITS.BROWSER_CLOSE_TRIES; attempt++) {
     if (signal.aborted) return;
-    if (await closeMotionStandaloneBrowser().catch(() => false)) return reupLog(job, REUP_LOG.BROWSER_CLOSED);
+    if (await closeMotionStandaloneBrowser().catch(() => false)) return quiet ? undefined : reupLog(job, REUP_LOG.BROWSER_CLOSED);
     await new Promise((resolve) => setTimeout(resolve, REUP_LIMITS.BROWSER_CLOSE_WAIT_MS));
   }
-  reupLog(job, REUP_LOG.BROWSER_KEPT);
+  if (!quiet) reupLog(job, REUP_LOG.BROWSER_KEPT);
 };
 const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promise<"next" | "stop">> = {
   source: async (job, signal) => {
@@ -140,7 +140,7 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     const [{ sheets, watermark }, quality] = await Promise.all([makeReupSheets(job.id, job.source, job.settings.sheetInterval, signal, () => reupLog(job, REUP_LOG.FONT_MISSING, "warn")), measureReupQuality(job.source, job.settings.darkLevel, job.settings.blurLevel, signal)]);
     job.sheets = sheets;
     job.watermark = watermark;
-    if (watermark) reupLog(job, REUP_LOG.WATERMARK(watermark, job.settings.logo === "crop" || (job.settings.logo !== "off" && job.settings.logoCorner === watermark)), "warn");
+    if (watermark) reupLog(job, REUP_LOG.WATERMARK(watermark, job.settings.logo === "off" ? "auto" : job.settings.logo === "crop" || job.settings.logoCorner === watermark ? "hidden" : "other"), "warn");
     job.bad = quality.bad;
     job.dim = quality.dim;
     if (quality.dim.length)
@@ -430,7 +430,7 @@ export const rerollReupThumb = async (id: string, index: number): Promise<ReupJo
     } finally {
       release();
     }
-    await closeReupBrowser(job, controller.signal);
+    await closeReupBrowser(job, controller.signal, true);
     saveReupJob(job, true);
     return job;
   } finally {

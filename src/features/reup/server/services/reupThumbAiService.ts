@@ -1,4 +1,6 @@
 import fs from "fs";
+import path from "path";
+import { createHash } from "crypto";
 import _ from "lodash";
 import { GEMINI_MEDIA_ERRORS } from "../../../../constants/config.js";
 import { generateImageWithPlaywright, retainGlobalBrowser } from "../../../../server/services/imageGeneratorService.js";
@@ -6,17 +8,46 @@ import { getDownloadedImageMimeType } from "../../../../server/utils/imageMedia.
 import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine, PromptInputMethod } from "../../../../types.js";
 import { REUP_DIR, REUP_THUMBS } from "../../constants/reupConfig.js";
 import { REUP_PROMPT } from "../../constants/reupPrompts.js";
-import { REUP_LOG } from "../../constants/reupServerText.js";
+import { REUP_ERROR, REUP_LOG } from "../../constants/reupServerText.js";
 import { reupThumbFallback } from "../../lib/reupThumbPlan.js";
 import type { ReupJob, ReupThumbIdea } from "../../types/reup.js";
-import { reupFileUrl, reupJobDir } from "./reupJobStore.js";
+import { reupFfmpeg } from "./reupFfmpeg.js";
+import { reupFileUrl, reupJobDir, reupRoot } from "./reupJobStore.js";
 import { reupFrame } from "./reupMediaService.js";
 type Log = (text: string, level?: "info" | "warn") => void;
 const MIME_EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
 const dataUrl = (file: string): string => `data:image/jpeg;base64,${fs.readFileSync(file).toString("base64")}`;
+const styleFile = (url: string): string | undefined => {
+  const name = decodeURIComponent(_.last(url.split("/")) || "");
+  const file = path.join(reupRoot(), REUP_THUMBS.STYLE.DIR, name);
+  return /^[a-f0-9]{40}\.jpg$/.test(name) && fs.existsSync(file) ? file : undefined;
+};
+export const reupSaveStyle = async (image: string): Promise<string> => {
+  const match = REUP_THUMBS.STYLE.MIME.exec(image);
+  if (!match) throw new Error(REUP_ERROR.STYLE_IMAGE);
+  const buffer = Buffer.from(image.slice(match[0].length), "base64");
+  if (!buffer.length || buffer.length > REUP_THUMBS.STYLE.BYTES || !getDownloadedImageMimeType(buffer)) throw new Error(REUP_ERROR.STYLE_IMAGE);
+  const dir = path.join(reupRoot(), REUP_THUMBS.STYLE.DIR);
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${createHash("sha1").update(buffer).digest("hex")}.jpg`);
+  if (!fs.existsSync(file)) {
+    const raw = `${file}.src`;
+    fs.writeFileSync(raw, buffer);
+    try {
+      await reupFfmpeg(["-y", "-i", raw, "-frames:v", "1", "-vf", `scale='min(${REUP_THUMBS.STYLE.WIDTH},iw)':-2`, "-q:v", "3", file]);
+    } finally {
+      fs.rmSync(raw, { force: true });
+    }
+  }
+  return reupFileUrl(file);
+};
+const seedOf = (text: string): number => [...text].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const draw = async (job: ReupJob, idea: ReupThumbIdea, index: number, signal?: AbortSignal): Promise<{ image?: string; warning: string }> => {
-  const refs = await Promise.all(idea.ai!.refs.slice(0, REUP_THUMBS.AI.REFS).map((t) => reupFrame(job.id, job.source, t, 1280, signal, job.watermark)));
-  const prompt = REUP_PROMPT.THUMB_IMAGE(idea.kind || "signature", idea.ai!.scene, idea.ai!.look);
+  const styles = _.compact((job.settings.thumbStyles || []).map(styleFile));
+  const style = styles.length ? styles[(index + seedOf(job.id) + (idea.image ? 1 : 0)) % styles.length] : undefined;
+  const frames = await Promise.all(idea.ai!.refs.slice(0, REUP_THUMBS.AI.REFS - (style ? REUP_THUMBS.AI.STYLE_REFS : 0)).map((t) => reupFrame(job.id, job.source, t, 1280, signal, job.watermark)));
+  const refs = style ? [...frames, style] : frames;
+  const prompt = REUP_PROMPT.THUMB_IMAGE(idea.kind || "signature", idea.ai!.scene, idea.ai!.look, !!style);
   let warning = "";
   for (let attempt = 0; attempt < REUP_THUMBS.AI.ATTEMPTS; attempt++) {
     signal?.throwIfAborted();

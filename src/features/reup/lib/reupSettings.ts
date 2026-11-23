@@ -1,5 +1,5 @@
 import { MOTION_LANGUAGE_CODES } from "../../../constants/motionLanguages/index.js";
-import { REUP_LIMITS } from "../constants/reupConfig.js";
+import { REUP_DIR, REUP_LIMITS, REUP_THUMBS } from "../constants/reupConfig.js";
 import { REUP_LENGTHS, reupPresetDefaults } from "../constants/reupPresets.js";
 import type { ReupAiChoice, ReupLanguage, ReupMusicChoice, ReupSettings } from "../types/reup.js";
 const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(value as T) ? (value as T) : fallback);
@@ -40,6 +40,7 @@ export const cleanReupSettings = (raw: unknown, preset: unknown): ReupSettings =
     angle: str(v.angle, REUP_LIMITS.NOTE, d.angle),
     sourceLink: str(v.sourceLink, 300, d.sourceLink),
     logoFile: str(v.logoFile, REUP_LIMITS.PATH, d.logoFile),
+    thumbStyles: Array.isArray(v.thumbStyles) ? [...new Set(v.thumbStyles.filter((u: unknown): u is string => typeof u === "string" && u.startsWith(`${REUP_DIR.ASSETS_URL}${REUP_THUMBS.STYLE.DIR}/`) && !u.includes("..")))].slice(0, REUP_THUMBS.STYLE.MAX) : d.thumbStyles,
     quality: pick(v.quality, ["auto", "draft", "standard", "high", "ultra"], d.quality),
     encoder: pick(v.encoder, ["auto", "gpu", "cpu"], d.encoder),
     highlights: pick(v.highlights, ["off", "few", "normal"], d.highlights),

@@ -73,6 +73,7 @@ export interface ReupSettings {
   angle: string;
   sourceLink: string;
   logoFile: string;
+  thumbStyles: string[];
   quality: ReupQuality;
   encoder: ReupEncoder;
   highlights: ReupHighlights;

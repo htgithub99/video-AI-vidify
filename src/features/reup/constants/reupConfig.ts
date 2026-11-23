@@ -2,7 +2,7 @@ import type { ThumbConcept } from "../../../constants/thumbConcepts.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import type { ReupQuality, ReupStepId } from "../types/reup.js";
 export const REUP_STEPS: readonly ReupStepId[] = ["source", "scenes", "script", "package", "voice", "build"];
-export const REUP_API = { BASE: "/reup", SOURCE: "/source", START: "/start", APPROVE_SCRIPT: "/approve-script", RERUN: "/rerun", EXPORT: "/export", SAVE_VIDEO: "/save-video", CANCEL: "/cancel", STATUS: "/status/:jobId", FRAME: "/frame/:jobId", PICK_FOLDER: "/pick-folder", JOBS: "/jobs", DELETE: "/delete", THUMB: "/thumb" } as const;
+export const REUP_API = { BASE: "/reup", SOURCE: "/source", START: "/start", APPROVE_SCRIPT: "/approve-script", RERUN: "/rerun", EXPORT: "/export", SAVE_VIDEO: "/save-video", CANCEL: "/cancel", STATUS: "/status/:jobId", FRAME: "/frame/:jobId", PICK_FOLDER: "/pick-folder", JOBS: "/jobs", DELETE: "/delete", THUMB: "/thumb", STYLE: "/style" } as const;
 export const REUP_URL = {
   SOURCE: "/api/reup/source",
   START: "/api/reup/start",
@@ -17,6 +17,7 @@ export const REUP_URL = {
   JOBS: "/api/reup/jobs",
   DELETE: "/api/reup/delete",
   THUMB: "/api/reup/thumb",
+  STYLE: "/api/reup/style",
   STREAM: (file: string): string => `/api/shorts/stream-source?path=${encodeURIComponent(file)}`,
 } as const;
 export const REUP_STORAGE = { STATE: "reup_state_v1" } as const;
@@ -126,12 +127,14 @@ export const REUP_THUMBS = {
   PLAIN: ["cinema"],
   WORDED: ["hero", "badge", "collage", "split", "circle"],
   FRAMES: { hero: 1, cinema: 1, badge: 1, split: 2, circle: 2, collage: 3, ai: 1 },
-  SPOTS: { hero: ["tl", "tc", "tr", "bl", "bc"], badge: ["tl", "tr", "bl"], collage: ["tl", "bl"], split: ["tc", "bc"], circle: ["tl", "bl"], cinema: ["bl"], ai: ["tl", "tc", "tr", "bl", "bc"] },
+  SPOTS: { hero: ["tl", "tc", "tr", "bl", "bc"], badge: ["tl", "tr", "bl"], collage: ["tl", "bl"], split: ["tc", "bc"], circle: ["tl", "bl"], cinema: ["bl"], ai: ["tl", "bl"] },
+  SPLIT_SPOTS: ["tc"],
   PREFER: { A: ["tl", "tc", "tr", "bl", "bc"], C: ["bc", "tc", "bl", "tl", "tr"], D: ["bl", "bc", "tl", "tc", "tr"], F: ["tc", "bc", "tl", "tr", "bl"], G: ["tl", "tr", "tc", "bl", "bc"], H: ["tl", "tr", "bl", "tc", "bc"] } as Record<string, readonly string[]>,
   CONCEPTS: { A: ["action", "trophy", "split"], C: ["curiosity", "trophy", "action"], D: ["trophy", "action", "split"], F: ["split", "trophy", "action"], G: ["split", "trophy", "curiosity"], H: ["trophy", "action", "split"] } as Record<string, readonly ThumbConcept[]>,
   FALLBACK: { signature: "cinema", trophy: "hero", split: "split", action: "hero", curiosity: "circle", mood: "cinema" },
   LOOKS: ["right:door", "left:back", "right:tool", "left:door", "right:back", "left:tool"],
-  AI: { ATTEMPTS: 2, MIN_BYTES: 20000, REFS: 3, TEXT_MIN: 110, SMALL: 168, FLAT: 30, PUNCH: 1.18 },
+  AI: { ATTEMPTS: 2, MIN_BYTES: 20000, REFS: 3, STYLE_REFS: 1, TEXT_MIN: 110, COLUMN: 0.44, LINES: 3, WORDS: 4, SMALL: 168, FLAT: 30, PUNCH: 1.18 },
+  STYLE: { MAX: 8, DIR: "style", WIDTH: 1280, BYTES: 15 * 1024 * 1024, MIME: /^data:image\/(png|jpe?g|webp);base64,/ },
   SUBJECT_LEFT: 0.4,
   SUBJECT_RIGHT: 0.6,
   HISTORY: 3,

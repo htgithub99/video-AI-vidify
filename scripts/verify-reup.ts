@@ -27,7 +27,7 @@ import { reupNextLook, reupThumbSlots, reupThumbSpots } from "../src/features/re
 import { reupWatermarkCorner, reupWatermarkCrop } from "../src/features/reup/lib/reupWatermark.js";
 import { THUMB_CONCEPTS, THUMB_CONCEPT_BRIEF, THUMB_CONCEPT_TEXT } from "../src/constants/thumbConcepts.js";
 import { MOTION_THUMBNAIL, motionThumbConcept } from "../src/constants/motionThumbnail.js";
-import { reupLift, reupStingBeds, titleFit } from "../src/features/reup/server/services/reupBuildService.js";
+import { reupLift, reupLogoFilter, reupStingBeds, titleFit } from "../src/features/reup/server/services/reupBuildService.js";
 import { pickHighlightAnchor, highlightColumn } from "../src/lib/highlightAnchor.js";
 import _ from "lodash";
 import { reupMusicZones } from "../src/features/reup/lib/reupMusicZones.js";
@@ -478,13 +478,18 @@ check("thumbnails: two classic frame thumbnails with text, one channel-signature
   const spots = reupThumbSpots([{ layout: "hero", lines: 2 }, { layout: "ai", lines: 0 }, { layout: "badge", lines: 1 }, { layout: "ai", lines: 2 }, { layout: "collage", lines: 2 }], [0.2, undefined, 0.8, undefined, 0.5], [], "job-1");
   assert.equal(spots[1], undefined);
   assert.ok(spots[0] && spots[0][1] !== "l" && spots[2] && spots[2][1] !== "r", `text stays off the subject: ${spots}`);
-  const used = _.compact(spots);
-  assert.equal(new Set(used).size, used.length, "no two text thumbnails share a spot");
+  const used = _.compact([spots[0], spots[2], spots[4]]);
+  assert.equal(new Set(used).size, used.length, "no two classic text thumbnails share a spot");
+  assert.ok(spots[3] === "tl" || spots[3] === "bl", "AI concept text sits in the calm left column");
   assert.ok(!used.includes("br" as never), "the duration badge corner stays clear");
   const again = reupThumbSpots([{ layout: "hero", lines: 2 }], [undefined], ["tl", "tc", "tr", "bl"], "x");
   assert.equal(again[0], "bc", "the spot the last videos did not use comes first");
   const sig = REUP_PROMPT.THUMB_IMAGE("signature", "A bearded man in a grey sweater with a black and white dog beside a small log cabin in light snow, daytime.", "left:tool");
-  assert.ok(/full-body on the left third/.test(sig) && /holding the main tool/.test(sig) && /never add rain, storm, lightning/.test(sig) && /no text, letters/.test(sig) && /same person \(face, hair, clothes\)/.test(sig), sig);
+  assert.ok(/full-body on the left third/.test(sig) && /60-75% of the frame height/.test(sig) && /holding the main item/.test(sig) && /no lightning, storm or rain unless named/.test(sig) && /No text, letters/.test(sig) && /SAME person \(face, hair, beard, clothes\)/.test(sig) && /BRIGHT and vivid/.test(sig) && !/STYLE reference/.test(sig), sig);
+  assert.ok(/LAST attached picture is a STYLE reference only/.test(REUP_PROMPT.THUMB_IMAGE("trophy", "x", undefined, true)) && /LEFT 42% is calm/.test(REUP_PROMPT.THUMB_IMAGE("trophy", "x")) && /top 22% of both halves/.test(REUP_PROMPT.THUMB_IMAGE("split", "x")), "a style reference is used for look only; concepts keep the bottom free for text");
+  assert.ok(["trophy", "split", "action", "curiosity", "mood"].every((k) => /BOTH the person of the video/.test(REUP_PROMPT.THUMB_IMAGE(k, "x")) && /face fully in frame|faces lit warm orange and clearly visible/.test(REUP_PROMPT.THUMB_IMAGE(k, "x"))), "every AI picture shows the person's face with the video's highlight");
+  const styled = cleanReupSettings({ thumbStyles: ["/assets/reup/style/" + "a".repeat(40) + ".jpg", "/assets/reup/x/../style/b.jpg", "http://evil/x.jpg", 3] }, "A");
+  assert.deepEqual(styled.thumbStyles, ["/assets/reup/style/" + "a".repeat(40) + ".jpg"], "only uploaded style references are kept");
   assert.ok(/MID-ACTION/.test(REUP_PROMPT.PACKAGE({ map: { summary: "", hook: [], ending: "", thumbnails: [], segments: [] }, script: "", settings: reupJobSettings("A", cleanReupSettings({}, "A")), frames: [1], options: 1, thumbs: concepts.map((c) => ({ ...c, frames: 1 })), pastTitles: [], shown: [] })), "the package prompt explains each concept");
   assert.ok(THUMB_CONCEPTS.every((c) => THUMB_CONCEPT_TEXT.vi[c] && THUMB_CONCEPT_TEXT.en[c] && THUMB_CONCEPT_BRIEF[c]));
   assert.equal(motionThumbConcept("verdict"), "curiosity");
@@ -513,6 +518,17 @@ check("fixed corner text in the source is found and cropped off thumbnail frames
   assert.equal(reupWatermarkCorner(make(false), w, h), undefined, "changing footage alone is not a watermark");
   assert.equal(reupWatermarkCrop("tr"), "crop=iw*0.88:ih*0.88:0:ih*0.12,");
   assert.equal(reupWatermarkCrop(undefined), "");
+});
+check("a fixed corner text found in the source is blurred in the video when logo hiding is off, without touching the setting", () => {
+  const s = reupJobSettings("A", cleanReupSettings({}, "A"));
+  const piece = { width: 3840, height: 2160 } as never;
+  assert.equal(reupLogoFilter(s, piece, "tr"), "delogo=x=2494:y=2:w=1344:h=216,");
+  assert.equal(reupLogoFilter(s, piece), "");
+  assert.equal(s.logo, "off");
+  assert.match(reupLogoFilter({ ...s, logo: "blur", logoCorner: "bl" }, piece, "tr"), /delogo=x=2:/, "a chosen corner keeps the user's choice");
+  const map = { summary: "", segments: [] };
+  assert.deepEqual(reupUnbackedClaims("1 ĐÊM TUYẾT", map, "Man and Dog Stay Overnight in a Forest Cabin.mp4"), [], "an overnight source backs 1 night");
+  assert.deepEqual(reupUnbackedClaims("3 ĐÊM TUYẾT", map, "Man and Dog Stay Overnight in a Forest Cabin.mp4"), ["3 đêm"]);
 });
 check("short videos: two shots in a row come from clearly different moments", () => {
   const ledger = new ReupFootageLedger({ duration: 300, bad: [], minShot: 1.2, maxShot: 3.2, hookCut: 1.2, spacing: REUP_HIGHLIGHT.SHORT.SPACING });

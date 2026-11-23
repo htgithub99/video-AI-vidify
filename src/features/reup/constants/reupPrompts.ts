@@ -38,7 +38,7 @@ const STORY = [
   "Never contradict the pictures. Never invent results or counts the viewer can check on screen (fish caught, days, buildings, animals), accidents, injuries, rescues or other dramatic events the footage does not show, or advice that would be unsafe if wrong. Describe only what can be seen or reasoned: no smells or tastes.",
 ].join(" ");
 const THUMB_RULES =
-  'Frame thumbnails lead each with a different frame: a large, sharp subject (the person or animal big in frame, best the person with the animal or the shelter), warm or strong light, or a clear before/after; skip dark, blurred or empty frames; never use the same frame in two thumbnails. For several frames, the first is the strongest and the text matches it. Text lines are max 18 characters; a tag is max 12 characters and is a number, a time or a subject the video shows (like 1 NIGHT, + DOG, DAY 2), never an adjective. Never promise what the video does not show. For AI pictures, "refs" are the frames that show the person, the shelter or build, and the animal or result most clearly, and "scene" says in plain English who (clothes, hair), the animal, the shelter or build, the place, the weather and the time of day exactly as those frames show them, plus what this concept puts in the picture; no weather, season or event the frames do not show.';
+  'Frame thumbnails lead each with a different frame: a large, sharp subject (the person or animal big in frame, best the person with the animal or the shelter), warm or strong light, or a clear before/after; skip dark, blurred or empty frames; never use the same frame in two thumbnails. For several frames, the first is the strongest and the text matches it. Text lines are max 18 characters; a tag is max 12 characters and is a number, a time or a subject the video shows (like 1 NIGHT, + DOG, DAY 2), never an adjective. Never promise what the video does not show: text names what the video really shows or its result, never a mistake, danger or loss that does not happen on screen. For AI pictures, "refs" are the frames that show the person, the shelter or build, and the animal or result most clearly, and "scene" says in plain English who (face, hair, clothes), the animal, the shelter or build (shape, materials, what is inside), the place, the weather type and the time of day as the frames show them, plus the highlight of the video this concept is about (the best result, the peak action or the shelter) and how the person appears with it — every AI picture shows the face of the person together with that highlight; describe the people, places and moment only, never camera words like close-up, framing or angle (the app sets those); no weather, season or event the frames do not show.';
 const thumbAsk = (t: { frames: number; lines: number; kind?: string; ai?: boolean }): string => {
   const text = t.lines ? (t.lines > 1 ? "two text lines, 2-4 words in all" : "one short tag") : "no text";
   if (t.ai && t.kind === "signature") return "an AI picture in the channel's signature look (the main person full-body beside the glowing main place or build of the video), refs + scene, no text";
@@ -47,20 +47,36 @@ const thumbAsk = (t: { frames: number; lines: number; kind?: string; ai?: boolea
   return `${t.frames} frame${t.frames > 1 ? "s" : ""}${concept}, ${text}`;
 };
 const LOOK_SIDE: Record<string, string> = { left: "left", right: "right" };
-const LOOK_POSE: Record<string, string> = { door: "one hand resting on the door frame or the shelter, face turned to the camera", back: "looking back over the shoulder toward the camera", tool: "holding the main tool or item from the video (axe, lantern, pot) at chest height, face toward the camera" };
-const CONCEPT_PICTURE: Record<ThumbConcept, string> = {
-  trophy: "Composition: the best result of the video big and sharp close to the lens in the foreground; the place and the person softly out of focus behind it.",
-  split: "Composition: two halves divided by one clean vertical line, each half showing one side of the strongest contrast in the scene, both readable at a glance.",
-  action: "Composition: the peak action frozen mid-motion from a low dynamic angle (chips, sparks, splash or flame in the air), the person's effort visible.",
-  curiosity: "Composition: one unusual or unfinished detail is the centre of attention, the person looking at it with surprise; the answer stays unseen.",
-  mood: "Composition: calm cinematic light (golden hour, mist or firelight), the person and the animal still and cosy by the fire or stove.",
+const LOOK_POSE: Record<string, string> = {
+  door: "one hand resting high on the door frame or the shelter, the other relaxed, chest open, a confident half smile",
+  back: "turned three-quarters away toward the glowing shelter, looking back over the shoulder straight into the lens",
+  tool: "holding the main item of the video (axe, lantern, pot or tool) up near the chest, looking straight into the lens",
 };
-const IMAGE_BASE = [
-  "Create one photorealistic YouTube thumbnail picture, 16:9 landscape, with no text, letters, numbers, logos, watermarks or borders.",
-  "The attached pictures are frames of the real video: keep the same person (face, hair, clothes), the same animal (breed, colours), the same shelter, vehicle or build and the same kind of place. Add no other people or animals.",
-  "Weather, season and time of day exactly as in the scene below and the frames: never add rain, storm, lightning, snow, fog or night that they do not show.",
-  "Look: tack-sharp focus, high dynamic range, rich natural colour, cinematic light; natural, modest clothing as in the frames. One clear focal point that still reads when the picture is the size of a thumb.",
+const CONCEPT_PICTURE: Record<ThumbConcept, string> = {
+  trophy:
+    "Concept TROPHY: two heroes in one frame — (1) the finished result of the video (the cooked meal, the catch, the finished build) huge and tack-sharp in the foreground, as wide as half of the subject area, glistening, steaming or glowing; (2) the person right behind or beside it, sharp and recognisable from the chest up, face fully in frame, proud or delighted, looking at the lens or at the result (the animal next to them if the video has one). Background soft.",
+  split: "Concept SPLIT: the frame is cut in two by one clean vertical line. Left half: the cold or bare side (blue snow or rain outside, the empty site, the problem). Right half: the warm or finished side (glowing amber interior, fire, the finished build, the solution). The person appears large and recognisable in the warm half (face fully in frame), the animal too if the video has one.",
+  action:
+    "Concept MID-ACTION: the single peak moment of the video frozen at 1/4000 s from a low dynamic angle — the person seen from the waist up with the face fully in frame and tense with effort while doing the main action (the axe biting into the log with chips flying, flames bursting from the stove, snow or water spraying), the tool and the effect sharp, sparks or particles in the air. Never only hands.",
+  curiosity: "Concept CURIOSITY: the person's face large on one side (face fully in frame), reacting with surprise or intense focus, eyes toward the video's most striking detail on the other side (the result, an odd object, the glowing shelter) lit brighter than everything else; the rest falls into shadow.",
+  mood: "Concept CINEMATIC MOOD: the person and the animal sitting close by the fire or stove, both faces lit warm orange and clearly visible, the cosy interior around them, a window or doorway showing the cold blue outside.",
+};
+const IMAGE_LOOK = [
+  "Create ONE finished YouTube thumbnail photo (16:9 landscape) that makes people click: the polished, hyper-real look of top outdoor and camping channels.",
+  "Exposure: BRIGHT and vivid, well exposed like a sunny commercial photo — never dark, murky or underexposed; faces and the main subject clearly lit; shadows rich but open.",
+  "Grade: high dynamic range, punchy saturated colour (lush greens, clean blues, glowing warm amber), crisp micro-detail, clean skin, strong warm-cold contrast between the glowing warm light and the cool surroundings, a touch of volumetric light and haze.",
+  "Lighting: soft bright daylight or early dusk (the sky still light) by default, night only if the scene says night; every interior light switched on and glowing; a warm rim light on the person; wet or snowy surfaces catching reflections.",
+  "Camera: full-frame look, 24-35 mm, slightly low angle, subject tack-sharp, background gently soft; nothing small or far away — the main subject fills the frame and whole heads are never cut off.",
+  "No text, letters, numbers, logos, watermarks, borders or YouTube interface anywhere.",
 ];
+const CAPTION_SIDE = "Caption space: group the person (face fully in frame), the animal and the highlight together in the RIGHT 58% of the frame; the LEFT 42% is calm, darker, out-of-focus background (wall, sky, trees or shadow) with nothing important in it, for a caption added later.";
+const CAPTION_SPLIT = "Caption space: keep the top 22% of both halves calm and darker (sky, wall or shadow) for a caption added later; faces and the highlight sit below it.";
+const IMAGE_SUBJECT = "Every picture shows BOTH the person of the video (large, face fully visible and recognisable, never cropped, never only hands or a back) AND the highlight of the video named in the scene (the result, the peak action or the shelter); a picture without the person's face is wrong.";
+const IMAGE_TRUTH = [
+  "The first attached pictures are frames of the real video: keep the SAME person (face, hair, beard, clothes), the SAME animal (breed, colours, size) and the SAME shelter, vehicle or build (shape, materials). Add no other people or animals. Clothing stays natural and modest as in the frames.",
+  "Weather: use the type of weather the scene names and push it to its most dramatic version (snow → thick falling snowflakes and snow haze; rain → heavy downpour, splashes and wet shine; clear → golden hour with mist). Never add a type of weather it does not name (no lightning, storm or rain unless named).",
+];
+const IMAGE_STYLE = "The LAST attached picture is a STYLE reference only: match its lighting, colour grade, camera angle, framing, subject size and mood as closely as possible, but never copy its people, faces, bodies, clothes, animals, vehicles, buildings, logos or text — those come only from the video frames.";
 type Pace = "quick" | "mid" | "full";
 const paceOf = (seconds: number): Pace => (seconds < REUP_PACE.QUICK ? "quick" : seconds < REUP_PACE.MID ? "mid" : "full");
 const SHAPE: Record<Pace, string> = {
@@ -215,13 +231,18 @@ export const REUP_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n"),
-  THUMB_IMAGE: (kind: string, scene: string, look?: string): string => {
+  THUMB_IMAGE: (kind: string, scene: string, look?: string, style = false): string => {
     const [side, pose] = (look || "right:door").split(":");
     const picture =
       kind === "signature"
-        ? `Composition (the channel's signature look): the person stands full-body on the ${LOOK_SIDE[side] || "right"} third, body turned three-quarters, ${LOOK_POSE[pose] || LOOK_POSE.door}. The main place or build from the frames (shelter, tent, cabin, house, workshop, garage or vehicle) fills the other two thirds, its inside glowing warm amber (bed, stove, lamps or work lights seen through the open door or windows). Warm interior light against cool blue-green surroundings, eye-level wide-angle view; wet reflections and mist only if the scene has rain or mist. The animal sits or stands near the person if the frames show one.`
-        : `${CONCEPT_PICTURE[kind as ThumbConcept] || CONCEPT_PICTURE.trophy} Keep one calm, uncluttered band along the top or bottom edge for a short caption added later.`;
-    return [...IMAGE_BASE, `Scene: ${scene}`, picture].join("\n");
+        ? [
+            "Composition — the channel signature shot:",
+            `the main place of the video (shelter, tent, cabin, house, workshop, garage or vehicle) is big and close, filling 55-65% of the frame, seen from a slightly low angle, its door or windows wide open with the inside glowing bright warm amber and full of cosy detail (bed with blankets, fire in the stove, lanterns or string lights);`,
+            `the person stands full-body on the ${LOOK_SIDE[side] || "right"} third, large in frame (head to feet 60-75% of the frame height), ${LOOK_POSE[pose] || LOOK_POSE.door};`,
+            "the animal, if the frames show one, sits or stands right next to the person, looking at the lens; dark dramatic sky and tall dark trees frame the scene.",
+          ].join(" ")
+        : `${CONCEPT_PICTURE[kind as ThumbConcept] || CONCEPT_PICTURE.trophy} ${kind === "split" ? CAPTION_SPLIT : CAPTION_SIDE}`;
+    return [...IMAGE_LOOK, IMAGE_SUBJECT, ...IMAGE_TRUTH, style ? IMAGE_STYLE : "", `Scene from the video: ${scene}`, picture].filter(Boolean).join("\n");
   },
 } as const;
 export const REUP_FIX = {

@@ -5,7 +5,7 @@ import { MotionSeoCard } from "../../motion/components/MotionSeoCard.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { reupSeoPack } from "../lib/reupSeo.js";
-import { drawReupThumbnail } from "../lib/reupThumbnail.js";
+import { drawReupPending, drawReupThumbnail } from "../lib/reupThumbnail.js";
 import { ReupReport } from "./ReupReport.js";
 import { REUP_THUMBS } from "../constants/reupConfig.js";
 import { THUMB_CONCEPT_TEXT } from "../../../constants/thumbConcepts.js";
@@ -32,6 +32,7 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
   const [turns, setTurns] = useState<Record<number, number>>({});
   const [thumbnails, setThumbnails] = useState<Record<number, MotionThumbnail>>({});
   const [drawing, setDrawing] = useState<number | null>(null);
+  const packaging = job?.steps.package.status === "running";
   useEffect(() => {
     setTurns({});
     setThumbnails({});
@@ -44,7 +45,7 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
     void Promise.all(
       pack.thumbs.map(async (idea, i) => {
         const take = variant(idea, times, turns[i] || 0);
-        const image = await drawReupThumbnail(take, take.frames.map((t) => url.get(t) || "").filter(Boolean), job?.settings.language, REUP_THUMBS.PREFER[job?.preset || ""]).catch(() => "");
+        const image = idea.ai && !idea.image && packaging ? drawReupPending(text.THUMB_AI_PENDING, lang) : await drawReupThumbnail(take, take.frames.map((t) => url.get(t) || "").filter(Boolean), job?.settings.language, REUP_THUMBS.PREFER[job?.preset || ""]).catch(() => "");
         return [i, { image, prompt: "", optionIndex: i, ...(idea.kind ? { tag: `${THUMB_CONCEPT_TEXT[lang === "en" ? "en" : "vi"][idea.kind]}${idea.layout === "ai" ? text.THUMB_AI : ""}` } : {}) }] as const;
       }),
     ).then((list) => {
@@ -55,8 +56,7 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
     return () => {
       alive = false;
     };
-  }, [pack, turns, job?.settings.language, job?.preset, lang, text.THUMB_AI]);
-  const packaging = job?.steps.package.status === "running";
+  }, [pack, turns, job?.settings.language, job?.preset, lang, text.THUMB_AI, text.THUMB_AI_PENDING, packaging]);
   if (!job || (!seo && !packaging && !job.report)) return null;
   return (
     <MotionSeoCard

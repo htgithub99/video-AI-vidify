@@ -9,6 +9,7 @@ import type { ReupJob, ReupStepId } from "../../types/reup.js";
 import { deleteReupJobs, getReupJob, listReupJobs } from "../services/reupJobStore.js";
 import { inspectReupSource, reupFingerprint, reupFrame } from "../services/reupMediaService.js";
 import { reupSourceReuses } from "../../lib/reupAdvice.js";
+import { reupSaveStyle } from "../services/reupThumbAiService.js";
 import { approveReupScript, cancelReup, exportReup, rerollReupThumb, rerunReup, startReup } from "../services/reupPipeline.js";
 const fail = (res: Response, status: number, error: unknown): void => void res.status(status).json({ success: false, error: String((error as Error)?.message || error) });
 const view = (job: ReupJob) => ({ ...job, sheets: job.sheets.map(({ file: _file, ...sheet }) => sheet), voices: undefined, transcript: job.transcript ? { text: job.transcript.text, words: [], phrases: [] } : undefined });
@@ -50,6 +51,13 @@ export const rerunReupController = (req: Request, res: Response): void => {
 export const rerollReupThumbController = async (req: Request, res: Response): Promise<void> => {
   try {
     res.json({ success: true, job: view(await rerollReupThumb(String(req.body?.jobId || ""), Number(req.body?.index))) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const saveReupStyleController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, url: await reupSaveStyle(String(req.body?.image || "")) });
   } catch (error) {
     fail(res, 400, error);
   }

@@ -195,7 +195,7 @@ const busyMap = (ctx: CanvasRenderingContext2D): ((r: Box) => number) => {
   };
 };
 const pickSpot = (ctx: CanvasRenderingContext2D, idea: ReupThumbIdea, prefer: readonly string[], rectOf: (spot: ReupThumbSpot) => Box): ReupThumbSpot => {
-  const allowed = REUP_THUMBS.SPOTS[idea.layout] as readonly ReupThumbSpot[];
+  const allowed = (idea.layout === "ai" && idea.kind === "split" ? REUP_THUMBS.SPLIT_SPOTS : REUP_THUMBS.SPOTS[idea.layout]) as readonly ReupThumbSpot[];
   if (idea.pin && idea.spot) return idea.spot;
   const busy = busyMap(ctx);
   const subject = idea.focus === undefined ? undefined : idea.focus * REUP_THUMB.W;
@@ -226,6 +226,24 @@ const drawTag = (ctx: CanvasRenderingContext2D, css: string, text: string, [x, y
   ctx.textBaseline = "middle";
   ctx.fillText(text, x + w / 2, y + h / 2 + size * 0.04, w - pad);
 };
+const rewrap = (ctx: CanvasRenderingContext2D, css: string, lines: string[], width: number): { lines: string[]; size: number } => {
+  const words = lines.join(" ").split(/\s+/).filter(Boolean);
+  const wrap = (size: number): string[] => {
+    ctx.font = fontOf(css, size);
+    const out: string[] = [];
+    for (const word of words) {
+      const last = out[out.length - 1];
+      if (last && ctx.measureText(`${last} ${word}`).width <= width) out[out.length - 1] = `${last} ${word}`;
+      else out.push(word);
+    }
+    return out;
+  };
+  for (let size = REUP_THUMBS.AI.TEXT_MIN; size >= REUP_THUMB.MIN_SIZE; size -= 4) {
+    const out = wrap(size);
+    if (out.length <= REUP_THUMBS.AI.LINES && out.every((l) => ctx.measureText(l).width <= width)) return { lines: out, size };
+  }
+  return { lines: wrap(REUP_THUMB.MIN_SIZE), size: REUP_THUMB.MIN_SIZE };
+};
 const readable = (ctx: CanvasRenderingContext2D): boolean => {
   const { SMALL, FLAT } = REUP_THUMBS.AI;
   const probe = document.createElement("canvas");
@@ -244,11 +262,30 @@ const readable = (ctx: CanvasRenderingContext2D): boolean => {
     return true;
   }
 };
+export const drawReupPending = (label: string, lang = "en"): string => {
+  const { W, H } = REUP_THUMB;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, "#0f172a");
+  g.addColorStop(1, "#3b0764");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  ctx.font = fontOf(REUP_CSS_FONTS[reupFontScript(lang)], 64);
+  ctx.fillStyle = REUP_THUMB.WHITE;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, W / 2, H / 2);
+  return canvas.toDataURL("image/jpeg", REUP_THUMB.QUALITY);
+};
 export const drawReupThumbnail = async (idea: ReupThumbIdea, frames: string[], lang = "en", prefer: readonly string[] = []): Promise<string> => {
   if (idea.layout === "ai" && idea.image) frames = [idea.image];
   if (!frames[0]) return "";
   const css = REUP_CSS_FONTS[reupFontScript(lang)];
-  const lines = idea.lines
+  let lines = idea.lines
     .map((l) => l.trim().toLocaleUpperCase(lang))
     .filter(Boolean)
     .slice(0, 2);
@@ -265,7 +302,15 @@ export const drawReupThumbnail = async (idea: ReupThumbIdea, frames: string[], l
   const focus = idea.focus ?? 0.5;
   let textBox = full;
   let width = W - REUP_THUMB.PAD * 2;
+  let least: number = REUP_THUMBS.AI.TEXT_MIN;
   if (idea.layout === "ai") {
+    if (idea.kind !== "split" && lines.length) {
+      textBox = [0, 0, Math.round(W * REUP_THUMBS.AI.COLUMN), H];
+      width = textBox[2] - REUP_THUMB.PAD * 2;
+      const wrapped = rewrap(ctx, css, lines, width);
+      lines = wrapped.lines;
+      least = wrapped.size;
+    }
     cover(ctx, a, full);
     if (!readable(ctx)) {
       ctx.save();
@@ -321,7 +366,7 @@ export const drawReupThumbnail = async (idea: ReupThumbIdea, frames: string[], l
       ),
     );
   else if (lines.length && idea.layout !== "cinema") {
-    const fit = (s: ReupThumbSpot) => place(ctx, css, lines, s, textBox, roomFor(s, textBox, width, idea.layout === "hero" || idea.layout === "circle" ? idea.focus : undefined), idea.layout === "ai" ? REUP_THUMBS.AI.TEXT_MIN : undefined);
+    const fit = (s: ReupThumbSpot) => place(ctx, css, lines, s, textBox, roomFor(s, textBox, width, idea.layout === "hero" || idea.layout === "circle" ? idea.focus : undefined), idea.layout === "ai" ? least : undefined);
     const spot = pickSpot(ctx, idea, prefer, (s) => fit(s).rect);
     shade(ctx, spot[0] === "t", textBox);
     drawLines(ctx, css, lines, fit(spot));

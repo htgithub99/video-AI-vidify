@@ -40,24 +40,38 @@ export const reupThumbSlots = (past: ReupThumbPast, preset: string, seedText: st
   return [signature, worded[0], concepts[0], worded[1], concepts[1]].filter(Boolean);
 };
 export const reupNextLook = (look: string | undefined, past: string[]): string => freshest(T.LOOKS, _.compact([look, ...past]), 0).find((l) => l !== look) || T.LOOKS[0];
-export const reupThumbSpots = (slots: Pick<ReupThumbSlot, "layout" | "lines">[], focus: (number | undefined)[], pastSpots: string[], seedText: string): (ReupThumbSpot | undefined)[] => {
-  const used: ReupThumbSpot[] = [];
+export const reupThumbSpots = (slots: Pick<ReupThumbSlot, "layout" | "lines" | "kind">[], focus: (number | undefined)[], pastSpots: string[], seedText: string): (ReupThumbSpot | undefined)[] => {
   const seed = seedOf(seedText);
   const out: (ReupThumbSpot | undefined)[] = slots.map(() => undefined);
-  const choices = slots.map(({ layout }, i) => {
-    const all = T.SPOTS[layout] as readonly ReupThumbSpot[];
-    const f = focus[i];
+  const choices = slots.map(({ layout, kind }, i) => {
+    const all = (layout === "ai" && kind === "split" ? T.SPLIT_SPOTS : T.SPOTS[layout]) as readonly ReupThumbSpot[];
+    const f = layout === "ai" ? undefined : focus[i];
     const clear = all.filter((s) => (f === undefined ? true : f < T.SUBJECT_LEFT ? s[1] !== "l" : f > T.SUBJECT_RIGHT ? s[1] !== "r" : s[1] !== "c"));
     return clear.length ? clear : all;
   });
-  for (const i of _.sortBy(
-    slots.flatMap((s, i) => (s.lines ? [i] : [])),
-    (i) => choices[i].length,
-  )) {
-    const open = choices[i].filter((s) => !used.includes(s));
-    const spot = freshest(open.length ? open : choices[i], [...used, ...pastSpots], seed + i)[0];
-    used.push(spot);
-    out[i] = spot;
+  for (const ai of [false, true]) {
+    const order = _.sortBy(
+      slots.flatMap((s, i) => (s.lines && (s.layout === "ai") === ai ? [i] : [])),
+      (i) => choices[i].length,
+    );
+    const ranked = new Map(order.map((i) => [i, freshest(choices[i], pastSpots, seed + i)]));
+    const solve = (k: number, taken: ReupThumbSpot[]): ReupThumbSpot[] | undefined => {
+      if (k === order.length) return taken;
+      for (const spot of ranked.get(order[k])!)
+        if (!taken.includes(spot)) {
+          const done = solve(k + 1, [...taken, spot]);
+          if (done) return done;
+        }
+      return undefined;
+    };
+    const best = solve(0, []);
+    const used: ReupThumbSpot[] = [];
+    order.forEach((i, k) => {
+      const open = choices[i].filter((s) => !used.includes(s));
+      const spot = best ? best[k] : freshest(open.length ? open : choices[i], [...used, ...pastSpots], seed + i)[0];
+      used.push(spot);
+      out[i] = spot;
+    });
   }
   return out;
 };

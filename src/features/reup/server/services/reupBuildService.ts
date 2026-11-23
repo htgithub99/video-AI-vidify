@@ -4,7 +4,7 @@ import path from "path";
 import { createHash } from "crypto";
 import _ from "lodash";
 import { probeMediaDurationSeconds } from "../../../video-export/server/services/videoExportFfmpegService.js";
-import { REUP_BUILD, REUP_DIR, REUP_QUALITY, REUP_FOLDER, REUP_HIGHLIGHT, REUP_HOLD, REUP_MOMENT, REUP_MUSIC_ZONE, REUP_NARRATION, REUP_OVERLAY, REUP_POP_THEME, REUP_TEXT, REUP_TYPE } from "../../constants/reupConfig.js";
+import { REUP_BUILD, REUP_DIR, REUP_QUALITY, REUP_FOLDER, REUP_HIGHLIGHT, REUP_HOLD, REUP_MOMENT, REUP_MUSIC_ZONE, REUP_NARRATION, REUP_OVERLAY, REUP_POP_THEME, REUP_TEXT, REUP_TYPE, REUP_WATERMARK } from "../../constants/reupConfig.js";
 import { REUP_LOG } from "../../constants/reupServerText.js";
 import { reupPreset, reupQuick } from "../../constants/reupPresets.js";
 import { reupTracks, reupZonedMusicBed } from "./reupMusicService.js";
@@ -20,7 +20,7 @@ import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
 import { ReupFootageLedger, mergeSpans, reupFillScenes, reupPacing, reupSectionSeconds, type ReupPlannedSection } from "../../lib/reupTimeline.js";
 import { reupHeardTalk, reupTalkTail } from "../../lib/reupTalk.js";
 import { reupMoments } from "../../lib/reupSceneMap.js";
-import type { ReupDimRange, ReupJob, ReupJobSettings, ReupOutputResult, ReupOutputScript, ReupSegment, ReupSettings, ReupShot } from "../../types/reup.js";
+import type { ReupCorner, ReupDimRange, ReupJob, ReupJobSettings, ReupOutputResult, ReupOutputScript, ReupSegment, ReupSettings, ReupShot } from "../../types/reup.js";
 import { reupFfmpeg, reupFilterValue, reupFont, reupFontFor } from "./reupFfmpeg.js";
 import { reupFileUrl, reupJobDir } from "./reupJobStore.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
@@ -44,8 +44,14 @@ export const reupFrameSize = (settings: Pick<ReupSettings, "aspect" | "quality">
   const [w, h] = settings.quality === "auto" && sourceHeight && sourceHeight < REUP_BUILD.AUTO_SMALL_HEIGHT ? REUP_BUILD.AUTO_SMALL_SIZE : REUP_BUILD.QUALITY[settings.quality].size;
   return settings.aspect === "9:16" ? [even(h), even(w)] : [even(w), even(h)];
 };
-const logoFilter = (s: ReupJobSettings, p: Piece): string => {
-  if (p.still || s.logo === "off") return "";
+export const reupLogoFilter = (s: ReupJobSettings, p: Piece, mark?: ReupCorner): string => {
+  if (p.still) return "";
+  if (s.logo === "off" && mark) {
+    const w = Math.max(8, Math.round(p.width * REUP_WATERMARK.BOX.W));
+    const h = Math.max(8, Math.round(p.height * REUP_WATERMARK.BOX.H));
+    return `delogo=x=${mark.endsWith("l") ? 2 : p.width - w - 2}:y=${mark.startsWith("t") ? 2 : p.height - h - 2}:w=${w}:h=${h},`;
+  }
+  if (s.logo === "off") return "";
   if (s.logo === "crop") return `scale=iw*${REUP_BUILD.LOGO_ZOOM}:ih*${REUP_BUILD.LOGO_ZOOM},crop=iw/${REUP_BUILD.LOGO_ZOOM}:ih/${REUP_BUILD.LOGO_ZOOM},`;
   const w = Math.max(8, Math.round(p.width * REUP_BUILD.LOGO_BOX));
   const h = Math.max(8, Math.round(p.height * REUP_BUILD.LOGO_BOX * 0.6));
@@ -72,8 +78,8 @@ export const titleFit = (lines: string[], base: number, width: number): number =
         ),
     ),
   );
-const pictureFilter = (i: number, s: ReupJobSettings, p: Piece, w: number, h: number, font?: string, labelFile?: string): string => {
-  const head = `[${i}:v]${p.lift ? `eq=gamma=${p.lift}:brightness=${REUP_QUALITY.LIFT_BRIGHT}:saturation=${REUP_QUALITY.LIFT_SAT},` : ""}${logoFilter(s, p)}`;
+const pictureFilter = (i: number, s: ReupJobSettings, p: Piece, w: number, h: number, font?: string, labelFile?: string, mark?: ReupCorner): string => {
+  const head = `[${i}:v]${p.lift ? `eq=gamma=${p.lift}:brightness=${REUP_QUALITY.LIFT_BRIGHT}:saturation=${REUP_QUALITY.LIFT_SAT},` : ""}${reupLogoFilter(s, p, mark)}`;
   const label = labelFile && font && p.label ? `,${p.label.kind === "stage" ? draw(font, labelFile, Math.round(h * 0.07), "36", "36", "0xFFD400", ":box=1:boxcolor=black@0.6:boxborderw=14") : draw(font, labelFile, Math.round(Math.min(w, h) * 0.042), "40", `h-th-${Math.round(h * 0.06)}`, "white", ":box=1:boxcolor=black@0.5:boxborderw=10")}` : "";
   const hold = p.hold ? `,tpad=stop_mode=clone:stop_duration=${p.hold.toFixed(3)}` : "";
   const tail = `${hold},fps=${s.fps},format=yuv420p,setsar=1${label},trim=duration=${p.len.toFixed(3)},setpts=PTS-STARTPTS[v${i}]`;
@@ -133,7 +139,7 @@ const renderSection = async (job: ReupJob, pieces: Piece[], file: string, opts: 
   pieces.forEach((p, i) => {
     inputs.push(...inputArgs(p, s.fps));
     const labelFont = p.label?.kind === "stage" ? heavy : font;
-    graph.push(pictureFilter(i, s, p, w, h, labelFont, p.label && labelFont ? textFile(`${file}.l${i}.txt`, p.label.text) : undefined));
+    graph.push(pictureFilter(i, s, p, w, h, labelFont, p.label && labelFont ? textFile(`${file}.l${i}.txt`, p.label.text) : undefined, job.watermark));
     const len = p.len.toFixed(3);
     graph.push(p.hasAudio && !p.still ? `[${i}:a]aresample=${REUP_BUILD.AUDIO_RATE},aformat=channel_layouts=stereo,apad,atrim=duration=${len},asetpts=PTS-STARTPTS[a${i}]` : `anullsrc=r=${REUP_BUILD.AUDIO_RATE}:cl=stereo,atrim=duration=${len}[a${i}]`);
   });
