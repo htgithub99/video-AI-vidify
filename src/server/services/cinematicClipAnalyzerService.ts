@@ -1,3 +1,4 @@
+import type { CinematicEditSegment } from "../../types.js";
 import { parseJson } from "../../lib/jsonStringify.js";
 import {
   SOURCE_TEMPLATE_DIALOGUE_SEGMENT_MISSING,
@@ -35,15 +36,7 @@ interface CinematicLibraryClipInput {
   expectedDialogue?: string;
   dialogueLanguage?: string;
 }
-interface CinematicLibrarySegment {
-  segmentId: string;
-  inSeconds: number;
-  outSeconds: number;
-  shotRole: "master" | "coverage" | "reaction" | "insert" | "transition" | "payoff";
-  storyContribution: string;
-  transition: "cut" | "match_cut" | "cross_dissolve" | "fade_black";
-  audioBridgeMode: "hard" | "j_cut" | "l_cut" | "ambience";
-  containsDialogue: boolean;
+interface CinematicLibrarySegment extends CinematicEditSegment {
   libraryScore?: number;
 }
 interface CinematicLibraryDecision {

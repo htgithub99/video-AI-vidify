@@ -144,7 +144,6 @@ export const SKIN_PART_QUAD = `(c, o, K) => {
   if (A.ruff) { const c0 = hpt(0.3, 0); const rr = []; for (let i = 0; i < 14; i++) { const a = (i / 14) * K.PI * 2, k = i % 2 ? 0.95 : 1.12; rr.push([c0[0] + Math.cos(a) * hd * 1.05 * k, c0[1] + Math.sin(a) * hd * 1.05 * k]); } const rp = S(rr); K.fill(c, rp, A.ruff, w, { R, box }); K.fill(c, head, B, w, { R, box, hatch: false }); }
   const earB = hpt(0.15, -0.48), earB2 = hpt(0.32, -0.5), up = [-ph_[0], -ph_[1]];
   if (A.ears === "pointed") K.paint(c, S([earB, [earB[0] + up[0] * 0.36 - 0.04, earB[1] + up[1] * 0.36], earB2]), B, w);
-  // Long ears (a rabbit): two upright leaf-shaped ears, pink inside.
   if (A.ears === "long") [[-0.08, 0.95], [0.1, 0.8]].forEach(([dx, k]) => { const m = [(earB[0] + earB2[0]) / 2 + dx, (earB[1] + earB2[1]) / 2]; K.paint(c, S([[m[0] - 0.09, m[1]], [m[0] + up[0] * k * 0.5 - 0.13, m[1] + up[1] * k * 0.5], [m[0] + up[0] * k, m[1] + up[1] * k], [m[0] + up[0] * k * 0.5 + 0.11, m[1] + up[1] * k * 0.5], [m[0] + 0.09, m[1]]]), B, w); K.paint(c, S([[m[0] - 0.03, m[1] - 0.05], [m[0] + up[0] * k * 0.5 - 0.06, m[1] + up[1] * k * 0.5], [m[0] + up[0] * k * 0.85, m[1] + up[1] * k * 0.85], [m[0] + up[0] * k * 0.5 + 0.05, m[1] + up[1] * k * 0.5], [m[0] + 0.03, m[1] - 0.05]]), "#e8b4ae", 0); });
   if (A.ears === "round") K.paint(c, K.ell(earB[0] * R, (earB[1] - 0.05) * R, 0.15 * R, 0.15 * R), K.shade(B, 0.9), w);
   if (A.ears === "side") K.paint(c, K.ell((earB[0] - 0.12) * R, (earB[1] + 0.08) * R, 0.24 * R, 0.1 * R, 0.35), K.shade(B, 0.9), w);

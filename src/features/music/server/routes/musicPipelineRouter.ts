@@ -519,8 +519,18 @@ const validateMusicSongRankingContract = (parsed: any, songs: any[], requestId: 
   const orderedIds = _.map(_.castArray(parsed?.orderedSongIds || []), (songId) => _.trim(_.toString(songId)));
   return _.isEqual(parsed?.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_RANKING) && _.isEqual(parsed?.requestId, requestId) && _.isEqual(orderedIds.length, expectedIds.length) && _.isEqual(_.uniq(orderedIds).length, expectedIds.length) && _.isEqual(_.sortBy(orderedIds), _.sortBy(expectedIds));
 };
-const validateSunoSettingsContract = (parsed: any, requestId: string): boolean => {
+const hasUsableSunoSettingsResult = (parsed: any): boolean => {
   const settings = parsed?.settings;
+  return (
+    _.isString(settings?.excludeStyles) &&
+    _.includes([SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_AUTO], settings?.vocalGender) &&
+    settings?.duration === SUNO_AUTOMATION_CONFIG.DURATION_AUTO &&
+    _.every([settings?.weirdness, settings?.styleInfluence, settings?.audioInfluence, settings?.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101)) &&
+    _.isBoolean(settings?.maxMode) &&
+    _.isBoolean(settings?.personalize)
+  );
+};
+const validateSunoSettingsContract = (parsed: any, requestId: string): boolean => {
   const assessment = parsed?.productionAssessment;
   const rationale = parsed?.parameterRationale;
   const analysis = parsed?.parameterAnalysis;
@@ -538,23 +548,7 @@ const validateSunoSettingsContract = (parsed: any, requestId: string): boolean =
     _.isArray(assessment?.risks) &&
     _.every(requiredRationaleFields, (field) => !_.isEmpty(_.trim(_.toString(rationale?.[field])))) &&
     hasCompleteAnalysis &&
-    _.isString(settings?.excludeStyles) &&
-    _.includes([SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_AUTO], settings?.vocalGender) &&
-    settings?.duration === SUNO_AUTOMATION_CONFIG.DURATION_AUTO &&
-    _.every([settings?.weirdness, settings?.styleInfluence, settings?.audioInfluence, settings?.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101)) &&
-    _.isBoolean(settings?.maxMode) &&
-    _.isBoolean(settings?.personalize)
-  );
-};
-const hasUsableSunoSettingsResult = (parsed: any): boolean => {
-  const settings = parsed?.settings;
-  return (
-    _.isString(settings?.excludeStyles) &&
-    _.includes([SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE, SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_AUTO], settings?.vocalGender) &&
-    settings?.duration === SUNO_AUTOMATION_CONFIG.DURATION_AUTO &&
-    _.every([settings?.weirdness, settings?.styleInfluence, settings?.audioInfluence, settings?.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101)) &&
-    _.isBoolean(settings?.maxMode) &&
-    _.isBoolean(settings?.personalize)
+    hasUsableSunoSettingsResult(parsed)
   );
 };
 const validateMusicPlaylistSeoContract = (parsed: any, _songs?: any[]): boolean => {

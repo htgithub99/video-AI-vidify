@@ -61,6 +61,25 @@ const createHeuristicClips = (durationSec: number, clipCount: number, durationMo
     };
   });
 };
+const toHighlightClips = (parsed: any[], clipCount: number, durationSec: number): HighlightClipItem[] =>
+  _.map(_.take(parsed, clipCount), (item: any, idx: number): HighlightClipItem => {
+    const parsedStart = Math.max(0, parseFloat(item.startTime || SOURCE_TEXT_0));
+    const parsedEnd = Math.min(durationSec, parseFloat(item.endTime || `${parsedStart + 45}`));
+    const start = parseFloat(parsedStart.toFixed(2));
+    const end = parseFloat((parsedEnd <= parsedStart || parsedEnd - parsedStart < 10 ? Math.min(durationSec, parsedStart + 45) : parsedEnd).toFixed(2));
+    return {
+      id: SOURCE_TEMPLATE_SYMBOL_60(`${SHORTS_CONSTANTS.CLIP_ID_PREFIX}`, `${Date.now()}`, `${idx + 1}`),
+      index: idx + 1,
+      startTime: start,
+      endTime: end,
+      duration: parseFloat((end - start).toFixed(2)),
+      title: item.title || `${SHORTS_TEXTS.DEFAULT_CLIP_PREFIX}${idx + 1}`,
+      hookReason: item.hookReason || SHORTS_TEXTS.DEFAULT_HOOK_REASON,
+      viralScore: _.clamp(_.toNumber(item.viralScore) || 90, 70, 100),
+      outputVideoPath: "",
+      videoUrl: "",
+    };
+  });
 export async function analyzeVideoHighlights(request: HighlightAnalysisRequest): Promise<HighlightClipItem[]> {
   const { metadata, clipCount, durationMode, audioSummaryText, audioPath, aiExecution, signal } = request;
   const durationSec = metadata.duration > 0 ? metadata.duration : 1800;
@@ -78,24 +97,7 @@ export async function analyzeVideoHighlights(request: HighlightAnalysisRequest):
       await closeChatPlanningRoomsForProject({ provider: aiExecution.provider, projectId }).catch(() => undefined);
       await closeChatBrowserIfIdle().catch(() => undefined);
       if (_.isArray(parsed) && !_.isEmpty(parsed)) {
-        return _.map(_.take(parsed, clipCount), (item: any, idx: number): HighlightClipItem => {
-          const parsedStart = Math.max(0, parseFloat(item.startTime || SOURCE_TEXT_0));
-          const parsedEnd = Math.min(durationSec, parseFloat(item.endTime || `${parsedStart + 45}`));
-          const start = parseFloat(parsedStart.toFixed(2));
-          const end = parseFloat((parsedEnd <= parsedStart || parsedEnd - parsedStart < 10 ? Math.min(durationSec, parsedStart + 45) : parsedEnd).toFixed(2));
-          return {
-            id: SOURCE_TEMPLATE_SYMBOL_60(`${SHORTS_CONSTANTS.CLIP_ID_PREFIX}`, `${Date.now()}`, `${idx + 1}`),
-            index: idx + 1,
-            startTime: start,
-            endTime: end,
-            duration: parseFloat((end - start).toFixed(2)),
-            title: item.title || `${SHORTS_TEXTS.DEFAULT_CLIP_PREFIX}${idx + 1}`,
-            hookReason: item.hookReason || SHORTS_TEXTS.DEFAULT_HOOK_REASON,
-            viralScore: _.clamp(_.toNumber(item.viralScore) || 90, 70, 100),
-            outputVideoPath: "",
-            videoUrl: "",
-          };
-        });
+        return toHighlightClips(parsed, clipCount, durationSec);
       }
     } catch (chatError: any) {
       await closeChatPlanningRoomsForProject({ provider: aiExecution.provider, projectId }).catch(() => undefined);
@@ -111,24 +113,7 @@ export async function analyzeVideoHighlights(request: HighlightAnalysisRequest):
     if (!_.isArray(parsed) || _.isEmpty(parsed)) {
       throw new Error(SHORTS_TEXTS.ERR_NO_VALID_CLIPS_AI);
     }
-    return _.map(_.take(parsed, clipCount), (item: any, idx: number): HighlightClipItem => {
-      const parsedStart = Math.max(0, parseFloat(item.startTime || SOURCE_TEXT_0));
-      const parsedEnd = Math.min(durationSec, parseFloat(item.endTime || `${parsedStart + 45}`));
-      const start = parseFloat(parsedStart.toFixed(2));
-      const end = parseFloat((parsedEnd <= parsedStart || parsedEnd - parsedStart < 10 ? Math.min(durationSec, parsedStart + 45) : parsedEnd).toFixed(2));
-      return {
-        id: SOURCE_TEMPLATE_SYMBOL_60(`${SHORTS_CONSTANTS.CLIP_ID_PREFIX}`, `${Date.now()}`, `${idx + 1}`),
-        index: idx + 1,
-        startTime: start,
-        endTime: end,
-        duration: parseFloat((end - start).toFixed(2)),
-        title: item.title || `${SHORTS_TEXTS.DEFAULT_CLIP_PREFIX}${idx + 1}`,
-        hookReason: item.hookReason || SHORTS_TEXTS.DEFAULT_HOOK_REASON,
-        viralScore: _.clamp(_.toNumber(item.viralScore) || 90, 70, 100),
-        outputVideoPath: "",
-        videoUrl: "",
-      };
-    });
+    return toHighlightClips(parsed, clipCount, durationSec);
   } catch (error: any) {
     logger.warn(SHORTS_LOG_MESSAGES.AI_FALLBACK_HEURISTIC(error?.message || ""));
     return createHeuristicClips(durationSec, clipCount, durationMode);

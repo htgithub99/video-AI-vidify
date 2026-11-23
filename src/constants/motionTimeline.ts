@@ -11,4 +11,13 @@ export const MOTION_TIMELINE = {
   } as Record<string, string[]>,
   NEXT_DAY: ["next day", "next morning", "following day", "following morning", "days later", "the next", "hôm sau", "ngày hôm sau", "sáng hôm sau", "ngày sau", "al día siguiente", "le lendemain", "am nächsten", "no dia seguinte"],
 } as const;
-export const MOTION_CAST_MARKS = { LOCK: ["outfit", "head", "headColor", "armor", "cape", "top", "pants", "robe", "trim", "beard", "hairColor", "build", "emblem", "emblemColor", "shield", "shieldColor"], LOOK: "look:", HOME: "*", GENERIC: /^(you|crowd|soldiers?|riders?|men|people|army|archers?|knights?|levies|militia|refugees?|villagers?|guards?|enemy|enemies|troops|warriors?|horsemen|far_.*|.*_\d+)$/, CAPE: /\b(cloak|cape|mantle|mantel|capa|manteau|umhang)\b|áo choàng/i, FUR: /\b(fur|piel|pelz)\b|fourrure|lông thú|viền lông/i, FUR_TRIM: "#cbb089", CAPES: ["#8a1a2a", "#2a3a6a", "#2e5a3a", "#6a3a7a", "#8a5a1a", "#1e4a5a", "#7a2a1a", "#4a4a5a"] } as const;
+export const MOTION_CAST_MARKS = {
+  LOCK: ["outfit", "head", "headColor", "armor", "cape", "top", "pants", "robe", "trim", "beard", "hairColor", "build", "emblem", "emblemColor", "shield", "shieldColor"],
+  LOOK: "look:",
+  HOME: "*",
+  GENERIC: /^(you|crowd|soldiers?|riders?|men|people|army|archers?|knights?|levies|militia|refugees?|villagers?|guards?|enemy|enemies|troops|warriors?|horsemen|far_.*|.*_\d+)$/,
+  CAPE: /\b(cloak|cape|mantle|mantel|capa|manteau|umhang)\b|áo choàng/i,
+  FUR: /\b(fur|piel|pelz)\b|fourrure|lông thú|viền lông/i,
+  FUR_TRIM: "#cbb089",
+  CAPES: ["#8a1a2a", "#2a3a6a", "#2e5a3a", "#6a3a7a", "#8a5a1a", "#1e4a5a", "#7a2a1a", "#4a4a5a"],
+} as const;

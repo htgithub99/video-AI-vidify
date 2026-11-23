@@ -924,6 +924,44 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
   const feature = _.isEqual(generateType, GenerateType.Video) ? FeatureType.VIDEO : FeatureType.IMAGE;
   requireLicense(feature)(req, res, next);
 };
+const rewriteStoryboardPrompts = async (storyboard: any[], visualConfig: any, aspectRatio: AspectRatio | undefined, chunkSize: number, buildPrompt: (chunk: string, ratio: AspectRatio, background?: string, text?: string, focus?: string) => string, onChunkError?: (error: unknown) => void): Promise<any[]> => {
+  const ratio = aspectRatio || AspectRatio.SixteenNine;
+  const chunks = _.chunk(
+    _.filter(
+      _.map(storyboard, (s: any) => ({ id: s.id, prompt: s.prompt || s.script || C.EMPTY })),
+      (s) => s.prompt,
+    ),
+    chunkSize,
+  );
+  const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
+  const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
+  const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
+  const rewrittenMap = new Map<string, string>();
+  for (let i = 0; i < chunks.length; i++) {
+    const chunkItem = chunks[i];
+    try {
+      const response = await generateContentWithRetry({ contents: buildPrompt(jsonUtils.safeStringify(chunkItem), ratio, backgroundDirective, textDirective, focusDirective), config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
+      const parsed = safeParseJSON(response.text, []);
+      const expectedIds = _.map(chunkItem, SOURCE_TEXT_ID);
+      const returnedIds = _.map(_.castArray(parsed), SOURCE_TEXT_ID);
+      if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(chunkItem)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds))) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+      for (const item of parsed) {
+        if (!item?.id || _.isEmpty(_.trim(_.toString(item.prompt)))) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+        rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, ratio));
+      }
+    } catch (err) {
+      onChunkError?.(err);
+      throw err;
+    }
+    if (i < chunks.length - 1) await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
+  }
+  return _.map(storyboard, (scene: any) => {
+    if (_.isEmpty(_.trim(_.toString(scene.prompt)))) return scene;
+    const rewritten = rewrittenMap.get(scene.id);
+    if (!rewritten) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
+    return { ...scene, prompt: rewritten };
+  });
+};
 router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
   const isVi = isVietnameseRequest(req);
   try {
@@ -983,46 +1021,15 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
     return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: getBackendMsg(SOURCE_TEXT_GEMINI_NOT_INIT, isVi), retryable: true });
   }
   try {
-    const scenesToRewrite = _.filter(
-      _.map(storyboard, (s: any) => ({ id: s.id, prompt: s.prompt || s.script || C.EMPTY })),
-      (s: any) => s.prompt,
+    if (!_.some(storyboard, (s: any) => s.prompt || s.script)) return res.json({ success: true, storyboard });
+    const updatedStoryboard = await rewriteStoryboardPrompts(
+      storyboard,
+      visualConfig,
+      aspectRatio,
+      PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE,
+      (chunk, ratio, background, text, focus) => getStyleRewriteBatchPrompt(newStyle, chunk, ratio, isVi, background, text, focus),
+      (err) => logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_CHUNK, err),
     );
-    if (_.isEmpty(scenesToRewrite)) {
-      return res.json({ success: true, storyboard });
-    }
-    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE;
-    const chunks = _.chunk(scenesToRewrite, chunkSize);
-    const rewrittenMap = new Map<string, string>();
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkItem = chunks[i];
-      const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
-      const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
-      const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
-      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective);
-      try {
-        const response = await generateContentWithRetry({ contents: prompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
-        const parsed = safeParseJSON(response.text, []);
-        const expectedIds = _.map(chunkItem, SOURCE_TEXT_ID);
-        const returnedIds = _.map(_.castArray(parsed), SOURCE_TEXT_ID);
-        if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(chunkItem)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds))) {
-          throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-        }
-        for (const item of parsed) {
-          if (!item.id || _.isEmpty(_.trim(_.toString(item.prompt)))) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-          rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
-        }
-      } catch (err) {
-        logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_CHUNK, err);
-        throw err;
-      }
-      if (i < chunks.length - 1) await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
-    }
-    const updatedStoryboard = _.map(storyboard, (scene: any) => {
-      if (_.isEmpty(_.trim(_.toString(scene.prompt)))) return scene;
-      const rewritten = rewrittenMap.get(scene.id);
-      if (!rewritten) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-      return { ...scene, prompt: rewritten };
-    });
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
     logger.error(LogEvent.REWRITE_PROMPTS_ERROR, error);
@@ -1649,38 +1656,8 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Re
     return res.json({ storyboard });
   }
   try {
-    const scenesToRewrite = _.filter(
-      _.map(storyboard, (s: any) => ({ id: s.id, prompt: s.prompt || s.script || C.EMPTY })),
-      (s) => s.prompt,
-    );
-    if (_.isEmpty(scenesToRewrite)) {
-      return res.json({ success: true, storyboard });
-    }
-    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE_CHARACTER;
-    const chunks = _.chunk(scenesToRewrite, chunkSize);
-    const rewrittenMap = new Map<string, string>();
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkItem = chunks[i];
-      const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
-      const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
-      const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
-      const prompt = getCharacterRewriteBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, backgroundDirective, textDirective, focusDirective);
-      const response = await generateContentWithRetry({ contents: prompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
-      const parsed = safeParseJSON(response.text, []);
-      const expectedIds = _.map(chunkItem, SOURCE_TEXT_ID);
-      const returnedIds = _.map(_.castArray(parsed), SOURCE_TEXT_ID);
-      if (!_.isArray(parsed) || !_.isEqual(_.size(parsed), _.size(chunkItem)) || !_.isEmpty(_.difference(expectedIds, returnedIds)) || !_.isEmpty(_.difference(returnedIds, expectedIds)) || _.some(parsed, (item) => _.isEmpty(_.trim(_.toString(item?.prompt))))) {
-        throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-      }
-      for (const item of parsed) rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
-      if (i < chunks.length - 1) await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
-    }
-    const updatedStoryboard = _.map(storyboard, (scene: any) => {
-      if (_.isEmpty(_.trim(_.toString(scene.prompt)))) return scene;
-      const rewritten = rewrittenMap.get(scene.id);
-      if (!rewritten) throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-      return { ...scene, prompt: rewritten };
-    });
+    if (!_.some(storyboard, (s: any) => s.prompt || s.script)) return res.json({ success: true, storyboard });
+    const updatedStoryboard = await rewriteStoryboardPrompts(storyboard, visualConfig, aspectRatio, PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE_CHARACTER, (chunk, ratio, background, text, focus) => getCharacterRewriteBatchPrompt(jsonUtils.safeStringify(finalCharacters), chunk, ratio, background, text, focus));
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
     logger.error(LogEvent.REWRITE_PROMPTS_CHARACTER_ERROR, error);

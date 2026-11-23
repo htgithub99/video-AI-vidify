@@ -58,14 +58,11 @@ export const MOTION_KIT_EXTRAS = `(function (K) {
       if (o && o.kind === 'wagonFort') return wagonFort(c, o);
       return prop0.apply(this, arguments);
     };
-    // A horse or other animal seen from the front or the back does not read as an animal in any skin, so animals and
-    // their riders are always drawn side-on; where they stand and how they move stays the scene's own.
     const animal1 = K.animal;
     if (typeof animal1 === 'function') K.animal = function (c, opt) {
       if (busy || !opt || typeof opt !== 'object' || (opt.view !== 'front' && opt.view !== 'back')) return animal1.apply(this, arguments);
       return animal1.call(this, c, Object.assign({}, opt, { view: 'side' }));
     };
-    // The kinds the figure table may hand to the kit: the base kit's own and the items drawn here.
     const knows0 = K.knows;
     const EXTRA = { prop: ['wagonFort'] };
     K.knows = function (fn, kind) { return (EXTRA[fn] || []).indexOf(kind) >= 0 || (typeof knows0 === 'function' && knows0(fn, kind)); };

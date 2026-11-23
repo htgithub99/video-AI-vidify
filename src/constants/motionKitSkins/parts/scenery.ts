@@ -18,7 +18,6 @@ export const SKIN_PART_SCENERY = `(c, o, K) => {
     ln([[0.1 * s, -0.55 * s], [0.25 * s, -0.3 * s], [0.18 * s, -0.08 * s]], 0.5);
     ln([[-0.45 * s, -0.25 * s], [-0.25 * s, -0.4 * s]], 0.45);
   } else if (kind === "stump") {
-    // A cut trunk: straight, slightly flaring sides, roots spreading into the ground, a flat cut face with rings and a crack.
     const wood = night ? "#8a7a5a" : "#d8b88a";
     [[-1, 0.32, 0.78], [1, 0.3, 0.72], [-1, 0.1, 0.42]].forEach(([k, at, out], i) => K.fill(c, S([[k * at, -0.22], [k * (at + 0.18), -0.12], [k * out, 0.02], [k * (at - 0.02), 0.03]]), K.shade(bark, 0.9 + i * 0.05), w * 0.8, { R, hatch: false }));
     K.fill(c, P([[-0.47, 0.02], [-0.4, -0.52], [0.4, -0.52], [0.47, 0.02]]), bark, w, { R, box: [-R, -R, R, 0.1 * R] });
@@ -27,7 +26,6 @@ export const SKIN_PART_SCENERY = `(c, o, K) => {
     [0.27, 0.15, 0.05].forEach((k) => { c.lineWidth = w * 0.35; c.strokeStyle = ol; c.stroke(K.ell(0.02 * R, -0.52 * R, k * R, k * 0.27 * R)); });
     ln([[0.02, -0.52], [0.3, -0.56]], 0.4);
   } else if (kind === "log") {
-    // A felled trunk: a long cylinder (rounded far end, end grain toward the viewer's side), bark grooves along it, a cut branch.
     const wood = night ? "#8a7a5a" : "#d8b88a", p = new Path2D();
     p.moveTo(0.95 * R, -0.42 * R); p.lineTo(-1.0 * R, -0.42 * R); p.ellipse(-1.0 * R, -0.2 * R, 0.12 * R, 0.22 * R, 0, -Math.PI / 2, Math.PI / 2, true); p.lineTo(0.95 * R, 0.02 * R); p.closePath();
     K.fill(c, p, bark, w, { R, box: [-1.2 * R, -0.5 * R, 1.2 * R, 0.1 * R] });

@@ -12,7 +12,6 @@ export const SKIN_PART_VEHICLE2 = `(c, o0, K) => {
   if (LIST.indexOf(kind) < 0 || (o.view && o.view !== "side")) return null;
   const st = K.S(), R = K.num(o.r, 30), t = K.num(o.t, K.num(window.__motionKitTime, 0)), w = K.LW(R) * 0.9, ol = st.ol;
   const f = K.num(o.facing, 1) < 0 ? -1 : 1, moving = o.moving !== false && o.pose !== "stand", night = K.NIGHT();
-  // An aircraft parked (or a rocket on its pad) stands on the ground with a shadow; in the air it has neither.
   const parked = o.pose === "parked" || (kind === "rocket" && o.pose === "launch"), air = ${JSON.stringify(AIR)}.indexOf(kind) >= 0 && !parked, sea = ${JSON.stringify(WATER)}.indexOf(kind) >= 0;
   const spin = moving ? (o.distance != null ? +o.distance / R : t * 6) : 0;
   const S = (pts) => K.smooth(pts.map(([x, y]) => [x * R, y * R]), true);
@@ -28,12 +27,10 @@ export const SKIN_PART_VEHICLE2 = `(c, o0, K) => {
   const rider = (x, y, k, extra) => { if (!o.crew) return; const p = Array.isArray(o.crew) ? o.crew[0] : o.crew; const r2 = R * k; K.person(c, Object.assign({}, typeof p === "object" ? p : {}, extra || {}, { x: x * R, y: y * R + st.hip * r2, r: r2, facing: 1, pose: "ride", arms: "rein", noShadow: true, t })); };
   c.save();
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
-  // A submarine's drawing is far shorter than the real hull: drawn longer.
   c.scale(f * (kind === "submarine" ? 2 : 1), 1);
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
   if (!air && !sea) { K.shadow(c, K.ell(0, 0, (kind === "train" ? 3.1 : /bicycle|motorbike/.test(kind) ? 1.3 : 2.4) * R, 0.2 * R), 0.24, 0.2 * R); }
   if (parked && /jet|airliner/.test(kind)) { [-0.8, 1.0].forEach((x) => { ln([[x, -0.3], [x, -0.12]], 0.7); K.paint(c, K.ell(x * R, -0.1 * R, 0.1 * R, 0.1 * R), "#2e2e32", w * 0.6); }); c.translate(0, -0.06 * R); }
-  // A rocket on its pad stands upright, nose to the sky, its tail on the ground (smoke at the base while it lifts off).
   if (kind === "rocket" && o.pose === "launch") { c.rotate(-Math.PI / 2 * f); c.scale(f, 1); c.translate(2.75 * R, 0.55 * R); }
   if (air) { c.translate(0, Math.sin(t * 1.3 + K.num(o.seed, 0)) * 0.08 * R); c.rotate(-K.num(o.tilt, 0) * Math.PI / 180); }
   if (sea) c.translate(0, Math.sin(t * 1.6) * 0.05 * R);

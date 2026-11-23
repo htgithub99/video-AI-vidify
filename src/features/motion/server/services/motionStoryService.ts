@@ -984,63 +984,15 @@ export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => 
   return [primary, ...rest];
 };
 const motionFallbackChain = (exec: MotionAiExecution): string[] | undefined => (exec.allowFallback === false ? undefined : motionAiRoutes({ ...exec, strictProvider: false }).map((route) => String(route.provider)));
-export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
-  const run = motionAiRunStore.getStore();
-  if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
-  const key = `${RT_MAINTENANCE.CONTENT}${AIR.MODEL_KEY(String(exec.provider), exec.model)}`;
+const prepareMotionRooms = async (exec: MotionAiExecution, key: string, workerIds: string[], signal: AbortSignal | undefined, onStart: () => void, onDone: (results: PromiseSettledResult<void>[]) => void): Promise<void> => {
+  const run = motionAiRunStore.getStore()!;
   const linked = AbortSignal.any(_.compact([signal, run.signal]));
   if (!run.scenePreparations.has(key)) {
     const preparation = (async () => {
       const releaseSession = await motionBrowserLifecycle.acquireSession(linked, exec.renderRecovery === true);
       releaseMotionBrowser ||= retainGlobalBrowser();
       try {
-        log?.(`${RT_MAINTENANCE.DANG_MO}${motionContentWorkerIds(exec).length}${RT_MAINTENANCE.ROOM_AI_NOI_DUNG}`);
-        const results = await Promise.allSettled(
-          motionContentWorkerIds(exec).map(async (workerId) => {
-            linked.throwIfAborted();
-            const release = await acquireMotionAiRoom(run, workerId, exec.provider as AiPlanningFallbackProvider, linked);
-            const readySignal = AbortSignal.any([linked, AbortSignal.timeout(AIR.READINESS_TIMEOUT_MS)]);
-            try {
-              readySignal.throwIfAborted();
-              await prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true, fallbackChain: motionFallbackChain(exec) });
-              readySignal.throwIfAborted();
-            } catch (error) {
-              await closeMotionAiRoom(run, workerId);
-              throw error;
-            } finally {
-              release();
-            }
-          }),
-        );
-        linked.throwIfAborted();
-        log?.(`${RT_MAINTENANCE.DA_SAN_SANG}${results.filter((result) => result.status !== RT_SERVER.REJECTED).length}${RT_MAINTENANCE.SLASH}${results.length}${RT_MAINTENANCE.ROOM_AI_NOI_DUNG}`);
-      } finally {
-        releaseSession();
-      }
-    })().catch((error) => {
-      run.scenePreparations.delete(key);
-      throw error;
-    });
-    run.scenePreparations.set(key, preparation);
-    run.pending.add(preparation);
-    const settled = () => run.pending.delete(preparation);
-    void preparation.then(settled, settled);
-  }
-  await waitForMotionBrowser(run.scenePreparations.get(key)!, linked);
-};
-export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
-  const run = motionAiRunStore.getStore();
-  if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
-  const workerIds = motionSceneWorkerIds(exec);
-  const key = `${AIR.MODEL_KEY(String(exec.provider), exec.model)}:${workerIds.length}`;
-  const linked = AbortSignal.any(_.compact([signal, run.signal]));
-  if (!run.scenePreparations.has(key)) {
-    const sceneLog = (line: string) => log?.(line && !/^\s*\[[^\]]+\]/u.test(line) ? `${RT_MAINTENANCE.OPEN_BRACKET}${MOTION_PRODUCTION.STAGES.SCENES}${RT_MAINTENANCE.CLOSE_BRACKET_SPACE}${line}` : line);
-    const preparation = (async () => {
-      const releaseSession = await motionBrowserLifecycle.acquireSession(linked, exec.renderRecovery === true);
-      releaseMotionBrowser ||= retainGlobalBrowser();
-      try {
-        sceneLog(MOTION_STORY_CONFIG.SCENE_ROOMS_PREPARING_COUNT(workerIds.length));
+        onStart();
         const results = await Promise.allSettled(
           workerIds.map(async (workerId) => {
             linked.throwIfAborted();
@@ -1059,10 +1011,7 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
           }),
         );
         linked.throwIfAborted();
-        results.forEach((result, index) => {
-          if (result.status === RT_SERVER.REJECTED) sceneLog(MOTION_STORY_CONFIG.SCENE_ROOM_PENDING(index + 1));
-        });
-        sceneLog(MOTION_STORY_CONFIG.SCENE_ROOMS_READY(results.filter((result) => result.status !== RT_SERVER.REJECTED).length, results.length));
+        onDone(results);
       } finally {
         releaseSession();
       }
@@ -1076,6 +1025,39 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
     void preparation.then(settled, settled);
   }
   await waitForMotionBrowser(run.scenePreparations.get(key)!, linked);
+};
+const readyRooms = (results: PromiseSettledResult<void>[]): number => results.filter((result) => result.status !== RT_SERVER.REJECTED).length;
+export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
+  const run = motionAiRunStore.getStore();
+  if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
+  const workerIds = motionContentWorkerIds(exec);
+  await prepareMotionRooms(
+    exec,
+    `${RT_MAINTENANCE.CONTENT}${AIR.MODEL_KEY(String(exec.provider), exec.model)}`,
+    workerIds,
+    signal,
+    () => log?.(`${RT_MAINTENANCE.DANG_MO}${workerIds.length}${RT_MAINTENANCE.ROOM_AI_NOI_DUNG}`),
+    (results) => log?.(`${RT_MAINTENANCE.DA_SAN_SANG}${readyRooms(results)}${RT_MAINTENANCE.SLASH}${results.length}${RT_MAINTENANCE.ROOM_AI_NOI_DUNG}`),
+  );
+};
+export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
+  const run = motionAiRunStore.getStore();
+  if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
+  const workerIds = motionSceneWorkerIds(exec);
+  const sceneLog = (line: string) => log?.(line && !/^\s*\[[^\]]+\]/u.test(line) ? `${RT_MAINTENANCE.OPEN_BRACKET}${MOTION_PRODUCTION.STAGES.SCENES}${RT_MAINTENANCE.CLOSE_BRACKET_SPACE}${line}` : line);
+  await prepareMotionRooms(
+    exec,
+    `${AIR.MODEL_KEY(String(exec.provider), exec.model)}:${workerIds.length}`,
+    workerIds,
+    signal,
+    () => sceneLog(MOTION_STORY_CONFIG.SCENE_ROOMS_PREPARING_COUNT(workerIds.length)),
+    (results) => {
+      results.forEach((result, index) => {
+        if (result.status === RT_SERVER.REJECTED) sceneLog(MOTION_STORY_CONFIG.SCENE_ROOM_PENDING(index + 1));
+      });
+      sceneLog(MOTION_STORY_CONFIG.SCENE_ROOMS_READY(readyRooms(results), results.length));
+    },
+  );
 };
 export const runMotionAi = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0, contract?: MotionAiResponseContract): Promise<any> => {
   const run = motionAiRunStore.getStore();

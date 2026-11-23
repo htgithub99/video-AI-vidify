@@ -1,5 +1,6 @@
 import { REUP_CSS_FONTS, REUP_TEXT, REUP_THUMBS, reupFontScript } from "../constants/reupConfig.js";
 import type { ReupThumbIdea, ReupThumbSpot } from "../types/reup.js";
+import { reupThumbCaption } from "./reupThumbPlan.js";
 const REUP_THUMB = {
   W: 1280,
   H: 720,
@@ -195,7 +196,7 @@ const busyMap = (ctx: CanvasRenderingContext2D): ((r: Box) => number) => {
   };
 };
 const pickSpot = (ctx: CanvasRenderingContext2D, idea: ReupThumbIdea, prefer: readonly string[], rectOf: (spot: ReupThumbSpot) => Box): ReupThumbSpot => {
-  const allowed = (idea.layout === "ai" && idea.kind === "split" ? REUP_THUMBS.SPLIT_SPOTS : REUP_THUMBS.SPOTS[idea.layout]) as readonly ReupThumbSpot[];
+  const allowed = (idea.layout === "ai" ? REUP_THUMBS.CAPTION_SPOTS[reupThumbCaption(idea.kind)] : REUP_THUMBS.SPOTS[idea.layout]) as readonly ReupThumbSpot[];
   if (idea.pin && idea.spot) return idea.spot;
   const busy = busyMap(ctx);
   const subject = idea.focus === undefined ? undefined : idea.focus * REUP_THUMB.W;
@@ -226,7 +227,7 @@ const drawTag = (ctx: CanvasRenderingContext2D, css: string, text: string, [x, y
   ctx.textBaseline = "middle";
   ctx.fillText(text, x + w / 2, y + h / 2 + size * 0.04, w - pad);
 };
-const rewrap = (ctx: CanvasRenderingContext2D, css: string, lines: string[], width: number): { lines: string[]; size: number } => {
+const rewrap = (ctx: CanvasRenderingContext2D, css: string, lines: string[], width: number, most: number): { lines: string[]; size: number } => {
   const words = lines.join(" ").split(/\s+/).filter(Boolean);
   const wrap = (size: number): string[] => {
     ctx.font = fontOf(css, size);
@@ -238,9 +239,29 @@ const rewrap = (ctx: CanvasRenderingContext2D, css: string, lines: string[], wid
     }
     return out;
   };
+  const balance = (count: number): string[] => {
+    let best: string[] = [];
+    let widest = Infinity;
+    const walk = (from: number, left: number, acc: string[]): void => {
+      if (left === 1) {
+        const lines = [...acc, words.slice(from).join(" ")];
+        const w = Math.max(...lines.map((l) => ctx.measureText(l).width));
+        if (w < widest) ((widest = w), (best = lines));
+        return;
+      }
+      for (let cut = from + 1; cut <= words.length - left + 1; cut++) walk(cut, left - 1, [...acc, words.slice(from, cut).join(" ")]);
+    };
+    walk(0, count, []);
+    return best;
+  };
+  for (let size = REUP_THUMBS.AI.TEXT_MIN; size >= REUP_THUMBS.AI.KEEP_MIN; size -= 4) {
+    ctx.font = fontOf(css, size);
+    if (lines.length <= most && lines.every((l) => ctx.measureText(l).width <= width)) return { lines, size };
+  }
   for (let size = REUP_THUMBS.AI.TEXT_MIN; size >= REUP_THUMB.MIN_SIZE; size -= 4) {
-    const out = wrap(size);
-    if (out.length <= REUP_THUMBS.AI.LINES && out.every((l) => ctx.measureText(l).width <= width)) return { lines: out, size };
+    const greedy = wrap(size);
+    const out = greedy.length > 1 && greedy.length <= words.length ? balance(greedy.length) : greedy;
+    if (out.length <= most && out.every((l) => ctx.measureText(l).width <= width)) return { lines: out, size };
   }
   return { lines: wrap(REUP_THUMB.MIN_SIZE), size: REUP_THUMB.MIN_SIZE };
 };
@@ -304,10 +325,13 @@ export const drawReupThumbnail = async (idea: ReupThumbIdea, frames: string[], l
   let width = W - REUP_THUMB.PAD * 2;
   let least: number = REUP_THUMBS.AI.TEXT_MIN;
   if (idea.layout === "ai") {
-    if (idea.kind !== "split" && lines.length) {
-      textBox = [0, 0, Math.round(W * REUP_THUMBS.AI.COLUMN), H];
+    const mode = reupThumbCaption(idea.kind);
+    if (mode !== "none" && lines.length) {
+      const corner = Math.round(W * REUP_THUMBS.AI.CORNER),
+        band = Math.round(H * REUP_THUMBS.AI.BAND);
+      textBox = mode === "topleft" ? [0, 0, corner, band] : mode === "topright" ? [W - corner, 0, corner, band] : mode === "top" ? [0, 0, W, band] : [0, H - band, W, band];
       width = textBox[2] - REUP_THUMB.PAD * 2;
-      const wrapped = rewrap(ctx, css, lines, width);
+      const wrapped = rewrap(ctx, css, lines, width, REUP_THUMBS.AI.BAND_LINES);
       lines = wrapped.lines;
       least = wrapped.size;
     }

@@ -60,7 +60,7 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
               </MotionStatCard>
             ) : (
               <MotionStatCard icon={Monitor} iconClassName={S.STAT_ICON_B} label={text.STAT_SIZE}>
-                {source.width}×{source.height} · {Math.round(source.fps)}
+                {text.STAT_SIZE_VALUE(source.width, source.height, Math.round(source.fps))}
               </MotionStatCard>
             )}
             <MotionStatCard icon={Volume2} iconClassName={S.STAT_ICON_C} label={text.STAT_AUDIO}>

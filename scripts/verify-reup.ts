@@ -26,7 +26,7 @@ import { reupHighlightAss, reupHighlightCount, reupPickHighlights, reupPopAss } 
 import { reupNextLook, reupThumbSlots, reupThumbSpots } from "../src/features/reup/lib/reupThumbPlan.js";
 import { reupWatermarkCorner, reupWatermarkCrop } from "../src/features/reup/lib/reupWatermark.js";
 import { THUMB_CONCEPTS, THUMB_CONCEPT_BRIEF, THUMB_CONCEPT_TEXT } from "../src/constants/thumbConcepts.js";
-import { MOTION_THUMBNAIL, motionThumbConcept } from "../src/constants/motionThumbnail.js";
+import { MOTION_THUMBNAIL, motionThumbConcept, motionThumbHeadline } from "../src/constants/motionThumbnail.js";
 import { reupLift, reupLogoFilter, reupStingBeds, titleFit } from "../src/features/reup/server/services/reupBuildService.js";
 import { pickHighlightAnchor, highlightColumn } from "../src/lib/highlightAnchor.js";
 import _ from "lodash";
@@ -475,19 +475,19 @@ check("thumbnails: two classic frame thumbnails with text, one channel-signature
     assert.ok(all[0].kind === "signature" && all.filter((s) => s.ai).length === 3 && all.filter((s) => !s.kind).length === 2, `every type: one signature and two concept AI pictures plus two classic ones (${preset})`);
   }
   assert.notEqual(reupNextLook("right:door", []), "right:door");
-  const spots = reupThumbSpots([{ layout: "hero", lines: 2 }, { layout: "ai", lines: 0 }, { layout: "badge", lines: 1 }, { layout: "ai", lines: 2 }, { layout: "collage", lines: 2 }], [0.2, undefined, 0.8, undefined, 0.5], [], "job-1");
+  const spots = reupThumbSpots([{ layout: "hero", lines: 2 }, { layout: "ai", lines: 0 }, { layout: "badge", lines: 1 }, { layout: "ai", lines: 2, kind: "action" }, { layout: "collage", lines: 2 }], [0.2, undefined, 0.8, undefined, 0.5], [], "job-1");
   assert.equal(spots[1], undefined);
   assert.ok(spots[0] && spots[0][1] !== "l" && spots[2] && spots[2][1] !== "r", `text stays off the subject: ${spots}`);
   const used = _.compact([spots[0], spots[2], spots[4]]);
   assert.equal(new Set(used).size, used.length, "no two classic text thumbnails share a spot");
-  assert.ok(spots[3] === "tl" || spots[3] === "bl", "AI concept text sits in the calm left column");
+  assert.equal(spots[3], "tr", "mid-action text sits in the calm top-right corner");
   assert.ok(!used.includes("br" as never), "the duration badge corner stays clear");
   const again = reupThumbSpots([{ layout: "hero", lines: 2 }], [undefined], ["tl", "tc", "tr", "bl"], "x");
   assert.equal(again[0], "bc", "the spot the last videos did not use comes first");
   const sig = REUP_PROMPT.THUMB_IMAGE("signature", "A bearded man in a grey sweater with a black and white dog beside a small log cabin in light snow, daytime.", "left:tool");
-  assert.ok(/full-body on the left third/.test(sig) && /60-75% of the frame height/.test(sig) && /holding the main item/.test(sig) && /no lightning, storm or rain unless named/.test(sig) && /No text, letters/.test(sig) && /SAME person \(face, hair, beard, clothes\)/.test(sig) && /BRIGHT and vivid/.test(sig) && !/STYLE reference/.test(sig), sig);
-  assert.ok(/LAST attached picture is a STYLE reference only/.test(REUP_PROMPT.THUMB_IMAGE("trophy", "x", undefined, true)) && /LEFT 42% is calm/.test(REUP_PROMPT.THUMB_IMAGE("trophy", "x")) && /top 22% of both halves/.test(REUP_PROMPT.THUMB_IMAGE("split", "x")), "a style reference is used for look only; concepts keep the bottom free for text");
-  assert.ok(["trophy", "split", "action", "curiosity", "mood"].every((k) => /BOTH the person of the video/.test(REUP_PROMPT.THUMB_IMAGE(k, "x")) && /face fully in frame|faces lit warm orange and clearly visible/.test(REUP_PROMPT.THUMB_IMAGE(k, "x"))), "every AI picture shows the person's face with the video's highlight");
+  assert.ok(/on the left third right against it, seen from the knees up/.test(sig) && /60-70% of the frame/.test(sig) && /holding the main item/.test(sig) && /never flat midday sun/.test(sig) && /teal/.test(sig) && /vehicle or a product/.test(sig) && /no lightning, storm or rain unless named/.test(sig) && /No text, letters/.test(sig) && /SAME person \(face, hair, beard, clothes\)/.test(sig) && /vivid look of top camping channels/.test(sig) && !/STYLE reference/.test(sig), sig);
+  assert.ok(/LAST attached picture is a STYLE reference only/.test(REUP_PROMPT.THUMB_IMAGE("trophy", "x", undefined, true)) && /top-left area/.test(REUP_PROMPT.THUMB_IMAGE("trophy", "x")) && /f\/1\.8/.test(REUP_PROMPT.THUMB_IMAGE("trophy", "x")) && !/f\/1\.8/.test(sig) && /top-right area/.test(REUP_PROMPT.THUMB_IMAGE("action", "x")) && /top-left area/.test(REUP_PROMPT.THUMB_IMAGE("curiosity", "x")) && /bottom 26%/.test(REUP_PROMPT.THUMB_IMAGE("mood", "x")) && /top 26%/.test(REUP_PROMPT.THUMB_IMAGE("split", "x")) && !/Caption space/.test(REUP_PROMPT.THUMB_IMAGE("signature", "x")), "a style reference is used for look only; each concept has its own layout and caption space");
+  assert.ok(["trophy", "split", "action", "curiosity", "mood"].every((k) => /BOTH the person of the video/.test(REUP_PROMPT.THUMB_IMAGE(k, "x")) && /INTERACTS with that highlight/.test(REUP_PROMPT.THUMB_IMAGE(k, "x"))), "every AI picture shows the person's face with the video's highlight");
   const styled = cleanReupSettings({ thumbStyles: ["/assets/reup/style/" + "a".repeat(40) + ".jpg", "/assets/reup/x/../style/b.jpg", "http://evil/x.jpg", 3] }, "A");
   assert.deepEqual(styled.thumbStyles, ["/assets/reup/style/" + "a".repeat(40) + ".jpg"], "only uploaded style references are kept");
   assert.ok(/MID-ACTION/.test(REUP_PROMPT.PACKAGE({ map: { summary: "", hook: [], ending: "", thumbnails: [], segments: [] }, script: "", settings: reupJobSettings("A", cleanReupSettings({}, "A")), frames: [1], options: 1, thumbs: concepts.map((c) => ({ ...c, frames: 1 })), pastTitles: [], shown: [] })), "the package prompt explains each concept");
@@ -495,6 +495,11 @@ check("thumbnails: two classic frame thumbnails with text, one channel-signature
   assert.equal(motionThumbConcept("verdict"), "curiosity");
   assert.equal(motionThumbConcept("verdict", ["curiosity"]), "split", "each SEO option gets a different concept");
   assert.equal(motionThumbConcept("verdict", [], "curiosity"), "split", "a refresh moves to another concept");
+  const head = { lines: ["VÀNG", "CỦA AI?"], x: 0, y: 0, size: 300 };
+  assert.deepEqual(_.pick(motionThumbHeadline(head, "trophy", [1280, 720]), ["x", "y", "size", "align"]), { x: 51, y: 180, size: 144, align: "left" }, "motion trophy text top-left");
+  assert.deepEqual(_.pick(motionThumbHeadline(head, "action", [1280, 720]), ["x", "align"]), { x: 1229, align: "right" }, "motion action text top-right");
+  assert.equal(motionThumbHeadline({ ...head, size: 10 }, "mood", [1280, 720]).y, Math.round(720 * 0.95 - 86 * 1.08), "motion mood text at the bottom");
+  assert.ok(/INTERACTS with the story/.test(MOTION_THUMBNAIL.LAYOUT("trophy")) && /top-left area/.test(MOTION_THUMBNAIL.LAYOUT("trophy")) && /presenting the key prize/.test(MOTION_THUMBNAIL.LAYOUT("trophy")));
   assert.ok(/CONCEPT \(chosen by the app/.test(MOTION_THUMBNAIL.LAYOUT("split")) && /2-4 punchy words/.test(MOTION_THUMBNAIL.LAYOUT("split")) && !/\(a\) CLOSE-UP/.test(MOTION_THUMBNAIL.LAYOUT("split")));
 });
 check("fixed corner text in the source is found and cropped off thumbnail frames", () => {

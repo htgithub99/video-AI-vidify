@@ -16,7 +16,7 @@ import { reupStripToolNotes } from "../../lib/reupSeo.js";
 import { reupIssueScore, reupNarrationShare, reupNeedsRevision, reupPastText, reupScriptReview, reupUnits, reupWordBudget, type ReupScriptIssues } from "../../lib/reupScriptReview.js";
 import { cleanScenePart, mergeSceneParts, reupMoments, reupSheetBatches, reupSheetSpan, reupUploadLimit, type ReupScenePart } from "../../lib/reupSceneMap.js";
 import type { MotionSeoOption } from "../../../../types/motionVideo.js";
-import type { ReupAiChoice, ReupCue, ReupMark, ReupValueBeat, ReupFrame, ReupJob, ReupMoment, ReupOutputScript, ReupPackage, ReupSceneMap, ReupScript, ReupSection, ReupSectionRole, ReupSegment, ReupSheet, ReupShot, ReupThumbIdea, ReupBadRange, ReupDimRange } from "../../types/reup.js";
+import type { ReupAiChoice, ReupCue, ReupMark, ReupValueBeat, ReupFrame, ReupJob, ReupMoment, ReupOutputScript, ReupPackage, ReupSceneMap, ReupScript, ReupSection, ReupSectionRole, ReupSegment, ReupSheet, ReupShot, ReupThumbIdea, ReupBadRange, ReupDimRange, ReupThumbAi, ReupThumbKind, ReupThumbLayout } from "../../types/reup.js";
 import { learnReupUploadLimit, readReupUploadLimits } from "./reupJobStore.js";
 import { cropReupSheet } from "./reupMediaService.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
@@ -322,6 +322,7 @@ export const reupCandidateTimes = (map: ReupSceneMap, limit: number, opts: { dim
   for (const x of _.orderBy(spots, ["score"], ["desc"])) if (out.length < limit && out.every((o) => Math.abs(o - x.t) > C.APART)) out.push(x.t);
   return out;
 };
+const norm = (text: string): string => text.toLowerCase().normalize("NFC");
 const clip = (value: unknown, length: number): string => _.truncate(_.trim(String(value ?? "")), { length });
 export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file: string })[], past: ReupThumbPast & { titles: string[]; spots: string[] }, log: Log, signal?: AbortSignal): Promise<ReupPackage> => {
   const s = job.settings;
@@ -390,27 +391,47 @@ export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file
   const segments = job.sceneMap?.segments || [];
   const focusAt = (t: number): number | undefined => segments.find((g) => t >= g.start && t < g.end)?.focusX;
   const rawThumbs = _.castArray(raw?.thumbs || []);
+  const C = REUP_THUMBS.CANDIDATE;
+  const frameText = (t: number): string => {
+    const g = segments.find((x) => t >= x.start - C.LEAD && t < x.end);
+    return norm([g?.what || "", ...(g?.moments || []).filter((m) => Math.abs(m.t + C.LEAD - t) <= C.APART).map((m) => m.what)].join(" "));
+  };
+  const needs = (lines: string[]): string[] => _.uniq([...norm(lines.join(" ")).matchAll(new RegExp(C.TAG.source, "giu"))].map((m) => m[1]));
+  const shows = (t: number, words: string[]): boolean => {
+    const text = frameText(t);
+    return words.every((w) => (C.TAG_ALIASES[w] || [w]).some((a) => new RegExp(`(?<!\\p{L})${a}(?!\\p{L})`, "iu").test(text)));
+  };
   const taken: number[] = [];
-  const drafts = asks.map((ask, i) => {
+  const order = _.sortBy(
+    asks.map((_a, i) => i),
+    (i) => (asks[i].ai ? 1 : 0),
+  );
+  const drafts: { layout: ReupThumbLayout; kind?: ReupThumbKind; ai?: ReupThumbAi; frames: number[]; lines: string[] }[] = [];
+  for (const i of order) {
+    const ask = asks[i];
     const t = rawThumbs[i] || {};
     const picked = _.uniq(_.compact(_.castArray(t.frames || []).map(nearest)) as number[]);
     const refs = _.uniq(_.compact(_.castArray(t.refs || t.frames || []).map(nearest)) as number[]).slice(0, REUP_THUMBS.AI.REFS);
-    const spare = frames.map((f) => f.time).filter((x) => !picked.includes(x));
-    const fresh = [...picked, ...spare].filter((x) => !taken.includes(x));
-    const chosen = _.uniq([...fresh, ...picked, ...spare]).slice(0, ask.frames);
-    taken.push(...chosen);
     const lines = _.castArray(t.lines || [])
       .map((l: unknown) => clip(l, ask.lines > 1 ? 24 : 14))
       .filter(Boolean)
       .slice(0, ask.lines);
+    const all = frames.map((f) => f.time);
+    const words = ask.ai ? [] : needs(lines);
+    const free = (x: number) => !taken.includes(x);
+    let lead = ask.ai ? [...refs, ...all].find(free) : (picked[0] ?? all.find(free));
+    if (lead !== undefined && words.length && !shows(lead, words)) lead = [...all.filter(free), ...all].find((x) => shows(x, words)) ?? lead;
+    const rest = [...picked, ...all].filter((x) => x !== lead && free(x));
+    const chosen = _.uniq(_.compact([lead, ...rest])).slice(0, ask.frames);
+    taken.push(...chosen);
     const scene = clip(t.scene, 600);
     const stray = scene ? reupStrayWords(scene, evidence) : [];
     const ai = ask.ai && scene && !stray.length ? { scene, refs: refs.length ? refs : chosen, ...(ask.look ? { look: ask.look } : {}) } : undefined;
     const layout = ask.ai && !ai ? reupThumbFallback(ask.kind!) : ask.layout;
     const want = reupThumbLines(layout, ask.kind);
     const short = ai && ask.kind !== "signature" && lines.join(" ").split(/\s+/).length > REUP_THUMBS.AI.WORDS ? lines.slice(0, 1) : lines;
-    return { layout, ...(ask.kind ? { kind: ask.kind } : {}), ...(ai ? { ai } : {}), frames: chosen.length ? chosen : [frames[i % frames.length].time], lines: want && !short.length && options[0] ? [clip(options[0].title, 24)] : short.slice(0, want) };
-  });
+    drafts[i] = { layout, ...(ask.kind ? { kind: ask.kind } : {}), ...(ai ? { ai } : {}), frames: chosen.length ? chosen : [frames[i % frames.length].time], lines: want && !short.length && options[0] ? [clip(options[0].title, 24)] : short.slice(0, want) };
+  }
   const spots = reupThumbSpots(
     drafts.map((d) => ({ layout: d.layout, lines: d.lines.length, kind: d.kind })),
     drafts.map((d) => focusAt(d.frames[0])),

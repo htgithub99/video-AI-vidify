@@ -251,16 +251,19 @@ const selectZipDestination = async (name: string): Promise<string | null> => {
   if (!destinationResponse.ok || !destination.success) throw new Error(destination.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
   return destination.cancelled ? null : destination.token;
 };
-const createSeo = (folder: ResultFolder) => {
-  const title = SOURCE_TEMPLATE_SYMBOL_20(SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.DEFAULT_SEO_TITLE_SUFFIX}`));
+const trackTimeline = (folder: ResultFolder): string[] => {
   let elapsed = 0;
-  const tracks = _.map(folder.tracks, (track) => {
+  return _.map(folder.tracks, (track) => {
     const minutes = Math.floor(elapsed / 60);
     const seconds = Math.floor(elapsed % 60);
     const stamp = SOURCE_TEMPLATE_SYMBOL_8(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(seconds), 2, SOURCE_TEXT_0)}`));
     elapsed += track.durationSeconds || 0;
     return SOURCE_TEMPLATE_SYMBOL_126(`${stamp}`, `${cleanTrackTitle(getTrackFileName(track))}`);
   });
+};
+const createSeo = (folder: ResultFolder) => {
+  const title = SOURCE_TEMPLATE_SYMBOL_20(SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.DEFAULT_SEO_TITLE_SUFFIX}`));
+  const tracks = trackTimeline(folder);
   return {
     title,
     description: SOURCE_TEMPLATE_TRACKS(SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.DEFAULT_SEO_DESCRIPTION_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${folder.tracks.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.DEFAULT_SEO_DESCRIPTION_SUFFIX}`)),
@@ -289,14 +292,7 @@ const formatList = (val: unknown, sep: string = SOURCE_TEXT_SYMBOL_10): string =
 };
 const formatSeoText = (folder: ResultFolder) => {
   const orderedTracks = _.map(folder.tracks, (track) => cleanTrackTitle(getTrackFileName(track)));
-  let elapsed = 0;
-  const timeline = _.map(folder.tracks, (track) => {
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = Math.floor(elapsed % 60);
-    const stamp = SOURCE_TEMPLATE_SYMBOL_8(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(seconds), 2, SOURCE_TEXT_0)}`));
-    elapsed += track.durationSeconds || 0;
-    return SOURCE_TEMPLATE_SYMBOL_126(`${stamp}`, `${cleanTrackTitle(getTrackFileName(track))}`);
-  });
+  const timeline = trackTimeline(folder);
   const options = !_.isEmpty(folder.seoOptions) ? folder.seoOptions : [{ title: folder.seo?.title || "", description: folder.seo?.description || "", hashtags: [], tags: [], seoScore: SOURCE_TEXT_AI }];
   return SOURCE_TEMPLATE_SYMBOL_149(
     `${MUSIC_MIXER_SERVER.SEO_FILE_HEADER}`,

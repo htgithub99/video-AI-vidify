@@ -37,6 +37,27 @@ import { MUSIC_MIXER_UPLOAD_POLICY } from "../../../../constants/musicMixer.js";
 type Attachment = { name: string; path?: string };
 type UploadState = { labels: string[]; busy: boolean; error: string; progress: string };
 type WaitPolicy = { maxWaitMs?: number; stallTimeoutMs?: number; pollMs?: number };
+const UPLOAD_TEXTS = {
+  SOURCE_TEXT_INPUT_AREA_INPUT_AREA_FORM_DATA_TESTID,
+  SOURCE_TEXT_HIDDEN,
+  SOURCE_TEXT_ARIA_DESCRIBEDBY,
+  SOURCE_TEXT_ARIA_DESCRIBEDBY_2,
+  SOURCE_TEXT_TITLE_ARIA_LABEL,
+  SOURCE_TEXT_TITLE,
+  SOURCE_TEXT_ARIA_LABEL,
+  SOURCE_TEXT_SYMBOL_52,
+  SOURCE_TEXT_INPUT_COMPANION_CHIP_UPLOADER_FILE_PREVIEW_GEM,
+  SOURCE_TEXT_BUTTON_ARIA_LABEL_REMOVE_FILE_I_BUTTON,
+  SOURCE_TEXT_ASYNC_PROCESSING_CHIP_ROLE_PROGRESSBAR_PROGRESS_MAT,
+  SOURCE_TEXT_ROLE_STATUS_UPLOAD_STATUS_PROCESSING_STATUS,
+  SOURCE_TEXT_ROLE_PROGRESSBAR_ARIA_VALUENOW_PROGRESS_VALUE,
+  SOURCE_TEXT_ARIA_VALUENOW,
+  SOURCE_TEXT_VALUE,
+  SOURCE_TEXT_SYMBOL_53,
+  SOURCE_TEXT_UPLOAD_ERROR_DATA_STATE_ERROR_DATA_STATUS,
+  SOURCE_TEXT_ROLE_ALERT,
+  SOURCE_TEXT_LOI_TAI_TEP,
+};
 const readMusicMixerUploadState = (input: Locator): Promise<UploadState> =>
   input.evaluate(
     (element, sharedBrowserPayload) => {
@@ -95,29 +116,7 @@ const readMusicMixerUploadState = (input: Locator): Promise<UploadState> =>
       const error = explicitError ? helpers.label(explicitError) || SOURCE_TEXT_LOI_TAI_TEP : [...labels, ...alerts].find((text) => failure.test(text)) || "";
       return { labels, busy, error, progress };
     },
-    {
-      texts: {
-        SOURCE_TEXT_INPUT_AREA_INPUT_AREA_FORM_DATA_TESTID,
-        SOURCE_TEXT_HIDDEN,
-        SOURCE_TEXT_ARIA_DESCRIBEDBY,
-        SOURCE_TEXT_ARIA_DESCRIBEDBY_2,
-        SOURCE_TEXT_TITLE_ARIA_LABEL,
-        SOURCE_TEXT_TITLE,
-        SOURCE_TEXT_ARIA_LABEL,
-        SOURCE_TEXT_SYMBOL_52,
-        SOURCE_TEXT_INPUT_COMPANION_CHIP_UPLOADER_FILE_PREVIEW_GEM,
-        SOURCE_TEXT_BUTTON_ARIA_LABEL_REMOVE_FILE_I_BUTTON,
-        SOURCE_TEXT_ASYNC_PROCESSING_CHIP_ROLE_PROGRESSBAR_PROGRESS_MAT,
-        SOURCE_TEXT_ROLE_STATUS_UPLOAD_STATUS_PROCESSING_STATUS,
-        SOURCE_TEXT_ROLE_PROGRESSBAR_ARIA_VALUENOW_PROGRESS_VALUE,
-        SOURCE_TEXT_ARIA_VALUENOW,
-        SOURCE_TEXT_VALUE,
-        SOURCE_TEXT_SYMBOL_53,
-        SOURCE_TEXT_UPLOAD_ERROR_DATA_STATE_ERROR_DATA_STATUS,
-        SOURCE_TEXT_ROLE_ALERT,
-        SOURCE_TEXT_LOI_TAI_TEP,
-      },
-    },
+    { texts: UPLOAD_TEXTS },
   );
 export const waitForMusicMixerUploads = async (input: Locator, attachments: Attachment[], timeoutMs: number, signal?: AbortSignal, stableMs = 1000, policy: WaitPolicy = {}): Promise<void> => {
   const normalize = (value: string) => value.normalize(SOURCE_TEXT_NFC).toLowerCase().replace(/\s+/g, SOURCE_TEXT_SYMBOL_52);

@@ -260,6 +260,14 @@ export default function App() {
       }
     }
   }, [activeTab, selectedProjectId, projects]);
+  const openWorkspaceProject = (project: (typeof projectsRef.current)[number] | undefined, id: string) => {
+    const childProjects = _.filter(projectsRef.current, (candidate) => _.isEqual(candidate.parentId, id));
+    const defaultChild = _.find(childProjects, (candidate) => _.isEqual(getWorkspaceProjectKind(candidate), ProjectKind.Auto)) || _.find(childProjects, (candidate) => _.isEqual(getWorkspaceProjectKind(candidate), ProjectKind.Cinematic));
+    const targetProject = _.isEqual(getWorkspaceProjectKind(project), ProjectKind.Container) ? defaultChild : project;
+    const targetKind = getWorkspaceProjectKind(targetProject);
+    setSelectedProjectId(targetProject?.id || id);
+    setActiveTab(_.isEqual(targetKind, ProjectKind.Cinematic) ? AppTab.CINEMATIC_FILM : _.isEqual(targetKind, ProjectKind.Auto) ? AppTab.AUTO_GENERATOR : AppTab.PROJECTS);
+  };
   const handleSelectProject = useCallback(async (id: string | null) => {
     if (!id) {
       setSelectedProjectId(null);
@@ -278,36 +286,12 @@ export default function App() {
           setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
           projectsRef.current = _.map(projectsRef.current, (p) => (_.isEqual(p.id, id) ? detailData : p));
         }
-        const resolvedKind = getWorkspaceProjectKind(resolvedProject);
-        const childProjects = _.filter(projectsRef.current, (candidate) => _.isEqual(candidate.parentId, id));
-        const defaultChild = _.find(childProjects, (candidate) => _.isEqual(getWorkspaceProjectKind(candidate), ProjectKind.Auto)) || _.find(childProjects, (candidate) => _.isEqual(getWorkspaceProjectKind(candidate), ProjectKind.Cinematic));
-        const targetProject = _.isEqual(resolvedKind, ProjectKind.Container) ? defaultChild : resolvedProject;
-        const targetId = targetProject?.id || id;
-        setSelectedProjectId(targetId);
-        if (_.isEqual(getWorkspaceProjectKind(targetProject), ProjectKind.Cinematic)) {
-          setActiveTab(AppTab.CINEMATIC_FILM);
-        } else if (_.isEqual(getWorkspaceProjectKind(targetProject), ProjectKind.Auto)) {
-          setActiveTab(AppTab.AUTO_GENERATOR);
-        } else {
-          setActiveTab(AppTab.PROJECTS);
-        }
+        openWorkspaceProject(resolvedProject, id);
       } catch (err) {
         appError(ERROR_MESSAGES.FETCHING_PROJECTS, err);
       }
     } else {
-      const projectKind = getWorkspaceProjectKind(project);
-      const childProjects = _.filter(projectsRef.current, (candidate) => _.isEqual(candidate.parentId, id));
-      const defaultChild = _.find(childProjects, (candidate) => _.isEqual(getWorkspaceProjectKind(candidate), ProjectKind.Auto)) || _.find(childProjects, (candidate) => _.isEqual(getWorkspaceProjectKind(candidate), ProjectKind.Cinematic));
-      const targetProject = _.isEqual(projectKind, ProjectKind.Container) ? defaultChild : project;
-      const targetId = targetProject?.id || id;
-      setSelectedProjectId(targetId);
-      if (_.isEqual(getWorkspaceProjectKind(targetProject), ProjectKind.Cinematic)) {
-        setActiveTab(AppTab.CINEMATIC_FILM);
-      } else if (_.isEqual(getWorkspaceProjectKind(targetProject), ProjectKind.Auto)) {
-        setActiveTab(AppTab.AUTO_GENERATOR);
-      } else {
-        setActiveTab(AppTab.PROJECTS);
-      }
+      openWorkspaceProject(project, id);
     }
   }, []);
   const handleCreateProject = async (name: string, desc: string) => {

@@ -14,10 +14,7 @@ export const MOTION_FIGURES = {
   VIEW: `(function () {
   var cfg = window.__motionView || {}, S = cfg.style || null, CUTOUT = cfg.movement === 'cutout';
   var FOCUS = Array.isArray(cfg.focus) ? cfg.focus.map(String) : [];
-  // kit: the kit is drawing (its own device-space transforms and colours); screen: the scene draws over the frame (story
-  // devices, the finishing light), outside the camera.
   var hooks = window.__motionViewHooks = { kit: 0, screen: 0, header: null, speak: null, person: function () {} };
-  // Whether a person is speaking now: a speaker span of the narration names the person by its mark, id or cast key.
   hooks.speaking = function (o) {
     var sp = hooks.speak;
     if (!sp || !sp.list.length) return false;
@@ -32,7 +29,6 @@ export const MOTION_FIGURES = {
   ['fillStyle', 'strokeStyle', 'shadowColor'].forEach(function (name) { desc[name] = Object.getOwnPropertyDescriptor(proto, name); });
   var active = false, zoom = 1, M = null, recording = false, seen = [];
   var isScene = function (c) { return !!c && !!c.canvas && c.canvas.id === 'motion-canvas'; };
-  // Colours: parsed once per string through a scratch context (not the scene canvas, so it is never toned).
   var parsed = new Map(), toned = new Map(), scratch = null;
   var rgba = function (v) {
     if (typeof v !== 'string') return null;
@@ -64,7 +60,6 @@ export const MOTION_FIGURES = {
     return out;
   };
   var styling = function (c) { return !!S && active && !hooks.kit && isScene(c); };
-  // What the scene set is what it reads back; only the paint is toned.
   var stored = new WeakMap();
   if (S) {
     ['fillStyle', 'strokeStyle', 'shadowColor'].forEach(function (name) {
@@ -81,7 +76,6 @@ export const MOTION_FIGURES = {
     });
     if (Grad && native.addColorStop) Grad.addColorStop = function (at, color) { return native.addColorStop.call(this, at, S && active && !hooks.kit ? tone(color) : color); };
   }
-  // Thin dark strokes are outlines: the style's ink and width, and thinner in a closer shot (by the square root of the zoom).
   var rawStroke = function (c) { var m = stored.get(c); return m && Object.prototype.hasOwnProperty.call(m, 'strokeStyle') ? m.strokeStyle : desc.strokeStyle.get.call(c); };
   var inked = function (c, fn, args) {
     if (!active || !isScene(c)) return fn.apply(c, args);
@@ -96,8 +90,6 @@ export const MOTION_FIGURES = {
   };
   proto.stroke = function () { return inked(this, native.stroke, arguments); };
   proto.strokeRect = function () { return inked(this, native.strokeRect, arguments); };
-  // The camera: every transform the scene sets is taken inside it, also after the scene resizes its canvas. The kit sets
-  // device-space transforms of its own (read from the current transform, which already holds the camera), so it is left alone.
   var put = function (c) { if (M) native.setTransform.call(c, M.a, M.b, M.c, M.d, M.e, M.f); };
   proto.setTransform = function (a, b, c, d, e, f) {
     if (!M || hooks.kit || hooks.screen || !isScene(this)) return native.setTransform.apply(this, arguments);
@@ -111,9 +103,6 @@ export const MOTION_FIGURES = {
     if (!d || !d.set) return;
     Object.defineProperty(HTMLCanvasElement.prototype, name, { configurable: true, get: d.get, set: function (v) { d.set.call(this, v); if (M && this.id === 'motion-canvas') put(this.getContext('2d')); } });
   });
-  // Every person the figure table draws, in frame shares: ground point, crown, eye line, waist and facing. The eye line
-  // and waist are the ones the drawing returns (the kit's from its skeleton: the head centre is the eye line); without them,
-  // the shares of the base figure design.
   hooks.person = function (c, o, res, byKit) {
     if (!recording || !isScene(c)) return;
     var x = +o.x, y = +o.y, h = +o.h;
@@ -126,43 +115,24 @@ export const MOTION_FIGURES = {
     var hip = isFinite(+res.hip) ? +res.hip : y - 0.42 * h;
     eye = clamp(at(x, eye)[1], top + 0.04 * span, foot[1] - 0.5 * span);
     hip = clamp(at(x, hip)[1], eye + 0.1 * span, foot[1] - 0.2 * span);
-    // The width that must stay in frame: the drawn width, never less than a big cartoon head.
     var wide = Math.max(+o.w > 0 ? +o.w : 0, 0.5 * h), half = Math.abs(at(x + wide / 2, y)[0] - at(x - wide / 2, y)[0]) / 2;
     seen.push({ id: o.mark == null ? null : String(o.mark), x: foot[0], half: half, foot: foot[1], top: top, eye: eye, hip: hip, facing: +o.facing < 0 ? -1 : 1 });
   };
-  // ---------- The camera: one shot list for every layout, two ways of moving through it ----------
-  // A layout sets the shot sizes (the cinematographer's cut points on the lead: full = head to toe, cowboy = mid-thigh,
-  // medium = just below the waist, mcu = mid-chest; wide = the whole master frame). The scene is cut into shots at the
-  // narration cues (each at least PLAN.MIN_SHOT seconds; in "Điện ảnh" a long sentence is cut once more in its middle);
-  // neighbouring shots differ by at least one size (else they are one shot: no jump cut). Inside a shot the smooth
-  // movement pushes in slowly and follows the lead; the cut-out movement pushes in briefly at the shot's start, then
-  // holds, panning at an even speed with a lead who crosses the frame. "Toàn cảnh" drifts by DRIFT (smooth) or holds still
-  // (cut-out). "Tự động" picks the layout from the kind of scene. Story devices never hold the camera back (they are drawn
-  // over the frame by the scene engine).
   var LAYOUT = cfg.layout || 'wide', INTENT = cfg.scene || {};
   var PAIRS = Array.isArray(cfg.pairs) ? cfg.pairs : [];
   var SAFE = 0.93, SMOOTH = 3;
   var PLAN = { SAMPLES: 24, MIN_SHOT: 1.8, LONG_SHOT: 7, PUSH: 0.08, PUSH_SECONDS: 1.2, DRIFT: 0.03, MIN_STEP: 1.18, TRAVEL: 0.15, QUIET_SECONDS: 8, QUIET_PUSH: 0.07, QUIET_TRAVEL: 0.03, REFRAME: 0.16, REFRAME_PUSH: 0.04 };
-  // The closest a shot may push in (the drawing is vector; lines thin back as the camera comes close, see the kit's LW):
-  // the master frame keeps the lead at about a quarter of the frame, so a chest shot needs about 8-9x.
   var ZMAX = { full: 10, cowboy: 10, medium: 10, mcu: 10 };
-  // A focal subject that is a thing (a ship, a plane, a building, an object) or a whole group: how much of the frame it
-  // fills at each size (whole with room around it, then an insert, then its detail). A group is always seen whole.
   var THING_FILL = { full: 0.8, cowboy: 0.86, medium: 0.92, mcu: 1.1 };
   var frameThing = function (b, size, group) {
     var fill = group ? THING_FILL.full : THING_FILL[size] || THING_FILL.full;
     var z = clamp(fill / Math.max(1e-6, b.w, b.h), 1, ZMAX[size] || 1), half = 0.5 / z;
     return { z: z, x: clamp(b.x + b.w / 2, half, 1 - half), y: clamp(b.y + b.h / 2, half, 1 - half) };
   };
-  // Where each size cuts the lead, as a share of their height from the crown (cartoon figures have big heads, so the cut
-  // points are read on the drawn figure, not on a real body): full shows all of them, cowboy to mid-thigh, medium to
-  // just below the waist, mcu to mid-chest. HEADROOM is the air above the crown.
   var CUT = { full: 1, cowboy: 0.76, medium: 0.6, mcu: 0.44 }, HEADROOM = { full: 0.1, cowboy: 0.06, medium: 0.06, mcu: 0.05 }, FOOTROOM = 0.06;
   var SEQUENCE = { wide: ['wide'], stage: ['full'], medium: ['full', 'cowboy'], cinematic: ['wide', 'medium', 'mcu', 'medium', 'mcu'], close: ['medium', 'mcu'] };
   var min = function (list, key) { return Math.min.apply(null, list.map(function (p) { return p[key]; })); };
   var max = function (list, key) { return Math.max.apply(null, list.map(function (p) { return p[key]; })); };
-  // The frame for these people at one size: the crown HEADROOM below the top edge, the cut on the bottom edge (a full
-  // shot keeps a little ground below the feet); a single is placed on a third with the room in front of the face.
   var frameFor = function (people, size) {
     var top = min(people, 'top'), cut = Math.max.apply(null, people.map(function (p) { return p.top + CUT[size] * (p.foot - p.top); })) + (size === 'full' ? FOOTROOM * (max(people, 'foot') - top) : 0);
     var z = clamp((1 - HEADROOM[size]) / Math.max(1e-6, cut - top), 1, ZMAX[size] || 1);
@@ -176,7 +146,6 @@ export const MOTION_FIGURES = {
     var marks = window.__motionMarks, kept = Array.isArray(marks) ? marks.length : 0, frames = [], thingFrames = [];
     var duration = Number(input.duration) > 0 ? Number(input.duration) : 3, fps = Number(input.fps) > 0 ? Number(input.fps) : 30;
     recording = true;
-    // The samples are only read for where people stand: painted through a one-pixel clip, so the pixels cost nothing.
     var pc = document.getElementById('motion-canvas'), pctx = pc && pc.getContext('2d');
     try {
       for (var i = 0; i <= PLAN.SAMPLES; i++) {
@@ -186,18 +155,12 @@ export const MOTION_FIGURES = {
         var markStart = Array.isArray(window.__motionMarks) ? window.__motionMarks.length : 0;
         try { await render.call(self, Object.assign({}, input, { progress: k, time: k * duration, frame: Math.round(k * duration * fps) })); } finally { if (pctx) proto.restore.call(pctx); }
         frames.push(seen.filter(function (p) { return p.id !== null; }));
-        // The focal thing's box this frame (marks are frame shares), for a scene whose subject is not a person.
         var mk = Array.isArray(window.__motionMarks) ? window.__motionMarks.slice(markStart) : [];
-        // (the app's bridge records frame shares; a page that records pixels is read in shares too)
         var cw = pc ? pc.width : 1280, ch = pc ? pc.height : 720;
         mk = mk.map(function (q) { return q.x > 1.5 || q.y > 1.5 || q.w > 1.5 || q.h > 1.5 ? { id: q.id, x: q.x / cw, y: q.y / ch, w: q.w / cw, h: q.h / ch } : q; });
         thingFrames.push(mk.filter(function (q) { return FOCUS.indexOf(String(q.id)) >= 0; }).reduce(function (b, q) { return b ? { x: Math.min(b.x, q.x), y: Math.min(b.y, q.y), w: Math.max(b.x + b.w, q.x + q.w) - Math.min(b.x, q.x), h: Math.max(b.y + b.h, q.y + q.h) - Math.min(b.y, q.y) } : { x: q.x, y: q.y, w: q.w, h: q.h }; }, null));
       }
     } finally { recording = false; seen = []; hooks.header = null; if (Array.isArray(marks)) marks.length = kept; }
-    // Subjects: one person per mark (a mark shared by several people is a group, never framed closer than its wide shot),
-    // the plan's focal person first, then whoever stands largest. A partner joins the frame when the plan pairs them with
-    // the lead, or when they stand at about the same size and depth (a two-shot); a pair too wide for the frame at that
-    // size is cut to a single.
     var size = {}, group = {}, height = {}, ground = {};
     frames.forEach(function (f) {
       var count = {};
@@ -211,8 +174,6 @@ export const MOTION_FIGURES = {
     var pairedWith = function (a, b) { return PAIRS.some(function (p) { return (norm(p[0]) === norm(a) && norm(p[1]) === norm(b)) || (norm(p[1]) === norm(a) && norm(p[0]) === norm(b)); }); };
     var partner = lead ? ids.slice(1).filter(function (id) { return pairedWith(lead, id); })[0] || ids.slice(1).filter(function (id) { var r = median(height[id]) / median(height[lead]); return r > 0.8 && r < 1.25 && Math.abs(median(ground[id]) - median(ground[lead])) < 0.06; })[0] : null;
     var at = function (n, id) { return frames[n].filter(function (p) { return p.id === id; })[0] || null; };
-    // A subject that is not a person: the plan's focal thing (a ship, a plane, a building, an object), else the largest
-    // group when no one stands alone (a crowd, an army): framed whole by its box.
     var focusThing = FOCUS.length > 0 && !(FOCUS[0] in size) && thingFrames.some(Boolean);
     if (focusThing) { lead = null; partner = null; }
     var groupId = !lead && !focusThing ? Object.keys(group).sort(function (a, b) { return size[b] - size[a]; })[0] || null : null;
@@ -224,8 +185,6 @@ export const MOTION_FIGURES = {
       var x0 = min(ms.map(function (p) { return { v: p.x - p.half }; }), 'v'), x1 = max(ms.map(function (p) { return { v: p.x + p.half }; }), 'v'), y0 = min(ms, 'top'), y1 = max(ms, 'foot');
       return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
     };
-    // "Tự động": a map, an establishing or wide scene is seen whole; a close scene close; a lead who travels in medium
-    // shots; any other scene is cut like a film.
     var layout = LAYOUT;
     if (layout === 'auto') {
       var first = lead ? frames.map(function (f, n) { return at(n, lead); }).filter(Boolean) : frames.map(function (f, n) { var b = boxAt(n); return b && { x: b.x + b.w / 2 }; }).filter(Boolean);
@@ -255,7 +214,6 @@ export const MOTION_FIGURES = {
           ps = ps.filter(Boolean);
           if (!ps.length) continue;
           var fr = frameFor(ps, sz);
-          // A pair whose bodies do not fit the action-safe width at this size is framed as a single on the lead.
           if (ps.length > 1 && (max(ps.map(function (p) { return { v: p.x + p.half }; }), 'v') - min(ps.map(function (p) { return { v: p.x - p.half }; }), 'v') + 0.04) * fr.z > SAFE) fr = frameFor([ps[0]], sz);
           shotInfo.pts.push({ n: n, x: fr.x, y: fr.y, z: fr.z });
         }
@@ -264,13 +222,10 @@ export const MOTION_FIGURES = {
           shotInfo.z = zs[zs.length >> 1];
         }
       }
-      // No jump cut: a shot that would look like its neighbour is part of it.
       var prev = shots[shots.length - 1];
       if (prev && Math.max(prev.z, shotInfo.z) / Math.max(1e-6, Math.min(prev.z, shotInfo.z)) < PLAN.MIN_STEP) { prev.b = b; prev.pts = prev.pts.concat(shotInfo.pts); continue; }
       shots.push(shotInfo);
     }
-    // The way through each shot: the frame centres smoothed over a few samples; the cut-out movement pans at an even
-    // speed from the shot's first frame to its last.
     shots.forEach(function (sh) {
       if (sh.z <= 1.001 || !sh.pts.length) { sh.z = 1; sh.path = null; return; }
       var half = 0.5 / sh.z, pts = sh.pts.map(function (p) { return { x: clamp(p.x, half, 1 - half), y: clamp(p.y - 0.5 / p.z + half, half, 1 - half) }; });
@@ -288,7 +243,6 @@ export const MOTION_FIGURES = {
     var p = clamp(progress, 0, 1), shot = plan.shots[plan.shots.length - 1];
     for (var i = 0; i < plan.shots.length; i++) if (p < plan.shots[i].b) { shot = plan.shots[i]; break; }
     var u = clamp((p - shot.a) / Math.max(1e-6, shot.b - shot.a), 0, 1), local = (p - shot.a) * plan.duration;
-    // The whole frame: the smooth movement drifts in by DRIFT on the lead's side; the cut-out movement holds still.
     if (shot.z <= 1.001) {
       if (plan.reframe && plan.lead) { var zr = 1 + PLAN.REFRAME + PLAN.REFRAME_PUSH * ease(u), hr = 0.5 / zr; return { z: zr, x: clamp(plan.lead.x, hr, 1 - hr), y: clamp(plan.lead.y, hr, 1 - hr) }; }
       if (plan.quiet) { var zq = 1 + PLAN.QUIET_PUSH * ease(u), hq = 0.5 / zq, cq = plan.lead || { x: 0.5, y: 0.5 }; return { z: zq, x: clamp(0.5 + (cq.x - 0.5) * (zq - 1) * 6, hq, 1 - hq), y: clamp(0.5 + (cq.y - 0.5) * (zq - 1) * 6, hq, 1 - hq) }; }
@@ -301,7 +255,6 @@ export const MOTION_FIGURES = {
     var z = shot.z * k, half = 0.5 / z;
     return { z: z, x: clamp(pa.x + (pb.x - pa.x) * t, half, 1 - half), y: clamp(pa.y + (pb.y - pa.y) * t, half, 1 - half) };
   };
-  // The finishing pass of a style, in screen pixels over the whole frame (same grain on every frame and every export page).
   var grain = null;
   var finish = function (c, W, H) {
     if (!S || !S.finish) return;
@@ -333,7 +286,6 @@ export const MOTION_FIGURES = {
       var self = this, args = arguments, opt = input || {};
       var canvas = document.getElementById('motion-canvas'), ctx = canvas && canvas.getContext('2d');
       M = null; zoom = 1;
-      // The shots depend on the scene's length and narration cues: planned again when either changes.
       var key = JSON.stringify([Number(opt.duration) || 0, Array.isArray(opt.cues) ? opt.cues : []]);
       if (!plans.has(key)) { var plan = null; try { plan = (await measurePlan(render, self, opt)) || null; } catch (e) { plan = null; } plans.set(key, plan); }
       var current = plans.get(key);
@@ -347,7 +299,6 @@ export const MOTION_FIGURES = {
         }
       }
       hooks.header = null;
-      // Who is speaking now (the narration's speaker spans): the kit opens and closes their mouth.
       hooks.speak = { t: Number(opt.time) || 0, list: Array.isArray(opt.speaking) ? opt.speaking : [] };
       active = true;
       window.__motionKitZoom = zoom;
@@ -363,7 +314,6 @@ export const MOTION_FIGURES = {
     scene.__motionView = true;
     return scene;
   };
-  // Chained after any earlier hook on window.motionScene (the kit's clock), so this wrapper is the outermost.
   var before = Object.getOwnPropertyDescriptor(window, 'motionScene'), value = window.motionScene;
   Object.defineProperty(window, 'motionScene', {
     configurable: true,
@@ -379,13 +329,10 @@ export const MOTION_FIGURES = {
   var LOOK = ['top', 'trim', 'pants', 'boots', 'belt', 'sleeve', 'robe', 'cape', 'armor', 'emblem', 'emblemColor', 'build', 'skin', 'hair', 'hairColor', 'beard', 'head', 'headColor', 'crest', 'hold', 'itemColor', 'shield', 'shieldColor', 'quiver', 'backpack', 'sword', 'barefoot', 'wounded', 'outfit', 'region', 'bandage', 'tied', 'wet', 'dirty'];
   var SPAN_WALLS = ['wall', 'gate', 'barbedWire'];
   var ROW_WALLS = ['fence', 'wagonFort', 'palisade', 'sandbags'];
-  // The kit figure is stretched sideways to the scene's width only this far, so its drawing never distorts.
   var STRETCH_MIN = 0.8, STRETCH_MAX = 1.25;
   var speakingNow = function (o) { var v = window.__motionViewHooks; return !!(v && v.speaking && v.speaking(o)); };
   var seedOf = function (o) { if (o.seed != null) return o.seed; var s = String(o.mark == null ? '' : o.mark), h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973; return s ? h : undefined; };
   var kit = function () { return window.MotionKit || null; };
-  // A hand's look (blackPalm, bloodyHands, sootHandColor...) is not a placement: the kit draws it as the colour of the
-  // hands (gloves), so it is never a fault.
   var LOOK_WORD = /^(black|blackened|dark|dirty|soot|sooty|burnt|burned|charred|blistered|bloody|blood|red|color|colour|tint|stained|muddy)$/;
   var HAND_WORD = /^(hand|hands|palm|palms|fist|fists|finger|fingers)$/;
   var wordsOf = function (key) { return key.split(/(?=[A-Z])|[_\\d]+/).map(function (word) { return word.toLowerCase(); }); };
@@ -399,9 +346,6 @@ export const MOTION_FIGURES = {
     }
     return null;
   };
-  // The figure vocabulary (motionFigureVocabulary, window.__motionVocab): every call's options are put in its words
-  // before either renderer draws, so the scene's own function and the kit get the same options and show the same things.
-  // What is left out is reported to the scene check as !fault:drop:fn.key.
   var VOCAB = window.__motionVocab || null;
   var plain = function (v) { return String(v == null ? '' : v).toLowerCase().replace(/[^a-z]/g, ''); };
   var stems = function (w) {
@@ -446,17 +390,13 @@ export const MOTION_FIGURES = {
       var v = o[key];
       if (v === undefined) return;
       var to = spec.keys.indexOf(key) >= 0 ? key : spec.keyAs[plain(key)];
-      // holdingSpear: true holds a spear; sootFace or tornCloak is dirty, bloodySleeve wounded.
       if (!to && spec.holdPrefix) spec.holdPrefix.some(function (pre) { var k = plain(key); if (k.length > pre.length && k.slice(0, pre.length) === pre) { to = 'hold'; if (v === true) v = k.slice(pre.length); return true; } return false; });
       if (!to && spec.wordKeys && v) { var kw = wordsOf(key); Object.keys(spec.wordKeys).some(function (k) { if (kw.some(function (w) { return spec.wordKeys[k].indexOf(w) >= 0; })) { to = k; v = true; return true; } return false; }); }
-      // A hand's look stays the scene's own word for its function (the kit draws it as the hands' colour).
       if (!to) { if (!(fn === 'person' && handLookKey(key))) dropped(fn, key); return; }
       if (spec.values[to]) {
-        // A switch named by its word (helmet: true, mail: true) is that word; a colour given for headgear is its colour.
         var word = wordIn(spec, to, v === true ? key : v);
         if (word === undefined && typeof v === 'string' && HEX.test(v) && to === 'head') { if (o.headColor == null) out.headColor = v; word = wordIn(spec, 'head', key); }
         if (word === undefined && typeof v === 'string' && HEX.test(v) && to === 'shield') { if (o.shieldColor == null) out.shieldColor = v; word = 'round'; }
-        // A held thing the hold words lack is drawn as its own prop in the hand (by the table, for both renderers).
         if (word === undefined && to === 'hold' && typeof v === 'string' && v.trim()) { heldOf.set(out, v.trim()); return; }
         if (word === undefined) { dropped(fn, key); return; }
         v = word;
@@ -467,8 +407,6 @@ export const MOTION_FIGURES = {
     });
     return out;
   };
-  // Large things (a third of the frame height or more) are also recorded unmarked as ~fn:kind, so the scene check can
-  // see when the frame cuts them or two of them stand on top of each other.
   var LARGE_FNS = ['building', 'vehicle', 'tree', 'bridge', 'wall'], LARGE = 0.3;
   var markBox = function (c, o, box, fn) {
     if (!o || typeof window.motionMark !== 'function' || !box) return;
@@ -486,26 +424,17 @@ export const MOTION_FIGURES = {
     if (o.kind) last.kind = String(o.kind);
     if (fn === 'person' && Object.keys(look).length) last.look = look;
   };
-  // The box o gives: things stand on (x, y); a side-view bridge hangs from its deck at y down to the water; a chart, meter
-  // or timeline has (x, y) as its top-left corner.
   var boxOf = function (fn, o) {
     var h = num(+o.h, 0), w = num(+o.w, 0), x = num(+o.x, 0), y = num(+o.y, 0);
     if (fn === 'bridge' && Array.isArray(o.from) && Array.isArray(o.to)) return { x: Math.min(o.from[0], o.to[0]) - w / 2, y: Math.min(o.from[1], o.to[1]), w: Math.abs(o.to[0] - o.from[0]) + w, h: Math.abs(o.to[1] - o.from[1]) };
     if (fn === 'bridge') return { x: x - w / 2, y: y, w: w, h: h };
     if (fn === 'chart' || fn === 'meter' || fn === 'timeline') return { x: x, y: y, w: w, h: h };
-    // A map icon fills the circle of radius r; an arrow spans from..to. (Without these the box was empty and the scene
-    // check read the icon or arrow as outside the frame.)
     if (fn === 'icon') { var r = num(+o.r, 20); return { x: x - r, y: y - r, w: 2 * r, h: 2 * r }; }
     if (fn === 'arrow' && Array.isArray(o.from) && Array.isArray(o.to)) return { x: Math.min(o.from[0], o.to[0]), y: Math.min(o.from[1], o.to[1]), w: Math.abs(o.to[0] - o.from[0]), h: Math.abs(o.to[1] - o.from[1]) };
-    // A thing given only its height (the scene engine's items) gets the usual width of its kind of thing, so the camera,
-    // the marks and the fire over a burning thing have a real box.
     if (!w && h) w = h * (BOX_ASPECT[fn] || 1);
     return { x: x - w / 2, y: y - h, w: w, h: h };
   };
   var BOX_ASPECT = { person: 0.42, animal: 1.35, vehicle: 1.7, building: 1.1, prop: 1, tree: 0.7, wall: 1 };
-  // Measures a kit drawing once from its own pixels: drawn standing at a reference size on a hidden canvas, its painted
-  // extent (soft ground shadows left out) gives the height, width and how far it sits off its ground point. A pose never
-  // changes the size, and every kind the kit draws, the added items included, fills the box it is given.
   var sizes = {}, PROBE = 30, PAD = 1400, SOLID = 110, THIN = 0.12, probeCanvas = null;
   var painted = function (draw, ox, oy) {
     probeCanvas = probeCanvas || document.createElement('canvas');
@@ -516,26 +445,19 @@ export const MOTION_FIGURES = {
     var d = c.getImageData(0, 0, PAD, PAD).data, x0 = PAD, y0 = PAD, x1 = -1, y1 = -1, cols = new Uint16Array(PAD);
     for (var y = 0; y < PAD; y++) for (var x = 0; x < PAD; x++) if (d[(y * PAD + x) * 4 + 3] > SOLID) { cols[x]++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     if (x1 < 0) return null;
-    // The body: the painted extent less thin parts reaching out at either side (a wagon's shaft, a cart's handles, a
-    // flagpole's tip), which a scene's box does not count.
     var thin = Math.max(2, (y1 + 1 - y0) * THIN), b0 = x0, b1 = x1;
     while (b0 < b1 && cols[b0] < thin) b0++;
     while (b1 > b0 && cols[b1] < thin) b1--;
     return { left: ox - x0, right: x1 + 1 - ox, top: oy - y0, bottom: y1 + 1 - oy, bodyLeft: ox - b0, bodyRight: b1 + 1 - ox, edge: x0 <= 0 || y0 <= 0 || x1 >= PAD - 1 || y1 >= PAD - 1 };
   };
   var measure = function (K, fn, o, key) {
-    // Measured with the seed it is drawn with: the kit picks variants by seed (a wagon with or without its cover).
     var seed = o.seed != null ? o.seed : 1;
     var id = [K.style ? K.style() : '', K.proportion ? K.proportion() : '', fn, o.kind || '', o.view || '', o.build || '', fn === 'vehicle' ? o.pose || '' : '', o.count || '', o.rider ? 'rider' : '', o.cover === false ? 'bare' : '', o.load || '', fn === 'person' ? [o.cape ? 'cape' : '', o.robe ? 'robe' : '', o.armor || '', o.outfit || '', o.region || ''].join(',') : '', seed].join('|');
     if (sizes[id] !== undefined) return sizes[id];
     var probe = { kind: o.kind, view: o.view, build: o.build, count: o.count, cover: o.cover, load: o.load, x: PAD / 2, y: PAD - 100, seed: seed };
     if (fn === 'person' || fn === 'animal') probe.pose = 'stand';
-    // An aircraft parked or a rocket on its pad has another shape than in flight: measured in its pose.
     if (fn === 'vehicle' && o.pose) probe.pose = o.pose;
-    // A person's width counts what it wears out to the side (a cape, a robe, an outfit's), so the kit fills the scene's box with it.
     if (fn === 'person') ['cape', 'robe', 'armor', 'outfit', 'region'].forEach(function (k) { if (o[k] != null) probe[k] = o[k]; });
-    // A big thing (a galleon, an airship) drawn at the probe size can run off the probe canvas: it is measured again
-    // smaller until it fits whole.
     var size = PROBE, box = null;
     for (var tries = 0; tries < 4; tries++) {
       probe[key] = size;
@@ -543,16 +465,12 @@ export const MOTION_FIGURES = {
       if (!box || !box.edge) break;
       size /= 2.5;
     }
-    // A person (its arms are part of its width) and a row of pieces (count: its ends are its length) are measured whole;
-    // anything else by its body.
     var body = box && fn !== 'person' && o.count == null, left = body ? box.bodyLeft : box && box.left, right = body ? box.bodyRight : box && box.right;
     sizes[id] = box && box.top > 0 && left + right > 0 ? { h: box.top / size, w: (left + right) / size, shift: (right - left) / 2 / size } : null;
     return sizes[id];
   };
-  // A turn the scene gives a thing (angle or rotation, radians, clockwise around its ground point).
   var turnOf = function (o) { var a = num(+o.angle, num(+o.rotation, 0)); return Math.abs(a) <= Math.PI * 2 ? a : 0; };
   var truthy = function (v) { return v === true || (typeof v === 'number' && v > 0) || (typeof v === 'string' && v !== '' && v !== 'false') || (Array.isArray(v) && v.length > 0); };
-  // A thing the kit draws at least LONG times as wide as tall is a long thing (spear, pole, oar).
   var LONG = 3;
   var TURNED = ['overturned', 'upturned', 'capsized', 'toppled', 'flipped', 'upsideDown'];
   var upright = function (c, K, o, opt, unit, key, x, y, len, angle) {
@@ -565,11 +483,7 @@ export const MOTION_FIGURES = {
     var tip = [x + Math.cos(turn) * len, y + Math.sin(turn) * len], thick = unit.h * size;
     return { box: { x: Math.min(x, tip[0]) - thick / 2, y: Math.min(y, tip[1]) - thick / 2, w: Math.abs(tip[0] - x) + thick, h: Math.abs(tip[1] - y) + thick }, tip: tip };
   };
-  // Draws o with the kit inside the scene's box: the size option makes the height h, a sideways stretch around the ground
-  // point makes the width w (within the limits), and the points the kit returns are mapped through the same stretch.
-  // How far an elastic thing's length may follow its box (shorter, longer) before it keeps its shape.
   var ELASTIC = [0.85, 1.3];
-  // A flat thing lying on the ground (a dropped shield) is seen from above at an angle: its drawing squashed to this height.
   var LIE_FLAT = 0.45;
   var SHAPE_FIT = [0.6, 3];
   var fitted = function (c, K, fn, o, key, extra, fit) {
@@ -581,24 +495,12 @@ export const MOTION_FIGURES = {
     var opt = Object.assign({}, o, extra || {});
     delete opt.h; delete opt.w; delete opt.r; delete opt.p; delete opt.mark; delete opt.angle;
     var angle = fn === 'person' || fn === 'animal' ? 0 : turnOf(o);
-    // A long thing (spear, pole, oar: the kit draws it lying) given as standing (its h is the longer side) stands on the
-    // scene's point, h long, turned by angle around its foot like the scene's own drawing.
     if (fn === 'prop' && fit !== 'ground' && fit !== 'rigid' && unit.w >= unit.h * LONG && !(w > h)) return upright(c, K, o, opt, unit, key, x, y, h, angle);
-    // A rigid or lying thing whose box has quite another shape than the standard drawing (a stump drawn as a fat log, a
-    // squat barrel drawn tall) is the scene's own: the standard one would shrink inside the box and what rests on it (a sitter,
-    // a load) would float.
     if (fn === 'prop' && (fit === 'rigid' || fit === 'ground') && w > 0 && h > 0) { var shape = (w / h) / (unit.w / unit.h); if (shape < SHAPE_FIT[0] || shape > SHAPE_FIT[1]) return null; }
     var size = h / unit.h, natural = unit.w * size;
-    // A flat thing on the ground (a pond, a ditch, planks) is as long as its box: its height follows from its own shape.
-    // Given only a height, a very flat one is at most LONG times that height long (its height alone would make a fallen
-    // banner a bar across the frame).
     if (fit === 'ground' && !(w > 0) && natural > h * LONG) { w = h * LONG; }
     if (fit === 'ground' && w > 0) { size = w / unit.w; natural = w; h = unit.h * size; }
     var sx = w > 0 ? clamp(w / natural, STRETCH_MIN, STRETCH_MAX) : 1;
-    // A thing fills exactly the box the scene gives, its length following the box; an elastic thing (a vehicle: round
-    // wheels) follows the box's length only within ELASTIC, then keeps that shape, as large as fits and centred; a rigid
-    // thing (an animal, a barrel) keeps its shape, as large as fits the box and centred in it; a person keeps its build
-    // within the stretch limits.
     if (fit === 'rigid' || fit === 'elastic') {
       var most = fit === 'rigid' ? 1 : ELASTIC[1], least = fit === 'rigid' ? 1 : ELASTIC[0];
       sx = w > 0 ? clamp(w / natural, least, most) : 1;
@@ -606,14 +508,11 @@ export const MOTION_FIGURES = {
     } else if (fn !== 'person' && w > 0) sx = w / natural;
     opt[key] = size;
     var map = function (pt) { return Array.isArray(pt) ? [x + (pt[0] - x) * sx, pt[1]] : pt; };
-    // The scene's hand points, into the kit's unstretched drawing.
     if (Array.isArray(opt.handsAt)) opt.handsAt = opt.handsAt.map(function (pt) { return Array.isArray(pt) ? [x + (pt[0] - x) / sx, pt[1]] : pt; });
     opt.x = x - (num(+o.facing, 1) < 0 ? -1 : 1) * unit.shift * size;
     var overturned = fn !== 'person' && fn !== 'animal' && TURNED.some(function (k) { return truthy(o[k]); });
     c.save();
-    // A figure seen against the light (silhouette) is drawn as a dark shape.
     if (o.silhouette) c.filter = 'brightness(0.22) saturate(0.35)';
-    // Turned by angle around its ground point; an overturned thing lies upside down in its box.
     if (angle) { c.translate(x, y); c.rotate(angle); c.translate(-x, -y); }
     if (overturned) { c.translate(x, y - h / 2); c.rotate(Math.PI); c.translate(-x, -(y - h / 2)); }
     var flat = fn === 'prop' && truthy(o.lying) ? LIE_FLAT : 1;
@@ -627,8 +526,6 @@ export const MOTION_FIGURES = {
     return res;
   };
   var has = function (list, kind) { return Array.isArray(list) && list.indexOf(kind) >= 0; };
-  // Amounts scenes often give instead of a pose (sitUp 0..1 from lying to sitting, crouchAmt 0..1 from standing to
-  // crouching): past halfway the figure takes the second pose, below it the first.
   var AMOUNT_POSES = { sitUp: ['lie', 'sit'], crouchAmt: ['stand', 'crouch'], crouch: ['stand', 'crouch'], kneelAmt: ['stand', 'kneel'] };
   var poseOf = function (K, o) {
     var pose = o.pose && has(K.poses, o.pose) ? o.pose : null;
@@ -640,18 +537,12 @@ export const MOTION_FIGURES = {
     }
     return pose || 'stand';
   };
-  // How long a wagon is for its height, as the kit and the scenes draw one.
   var WAGON_ASPECT = 1.6, WAGON_SHAFT = 0.4;
-  // The story's year (window.__motionView.year), or NaN when it names no time.
   var yearOf = function () { var v = window.__motionView && window.__motionView.year; return v == null ? NaN : +v; };
-  // The object catalogue (motionObjectCatalog): which kit drawing shows a FIG call's kind in the story's year and the
-  // build the scene gives. A word it does not list, a thing outside its years or a build it cannot draw returns null, and
-  // the scene's own drawing shows it: the kit never draws something only like it.
   var CATALOG = window.__motionCatalog || { entries: [], words: {} };
   var wordOf = function (v) { return String(v == null ? '' : v).toLowerCase().replace(/[^a-z]/g, ''); };
   var THING_FNS = ['vehicle', 'building', 'prop', 'animal', 'tree'];
   var inYears = function (v, year) { return !(isFinite(year) && ((v.from != null && year < v.from) || (v.to != null && year > v.to))); };
-  // A call without a kind is named by its mark ('wagons' is a wagon), as the scene check reads it.
   var markKind = function (fn, o) {
     var m = wordOf(o.mark), words = CATALOG.words[fn] || {};
     if (!m) return '';
@@ -660,7 +551,6 @@ export const MOTION_FIGURES = {
   };
   var pick = function (fn, o) {
     var words = CATALOG.words[fn] || {}, word = wordOf(o.kind), at = words[word];
-    // A thing called through another thing function (FIG.prop for a tent) is still that thing.
     if (at == null && THING_FNS.indexOf(fn) >= 0) THING_FNS.some(function (other) { var hit = (CATALOG.words[other] || {})[word]; if (hit != null) at = hit; return hit != null; });
     var e = at == null ? null : CATALOG.entries[at], year = yearOf(), build = wordOf(o.build);
     if (!e || !inYears(e, year) || (build && e.builds && e.builds.indexOf(build) < 0)) return null;
@@ -669,24 +559,16 @@ export const MOTION_FIGURES = {
     var kit = (byBuild || byYear || {}).kit;
     return kit ? [kit[0], kit[1], e.fit || 'stretch'] : null;
   };
-  // A state the kit cannot draw (broken, sinking, on fire, open...) or people the scene's function draws inside the thing
-  // (passengers on a ferry): the scene's own drawing shows them.
   var STATES = ['broken', 'smashed', 'wrecked', 'collapsed', 'sinking', 'sunk', 'destroyed', 'damaged', 'burning', 'onFire', 'ablaze', 'open', 'opened', 'splintered', 'shattered', 'cracked'];
   var PEOPLE = ['passengers', 'occupants', 'people', 'riders', 'sailors', 'rowers', 'soldiers', 'refugees', 'figures'];
   var THINGS = ['animal', 'vehicle', 'building', 'tree', 'prop', 'wall'];
-  // Options that carry the kit's own lists (a chain's points, a wagon fort's wagons, a chart's values...).
   var KIT_LISTS = ['points', 'wagons', 'from', 'to', 'values', 'labels', 'colors', 'items', 'groups', 'crew', 'load'];
   var kitCan = function (fn, o, nested) {
     if (THINGS.indexOf(fn) < 0) return true;
     if (STATES.some(function (k) { return truthy(o[k]); })) return false;
-    // A call that hands its function a list of its own (a volley of arrows, each with its own place and flight) is many
-    // things or an effect drawn by the scene's function, not one thing the kit could fit into the box.
     if (Object.keys(o).some(function (k) { var v = o[k]; return KIT_LISTS.indexOf(k) < 0 && Array.isArray(v) && v.length > 1 && v.some(function (e) { return e && typeof e === 'object'; }); })) return false;
-    // People in the thing: the kit draws the thing only when the scene's function draws them with figure calls, which are
-    // then drawn on it by the table; people painted straight into the thing keep the scene's whole drawing.
     return nested || !PEOPLE.some(function (k) { return truthy(o[k]); });
   };
-  // A chain hangs across the scene's box: from its left to its right end at the top, sagging down to its bottom.
   var chainIn = function (c, K, o) {
     var x = num(+o.x, 0), y = num(+o.y, 0), w = num(+o.w, 0), h = num(+o.h, 0);
     if (!(w > 0) || !(h > 0)) return null;
@@ -697,8 +579,6 @@ export const MOTION_FIGURES = {
     try { K.prop(c, opt); } finally { c.restore(); }
     return { box: { x: x - w / 2, y: y - h, w: w, h: h } };
   };
-  // A wagon fort whose scene placed each wagon (o.wagons: boxes x, y, w, h): every wagon in its own box, chained front to
-  // back, instead of the kit's evenly spaced row.
   var wagonsIn = function (c, K, o) {
     var list = o.wagons.filter(function (b) { return b && num(+b.w, 0) > 0 && num(+b.h, 0) > 0; }), x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, prev = null;
     list.forEach(function (b, i) {
@@ -713,14 +593,10 @@ export const MOTION_FIGURES = {
     });
     return list.length ? { box: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } } : null;
   };
-  // A bridge as it was built in the scene's period (build wood|stone|rope|iron|concrete; wood when the scene gives none):
-  // drawn along its deck from one end (a) to the other (b), wa and wb the deck width at each end (a bridge seen from the
-  // side is a deck a few px thick), drop the height from deck to water, rail the railing height.
   var BRIDGE_COLORS = { wood: '#8a6444', stone: '#a39d92', rope: '#8a6444', iron: '#5c626b', concrete: '#9a9c9e' };
   var BRIDGE_INK = '#2a2420', FAR_DECK = 0.56;
   var rgbOf = function (hex) { var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '')); if (!m) return null; var v = parseInt(m[1], 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; };
   var shadeOf = function (hex, k) { var v = rgbOf(hex) || [128, 128, 128]; return 'rgb(' + v.map(function (n) { return Math.round(clamp(n * k, 0, 255)); }).join(',') + ')'; };
-  // The scene's colour holds when it chose the build, or when the build is a modern one (its grey is then right).
   var bridgeColor = function (o, build) { return (o.build || build === 'concrete' || build === 'iron') && rgbOf(o.color) ? o.color : BRIDGE_COLORS[build]; };
   var sideBridge = function (c, o, build, x, y, w, h) {
     var base = bridgeColor(o, build), yr = num(+(window.__motionView || {}).year, 1900), x0 = x - w / 2, x1 = x + w / 2, water = y + h, lw = Math.max(1.2, h * 0.025);
@@ -774,12 +650,9 @@ export const MOTION_FIGURES = {
   };
   var drawBridge = function (c, o, build, a, b, wa, wb, drop, rail) {
     var base = bridgeColor(o, build);
-    // The deck's width runs sideways on the screen (as the scenes draw it): a bridge into the picture is a band from the
-    // near bank to the far one; a bridge seen from the side (a and b level) is a deck a few px thick, its width up and down.
     var dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, level = Math.abs(dy) < 1, nx = level ? 0 : 1, ny = level ? 1 : 0;
     var sag = build === 'rope' ? Math.max(wa, wb) * 0.35 + len * 0.04 : 0;
     var at = function (t, side) { var hw = (wa + (wb - wa) * t) / 2, cx = a[0] + dx * t, cy = a[1] + dy * t + Math.sin(Math.PI * t) * sag; return [cx + nx * hw * side, cy + ny * hw * side]; };
-    // Heights shrink with the deck toward the far end.
     var scaleAt = function (t) { return (wa + (wb - wa) * t) / wa; }, dropAt = function (t) { return drop * scaleAt(t); };
     var lw = Math.max(1.4, Math.min(wa, wb, drop) * 0.03 + 1), N = 24, k, t;
     var line = function (pts, width, col) { c.beginPath(); pts.forEach(function (q, i) { if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); }); c.lineWidth = width; c.strokeStyle = col; c.stroke(); };
@@ -790,7 +663,6 @@ export const MOTION_FIGURES = {
     c.save();
     c.lineJoin = 'round'; c.lineCap = 'round';
     if (build === 'stone') {
-      // A stone face under the near edge, cut by an arch between each pair of piers.
       var face = near.concat(near.slice().reverse().map(function (q, i) { return [q[0], q[1] + dropAt(1 - i / N)]; }));
       poly(face, shadeOf(base, 0.82));
       for (k = 0; k < piers; k++) {
@@ -802,7 +674,6 @@ export const MOTION_FIGURES = {
         poly(arch.concat([[at(t0, 1)[0], at(t0, 1)[1] + dropAt(t0)]]), under);
       }
     } else if (build !== 'rope') {
-      // Piles (wood) or piers (iron, concrete) from the deck down into the water.
       for (k = 0; k <= piers; k++) {
         t = Math.min(0.97, Math.max(0.03, k / piers));
         [1, -1].forEach(function (side) { var q = at(t, side); line([q, [q[0], q[1] + dropAt(t) * (side < 0 ? 0.8 : 1)]], Math.max(2, (wa + (wb - wa) * t) * (build === 'wood' ? 0.07 : 0.12)), side < 0 ? shadeOf(base, 0.55) : shadeOf(base, 0.72)); });
@@ -812,13 +683,11 @@ export const MOTION_FIGURES = {
     }
     poly(near.concat(far.slice().reverse()), base);
     if (build === 'wood' || build === 'rope') {
-      // Planks across the deck.
       var planks = Math.max(6, Math.round(len / Math.max(6, (wa + wb) * 0.09)));
       for (k = 1; k < planks; k++) { t = k / planks; line([at(t, -1), at(t, 1)], Math.max(1, lw * 0.6), shadeOf(base, 0.6)); }
     } else if (build === 'stone') {
       for (k = 1; k < piers * 3; k++) { t = k / (piers * 3); line([at(t, -1), at(t, 1)], Math.max(1, lw * 0.5), shadeOf(base, 0.75)); }
     }
-    // Railing: posts and a rail (handropes on a rope bridge, a low parapet on stone).
     [-1, 1].forEach(function (side) {
       var top = [];
       for (k = 0; k <= N; k++) { var q = at(k / N, side); top.push([q[0], q[1] - rail * scaleAt(k / N)]); }
@@ -829,21 +698,15 @@ export const MOTION_FIGURES = {
     });
     c.restore();
   };
-  // Paint the figures runtime draws itself (not the kit) goes through the drawing style like the scene's own paint: its
-  // colours are toned and its dark strokes inked.
   var asScene = function (draw) {
     var view = window.__motionViewHooks, held = view ? view.kit : 0;
     if (view) view.kit = 0;
     try { draw(); } finally { if (view) view.kit = held; }
   };
-  // Story devices (FIG.device): what a picture cannot show by itself, drawn the same in both renderers through the
-  // drawing style, never with words. thought and inset hold a small picture the scene draws inside them.
-  // A count shows at most COUNT_MAX figures for its largest group (each one then stands for many).
   var DEVICE_INK = '#26201c', DEVICE_PAPER = '#fbf8ef', INSET_PAPER = '#efe4cc', COUNT_MAX = 24;
   var devicePath = function (kind, x, y, r) {
     var p = new Path2D();
     if (kind === 'inset') { p.arc(x, y, r, 0, Math.PI * 2); return p; }
-    // A thought bubble: a cloud about 1.5 r wide either side and r tall, of overlapping lobes.
     var lobes = 9, rx = r * 1.25, ry = r * 0.78;
     for (var i = 0; i <= lobes; i++) {
       var a = (i / lobes) * Math.PI * 2, px = x + Math.cos(a) * rx, py = y + Math.sin(a) * ry;
@@ -868,13 +731,11 @@ export const MOTION_FIGURES = {
     c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = DEVICE_INK; c.lineWidth = Math.max(1.5, r * 0.05);
     try {
       if (kind === 'thought' || kind === 'inset') {
-        // Grows in from its centre; the tail points at what it comes from (a head, or the spot it magnifies).
         var from = Array.isArray(o.from) ? [num(+o.from[0], x), num(+o.from[1], y + r * 2)] : null;
         if (from && kind === 'inset') { var d = Math.hypot(from[0] - x, from[1] - y) || 1; c.globalAlpha *= a; c.beginPath(); c.moveTo(x + (from[0] - x) / d * r * a, y + (from[1] - y) / d * r * a); c.lineTo(from[0], from[1]); c.stroke(); c.beginPath(); c.arc(from[0], from[1], r * 0.12, 0, Math.PI * 2); c.stroke(); c.globalAlpha /= a; }
         c.translate(x, y); c.scale(a, a); c.translate(-x, -y);
         if (from && kind === 'thought') for (var i = 0; i < 3; i++) { var t = 0.35 + i * 0.22, bx = x + (from[0] - x) * t, by = y + (from[1] - y) * t, br = r * (0.16 - i * 0.04); c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fillStyle = DEVICE_PAPER; c.fill(); c.stroke(); }
         var p = devicePath(kind, x, y, r), box = kind === 'inset' ? { x: x - r * 0.75, y: y - r * 0.75, w: r * 1.5, h: r * 1.5 } : { x: x - r * 1.1, y: y - r * 0.68, w: r * 2.2, h: r * 1.36 };
-        // The centre and radius too (cx, cy, r): pictures drawn around the bubble's centre land inside it.
         box.cx = x; box.cy = y; box.r = r;
         c.fillStyle = kind === 'inset' ? INSET_PAPER : DEVICE_PAPER; c.fill(p);
         if (typeof inner === 'function') { c.save(); c.clip(p); try { inner(c, box); } catch (e) {} c.restore(); }
@@ -883,7 +744,6 @@ export const MOTION_FIGURES = {
       }
       if (kind === 'emote') { var sign = SIGNS[o.sign] || SIGNS.alarm; c.translate(x, y); c.scale(a, a); c.translate(-x, -y); sign(c, x, y, r); return { box: { x: x - r * 1.1, y: y - r * 1.4, w: r * 2.5, h: r * 2.4 } }; }
       if (kind === 'count') {
-        // Blocks of small figures, one block per group side by side, as many figures as n (one figure for many when n is large).
         var groups = (Array.isArray(o.groups) ? o.groups : []).filter(function (g) { return g && num(+g.n, 0) > 0; }), w = num(+o.w, 300), h = num(+o.h, 120);
         if (!groups.length) return null;
         var most = Math.max.apply(null, groups.map(function (g) { return +g.n; })), each = Math.max(1, Math.ceil(most / COUNT_MAX)), cols = Math.max(3, Math.ceil(Math.sqrt(Math.ceil(most / each) * 1.3))), gw = w / groups.length, cell = Math.min(gw / (cols + 0.6), h / (Math.ceil(Math.ceil(most / each) / cols) + 0.4));
@@ -895,27 +755,23 @@ export const MOTION_FIGURES = {
         return { box: { x: x, y: y, w: w, h: h } };
       }
       if (kind === 'time') {
-        // The sun or moon along a dashed sky arc: progress 0 at the left horizon, 1 at the right.
         var pr = clamp(num(+o.progress, 0.5), 0, 1), ang = Math.PI + pr * Math.PI, sx = x + Math.cos(ang) * r, sy = y + Math.sin(ang) * r * 0.6, moon = o.body === 'moon';
         c.lineWidth = Math.max(1.2, r * 0.02); c.setLineDash([r * 0.05, r * 0.05]); c.beginPath(); c.ellipse(x, y, r, r * 0.6, 0, Math.PI, Math.PI * 2); c.stroke(); c.setLineDash([]);
         c.fillStyle = moon ? '#f2ecd2' : '#f6c34a'; c.beginPath(); c.arc(sx, sy, r * 0.14, 0, Math.PI * 2); c.fill(); c.stroke();
         return { box: { x: x - r * 1.15, y: y - r * 0.8, w: r * 2.3, h: r * 0.95 } };
       }
       if (kind === 'sound') {
-        // Rings spreading from the source on the side it faces, starting over every 1.2 s of input.time.
         var f = num(+o.facing, 1) < 0 ? -1 : 1, time = num(+o.t, 0);
         for (var j = 0; j < 3; j++) { var ph = ((time / 1.2) + j / 3) % 1, rr = r * (0.3 + ph * 0.9); c.globalAlpha = (1 - ph) * a; c.beginPath(); c.arc(x, y, rr, f > 0 ? -0.6 : Math.PI - 0.6, f > 0 ? 0.6 : Math.PI + 0.6); c.stroke(); }
         return { box: { x: f > 0 ? x : x - r * 1.3, y: y - r * 0.8, w: r * 1.3, h: r * 1.6 } };
       }
       if (kind === 'speed') {
-        // Streaks trailing behind a fast mover: x, y = its back, facing = the way it goes; lines run toward -facing.
         var sf = num(+o.facing, 1) < 0 ? -1 : 1, st = num(+o.t, 0);
         c.lineWidth = Math.max(1.5, r * 0.045);
         for (var q = 0; q < 5; q++) { var lp = ((st * 1.6) + q * 0.37) % 1, ly = y + (q - 2) * r * 0.22, l0 = r * (0.15 + lp * 0.3), l1 = l0 + r * (0.55 + (q % 2) * 0.35) * a; c.globalAlpha = 0.85 * (1 - lp * 0.6); c.beginPath(); c.moveTo(x - sf * l0, ly); c.lineTo(x - sf * l1, ly); c.stroke(); }
         return { box: { x: sf > 0 ? x - r * 1.6 : x, y: y - r * 0.6, w: r * 1.6, h: r * 1.2 } };
       }
       if (kind === 'impact') {
-        // A jagged burst where a blow, shot or crash lands: grows in with appear, flickers with t.
         var it = num(+o.t, 0), spikes = 9, pulse = 1 + Math.sin(it * 18) * 0.05;
         c.translate(x, y); c.scale(a * pulse, a * pulse);
         [[1, '#f6c34a'], [0.55, '#fff4c8']].forEach(function (layer) {
@@ -926,7 +782,6 @@ export const MOTION_FIGURES = {
         return { box: { x: x - r, y: y - r, w: 2 * r, h: 2 * r } };
       }
       if (kind === 'spotlight') {
-        // The subject in light, the rest of the frame dimmed: drawn over everything but the header.
         var g = c.createRadialGradient(x, y, r * 0.8, x, y, r * 1.7);
         g.addColorStop(0, 'rgba(10,8,20,0)'); g.addColorStop(1, 'rgba(10,8,20,' + (num(+o.dim, 0.45) * a).toFixed(3) + ')');
         c.fillStyle = g; c.fillRect(x - 5000, y - 5000, 10000, 10000);
@@ -935,7 +790,6 @@ export const MOTION_FIGURES = {
       return null;
     } finally { c.restore(); }
   };
-  // A thing the catalogue lists, drawn by its kit drawing in the scene's box (a chain hangs across it).
   var thing = function (c, K, fn, o) {
     var k = pick(fn, o);
     if (!k) return null;
@@ -951,8 +805,6 @@ export const MOTION_FIGURES = {
     prop: function (c, K, o) { return thing(c, K, 'prop', o); },
     wall: function (c, K, o) {
       var k = pick('wall', o);
-      // A wall built of one library thing along its length (a row of stakes, an earthen bank): as many whole pieces as
-      // fill the length, each as tall as the wall.
       if (!k) {
         var q = pick('prop', o);
         if (!q || q[0] !== 'prop') return null;
@@ -968,13 +820,10 @@ export const MOTION_FIGURES = {
       if (ROW_WALLS.indexOf(o.kind) < 0) return null;
       if (o.kind === 'wagonFort') {
         if (Array.isArray(o.wagons) && o.wagons.length) return wagonsIn(c, K, o);
-        // A wagon fort in one box: as many whole wagons as its length holds side by side, each as tall as the box, the
-        // last one's shaft (WAGON_SHAFT of a wagon's length) still inside it.
         if (!(w > 0) || !(h > 0)) return null;
         var n = Math.max(1, Math.round(w / (h * WAGON_ASPECT))), each = w / (n + WAGON_SHAFT), left = num(+o.facing, 1) < 0 ? x - w / 2 + each * WAGON_SHAFT : x - w / 2;
         return wagonsIn(c, K, Object.assign({}, o, { wagons: Array.apply(null, Array(n)).map(function (_, i) { return { x: left + each * (i + 0.5), y: y, w: each * 0.94, h: h }; }) }));
       }
-      // A row is measured with two and three pieces (a row has at least two): as many pieces as fill the length.
       var two = measure(K, 'prop', Object.assign({}, o, { count: 2 }), 'p'), three = measure(K, 'prop', Object.assign({}, o, { count: 3 }), 'p');
       if (!two || !three || !(h > 0)) return null;
       var p = h / two.h, step = (three.w - two.w) * p, count = step > 0.5 ? Math.max(2, 2 + Math.round((w - two.w * p) / step)) : 2;
@@ -984,8 +833,6 @@ export const MOTION_FIGURES = {
       var w = num(+o.w, 0), k = pick('bridge', Object.assign({}, o, { kind: 'bridge' })), build = k && k[1];
       if (!(w > 0) || !build) return null;
       if (Array.isArray(o.from) && Array.isArray(o.to)) {
-        // Into the picture: from the near bank (deck w wide across the screen) to the far bank, as narrow as the scenes draw
-        // it there (FAR_DECK), piers and parapets in proportion to the near deck.
         var a = [num(+o.from[0], 0), num(+o.from[1], 0)], b = [num(+o.to[0], 0), num(+o.to[1], 0)];
         asScene(function () { drawBridge(c, o, build, a, b, w, w * FAR_DECK, w * 0.38, w * 0.24); });
         return { box: boxOf('bridge', o), deck: a };
@@ -1002,8 +849,6 @@ export const MOTION_FIGURES = {
     chart: function (c, K, o) { K.chart(c, { kind: o.kind, x: o.x, y: o.y, width: o.w, height: o.h, values: o.values, labels: o.labels, colors: o.colors, grow: o.grow }); return { box: { x: +o.x, y: +o.y, w: +o.w, h: +o.h } }; },
     meter: function (c, K, o) { K.meter(c, { kind: o.kind, x: o.x, y: o.y, width: o.w, height: o.h, value: o.value, color: o.color, label: o.label }); return { box: { x: +o.x, y: +o.y, w: +o.w, h: +o.h } }; },
     timeline: function (c, K, o) { K.timeline(c, { x: o.x, y: o.y, width: o.w, items: o.items, progress: o.progress, color: o.color, size: o.size }); return { box: { x: +o.x, y: +o.y, w: +o.w, h: num(+o.h, 0) } }; },
-    // An icon always shows at full size (appear 0..1 grows it in); pulse 0..1 (pop in older scenes) is a ring around it.
-    // The kit's symbol is scaled so its painted extent fills the circle of radius r the scene gives.
     icon: function (c, K, o) {
       if (!has(K.icons, o.kind)) return null;
       var r = num(+o.r, 20), x = num(+o.x, 0), y = num(+o.y, 0), id = [K.style ? K.style() : '', 'icon', o.kind].join('|');
@@ -1015,11 +860,8 @@ export const MOTION_FIGURES = {
       K.icon(c, opt);
       return { box: { x: x - r, y: y - r, w: 2 * r, h: 2 * r } };
     },
-    // curve is how far the middle of the arrow bends sideways, in px (to the right of travel when positive); the kit bends
-    // by a share of the length.
     arrow: function (c, K, o) { var len = Math.hypot(o.to[0] - o.from[0], o.to[1] - o.from[1]) || 1; K.arrow(c, Object.assign({}, o, { curve: num(+o.curve, 0) / len })); return { box: { x: Math.min(o.from[0], o.to[0]), y: Math.min(o.from[1], o.to[1]), w: Math.abs(o.to[0] - o.from[0]), h: Math.abs(o.to[1] - o.from[1]) } }; },
     label: function (c, K, o) {
-      // The kit reads a left-aligned label as the time header: a label that starts at x is centred on its own width instead.
       if (o.align === 'left') {
         var size = num(+o.size, 22);
         c.save(); c.font = '700 ' + size + 'px sans-serif';
@@ -1032,9 +874,6 @@ export const MOTION_FIGURES = {
     },
   };
   var FNS = Object.keys(KIT);
-  // Keyframe reading for both renderers: one monotone cubic through all keyframes (the speed carries on through a keyframe
-  // where the move continues and through a keyframe on the scene's first or last frame; it eases only where a value holds
-  // or turns back, and never overshoots). Numbers are read from the curve, other values from the keyframe that has started.
   var track = function (keys, progress) {
     var list = (Array.isArray(keys) ? keys : []).filter(function (key) { return key && isFinite(+key.at); }).slice().sort(function (a, b) { return a.at - b.at; });
     if (!list.length) return {};
@@ -1086,9 +925,6 @@ export const MOTION_FIGURES = {
     out.index = i;
     return out;
   };
-  // The header card, in screen pixels inside the 90 % title-safe area (SMPTE ST 2046-1), sized to the frame height.
-  // The cut-out style's place and time title: centred at the top in serif capitals, the place large and the date
-  // under it, in spaced capitals, light with a dark edge, fading in at the scene's start and out after a few seconds, like a storybook caption.
   var TITLE = { IN: 0.35, HOLD: 3.6, OUT: 0.5 };
   var storyTitle = function (c, text, time) {
     var a = time < TITLE.IN ? time / TITLE.IN : 1 - clamp((time - TITLE.HOLD) / TITLE.OUT, 0, 1);
@@ -1099,7 +935,6 @@ export const MOTION_FIGURES = {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.globalAlpha = a; c.globalCompositeOperation = 'source-over'; c.setLineDash([]);
     c.textAlign = 'center'; c.textBaseline = 'middle';
-    // Capitals spaced apart (the canvas has no true small capitals in every browser).
     lines.forEach(function (line, i) {
       var size = Math.round((i ? 24 : 40) * k), y = H * 0.1 + (i ? 46 * k : 0);
       line = line.toLocaleUpperCase('vi');
@@ -1131,8 +966,6 @@ export const MOTION_FIGURES = {
     track: track,
     header: header,
     use: function () {
-      // Every figure is drawn by the kit in the chosen style, fitted into the box the scene gives; a thing the kit
-      // cannot draw is left out (never something only like it).
       var table = {};
       FNS.forEach(function (fn) {
         table[fn] = function (c, o) {
@@ -1144,12 +977,10 @@ export const MOTION_FIGURES = {
           if (!opt.kind && THINGS.indexOf(fn) >= 0 && markKind(fn, opt)) opt = Object.assign({}, opt, { kind: markKind(fn, opt) });
           var K = kit(), out = null, view = window.__motionViewHooks;
           if (K && c && kitCan(fn, opt)) {
-            // While the kit draws, the camera and the style's tones stay off its own device-space transforms and colours.
             if (view) view.kit++;
             try { out = KIT[fn](c, K, Object.assign({}, opt, { mark: undefined, seed: opt.seed != null ? opt.seed : seedOf(opt) }, fn === 'person' && !opt.talking && speakingNow(opt) ? { talking: true } : {})); } catch (e) { out = null; } finally { if (view) view.kit--; }
           }
           if (!out) return {};
-          // A held thing outside the hold words: a prop of that kind in the near hand, as large as a hand-held thing.
           if (heldThing && Array.isArray(out.hand) && table.prop) {
             var hs = num(+opt.h, 100) * 0.22;
             try { table.prop(c, { kind: heldThing, x: +out.hand[0], y: +out.hand[1] + hs * 0.35, h: hs, w: hs }); } catch (e) {}
@@ -1167,7 +998,6 @@ export const MOTION_FIGURES = {
         asScene(function () { out = drawDevice(c, o, inner); });
         return out || {};
       };
-      // The time header is the video's own card in the title-safe corner, outside the camera: the scene only gives the text.
       table.header = function (c, o) {
         var text = o && o.text != null ? String(o.text).trim() : '';
         if (!text || !c) return {};

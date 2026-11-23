@@ -54,6 +54,22 @@ const buildOptionGroups = (lang: AppLanguage) => {
   ];
   return { chromeGroups, resumeGroups };
 };
+const GroupedSelect = ({ icon: Icon, value, groups, onChange }: { icon: React.ComponentType<{ className?: string }>; value: string; groups: Array<{ label: string; options: Array<{ value: string; label: string; desc?: string }> }>; onChange: (value: string) => void }) => (
+  <>
+    <Icon className={cn(RT_VIDEO_GENERATION.W_3_5_H_3_5_TEXT_SLATE_400_MR)} />
+    <StudioSelect value={value} onChange={(e) => onChange(e.target.value)} className={cn(RT_VIDEO_GENERATION.FLEX_1_BG_TRANSPARENT_TEXT_SLATE_200_TEXT_XS_FONT)}>
+      {_.map(groups, (group) => (
+        <optgroup key={group.label} label={group.label} className={cn(RT_VIDEO_GENERATION.BG_SLATE_955_TEXT_SLATE_400_FONT_BOLD)}>
+          {_.map(group.options, (option) => (
+            <option key={option.value} value={option.value} title={option.desc} className={cn(RT_VIDEO_GENERATION.BG_SLATE_955_TEXT_SLATE_300_FONT_NORMAL)}>
+              {option.label}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </StudioSelect>
+  </>
+);
 export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSectionProps> = ({ showAdvancedImageSettings, setShowAdvancedImageSettings, chromeHeadless, setChromeHeadless, resumeMode, setResumeMode, backgroundMode, setBackgroundMode, textMode, setTextMode, imageFocusMode, setImageFocusMode, language, T }) => {
   const { chromeGroups, resumeGroups } = buildOptionGroups(language);
   const currentChromeValue = chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED;
@@ -86,18 +102,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
               {T.lblChromeHeadless}
             </span>
             <div className={cn(RT_VIDEO_GENERATION.RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_955_BORDER_BORDER_SLATE)} title={T.lblChromeHeadlessTooltip}>
-              <Globe className={cn(RT_VIDEO_GENERATION.W_3_5_H_3_5_TEXT_SLATE_400_MR)} />
-              <StudioSelect value={currentChromeValue} onChange={(e) => setChromeHeadless(_.isEqual(e.target.value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))} className={cn(RT_VIDEO_GENERATION.FLEX_1_BG_TRANSPARENT_TEXT_SLATE_200_TEXT_XS_FONT)}>
-                {_.map(chromeGroups, (group) => (
-                  <optgroup key={group.label} label={group.label} className={cn(RT_VIDEO_GENERATION.BG_SLATE_955_TEXT_SLATE_400_FONT_BOLD)}>
-                    {_.map(group.options, (option) => (
-                      <option key={option.value} value={option.value} title={option.desc} className={cn(RT_VIDEO_GENERATION.BG_SLATE_955_TEXT_SLATE_300_FONT_NORMAL)}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </StudioSelect>
+              <GroupedSelect icon={Globe} value={currentChromeValue} groups={chromeGroups} onChange={(value) => setChromeHeadless(_.isEqual(value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))} />
               <ChevronDown className={cn(RT_VIDEO_GENERATION.POINTER_EVENTS_NONE_ABSOLUTE_RIGHT_2_TEXT_SLATE_500_W)} />
             </div>
           </div>
@@ -106,18 +111,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
               {T.lblResumeMode}
             </span>
             <div className={cn(RT_VIDEO_GENERATION.RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_955_BORDER_BORDER_SLATE)} title={T.lblResumeModeTooltip}>
-              <RefreshCw className={cn(RT_VIDEO_GENERATION.W_3_5_H_3_5_TEXT_SLATE_400_MR)} />
-              <StudioSelect value={currentResumeValue} onChange={(e) => setResumeMode(_.isEqual(e.target.value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))} className={cn(RT_VIDEO_GENERATION.FLEX_1_BG_TRANSPARENT_TEXT_SLATE_200_TEXT_XS_FONT)}>
-                {_.map(resumeGroups, (group) => (
-                  <optgroup key={group.label} label={group.label} className={cn(RT_VIDEO_GENERATION.BG_SLATE_955_TEXT_SLATE_400_FONT_BOLD)}>
-                    {_.map(group.options, (option) => (
-                      <option key={option.value} value={option.value} title={option.desc} className={cn(RT_VIDEO_GENERATION.BG_SLATE_955_TEXT_SLATE_300_FONT_NORMAL)}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </StudioSelect>
+              <GroupedSelect icon={RefreshCw} value={currentResumeValue} groups={resumeGroups} onChange={(value) => setResumeMode(_.isEqual(value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))} />
               <ChevronDown className={cn(RT_VIDEO_GENERATION.POINTER_EVENTS_NONE_ABSOLUTE_RIGHT_2_TEXT_SLATE_500_W)} />
             </div>
           </div>

@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { REUP_THUMBS as T } from "../constants/reupConfig.js";
-import type { ThumbConcept } from "../../../constants/thumbConcepts.js";
+import { THUMB_CAPTION, type ThumbCaption, type ThumbConcept } from "../../../constants/thumbConcepts.js";
 import type { ReupThumbKind, ReupThumbLayout, ReupThumbSpot } from "../types/reup.js";
 export interface ReupThumbSlot {
   layout: ReupThumbLayout;
@@ -26,6 +26,7 @@ const freshest = <V extends string>(options: readonly V[], past: string[], seed:
     ["desc", "asc"],
   ).map((x) => x.o);
 };
+export const reupThumbCaption = (kind?: ReupThumbKind): ThumbCaption | "none" => (kind && kind !== "signature" ? THUMB_CAPTION[kind] : "none");
 export const reupThumbFallback = (kind: ReupThumbKind): ReupThumbLayout => T.FALLBACK[kind];
 export const reupThumbLines = (layout: ReupThumbLayout, kind?: ReupThumbKind): number => (kind === "signature" || layout === "cinema" ? 0 : layout === "badge" ? 1 : 2);
 export const reupThumbSlots = (past: ReupThumbPast, preset: string, seedText: string): ReupThumbSlot[] => {
@@ -44,7 +45,7 @@ export const reupThumbSpots = (slots: Pick<ReupThumbSlot, "layout" | "lines" | "
   const seed = seedOf(seedText);
   const out: (ReupThumbSpot | undefined)[] = slots.map(() => undefined);
   const choices = slots.map(({ layout, kind }, i) => {
-    const all = (layout === "ai" && kind === "split" ? T.SPLIT_SPOTS : T.SPOTS[layout]) as readonly ReupThumbSpot[];
+    const all = (layout === "ai" ? T.CAPTION_SPOTS[reupThumbCaption(kind)] : T.SPOTS[layout]) as readonly ReupThumbSpot[];
     const f = layout === "ai" ? undefined : focus[i];
     const clear = all.filter((s) => (f === undefined ? true : f < T.SUBJECT_LEFT ? s[1] !== "l" : f > T.SUBJECT_RIGHT ? s[1] !== "r" : s[1] !== "c"));
     return clear.length ? clear : all;

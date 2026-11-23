@@ -27,7 +27,6 @@ export const motionLibraryPart = (items: MotionLibraryItem[], body: string, shad
   ${PRELUDE}
   c.save();
   c.translate(K.num(o.x, 0), K.num(o.y, 0));
-  // Long hulls whose drawing is far shorter than the real thing are drawn longer (their real length against their height).
   c.scale(f * (${JSON.stringify(LONG_HULL)}[kind] || 1), 1);
   if (o.alpha != null) c.globalAlpha *= K.clamp(o.alpha, 0, 1);
   ${shadow ? `K.shadow(c, E(0, 0.03, ${shadow}, 0.1), 0.18, 0.1 * R);` : ""}

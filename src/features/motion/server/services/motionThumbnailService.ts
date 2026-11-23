@@ -3,9 +3,12 @@ import { motionLanguage } from "../../../../lib/motionLanguage.js";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { getFfmpegPath } from "../../../../server/services/shortsPreprocessService.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import * as MR from "../../../../constants/motionRuntime.js";
-import { MOTION_THUMBNAIL as T, motionThumbConcept } from "../../../../constants/motionThumbnail.js";
+import { MOTION_THUMBNAIL as T, motionThumbConcept, motionThumbHeadline } from "../../../../constants/motionThumbnail.js";
 import type { ThumbConcept } from "../../../../constants/thumbConcepts.js";
 import { MOTION_AI_ROLE } from "../../../../constants/motionAiFallback.js";
 import { motionVideoGenrePackaging } from "../../../../constants/motionGenre.js";
@@ -27,7 +30,11 @@ import { motionHtmlFigures } from "../../../../lib/motionFigures.js";
 import { motionProportionOf } from "../../../../lib/motionDrawStyle.js";
 import { motionAnalysisEraYear } from "../../../../lib/motionEra.js";
 import { openMotionHtmlRuntime } from "./html/sceneRuntime.js";
-const dependencies = { runMotionAi, prepareMotionThumbnailReferences, openMotionHtmlRuntime };
+const toJpeg = async (source: string, target: string): Promise<string> => {
+  await promisify(execFile)(getFfmpegPath(), ["-hide_banner", "-y", "-i", source, "-filter_complex", `color=white[bg];[0:v]scale='min(${T.JPEG_WIDTH},iw)':-2[fg];[bg][fg]scale2ref[base][top];[base][top]overlay=shortest=1,format=yuvj420p`, "-frames:v", "1", "-q:v", "3", target], { windowsHide: true });
+  return target;
+};
+const dependencies = { toJpeg, runMotionAi, prepareMotionThumbnailReferences, openMotionHtmlRuntime };
 export const createMotionThumbnailService = (overrides: Partial<typeof dependencies> = {}) => {
   const deps = { ...dependencies, ...overrides };
   return async (
@@ -40,6 +47,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
     const width = portrait ? T.OUTPUT_HEIGHT : T.OUTPUT_WIDTH;
     const height = portrait ? T.OUTPUT_WIDTH : T.OUTPUT_HEIGHT;
     const title = seo?.title || analysis.title;
+    const concept = opts.concept || motionThumbConcept(analysis.videoGenre);
     const settings = motionVisualSettingsFor({ visualSettings: opts.visualSettings, analysis, script: opts.script });
     const style = motionThumbnailStyle(analysis, opts.script, settings);
     const exec = { ...resolveMotionSceneExecution(opts.exec), role: MOTION_AI_ROLE.DRAW };
@@ -57,7 +65,8 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         const name = `${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.DASH}${index}${RT_MAINTENANCE.DOT}${match[1].split(RT_MAINTENANCE.SLASH)[1]}`;
         const file = path.join(directory, name);
         await fs.promises.writeFile(file, buffer);
-        images.push({ name, mimeType: match[1], path: file });
+        const jpeg = await deps.toJpeg(file, path.join(directory, `${T.REFERENCE_PREFIX}${requestId.slice(0, T.REFERENCE_ID)}${index + 1}${T.JPEG_EXT}`)).catch(() => undefined);
+        images.push(jpeg ? { name: path.basename(jpeg), mimeType: T.JPEG_MIME, path: jpeg } : { name, mimeType: match[1], path: file });
       }
       const brief = {
         requestId,
@@ -80,7 +89,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       opts.log?.(T.LOG_SPEC);
       const render = { profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE, year: motionAnalysisEraYear(analysis) };
       const specExec: MotionAiExecution = { ...exec, singleResponse: true };
-      const base = [motionSceneSpecPrompt({}, { year: motionAnalysisEraYear(analysis), task: T.SPEC_TASK(width, height), frame: [width, height] }), T.LAYOUT(opts.concept || motionThumbConcept(analysis.videoGenre)), T.REFERENCE_RULE, T.STYLE_RULE + style, T.SPEC_HEADLINE, stringifyJson(brief)].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+      const base = [motionSceneSpecPrompt({}, { year: motionAnalysisEraYear(analysis), task: T.SPEC_TASK(width, height), frame: [width, height] }), T.LAYOUT(concept), T.REFERENCE_RULE, T.STYLE_RULE + style, T.SPEC_HEADLINE, stringifyJson(brief)].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
       let reason = "";
       for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
         opts.signal?.throwIfAborted();
@@ -91,6 +100,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
           const spec = motionSceneSpecRead(typeof answer === "string" ? extractJson(answer) : answer, [width, height]);
           if (!spec.headline?.lines.length) throw new Error(T.HEADLINE_MISSING);
           motionSceneSpecFix(spec, { year: render.year });
+          spec.headline = motionThumbHeadline(spec.headline, concept, [width, height]);
           page = motionSceneSpecPage(spec);
         } catch (error) {
           opts.signal?.throwIfAborted();
@@ -112,7 +122,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
             if (dimensions?.width === width && dimensions.height === height && !blank) {
               await fs.promises.writeFile(file, buffer);
               opts.log?.(MR.MOTION_TEXT_THUMBNAIL_XONG);
-              return { thumbnail: MR.MOTION_TEMPLATE_DATA_BASE64(MR.MOTION_TEXT_IMAGE_PNG, base64), prompt, concept: opts.concept || motionThumbConcept(analysis.videoGenre) };
+              return { thumbnail: MR.MOTION_TEMPLATE_DATA_BASE64(MR.MOTION_TEXT_IMAGE_PNG, base64), prompt, concept };
             }
             reason = blank ? T.BLANK : T.VIEWBOX_ERROR;
             break;

@@ -686,6 +686,15 @@ const normalizeFlowProjectId = (projectId?: string): string => {
   const normalized = _.replace(_.defaultTo(projectId, XRT.EMPTY), /^projects\//, XRT.EMPTY).trim();
   return /^proj_/i.test(normalized) ? XRT.EMPTY : normalized;
 };
+const countFlowGenerationFailures = (page: Page): Promise<number> =>
+  page.evaluate(
+    (browserPayload) => {
+      const { XRT } = browserPayload.studioTexts;
+      const { SOURCE_TEXT_GI } = browserPayload.texts;
+      return (document.body?.innerText || XRT.EMPTY).match(new RegExp(browserPayload.payload, SOURCE_TEXT_GI))?.length || 0;
+    },
+    { payload: FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source, texts: { SOURCE_TEXT_GI }, studioTexts: { XRT: { EMPTY: XRT.EMPTY } } },
+  );
 export const isFlowProjectPageUrl = (value: string, projectId: string): boolean => {
   const normalizedValue = _.trim(value);
   if (!FLOW_DIRECT_VIDEO_CONFIG.PROJECT_URL_PATTERN.test(normalizedValue) || _.isEmpty(projectId)) return false;
@@ -1143,15 +1152,7 @@ const waitForFlowGeneratedMediaBatch = async (page: Page, oldEditIds: string[], 
     if (_.gte(_.size(confirmedDomMedia), expectedOutputCount)) {
       return { media: _.take(confirmedDomMedia, expectedOutputCount), rejected: false, timedOut: false };
     }
-    const failureCount = await page.evaluate(
-      (browserPayload) => {
-        const { XRT } = browserPayload.studioTexts;
-        const { SOURCE_TEXT_GI } = browserPayload.texts;
-        const generationFailurePatternSource = browserPayload.payload;
-        return (document.body?.innerText || XRT.EMPTY).match(new RegExp(generationFailurePatternSource, SOURCE_TEXT_GI))?.length || 0;
-      },
-      { payload: FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source, texts: { SOURCE_TEXT_GI }, studioTexts: { XRT: { EMPTY: XRT.EMPTY } } },
-    );
+    const failureCount = await countFlowGenerationFailures(page);
     const newFailureCount = _.max([SecurityConstants.ZERO, _.subtract(failureCount, oldGenerationFailureCount)])!;
     if (_.gte(_.add(_.size(confirmedDomMedia), newFailureCount), expectedOutputCount)) {
       return { media: confirmedDomMedia, rejected: _.gt(newFailureCount, SecurityConstants.ZERO), timedOut: false };
@@ -3001,17 +3002,7 @@ async function generateImageWithPlaywrightTask(options: ImageGeneratorOptions): 
           { payload: undefined, texts: { SOURCE_BROWSER_TEXT_IMG_ALT_VIDEO_I } },
         );
         const oldVideoEditIds = _.isEqual(visualConfig?.generateType, GenerateType.Video) ? _.uniq([...(await getFlowVideoEditIds(activePage)), ..._.compact(_.map([...oldVideoSources, ...oldVideoThumbnailSources], extractFlowMediaIdFromUrl)), ..._.map(sandboxConfig.knownVideoMediaIds || [], normalizeFlowMediaId)]) : [];
-        const oldVideoGenerationFailureCount = _.isEqual(visualConfig?.generateType, GenerateType.Video)
-          ? await activePage.evaluate(
-              (browserPayload) => {
-                const { XRT } = browserPayload.studioTexts;
-                const { SOURCE_TEXT_GI } = browserPayload.texts;
-                const generationFailurePatternSource = browserPayload.payload;
-                return (document.body?.innerText || XRT.EMPTY).match(new RegExp(generationFailurePatternSource, SOURCE_TEXT_GI))?.length || 0;
-              },
-              { payload: FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source, texts: { SOURCE_TEXT_GI }, studioTexts: { XRT: { EMPTY: XRT.EMPTY } } },
-            )
-          : SecurityConstants.ZERO;
+        const oldVideoGenerationFailureCount = _.isEqual(visualConfig?.generateType, GenerateType.Video) ? await countFlowGenerationFailures(activePage) : SecurityConstants.ZERO;
         if (_.isEqual(visualConfig?.generateType, GenerateType.Video)) {
           flowResponseListener = (response: any) => {
             const responseUrl = _.toString(response.url());
@@ -3335,15 +3326,7 @@ async function generateFlowVideoPromptBatchWithPlaywrightTask(options: FlowVideo
       { payload: undefined, texts: { SOURCE_BROWSER_TEXT_IMG_ALT_VIDEO_I } },
     );
     const oldVideoEditIds = _.uniq([...(await getFlowVideoEditIds(activePage)), ..._.compact(_.map([...oldVideoSources, ...oldVideoThumbnailSources], extractFlowMediaIdFromUrl)), ..._.map(options.sandboxConfig?.knownVideoMediaIds || [], normalizeFlowMediaId)]);
-    const oldVideoGenerationFailureCount = await activePage.evaluate(
-      (browserPayload) => {
-        const { XRT } = browserPayload.studioTexts;
-        const { SOURCE_TEXT_GI } = browserPayload.texts;
-        const generationFailurePatternSource = browserPayload.payload;
-        return (document.body?.innerText || XRT.EMPTY).match(new RegExp(generationFailurePatternSource, SOURCE_TEXT_GI))?.length || 0;
-      },
-      { payload: FLOW_DIRECT_VIDEO_CONFIG.GENERATION_FAILURE_PATTERN.source, texts: { SOURCE_TEXT_GI }, studioTexts: { XRT: { EMPTY: XRT.EMPTY } } },
-    );
+    const oldVideoGenerationFailureCount = await countFlowGenerationFailures(activePage);
     flowResponseListener = (response: any) => {
       const responseUrl = _.toString(response.url());
       if (/video|media|download|googleusercontent|storage/i.test(responseUrl)) flowResponseUrls.push(responseUrl);

@@ -8,6 +8,7 @@ import { cn } from "../../../lib/utils";
 import { readBlobAsDataUrl } from "../../../lib/fileUtils";
 import { useState, useEffect, useMemo, useRef } from "react";
 import _ from "lodash";
+import { readProjectLogs } from "../lib/projectLogs";
 import { toast } from "sonner";
 import { usePresets } from "../../../hooks/usePresets";
 import { useAutoVideoState } from "../hooks/useAutoVideoState";
@@ -262,10 +263,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
       setActiveCreatedProject(foundProj);
       storageUtils.setAsync(selectedProjectStorageKey, scopedSelectedProjectId);
       setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      const cachedLogsStr = storageUtils.get(`${projectLogsStoragePrefix}${foundProj.id}`);
-      const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
-      const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
-      setLogs(projectLogs || []);
+      setLogs(readProjectLogs(foundProj, projectLogsStoragePrefix));
     }
   }, [scopedSelectedProjectId, projects, isConfigLoaded, isProcessing, setActiveCreatedProject, setRenderedVideoUrl, setLogs]);
   const { data: presetsData, refetch: refetchPresets } = usePresets();

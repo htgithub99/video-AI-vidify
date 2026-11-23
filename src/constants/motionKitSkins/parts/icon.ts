@@ -68,8 +68,6 @@ export const SKIN_PART_ICON = `(c, a, K) => {
     case "phone": fl(R(-0.42, -0.9, 0.42, 0.9, 0.12), "#2e2e32"); pt(R(-0.32, -0.7, 0.32, 0.6, 0.03), col || "#7a9ab8", 0.5); pt(E(0, 0.75, 0.06, 0.06), "#8a8a90", 0.3); break;
     case "computer": fl(R(-0.9, -0.75, 0.9, 0.4, 0.06), "#3a3a40"); pt(R(-0.78, -0.63, 0.78, 0.28, 0.02), col || "#7a9ab8", 0.5); fl(P([[-0.2, 0.4], [0.2, 0.4], [0.3, 0.75], [-0.3, 0.75]]), "#6a6a70", { hatch: false }); ln([[-0.5, 0.78], [0.5, 0.78]], 1.2); break;
     case "arrowUp": case "arrowDown": { const d = kind === "arrowUp" ? 1 : -1; fl(P([[0, -0.9 * d], [0.75, -0.1 * d], [0.3, -0.1 * d], [0.3, 0.9 * d], [-0.3, 0.9 * d], [-0.3, -0.1 * d], [-0.75, -0.1 * d]]), col || (d > 0 ? "#5a8a4a" : "#a83a2e")); break; }
-    // Forces on a map, drawn in the story's period (window.__motionView.year): spearmen, musketeers or riflemen; riders;
-    // a chariot or a tank; a galley, a sailing ship or a steamship; a castle or a concrete bunker.
     case "infantry": case "cavalry": case "armor": case "fleet": case "fortress": {
       const yr = window.__motionView && window.__motionView.year != null ? +window.__motionView.year : 1900, cc = col || "#6a5a48";
       fl(E(0, 0, 0.95, 0.95), "#f2ead6");

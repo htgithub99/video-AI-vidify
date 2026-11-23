@@ -1074,53 +1074,19 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       if (!autoCreateImages || thumbnailStoppedRef.current) {
         setIsGeneratingThumbnail(false);
       } else
-        void (async () => {
-          setIsGeneratingThumbnail(true);
-          const imageAbortController = new AbortController();
-          const imageRunId = SOURCE_TEMPLATE_MUSIC_COVER(String(Date.now()), String(Math.random().toString(36).slice(2)));
-          thumbnailAbortControllerRef.current = imageAbortController;
-          thumbnailRunIdRef.current = imageRunId;
-          try {
-            const thumbnailResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
-              method: HTTP_METHODS.POST,
-              headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-              body: jsonUtils.safeStringify({
-                ...chatPolicy,
-                songs: generatedSongs,
-                style: analyzeStyleFromSource ? createAnalyzedMusicStyle(generatedStyleAnalysis)?.content || trimmedStyle : trimmedStyle,
-                styleAnalysis: generatedStyleAnalysis,
-                sourceContext: referenceSource,
-                playlistSeoOptions: generatedPlaylistSeo,
-                thumbnailDescription,
-                thumbnailReference,
-                thumbnailReferenceName,
-                chromeHeadless,
-                aiExecution: { provider, model },
-                imageRunId,
-              }),
-              signal: imageAbortController.signal,
-            });
-            const thumbnailResult = await thumbnailResponse.json();
-            imageAbortController.signal.throwIfAborted();
-            const imageUrl = _.toString(thumbnailResult.thumbnail);
-            if (!thumbnailResponse.ok || !thumbnailResult.success || _.isEmpty(imageUrl)) {
-              throw new Error(thumbnailResult.warning || texts.THUMBNAIL_GENERATE_ERROR);
-            }
-            setGeneratedThumbnail(imageUrl);
-            await writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, imageUrl);
-            toast.success(texts.THUMBNAIL_GENERATE_SUCCESS);
-            recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverDone);
-          } catch (error: any) {
-            if (!imageAbortController.signal.aborted) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverFail);
-            if (!imageAbortController.signal.aborted) toast.error(_.toString(error?.message || texts.THUMBNAIL_GENERATE_ERROR));
-          } finally {
-            if (thumbnailAbortControllerRef.current === imageAbortController) {
-              thumbnailAbortControllerRef.current = null;
-              thumbnailRunIdRef.current = null;
-              setIsGeneratingThumbnail(false);
-            }
-          }
-        })();
+        void runMusicThumbnail({
+          ...chatPolicy,
+          songs: generatedSongs,
+          style: analyzeStyleFromSource ? createAnalyzedMusicStyle(generatedStyleAnalysis)?.content || trimmedStyle : trimmedStyle,
+          styleAnalysis: generatedStyleAnalysis,
+          sourceContext: referenceSource,
+          playlistSeoOptions: generatedPlaylistSeo,
+          thumbnailDescription,
+          thumbnailReference,
+          thumbnailReferenceName,
+          chromeHeadless,
+          aiExecution: { provider, model },
+        });
     } catch (err: any) {
       if (!musicStoppedByUserRef.current) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanFail);
       if (!receivedSongs) {
@@ -1414,22 +1380,14 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       if (_.get(error, SOURCE_TEXT_NAME) !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
     }
   };
-  const handleRegenerateThumbnail = async () => {
-    if (_.isEmpty(songs) || isBusy) return;
-    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverStart);
-    thumbnailStoppedRef.current = false;
+  const runMusicThumbnail = async (payload: Record<string, unknown>) => {
     const imageAbortController = new AbortController();
     const imageRunId = SOURCE_TEMPLATE_MUSIC_COVER(String(Date.now()), String(Math.random().toString(36).slice(2)));
     thumbnailAbortControllerRef.current = imageAbortController;
     thumbnailRunIdRef.current = imageRunId;
     setIsGeneratingThumbnail(true);
     try {
-      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
-        method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ ...chatPolicy, songs, style, styleAnalysis, sourceContext: referenceSongs, playlistSeoOptions, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless, aiExecution: { provider, model }, imageRunId }),
-        signal: imageAbortController.signal,
-      });
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ ...payload, imageRunId }), signal: imageAbortController.signal });
       const result = await response.json();
       imageAbortController.signal.throwIfAborted();
       const imageUrl = _.toString(result.thumbnail);
@@ -1448,6 +1406,12 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         setIsGeneratingThumbnail(false);
       }
     }
+  };
+  const handleRegenerateThumbnail = async () => {
+    if (_.isEmpty(songs) || isBusy) return;
+    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverStart);
+    thumbnailStoppedRef.current = false;
+    await runMusicThumbnail({ ...chatPolicy, songs, style, styleAnalysis, sourceContext: referenceSongs, playlistSeoOptions, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless, aiExecution: { provider, model } });
   };
   const cancelMusicImageRun = (runId: string | null) => {
     if (!runId) return;

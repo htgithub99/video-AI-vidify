@@ -168,6 +168,7 @@ import { delayAsync } from "../../../lib/asyncUtils";
 import { getErrorMessage } from "../../../utils/errorUtils";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import _ from "lodash";
+import { readProjectLogs } from "../lib/projectLogs";
 import { toast } from "sonner";
 import {
   VideoProject,
@@ -510,6 +511,15 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
     };
     restoreAutoProject();
   }, [projects, activeCreatedProject]);
+  const applySelectedProject = (foundProj: VideoProject, storageKey: string) => {
+    setActiveCreatedProject(foundProj);
+    const restoredProgress = getRestoredPipelineProgress(foundProj);
+    setCurrentStepIndex(restoredProgress.step);
+    setStepProgress(restoredProgress.progress);
+    storageUtils.setAsync(storageKey, foundProj.id);
+    setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+    setLogs(readProjectLogs(foundProj, projectLogsStoragePrefix));
+  };
   useEffect(() => {
     if (processingRef.current) return;
     const selectedProjectId = boundSelectedProjectIdRef.current;
@@ -518,16 +528,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
     if (!selectionChanged && activeCreatedProject) return;
     const foundProj = _.find(projects, { id: selectedProjectId });
     if (foundProj) {
-      setActiveCreatedProject(foundProj);
-      const restoredProgress = getRestoredPipelineProgress(foundProj);
-      setCurrentStepIndex(restoredProgress.step);
-      setStepProgress(restoredProgress.progress);
-      storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
-      setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      const cachedLogsStr = storageUtils.get(`${projectLogsStoragePrefix}${foundProj.id}`);
-      const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
-      const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
-      setLogs(projectLogs || []);
+      applySelectedProject(foundProj, REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT);
     }
   }, [projects, activeCreatedProject]);
   const syncSelectedProject = useCallback(
@@ -539,16 +540,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
       boundSelectedProjectIdRef.current = selectedProjectId;
       const foundProj = _.find(projects, { id: selectedProjectId });
       if (foundProj) {
-        setActiveCreatedProject(foundProj);
-        const restoredProgress = getRestoredPipelineProgress(foundProj);
-        setCurrentStepIndex(restoredProgress.step);
-        setStepProgress(restoredProgress.progress);
-        storageUtils.setAsync(selectedProjectStorageKey, selectedProjectId);
-        setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-        const cachedLogsStr = storageUtils.get(`${projectLogsStoragePrefix}${foundProj.id}`);
-        const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
-        const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
-        setLogs(projectLogs || []);
+        applySelectedProject(foundProj, selectedProjectStorageKey);
       }
     },
     [activeCreatedProject, projects],

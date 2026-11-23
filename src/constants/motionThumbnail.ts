@@ -1,10 +1,15 @@
-import { THUMB_CONCEPT_BRIEF, THUMB_GOLDEN_RULES, thumbConceptPick, type ThumbConcept } from "./thumbConcepts.js";
+import { THUMB_CAPTION, THUMB_CAPTION_SPACE, THUMB_CONCEPT_BRIEF, THUMB_GOLDEN_RULES, thumbConceptPick, type ThumbConcept } from "./thumbConcepts.js";
 export const MOTION_THUMBNAIL = {
   DRAW_ATTEMPTS: 3,
   RENDER_TRIES: 2,
   OUTPUT_WIDTH: 1280,
   OUTPUT_HEIGHT: 720,
   FILE_PREFIX: "thumbnail-",
+  REFERENCE_PREFIX: "ref_",
+  REFERENCE_ID: 8,
+  JPEG_EXT: ".jpg",
+  JPEG_MIME: "image/jpeg",
+  JPEG_WIDTH: 1280,
   VIEWBOX_ERROR: "Ảnh bìa: kích thước SVG không khớp khung hình đã chọn.",
   RENDER_LOG: "Ảnh bìa: đã nhận bản vẽ, đang lưu ảnh PNG về tool.",
   CLEANUP_WARNING: "Ảnh bìa: chưa dọn được tệp tham chiếu tạm; giữ nguyên kết quả đã tạo.",
@@ -13,18 +18,22 @@ export const MOTION_THUMBNAIL = {
   HEIGHT: 540,
   CONCEPT_ORDER: { pov: ["action", "curiosity", "mood", "split", "trophy"], witness: ["mood", "action", "curiosity", "split", "trophy"], chronicle: ["split", "action", "trophy", "curiosity", "mood"], verdict: ["curiosity", "split", "action", "trophy", "mood"] } as Record<string, readonly ThumbConcept[]>,
   CONCEPT_PICTURE: {
-    trophy: "the key prize or outcome of the story (the captured fort, the treasure, the invention, the crown) huge and sharp in the foreground, the character who won it beside or behind it with a proud or stunned face, the setting softly blurred behind",
-    split: "two halves divided by a thick white diagonal or zigzag line, each with its own subject and its own short label (two years with a curved red arrow between them, or two sides with a red-and-yellow VS burst on the divider)",
-    action: "the peak moment frozen mid-motion (the charge, the blow, the explosion, the fall): one main character's huge determined or frightened face in the near foreground on one side and the danger, army or trap on the other, one thick red arrow at the key spot",
-    curiosity: "one main character as a huge close-up on the right (head and shoulders about 55-75% of the frame height, cropped by the bottom edge) reacting in surprise to one mysterious key object or detail on the left, partly hidden or circled in red; the answer stays unseen",
-    mood: "a wide, atmospheric view of the story's place in its most striking light (dawn, fire, storm, candlelight) filling the frame, with one character's big calm or awed face cropped into a lower corner",
+    trophy: "the main character on the RIGHT half, seen from the chest up and close, holding up or presenting the key prize or outcome of the story (the treasure, the captured banner, the invention, the crown, the letter) toward the viewer so it is huge and sharp in the centre foreground, with a proud, stunned or triumphant face; the story's place softly simplified behind",
+    split: "two halves divided by a thick white diagonal or zigzag line, each with its own subject (two years with a curved red arrow between them, or two sides with a red-and-yellow VS burst on the divider); the main character large in one half, acting or reacting, face clearly visible",
+    action: "the peak moment frozen mid-motion (the charge, the blow, the leap, the explosion, the fall): the main character on the LEFT half, waist up and close, doing the decisive action with a fierce or terrified face, the weapon, tool or danger sharp and dramatic toward the centre, one thick red arrow at the key spot if it helps",
+    curiosity: "the main character's face very large on the RIGHT side (head and shoulders about 55-75% of the frame height), reacting in shock or intrigue while holding up or pointing at one mysterious key object or detail in the centre-right, circled in red; the answer stays unseen",
+    mood: "a wide, atmospheric view of the story's place in its most striking light (dawn, fire, storm, candlelight) with the main character in the upper three quarters, calm or awed, holding or touching the object that matters most to the story",
   } as Record<ThumbConcept, string>,
+  INTERACT: "The main character INTERACTS with the story's key object or moment — holds it up, presents it to the viewer, fights for it or reacts to it — so the picture tells the story at a glance; never a character standing apart from the highlight, never a face cut off.",
+  HEADLINE_SPOT: { margin: 0.04, top: 0.05, line: 1.08, min: 0.12, max: 0.2 },
   LAYOUT: (concept: ThumbConcept): string =>
     [
       "Compose a NEW finished YouTube thumbnail in the bold cartoon-history thumbnail grammar, not a video frame with a caption pasted over it.",
       `CONCEPT (chosen by the app, follow it): ${THUMB_CONCEPT_BRIEF[concept]} Draw it as: ${MOTION_THUMBNAIL.CONCEPT_PICTURE[concept]}.`,
-      "HEADLINE: 2-4 punchy words in all, in the selected video language with correct accents, that add emotion, a verdict, a question or a surprise and never repeat the selected SEO title (in a split, one short label per side; a number only if the story has it), upper-case, very large (letters about 12-20% of the frame height), in a heavy rounded marker-style font, white fill with a thick black outline about a fifth of the letter height and a small dark drop shadow, tilted 3-6 degrees, in front of everything; end it with a red '.', '?' or '!', or colour one key word red-orange. Keep text off faces and the subject and at least 3% from the edges.",
-      "LOOK: the background is a simple, softly blurred version of the story's real setting so the sharp, bright foreground subject and the headline pop; bold saturated colours; besides the headline at most one graphic sign (a red arrow, a red prohibition ring over an object, a VS burst or a red question mark). In portrait format stack the same parts: headline on top, subject large below. Preserve the scene's actual drawing style, proportions, clothing, colors and object construction; the concept never overrides that style. Horror uses subdued dark backgrounds and a restrained light pool/vignette; history and explainers retain their own selected palette and lighting. No YouTube interface, duration badge, progress bar, logo, watermark, subtitle strip or collage of sample thumbnails. Do not copy any real channel's titles, characters or events.",
+      `HEADLINE: 2-4 punchy words in all, in the selected video language with correct accents, that add emotion, a verdict, a question or a surprise and never repeat the selected SEO title (a number only if the story has it), upper-case, very large (letters about 12-20% of the frame height), in a heavy rounded marker-style font, white fill with a thick black outline about a fifth of the letter height and a small dark drop shadow, tilted 3-6 degrees, in front of everything; end it with a red '.', '?' or '!', or colour one key word red-orange. It goes in the caption space below (the app places it there).`,
+      THUMB_CAPTION_SPACE[THUMB_CAPTION[concept]],
+      MOTION_THUMBNAIL.INTERACT,
+      "LOOK: the background is a simple, softly blurred version of the story's real setting so the sharp, bright foreground subject and the headline pop; bold saturated colours; besides the headline at most one graphic sign (a red arrow, a red prohibition ring over an object, a VS burst or a red question mark). Preserve the scene's actual drawing style, proportions, clothing, colors and object construction; the concept never overrides that style. Horror uses subdued dark backgrounds and a restrained light pool/vignette; history and explainers retain their own selected palette and lighting. No YouTube interface, duration badge, progress bar, logo, watermark, subtitle strip or collage of sample thumbnails. Do not copy any real channel's titles, characters or events.",
       THUMB_GOLDEN_RULES,
     ].join(" "),
   REFERENCE_RULE:
@@ -50,3 +59,12 @@ export const MOTION_THUMBNAIL = {
   LOG_REFERENCE_ERROR: "Ảnh bìa: chưa đọc được hình tham chiếu; tiếp tục theo phong cách đã chọn.",
 } as const;
 export const motionThumbConcept = (genre: unknown, taken: readonly string[] = [], previous?: string): ThumbConcept => thumbConceptPick(MOTION_THUMBNAIL.CONCEPT_ORDER[String(genre)] || MOTION_THUMBNAIL.CONCEPT_ORDER.pov, taken, previous);
+export const motionThumbHeadline = <H extends { lines: string[]; x: number; y: number; size: number; align?: "left" | "center" | "right" }>(headline: H, concept: ThumbConcept, [width, height]: [number, number]): H => {
+  const P = MOTION_THUMBNAIL.HEADLINE_SPOT,
+    spot = THUMB_CAPTION[concept],
+    size = Math.round(Math.min(Math.max(+headline.size || 0, height * P.min), height * P.max)),
+    rows = Math.max(1, headline.lines.length),
+    x = spot === "topleft" ? width * P.margin : spot === "topright" ? width * (1 - P.margin) : width / 2,
+    y = spot === "bottom" ? height * (1 - P.top) - (rows - 1) * size * P.line : height * P.top + size;
+  return { ...headline, size, x: Math.round(x), y: Math.round(y), align: spot === "topleft" ? "left" : spot === "topright" ? "right" : "center" };
+};
