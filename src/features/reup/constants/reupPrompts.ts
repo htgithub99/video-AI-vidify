@@ -41,7 +41,7 @@ const THUMB_RULES =
   'Frame thumbnails lead each with a different frame: a large, sharp subject (the person or animal big in frame, best the person with the animal or the shelter), warm or strong light, or a clear before/after; skip dark, blurred or empty frames; never use the same frame in two thumbnails. For several frames, the first is the strongest and the text matches it. Text lines are max 18 characters; a tag is max 12 characters and is a number, a time or a subject the video shows (like 1 NIGHT, + DOG, DAY 2), never an adjective. Never promise what the video does not show. For AI pictures, "refs" are the frames that show the person, the shelter or build, and the animal or result most clearly, and "scene" says in plain English who (clothes, hair), the animal, the shelter or build, the place, the weather and the time of day exactly as those frames show them, plus what this concept puts in the picture; no weather, season or event the frames do not show.';
 const thumbAsk = (t: { frames: number; lines: number; kind?: string; ai?: boolean }): string => {
   const text = t.lines ? (t.lines > 1 ? "two text lines, 2-4 words in all" : "one short tag") : "no text";
-  if (t.ai && t.kind === "signature") return "an AI picture in the channel's signature look (the person full-body beside the glowing shelter), refs + scene, no text";
+  if (t.ai && t.kind === "signature") return "an AI picture in the channel's signature look (the main person full-body beside the glowing main place or build of the video), refs + scene, no text";
   if (t.ai) return `an AI picture for the concept ${THUMB_CONCEPT_BRIEF[t.kind as ThumbConcept]} refs + scene, ${text}`;
   const concept = t.kind && t.kind !== "signature" ? ` built as the concept ${THUMB_CONCEPT_BRIEF[t.kind as ThumbConcept]}` : "";
   return `${t.frames} frame${t.frames > 1 ? "s" : ""}${concept}, ${text}`;
@@ -219,7 +219,7 @@ export const REUP_PROMPT = {
     const [side, pose] = (look || "right:door").split(":");
     const picture =
       kind === "signature"
-        ? `Composition (the channel's signature look): the person stands full-body on the ${LOOK_SIDE[side] || "right"} third, body turned three-quarters, ${LOOK_POSE[pose] || LOOK_POSE.door}. The shelter, tent, cabin or vehicle from the frames fills the other two thirds, its inside glowing warm amber (bed, stove or lights seen through the open door or windows). Warm interior light against cool blue-green surroundings, eye-level wide-angle view; wet reflections and mist only if the scene has rain or mist. The animal sits or stands near the person if the frames show one.`
+        ? `Composition (the channel's signature look): the person stands full-body on the ${LOOK_SIDE[side] || "right"} third, body turned three-quarters, ${LOOK_POSE[pose] || LOOK_POSE.door}. The main place or build from the frames (shelter, tent, cabin, house, workshop, garage or vehicle) fills the other two thirds, its inside glowing warm amber (bed, stove, lamps or work lights seen through the open door or windows). Warm interior light against cool blue-green surroundings, eye-level wide-angle view; wet reflections and mist only if the scene has rain or mist. The animal sits or stands near the person if the frames show one.`
         : `${CONCEPT_PICTURE[kind as ThumbConcept] || CONCEPT_PICTURE.trophy} Keep one calm, uncluttered band along the top or bottom edge for a short caption added later.`;
     return [...IMAGE_BASE, `Scene: ${scene}`, picture].join("\n");
   },

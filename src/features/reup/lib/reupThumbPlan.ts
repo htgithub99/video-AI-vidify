@@ -30,19 +30,13 @@ export const reupThumbFallback = (kind: ReupThumbKind): ReupThumbLayout => T.FAL
 export const reupThumbLines = (layout: ReupThumbLayout, kind?: ReupThumbKind): number => (kind === "signature" || layout === "cinema" ? 0 : layout === "badge" ? 1 : 2);
 export const reupThumbSlots = (past: ReupThumbPast, preset: string, seedText: string): ReupThumbSlot[] => {
   const seed = seedOf(seedText);
-  const aiOk = !T.NO_AI.includes(preset);
-  const real = T.REAL[preset] || [];
   const worded = freshest(T.WORDED, past.layouts, seed)
     .slice(0, T.WORDED_KEEP)
     .map((layout): ReupThumbSlot => ({ layout, ai: false, lines: reupThumbLines(layout) }));
   const concepts = freshest((T.CONCEPTS[preset] || T.CONCEPTS.A) as readonly ThumbConcept[], past.kinds, 0)
     .slice(0, T.CONCEPT_KEEP)
-    .map((kind): ReupThumbSlot => {
-      const ai = aiOk && !real.includes(kind);
-      const layout = ai ? "ai" : reupThumbFallback(kind);
-      return { layout, kind, ai, lines: reupThumbLines(layout, kind) };
-    });
-  const signature: ReupThumbSlot = { layout: aiOk ? "ai" : reupThumbFallback("signature"), kind: "signature", ai: aiOk, lines: 0, ...(aiOk ? { look: freshest(T.LOOKS, past.looks, seed)[0] } : {}) };
+    .map((kind): ReupThumbSlot => ({ layout: "ai", kind, ai: true, lines: reupThumbLines("ai", kind) }));
+  const signature: ReupThumbSlot = { layout: "ai", kind: "signature", ai: true, lines: 0, look: freshest(T.LOOKS, past.looks, seed)[0] };
   return [signature, worded[0], concepts[0], worded[1], concepts[1]].filter(Boolean);
 };
 export const reupNextLook = (look: string | undefined, past: string[]): string => freshest(T.LOOKS, _.compact([look, ...past]), 0).find((l) => l !== look) || T.LOOKS[0];

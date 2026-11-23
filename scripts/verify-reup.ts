@@ -470,10 +470,10 @@ check("thumbnails: two classic frame thumbnails with text, one channel-signature
   assert.deepEqual(concepts.map((s) => [s.kind, s.layout, s.ai, s.lines]), [["action", "ai", true, 2], ["trophy", "ai", true, 2]], "survival: mid-action and trophy as AI pictures with two text lines");
   const next = reupThumbSlots({ layouts: first.map((s) => s.layout), kinds: concepts.map((s) => s.kind!), looks: [first[0].look!] }, "A", "job-2");
   assert.ok(next.some((s) => s.kind === "split") && next[0].look !== first[0].look, `the next video changes concept and pose: ${next.map((s) => s.kind || s.layout)} ${next[0].look}`);
-  const report = reupThumbSlots({ layouts: [], kinds: [], looks: [] }, "D", "x");
-  assert.ok(report.every((s) => !s.ai) && report[0].layout === "cinema", "real-photo reports never use AI pictures");
-  const reno = reupThumbSlots({ layouts: [], kinds: [], looks: [] }, "F", "x");
-  assert.ok(reno.some((s) => s.kind === "split" && !s.ai && s.layout === "split"), "renovation before/after stays real frames");
+  for (const preset of ["A", "C", "D", "F", "G", "H"]) {
+    const all = reupThumbSlots({ layouts: [], kinds: [], looks: [] }, preset, "x");
+    assert.ok(all[0].kind === "signature" && all.filter((s) => s.ai).length === 3 && all.filter((s) => !s.kind).length === 2, `every type: one signature and two concept AI pictures plus two classic ones (${preset})`);
+  }
   assert.notEqual(reupNextLook("right:door", []), "right:door");
   const spots = reupThumbSpots([{ layout: "hero", lines: 2 }, { layout: "ai", lines: 0 }, { layout: "badge", lines: 1 }, { layout: "ai", lines: 2 }, { layout: "collage", lines: 2 }], [0.2, undefined, 0.8, undefined, 0.5], [], "job-1");
   assert.equal(spots[1], undefined);

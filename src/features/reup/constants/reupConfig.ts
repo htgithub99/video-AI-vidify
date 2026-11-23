@@ -129,8 +129,6 @@ export const REUP_THUMBS = {
   SPOTS: { hero: ["tl", "tc", "tr", "bl", "bc"], badge: ["tl", "tr", "bl"], collage: ["tl", "bl"], split: ["tc", "bc"], circle: ["tl", "bl"], cinema: ["bl"], ai: ["tl", "tc", "tr", "bl", "bc"] },
   PREFER: { A: ["tl", "tc", "tr", "bl", "bc"], C: ["bc", "tc", "bl", "tl", "tr"], D: ["bl", "bc", "tl", "tc", "tr"], F: ["tc", "bc", "tl", "tr", "bl"], G: ["tl", "tr", "tc", "bl", "bc"], H: ["tl", "tr", "bl", "tc", "bc"] } as Record<string, readonly string[]>,
   CONCEPTS: { A: ["action", "trophy", "split"], C: ["curiosity", "trophy", "action"], D: ["trophy", "action", "split"], F: ["split", "trophy", "action"], G: ["split", "trophy", "curiosity"], H: ["trophy", "action", "split"] } as Record<string, readonly ThumbConcept[]>,
-  NO_AI: ["D"] as readonly string[],
-  REAL: { F: ["split"] } as Record<string, readonly string[]>,
   FALLBACK: { signature: "cinema", trophy: "hero", split: "split", action: "hero", curiosity: "circle", mood: "cinema" },
   LOOKS: ["right:door", "left:back", "right:tool", "left:door", "right:back", "left:tool"],
   AI: { ATTEMPTS: 2, MIN_BYTES: 20000, REFS: 3, TEXT_MIN: 110, SMALL: 168, FLAT: 30, PUNCH: 1.18 },
