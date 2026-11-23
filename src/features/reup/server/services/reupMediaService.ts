@@ -5,11 +5,12 @@ import _ from "lodash";
 import { inspectVideoFile } from "../../../../server/services/shortsPreprocessService.js";
 import { probeMediaHasAudio } from "../../../video-export/server/services/videoExportFfmpegService.js";
 import { transcribeVieneuAudio } from "../../../../server/services/vieneuTtsService.js";
-import { REUP_DIR, REUP_FINGERPRINT_BYTES, REUP_FOLDER, REUP_OVERLAY, REUP_QUALITY, REUP_SHEET } from "../../constants/reupConfig.js";
+import { REUP_DIR, REUP_FINGERPRINT_BYTES, REUP_FOLDER, REUP_OVERLAY, REUP_QUALITY, REUP_SHEET, REUP_WATERMARK } from "../../constants/reupConfig.js";
 import { REUP_ERROR } from "../../constants/reupServerText.js";
-import { reupBadRanges } from "../../lib/reupSceneMap.js";
+import { reupBadRanges, reupDimRanges } from "../../lib/reupSceneMap.js";
 import { reupItemAt, reupPhrases } from "../../lib/reupSpeech.js";
-import type { ReupBadRange, ReupMediaItem, ReupSheet, ReupSource, ReupTranscript } from "../../types/reup.js";
+import { reupWatermarkCorner, reupWatermarkCrop } from "../../lib/reupWatermark.js";
+import type { ReupBadRange, ReupCorner, ReupDimRange, ReupMediaItem, ReupSheet, ReupSource, ReupTranscript } from "../../types/reup.js";
 import { reupFfmpeg, reupFilterValue, reupFont, reupHasFilter, reupProbe } from "./reupFfmpeg.js";
 import { reupFileUrl, reupJobDir } from "./reupJobStore.js";
 const natural = (a: string, b: string): number => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
@@ -78,7 +79,7 @@ export const reupSheetInterval = (duration: number, wanted: number): number => {
   if (duration >= REUP_SHEET.SHORT_SOURCE) return wanted;
   return _.clamp(Math.ceil(duration / per), REUP_SHEET.MIN_INTERVAL, wanted);
 };
-export const makeReupSheets = async (jobId: string, source: ReupSource, wanted: number, signal?: AbortSignal, onFontMissing?: () => void): Promise<ReupSheet[]> => {
+export const makeReupSheets = async (jobId: string, source: ReupSource, wanted: number, signal?: AbortSignal, onFontMissing?: () => void): Promise<{ sheets: ReupSheet[]; watermark?: ReupCorner }> => {
   const interval = reupSheetInterval(source.duration, wanted);
   const dir = reupJobDir(jobId, REUP_DIR.SHEETS);
   for (const old of fs.readdirSync(dir)) fs.rmSync(path.join(dir, old), { force: true });
@@ -87,13 +88,17 @@ export const makeReupSheets = async (jobId: string, source: ReupSource, wanted: 
   const stamp = font ? `,drawtext=fontfile='${reupFilterValue(font)}':text='%{pts\\:hms}':x=6:y=6:fontsize=20:fontcolor=white:box=1:boxcolor=black@0.65:boxborderw=4` : "";
   const keyOnly = source.duration >= REUP_SHEET.SHORT_SOURCE ? ["-skip_frame", "nokey"] : [];
   const per = REUP_SHEET.COLS * REUP_SHEET.ROWS;
-  await reupFfmpeg(["-y", ...keyOnly, "-i", reupMediaFile(source), "-an", "-sn", "-vf", `fps=1/${interval}:start_time=0,scale=${REUP_SHEET.TILE_WIDTH}:-2${stamp},tile=${REUP_SHEET.COLS}x${REUP_SHEET.ROWS}:padding=4:margin=4`, "-q:v", String(REUP_SHEET.JPEG_Q), "-start_number", "0", path.join(dir, "sheet_%03d.jpg")], { signal });
+  const raw = reupJobDir(jobId, REUP_DIR.FRAMES, "watermark.raw");
+  const graph = `[0:v]fps=1/${interval}:start_time=0,split=2[a][b];[a]scale=${REUP_SHEET.TILE_WIDTH}:-2${stamp},tile=${REUP_SHEET.COLS}x${REUP_SHEET.ROWS}:padding=4:margin=4[s];[b]scale=${REUP_WATERMARK.WIDTH}:${REUP_WATERMARK.HEIGHT},format=gray[g]`;
+  await reupFfmpeg(["-y", ...keyOnly, "-i", reupMediaFile(source), "-an", "-sn", "-filter_complex", graph, "-map", "[s]", "-q:v", String(REUP_SHEET.JPEG_Q), "-start_number", "0", path.join(dir, "sheet_%03d.jpg"), "-map", "[g]", "-f", "rawvideo", raw], { signal });
+  const watermark = fs.existsSync(raw) ? reupWatermarkCorner(fs.readFileSync(raw)) : undefined;
+  fs.rmSync(raw, { force: true });
   const tiles = Math.max(1, Math.ceil(source.duration / interval));
   const files = fs
     .readdirSync(dir)
     .filter((f) => f.endsWith(".jpg"))
     .sort();
-  return files.map((file, index) => ({ index, file: path.join(dir, file), url: reupFileUrl(path.join(dir, file)), start: index * per * interval, interval, count: Math.max(1, Math.min(per, tiles - index * per)), cols: REUP_SHEET.COLS, rows: REUP_SHEET.ROWS }));
+  return { sheets: files.map((file, index) => ({ index, file: path.join(dir, file), url: reupFileUrl(path.join(dir, file)), start: index * per * interval, interval, count: Math.max(1, Math.min(per, tiles - index * per)), cols: REUP_SHEET.COLS, rows: REUP_SHEET.ROWS })), ...(watermark ? { watermark } : {}) };
 };
 export const cropReupSheet = async (jobId: string, sheet: ReupSheet, fromRow: number, rows: number, signal?: AbortSignal): Promise<ReupSheet | undefined> => {
   const count = Math.min(rows * sheet.cols, sheet.count - fromRow * sheet.cols);
@@ -102,7 +107,7 @@ export const cropReupSheet = async (jobId: string, sheet: ReupSheet, fromRow: nu
   await reupFfmpeg(["-y", "-i", sheet.file, "-vf", `crop=iw:(ih-4)*${rows}/${sheet.rows}+4:0:(ih-4)*${fromRow}/${sheet.rows}`, "-q:v", String(REUP_SHEET.JPEG_Q), file], { signal });
   return { ...sheet, file, url: reupFileUrl(file), start: sheet.start + fromRow * sheet.cols * sheet.interval, count, rows };
 };
-export const measureReupQuality = async (source: ReupSource, darkLevel: number, blurLevel: number, signal?: AbortSignal): Promise<{ bad: ReupBadRange[]; blurMeasured: boolean }> => {
+export const measureReupQuality = async (source: ReupSource, darkLevel: number, blurLevel: number, signal?: AbortSignal): Promise<{ bad: ReupBadRange[]; dim: ReupDimRange[]; blurMeasured: boolean }> => {
   const blur = blurLevel > 0 && (await reupHasFilter("blurdetect"));
   const keyOnly = source.duration >= REUP_SHEET.SHORT_SOURCE ? ["-skip_frame", "nokey"] : [];
   const log = await reupFfmpeg(["-y", ...keyOnly, "-i", reupMediaFile(source), "-an", "-sn", "-vf", `scale=${REUP_QUALITY.SCALE}:-2,signalstats${blur ? ",blurdetect" : ""},metadata=mode=print`, "-f", "null", "-"], { signal, keepLog: true });
@@ -120,15 +125,15 @@ export const measureReupQuality = async (source: ReupSource, darkLevel: number, 
     const b = line.match(/lavfi\.blur=([\d.]+)/);
     if (b && current) current.blur = Number(b[1]);
   }
-  return { bad: reupBadRanges(samples, darkLevel, blur ? blurLevel : 0, REUP_QUALITY.MERGE_GAP, REUP_QUALITY.MIN_BAD), blurMeasured: blur };
+  return { bad: reupBadRanges(samples, darkLevel, blur ? blurLevel : 0, REUP_QUALITY.MERGE_GAP, REUP_QUALITY.MIN_BAD), dim: reupDimRanges(samples, darkLevel, REUP_QUALITY.DIM, REUP_QUALITY.MERGE_GAP, REUP_QUALITY.DIM_MIN), blurMeasured: blur };
 };
-export const reupFrame = async (jobId: string, source: ReupSource, time: number, width = 640, signal?: AbortSignal): Promise<string> => {
-  const file = reupJobDir(jobId, REUP_DIR.FRAMES, `${Math.round(time * 10)}_${width}.jpg`);
+export const reupFrame = async (jobId: string, source: ReupSource, time: number, width = 640, signal?: AbortSignal, watermark?: ReupCorner): Promise<string> => {
+  const file = reupJobDir(jobId, REUP_DIR.FRAMES, `${Math.round(time * 10)}_${width}${watermark ? `_${watermark}` : ""}.jpg`);
   if (fs.existsSync(file)) return file;
   const item = source.kind === "folder" ? reupItemAt(source.items || [], time) : undefined;
   const input = item ? item.path : source.path;
   const seek = item ? (item.type === "clip" ? time - item.start : 0) : time;
-  await reupFfmpeg(["-y", ...(seek > 0 ? ["-ss", seek.toFixed(2)] : []), "-i", input, "-frames:v", "1", "-vf", `scale=${width}:-2`, "-q:v", "3", file], { signal });
+  await reupFfmpeg(["-y", ...(seek > 0 ? ["-ss", seek.toFixed(2)] : []), "-i", input, "-frames:v", "1", "-vf", `${reupWatermarkCrop(watermark)}scale=${width}:-2`, "-q:v", "3", file], { signal });
   return file;
 };
 export const reupFingerprint = async (source: ReupSource): Promise<string> => {

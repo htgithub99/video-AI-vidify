@@ -60,7 +60,7 @@ try {
             assert.equal(execution.role, "draw");
             assert.equal(execution.singleResponse, true, "one answer per request");
             assert.equal(motionAiRoutes(execution).length > 1, allowFallback);
-            assert.ok(prompt.includes(T.SPEC_TASK(720, 1280)) && prompt.includes(T.LAYOUT) && prompt.includes(T.REFERENCE_RULE) && prompt.includes(T.SPEC_HEADLINE));
+            assert.ok(prompt.includes(T.SPEC_TASK(720, 1280)) && prompt.includes(T.LAYOUT("split")) && prompt.includes(T.REFERENCE_RULE) && prompt.includes(T.SPEC_HEADLINE));
             assert.ok(prompt.includes(P.SCHEMA) && prompt.includes("720 x 1280 pixels"), "the scene spec rules on the thumbnail's own frame");
             assert.ok(prompt.includes(seo.description));
             assert.ok(!prompt.includes(analysis.look));
@@ -71,12 +71,13 @@ try {
           },
           openMotionHtmlRuntime: browser(() => (renders++, picture)),
         });
-        const options = { language: "vi", visualSettings, script, aspect: "9:16", exec: { ...selected, chromeHeadless: false, allowFallback } };
+        const options = { language: "vi", visualSettings, script, aspect: "9:16", concept: "split" as const, exec: { ...selected, chromeHeadless: false, allowFallback } };
         const first = await service(analysis, seo, options);
         const second = await service(analysis, seo, options);
         assert.equal(drawings, 2, "One request per click, no separate prompt-planning stage");
         assert.equal(renders, 2);
         assert.match(first.thumbnail, /^data:image\/png;base64,/);
+        assert.equal(first.concept, "split", "the app-chosen concept goes back with the picture");
         assert.deepEqual(readBase64ImageDimensions(first.thumbnail), { width: 720, height: 1280 });
         assert.notEqual(first.thumbnail, reference);
         assert.notEqual(first.prompt, second.prompt, "Every click has a new request identity");

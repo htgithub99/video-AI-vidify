@@ -1,9 +1,11 @@
 import { reupMoments } from "../lib/reupSceneMap.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { REUP_COMMENTARY } from "./reupCommentary.js";
+import { REUP_HIGHLIGHT, REUP_PACE } from "./reupConfig.js";
+import { THUMB_CONCEPT_BRIEF, THUMB_GOLDEN_RULES, type ThumbConcept } from "../../../constants/thumbConcepts.js";
 import { reupHoldWords, type ReupPastText, type ReupWordBudget } from "../lib/reupScriptReview.js";
 import { reupTalkQuote } from "../lib/reupTalk.js";
-import type { ReupJobSettings, ReupMediaItem, ReupOutputKind, ReupSceneMap, ReupShot, ReupStyle, ReupTranscript } from "../types/reup.js";
+import type { ReupJobSettings, ReupMediaItem, ReupSceneMap, ReupShot, ReupStyle, ReupTranscript } from "../types/reup.js";
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 export const REUP_ARTIFACT = { SCENES: "reup-scene-map", SCRIPT: "reup-script", PACKAGE: "reup-package" } as const;
 const LANG_NAME = { en: "English", vi: "Vietnamese", ja: "Japanese", ko: "Korean" } as const;
@@ -18,8 +20,9 @@ const VALUE_FOLDER = "Add meaning beyond what is seen: every chapter carries at 
 const VALUE_MARK_FOLDER = 'Set "value" to "why" or "view" on the cues that carry that context; leave it "" on lines that only describe the picture.';
 const quoted = (items: string[]): string => items.map((t) => `"${t}"`).join("; ");
 const TALK_MARK = "🗣";
+const USED_MARK = "⟲";
 const TALK = `Moments marked ${TALK_MARK} have the builder explaining on camera in their own words; that sound stays in the video. Do not talk over them: close a section on the moment just before one, with a short line, so the builder's words play in the pause after it. Never translate or repeat what the builder says.`;
-const usedLine = (used?: ReupShot[]): string => (used?.length ? `Earlier videos from this same source already used these stretches: ${used.map((u) => `${mmss(u.start)}-${mmss(u.end)}`).join(", ")}. Prefer other moments; never build a short or a section mainly from them.` : "");
+const usedLine = (used?: ReupShot[]): string => (used?.length ? `Earlier videos from this same source already used these stretches: ${used.map((u) => `${mmss(u.start)}-${mmss(u.end)}`).join(", ")}. Prefer other moments; never build a section mainly from them.` : "");
 const pastLine = (past?: ReupPastText): string =>
   past && past.openings.length + past.closings.length + past.phrases.length
     ? ["This channel's recent videos must not sound alike. Do not reuse these lines, phrases or their sentence patterns; say the same kind of thing in fresh words.", past.openings.length ? `Recent openings: ${quoted(past.openings)}.` : "", past.closings.length ? `Recent closings: ${quoted(past.closings)}.` : "", past.phrases.length ? `Phrases used again and again: ${quoted(past.phrases)}.` : ""]
@@ -28,20 +31,74 @@ const pastLine = (past?: ReupPastText): string =>
     : "";
 const MARKS = (n: number, lang: string, folder?: boolean): string =>
   `On-screen highlights: give a "mark" to at most ${n} ${folder ? "chapters" : "body or ending sections"}, spread across the video, at a new part, day or step or a striking result. "label" is a short tag like "DAY 2", "STEP 3", "BEFORE", "AFTER" or a chapter number; "title" names what happens; "sub" is the place and time of day or one thing visible on screen. Write them in ${lang}. Only what the footage shows: no invented numbers, names or results. Use null for every other section.`;
+const POP_MARKS = (n: number, lang: string): string =>
+  `On-screen pop words: about ${n} in total, spread from the first seconds to the end, one every ${REUP_HIGHLIGHT.SHORT.EVERY} seconds or so. Each "title" is 1-4 punchy words in ${lang} that the viewer must not miss at that moment: the key word of the line, a number the footage shows, the twist or the result, and always something the viewer SEES in that cue's moment or the result of that very line (never a word about warmth over a plate of food). Each also has a "label": 1-2 words in ${lang} that frame it, like TIP, STEP 2, WHY, RESULT, NIGHT 1 (vary them). Never a whole sentence, never invented numbers.`;
 const STORY = [
   'Storytelling may add what the pictures cannot show: the person\'s motivation and feelings, their plan and goals, general context (season, weather, the kind of place) and rough sizes or distances said as estimates ("about 20 metres"). Call the person by a simple first name or a role and keep it the same all video; never a full name, nationality, age or family story.',
   "Never contradict the pictures. Never invent results or counts the viewer can check on screen (fish caught, days, buildings, animals), accidents, injuries, rescues or other dramatic events the footage does not show, or advice that would be unsafe if wrong. Describe only what can be seen or reasoned: no smells or tastes.",
 ].join(" ");
-const CRAFT = [
-  "Write like a top documentary-style YouTube narrator:",
-  "- The hook promises the whole journey: 3-4 concrete payoffs the viewer will see later (from the scene map) and one stake — what could go wrong.",
-  "- Introduce the person and their goal early, and what they will need to build or do to reach it.",
-  '- Each body section runs problem → why it matters → the solution on screen → why it works → the result. Link sections with "But…", "So…", "That means…" so a new question is always open.',
-  '- Active voice with the person as the subject (in Vietnamese avoid chains of "được" passives).',
-  '- Mostly short sentences (6-14 words); a 2-5 word line at each payoff ("And it works.").',
-  "- Plain words. No filler adjectives or clichés (peaceful, perfect, amazing, well-deserved, every worry melts away; thật bình yên, trọn vẹn, tuyệt vời, xứng đáng, nghi ngút).",
-  "- If the scene map shows a setback (damage, storm, failure, repair), build a section around it. End with a callback to the opening promise.",
-].join("\n");
+const THUMB_RULES =
+  'Frame thumbnails lead each with a different frame: a large, sharp subject (the person or animal big in frame, best the person with the animal or the shelter), warm or strong light, or a clear before/after; skip dark, blurred or empty frames; never use the same frame in two thumbnails. For several frames, the first is the strongest and the text matches it. Text lines are max 18 characters; a tag is max 12 characters and is a number, a time or a subject the video shows (like 1 NIGHT, + DOG, DAY 2), never an adjective. Never promise what the video does not show. For AI pictures, "refs" are the frames that show the person, the shelter or build, and the animal or result most clearly, and "scene" says in plain English who (clothes, hair), the animal, the shelter or build, the place, the weather and the time of day exactly as those frames show them, plus what this concept puts in the picture; no weather, season or event the frames do not show.';
+const thumbAsk = (t: { frames: number; lines: number; kind?: string; ai?: boolean }): string => {
+  const text = t.lines ? (t.lines > 1 ? "two text lines, 2-4 words in all" : "one short tag") : "no text";
+  if (t.ai && t.kind === "signature") return "an AI picture in the channel's signature look (the person full-body beside the glowing shelter), refs + scene, no text";
+  if (t.ai) return `an AI picture for the concept ${THUMB_CONCEPT_BRIEF[t.kind as ThumbConcept]} refs + scene, ${text}`;
+  const concept = t.kind && t.kind !== "signature" ? ` built as the concept ${THUMB_CONCEPT_BRIEF[t.kind as ThumbConcept]}` : "";
+  return `${t.frames} frame${t.frames > 1 ? "s" : ""}${concept}, ${text}`;
+};
+const LOOK_SIDE: Record<string, string> = { left: "left", right: "right" };
+const LOOK_POSE: Record<string, string> = { door: "one hand resting on the door frame or the shelter, face turned to the camera", back: "looking back over the shoulder toward the camera", tool: "holding the main tool or item from the video (axe, lantern, pot) at chest height, face toward the camera" };
+const CONCEPT_PICTURE: Record<ThumbConcept, string> = {
+  trophy: "Composition: the best result of the video big and sharp close to the lens in the foreground; the place and the person softly out of focus behind it.",
+  split: "Composition: two halves divided by one clean vertical line, each half showing one side of the strongest contrast in the scene, both readable at a glance.",
+  action: "Composition: the peak action frozen mid-motion from a low dynamic angle (chips, sparks, splash or flame in the air), the person's effort visible.",
+  curiosity: "Composition: one unusual or unfinished detail is the centre of attention, the person looking at it with surprise; the answer stays unseen.",
+  mood: "Composition: calm cinematic light (golden hour, mist or firelight), the person and the animal still and cosy by the fire or stove.",
+};
+const IMAGE_BASE = [
+  "Create one photorealistic YouTube thumbnail picture, 16:9 landscape, with no text, letters, numbers, logos, watermarks or borders.",
+  "The attached pictures are frames of the real video: keep the same person (face, hair, clothes), the same animal (breed, colours), the same shelter, vehicle or build and the same kind of place. Add no other people or animals.",
+  "Weather, season and time of day exactly as in the scene below and the frames: never add rain, storm, lightning, snow, fog or night that they do not show.",
+  "Look: tack-sharp focus, high dynamic range, rich natural colour, cinematic light; natural, modest clothing as in the frames. One clear focal point that still reads when the picture is the size of a thumb.",
+];
+type Pace = "quick" | "mid" | "full";
+const paceOf = (seconds: number): Pace => (seconds < REUP_PACE.QUICK ? "quick" : seconds < REUP_PACE.MID ? "mid" : "full");
+const SHAPE: Record<Pace, string> = {
+  quick: [
+    "A short watch: the hook is one sentence over the single strongest moment, said in the first seconds.",
+    "One main idea: 2 to 4 body sections in time order, each a run of moments from neighbouring scenes.",
+    "No teasers and no chapter cards.",
+    "End on the result or one sharp closing line, over a moment that shows the person or the animal (a face, the two together), not only an object.",
+    "Moments in a row come from clearly different shots: never two cues on the same action a few seconds apart.",
+  ].join("\n"),
+  mid: ["A hook of about 10-15 seconds over 2-3 of the strongest moments, opened the way the opening line below says.", "4 to 7 body sections in time order, each a run of moments from neighbouring scenes.", "At most two teasers: one line over a strong later moment that makes the viewer want the next part.", "No chapter cards."].join("\n"),
+  full: ["A hook of about 20-30 seconds over the strongest moments, opened the way the opening line below says.", "8 to 12 body sections in time order, each a run of moments from neighbouring scenes.", "A teaser roughly every 2 minutes: one line over a strong later moment that makes the viewer want the next part.", "No chapter cards."].join("\n"),
+};
+const TITLE_TRUTH = "The on-screen title and every pop word or highlight describe only what the moments you pick show: no weather, temperature, danger, survival or season words unless those moments show it.";
+const QUICK_HOOK: Record<string, string> = {
+  result: 'Short-video opening: say the end result in the first line ("By the end, this tiny stove cooks a full dinner.").',
+  question: 'Short-video opening: one question the next seconds answer ("Can one small stove heat this whole cabin?").',
+  contrast: 'Short-video opening: before vs after in one line ("Cold bare boards now. Warm bed in a minute.").',
+  stakes: 'Short-video opening: what could go wrong right now, in one line ("If this fire dies, the night gets long.").',
+  tease: 'Short-video opening: hint at the payoff at the end without saying it ("Watch what this pan turns into.").',
+};
+const HOOK_MOMENTS: Record<Pace, string> = { quick: "1-2", mid: "2-4", full: "3-6" };
+const HOOK_CRAFT: Record<Pace, string> = {
+  quick: "- The hook is one punchy line: the single payoff the viewer will see by the end, or what is at stake.",
+  mid: "- The hook promises the journey: 2-3 concrete payoffs the viewer will see later (from the scene map) and one stake — what could go wrong.",
+  full: "- The hook promises the whole journey: 3-4 concrete payoffs the viewer will see later (from the scene map) and one stake — what could go wrong.",
+};
+const CRAFT = (pace: Pace): string =>
+  [
+    "Write like a top documentary-style YouTube narrator:",
+    HOOK_CRAFT[pace],
+    "- Introduce the person and their goal early, and what they will need to build or do to reach it.",
+    '- Each body section runs problem → why it matters → the solution on screen → why it works → the result. Link sections with "But…", "So…", "That means…" so a new question is always open.',
+    '- Active voice with the person as the subject (in Vietnamese avoid chains of "được" passives).',
+    '- Mostly short sentences (6-14 words); a 2-5 word line at each payoff ("And it works.").',
+    "- Plain words. No filler adjectives or clichés (peaceful, perfect, amazing, well-deserved, every worry melts away; thật bình yên, trọn vẹn, tuyệt vời, xứng đáng, nghi ngút).",
+    "- If the scene map shows a setback (damage, storm, failure, repair), build a section around it. End with a callback to the opening promise.",
+  ].join("\n");
 const angleLine = (angle: string): string => (angle.trim() ? `The channel's own knowledge and viewpoint (from the creator; weave it in naturally in at least two places, in your own words): ${angle.trim()}` : "");
 const styleLines = (style: ReupStyle): string[] => [REUP_COMMENTARY.VOICES[style.voice], style.hook ? REUP_COMMENTARY.HOOKS[style.hook] : "", style.shape ? REUP_COMMENTARY.SHAPES[style.shape] : "", REUP_COMMENTARY.ENDINGS[style.ending]];
 export const REUP_PROMPT = {
@@ -60,13 +117,14 @@ export const REUP_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n"),
-  SCRIPT: (input: { map: ReupSceneMap; settings: ReupJobSettings; rules: string; kind: ReupOutputKind; count: number; duration: number; style: ReupStyle; bilingual?: boolean; folder?: boolean; share?: [number, number]; marks: number; budget: ReupWordBudget; budgetAlt?: ReupWordBudget; past?: ReupPastText; talk?: ReupTranscript["phrases"]; used?: ReupShot[] }): string => {
+  SCRIPT: (input: { map: ReupSceneMap; settings: ReupJobSettings; rules: string; duration: number; style: ReupStyle; bilingual?: boolean; folder?: boolean; share?: [number, number]; marks: number; budget: ReupWordBudget; budgetAlt?: ReupWordBudget; past?: ReupPastText; talk?: ReupTranscript["phrases"]; used?: ReupShot[] }): string => {
     const s = input.settings;
     const share = input.folder ? undefined : input.share;
     const budget = input.budget;
     const lang = LANG_NAME[s.language];
     const alt = LANG_NAME[s.languageAlt];
-    const long = input.kind === "long";
+    const pace = paceOf(s.targetSeconds);
+    const pop = pace === "quick" && !input.folder;
     const rate = budget.rate;
     const scenes = input.folder
       ? input.map.segments.map((g) => `${g.id} [${mmss(g.start)}-${mmss(g.end)}] v${g.value} ${g.tags.join(",")} ≤${reupHoldWords(g.end - g.start, rate)}: ${g.what}`).join("\n")
@@ -76,29 +134,34 @@ export const REUP_PROMPT = {
             const lines = moments.map((m, k) => {
               const seen = (moments[k + 1]?.t ?? g.end) - m.t;
               const said = input.talk?.length ? reupTalkQuote(input.talk, m.t, m.t + seen) : undefined;
-              return `  ${m.id} ${mmss(m.t)} p${m.pull} ~${Math.max(1, Math.round(seen))}s ≤${Math.max(3, Math.round(seen * rate))}: ${m.what}${said ? ` ${TALK_MARK}"${said}…"` : ""}`;
+              const posted = input.used?.some((u) => m.t >= u.start && m.t < u.end) ? ` ${USED_MARK}` : "";
+              return `  ${m.id} ${mmss(m.t)} p${m.pull} ~${Math.max(1, Math.round(seen))}s ≤${Math.max(3, Math.round(seen * rate))}: ${m.what}${said ? ` ${TALK_MARK}"${said}…"` : ""}${posted}`;
             });
             return [`${g.id} [${mmss(g.start)}-${mmss(g.end)}] ${g.tags.join(",")}: ${g.what}`, ...lines].join("\n");
           })
           .join("\n");
     const cue = `{"moment": moment id, "text": the words spoken while this moment is on screen (1-2 sentences)${input.bilingual ? `, "textAlt": the same in ${alt}` : ""}, "value": "why"|"tip"|"compare"|"view"|"" (what this line adds beyond the picture)}`;
-    const mark = input.marks ? `, "mark": {"cue": index of the cue it opens on, "label": 1-3 words, "title": max 8 words, "sub": max 6 words${input.bilingual ? `, "labelAlt", "titleAlt", "subAlt": the same in ${alt}` : ""}} or null` : "";
+    const mark = !input.marks
+      ? ""
+      : !pop
+        ? `, "mark": {"cue": index of the cue it opens on, "label": 1-3 words, "title": max 8 words, "sub": max 6 words${input.bilingual ? `, "labelAlt", "titleAlt", "subAlt": the same in ${alt}` : ""}} or null`
+        : `, "marks": [{"cue": index of the cue it pops on, "label": 1-2 words, "title": 1-4 punchy words${input.bilingual ? `, "labelAlt", "titleAlt": the same in ${alt}` : ""}}] (0-${REUP_HIGHLIGHT.SHORT.PER_SECTION} per section)`;
     const shape = input.folder
       ? `{"outputs": [{"title": [line1, line2], "sections": [{"role": "body"|"ending", "chapter": short chapter title or "" (only when a new chapter starts)${mark}, "cues": [{"scene": segment id, "text": the words spoken while this picture is on screen (1-2 sentences), "value": "why"|"view"|""}]}]}]}`
       : `{"outputs": [{"title": [line1, line2] (on-screen title, max 28 characters per line)${input.bilingual ? `, "titleAlt": [the same in ${alt}]` : ""}, "sections": [{"role": "hook"|"body"|"teaser"|"ending"${mark}, "cues": [${cue}]}]}]}`;
     return [
-      long
-        ? `Write the voice-over for ONE ${input.folder ? "photo report" : "video"} (${s.targetSeconds >= 120 ? `${Math.round(s.targetSeconds / 60)}+ minutes` : `${s.targetSeconds} seconds`} on screen) built from real ${input.folder ? "photos and clips" : "footage"}.`
-        : `Write ${input.count} separate vertical shorts (${s.targetSeconds} seconds each) cut from a real source video. Each short uses different scenes.`,
-      `Narration language: ${lang}${input.bilingual ? ` and, for every line, a natural ${alt} version` : ""}. Target ${budget.min}-${budget.max} ${budget.unit} ${long ? "in total" : "per short"}, aim for about ${budget.aim}${input.budgetAlt ? ` (the ${alt} lines: ${input.budgetAlt.min}-${input.budgetAlt.max} ${input.budgetAlt.unit})` : ""}. Stay inside this range: below it the video ends up shorter than planned, above it the voice runs over the pictures. Reach it with lines worth hearing, never filler. ${input.folder ? "Warm, clear, formal register." : "Natural spoken style; short sentences."}`,
+      `Write the voice-over for ONE ${input.folder ? "photo report" : "video"} (${s.targetSeconds >= 120 ? `${Math.round(s.targetSeconds / 60)}+ minutes` : `${s.targetSeconds} seconds`} on screen) built from real ${input.folder ? "photos and clips" : "footage"}.`,
+      `Narration language: ${lang}${input.bilingual ? ` and, for every line, a natural ${alt} version` : ""}. Target ${budget.min}-${budget.max} ${budget.unit} in total, aim for about ${budget.aim}${input.budgetAlt ? ` (the ${alt} lines: ${input.budgetAlt.min}-${input.budgetAlt.max} ${input.budgetAlt.unit})` : ""}. Stay inside this range: below it the video ends up shorter than planned, above it the voice runs over the pictures. Reach it with lines worth hearing, never filler. ${input.folder ? "Warm, clear, formal register." : "Natural spoken style; short sentences."}`,
       share ? `Words cover about ${Math.round(share[0] * 100)}-${Math.round(share[1] * 100)}% of the time; between lines the footage and its own sound carry the story. Do not talk over every second.` : "",
+      input.folder ? "" : SHAPE[pace],
       input.rules,
       ...styleLines(input.style),
+      pace === "quick" && input.style.hook ? QUICK_HOOK[input.style.hook] : "",
       s.hook || input.folder ? "" : "No separate hook section.",
       s.teasers ? "" : "No teaser lines.",
       input.folder ? VALUE_FOLDER : VALUE,
       input.folder ? VALUE_MARK_FOLDER : VALUE_MARK,
-      input.marks ? MARKS(input.marks, lang, input.folder) : "",
+      input.marks ? (pop ? POP_MARKS(input.marks, lang) : MARKS(input.marks, lang, input.folder)) : "",
       angleLine(s.angle),
       pastLine(input.past),
       `Scene map (timeline ${mmss(input.duration)}). Summary: ${input.map.summary}`,
@@ -110,30 +173,15 @@ export const REUP_PROMPT = {
             `Suggested hook scenes: ${input.map.hook.join(", ")}. Clearest result: ${input.map.ending}.`,
             "Every cue points at one moment id from the list and talks about what is seen at that moment (or explains it, as above). The picture starts at that moment, so a line about anything else is wrong.",
             "Keep each cue within its moment's word limit; if a cue needs more, its picture runs on into the same scene — then do not use the next moment of that scene. Each moment at most once in the whole video. Skip weak moments (low pull) freely.",
-            "Body cues follow the timeline. The hook is one short line over each of 3-6 of the strongest moments from anywhere; a teaser is one line over a strong later moment that no other cue uses.",
+            `Body cues follow the timeline. The hook is one short line over each of ${HOOK_MOMENTS[pace]} of the strongest moments from anywhere; a teaser is one line over a strong later moment that no other cue uses.`,
           ].join(" "),
-      input.folder ? `${TRUTH} Every sentence must match the scenes listed for its section. Keep the words for each scene within its ≤ limit, so no photo stays on screen too long.` : `${STORY}\n${CRAFT}`,
+      input.folder ? `${TRUTH} Every sentence must match the scenes listed for its section. Keep the words for each scene within its ≤ limit, so no photo stays on screen too long.` : `${STORY}\n${CRAFT(pace)}`,
       input.talk?.length ? TALK : "",
       usedLine(input.used),
+      input.used?.length && !input.folder ? (pace === "quick" ? `Moments marked ${USED_MARK} were already posted from this source: in a video this short use none of them unless nothing else shows the idea.` : `Moments marked ${USED_MARK} were already posted from this source; use them only as connecting shots.`) : "",
+      input.folder ? "" : TITLE_TRUTH,
       `Return JSON: ${shape}.`,
-      long ? `Exactly one output. Sections in story order${input.folder ? "; every scene used at most once, in a sensible order" : ""}.` : `Exactly ${input.count} outputs; each has 1-3 sections.`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-  },
-  SPEECH: (input: { transcript: ReupTranscript; map: ReupSceneMap; settings: ReupJobSettings; rules: string; count: number; avoid?: string[] }): string => {
-    const s = input.settings;
-    return [
-      `Cut ${input.count} vertical promo clip${input.count > 1 ? "s" : ""} (${s.targetSeconds} seconds each, never above 60) from a real video where a person talks. Keep the speaker's own words: pick phrases by id, in the order they should play.`,
-      input.rules,
-      s.brandName ? `Brand: ${s.brandName}.` : "",
-      s.cta || s.hotline ? `Call to action must include: ${[s.cta, s.hotline].filter(Boolean).join(" · ")}.` : "",
-      `What is on screen: ${input.map.summary}`,
-      "Phrases (id [start-end] text):",
-      input.transcript.phrases.map((p) => `${p.id} [${p.start.toFixed(1)}-${p.end.toFixed(1)}] ${p.text}`).join("\n"),
-      `Language of hook, callouts and CTA: ${LANG_NAME[s.language]}. ${TRUTH} Do not change the speaker's words.`,
-      input.avoid?.length ? `This channel's recent clips used these hook, callout and CTA lines — write new ones with a different pattern: ${quoted(input.avoid)}.` : "",
-      `Return JSON: {"outputs": [{"title": [POV hook line 1, line 2] (max 24 characters each), "phrases": [phrase ids in play order, total ≈ ${s.targetSeconds} s], "callouts": [{"phrase": phrase id, "text": max 5 words}] (0-4), "cta": short call to action}]}.`,
+      `Exactly one output. Sections in story order${input.folder ? "; every scene used at most once, in a sensible order" : ""}.`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -150,28 +198,38 @@ export const REUP_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n"),
-  PACKAGE: (input: { map: ReupSceneMap; script: string; settings: ReupJobSettings; frames: number[]; options: number; thumbnail: boolean; pastTitles: string[]; pastLayouts: string[] }): string =>
+  PACKAGE: (input: { map: ReupSceneMap; script: string; settings: ReupJobSettings; frames: number[]; options: number; thumbs: { layout: string; frames: number; lines: number; kind?: string; ai?: boolean }[]; pastTitles: string[]; shown: string[]; avoid?: string[] }): string =>
     [
       `Prepare YouTube SEO for a narrated video made from real footage. Write everything in ${LANG_NAME[input.settings.language]}.`,
-      input.thumbnail ? `Attached images are candidate frames, in this order (seconds): ${input.frames.join(", ")}.` : "",
+      input.thumbs.length ? `Attached images are candidate frames, in this order (seconds): ${input.frames.join(", ")}.` : "",
       `Story: ${input.map.summary}`,
       `Narration: ${input.script}`,
+      input.shown.length ? `What this video actually shows (the story above covers the whole source, which this cut may not): ${input.shown.join("; ")}. Titles, descriptions and thumbnail text are about these scenes only.` : "",
+      input.avoid?.length ? `Do not use these words, the video does not show them: ${quoted(input.avoid)}.` : "",
       TRUTH + " Titles, descriptions and thumbnail text may not promise anything the video does not show.",
       "Never mention AI, text-to-speech, voice generators or any tool used to make the video in titles, descriptions, tags or hashtags.",
       `Write ${input.options} clearly different options (different angle or hook each), best first.`,
       input.pastTitles.length ? `This channel's recent titles — do not reuse their wording or their pattern: ${input.pastTitles.map((t) => `"${t}"`).join("; ")}.` : "",
-      input.thumbnail ? `Use a different thumbnail layout for each option${input.pastLayouts.length ? `; the last videos used ${input.pastLayouts.join(", ")}, so lead with another one` : ""}.` : "",
-      `Return JSON: {"options": [{"title": string (max 70 characters, the strongest keyword early), "description": string (first 2 lines carry the hook and main keywords; then 2-4 short lines about what happens${input.settings.sourceLink ? `; credit the original footage: ${input.settings.sourceLink}` : ""}), "hashtags": [3-5 hashtags starting with #], "tags": [10-15 search tags], "seoScore": 0-100 (honest estimate of search and click strength)${input.thumbnail ? `, "thumb": {"layout": "hero"|"split"|"circle", "frames": [frame seconds from the list; 2 for split/circle], "lines": [white line, yellow line] (max 18 characters each, matching this option's title)}` : ""}}], "pinned": string (one question that invites comments), "aiDisclosure": boolean (true only if the video would show realistic scenes that were generated or altered by AI)}.`,
+      input.thumbs.length ? [`Plan ${input.thumbs.length} thumbnails, in this order: ${input.thumbs.map((t, i) => `${i + 1}) ${thumbAsk(t)}`).join("; ")}.`, THUMB_RULES, THUMB_GOLDEN_RULES].join(" ") : "",
+      `Return JSON: {"options": [{"title": string (max 70 characters, the strongest keyword early), "description": string (first 2 lines carry the hook and main keywords; then 2-4 short lines about what happens${input.settings.sourceLink ? `; credit the original footage: ${input.settings.sourceLink}` : ""}), "hashtags": [3-5 hashtags starting with #], "tags": [10-15 search tags], "seoScore": 0-100 (honest estimate of search and click strength)}]${input.thumbs.length ? `, "thumbs": [{"frames": [frame seconds from the list, as many as asked], "refs": [2-3 frame seconds, only for AI pictures], "scene": "one English sentence, only for AI pictures", "lines": [text lines as asked, or [] for no text]}]` : ""}, "pinned": string (one question that invites comments), "aiDisclosure": boolean (true only if the video would show realistic scenes that were generated or altered by AI)}.`,
     ]
       .filter(Boolean)
       .join("\n"),
+  THUMB_IMAGE: (kind: string, scene: string, look?: string): string => {
+    const [side, pose] = (look || "right:door").split(":");
+    const picture =
+      kind === "signature"
+        ? `Composition (the channel's signature look): the person stands full-body on the ${LOOK_SIDE[side] || "right"} third, body turned three-quarters, ${LOOK_POSE[pose] || LOOK_POSE.door}. The shelter, tent, cabin or vehicle from the frames fills the other two thirds, its inside glowing warm amber (bed, stove or lights seen through the open door or windows). Warm interior light against cool blue-green surroundings, eye-level wide-angle view; wet reflections and mist only if the scene has rain or mist. The animal sits or stands near the person if the frames show one.`
+        : `${CONCEPT_PICTURE[kind as ThumbConcept] || CONCEPT_PICTURE.trophy} Keep one calm, uncluttered band along the top or bottom edge for a short caption added later.`;
+    return [...IMAGE_BASE, `Scene: ${scene}`, picture].join("\n");
+  },
 } as const;
 export const REUP_FIX = {
-  LABEL: (kind: ReupOutputKind, index: number): string => (kind === "long" ? "The video" : `Short ${index + 1}`),
+  LABEL: "The video",
   SHORT: (label: string, have: number, need: number, aim: number, unit: string, sections: number[]): string => `${label} has ${have} ${unit}; it needs at least ${need} (aim for about ${aim}). Add lines mainly in sections ${sections.join(", ")} (counted from 1).`,
   SHORT_ALT: (label: string, lang: string, have: number, need: number, unit: string): string => `${label}: the ${LANG_NAME[lang as keyof typeof LANG_NAME] || lang} lines have ${have} ${unit}; they need at least ${need}. Lengthen both languages together, saying the same thing.`,
   REPEAT: (label: string, sentences: string[]): string => `${label}: these sentences repeat this channel's earlier videos — keep the idea, use new wording and a different sentence pattern: ${quoted(sentences)}.`,
-  TWIN: (label: string, other: string, sentences: string[]): string => `${label} repeats ${other}; rewrite these so each short says its own thing: ${quoted(sentences)}.`,
   LONG: (label: string, sections: { n: number; have: number; cap: number }[]): string => `${label}: ${sections.map((x) => `section ${x.n} has ${x.have} words for photos that hold about ${x.cap}`).join("; ")} — shorten those lines (or add the next photos to the section) so no photo stays on screen too long.`,
+  STRAY: (label: string, words: string[]): string => `${label}: the title or on-screen words say ${quoted(words)}, which the chosen moments do not show — rephrase them around what is on screen.`,
   BARE: (label: string, sections: number[]): string => `${label}: sections ${sections.join(", ")} only describe the picture — give each one line of why, how, a tip, a comparison or the channel's view.`,
 } as const;

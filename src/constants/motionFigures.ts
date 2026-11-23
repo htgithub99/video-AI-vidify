@@ -142,7 +142,7 @@ export const MOTION_FIGURES = {
   var LAYOUT = cfg.layout || 'wide', INTENT = cfg.scene || {};
   var PAIRS = Array.isArray(cfg.pairs) ? cfg.pairs : [];
   var SAFE = 0.93, SMOOTH = 3;
-  var PLAN = { SAMPLES: 24, MIN_SHOT: 1.8, LONG_SHOT: 7, PUSH: 0.08, PUSH_SECONDS: 1.2, DRIFT: 0.03, MIN_STEP: 1.18, TRAVEL: 0.15 };
+  var PLAN = { SAMPLES: 24, MIN_SHOT: 1.8, LONG_SHOT: 7, PUSH: 0.08, PUSH_SECONDS: 1.2, DRIFT: 0.03, MIN_STEP: 1.18, TRAVEL: 0.15, QUIET_SECONDS: 8, QUIET_PUSH: 0.07, QUIET_TRAVEL: 0.03, REFRAME: 0.16, REFRAME_PUSH: 0.04 };
   // The closest a shot may push in (the drawing is vector; lines thin back as the camera comes close, see the kit's LW):
   // the master frame keeps the lead at about a quarter of the frame, so a chest shot needs about 8-9x.
   var ZMAX = { full: 10, cowboy: 10, medium: 10, mcu: 10 };
@@ -279,7 +279,9 @@ export const MOTION_FIGURES = {
     });
     var leadPts = lead ? frames.map(function (f, n) { return at(n, lead); }) : [];
     var anchor = leadPts.filter(Boolean)[0], box0 = !lead ? thingFrames.map(function (b, n) { return boxAt(n); }).filter(Boolean)[0] : null;
-    return { layout: layout, shots: shots, duration: duration, subjects: [lead, partner, focusThing ? FOCUS[0] : groupId].filter(Boolean), lead: anchor ? { x: anchor.x, y: (anchor.top + anchor.foot) / 2 } : box0 ? { x: box0.x + box0.w / 2, y: box0.y + box0.h / 2 } : null };
+    var xs = leadPts.filter(Boolean).map(function (q) { return q.x; }), quiet = duration > PLAN.QUIET_SECONDS && (!xs.length || Math.max.apply(null, xs) - Math.min.apply(null, xs) < PLAN.QUIET_TRAVEL);
+    var reframe = +((cfg.scene || {}).vary || 0) >= 2;
+    return { layout: layout, quiet: quiet, reframe: reframe, shots: shots, duration: duration, subjects: [lead, partner, focusThing ? FOCUS[0] : groupId].filter(Boolean), lead: anchor ? { x: anchor.x, y: (anchor.top + anchor.foot) / 2 } : box0 ? { x: box0.x + box0.w / 2, y: box0.y + box0.h / 2 } : null };
   };
   var ease = function (s) { s = clamp(s, 0, 1); return s * s * (3 - 2 * s); };
   var shotAt = function (plan, progress) {
@@ -288,6 +290,8 @@ export const MOTION_FIGURES = {
     var u = clamp((p - shot.a) / Math.max(1e-6, shot.b - shot.a), 0, 1), local = (p - shot.a) * plan.duration;
     // The whole frame: the smooth movement drifts in by DRIFT on the lead's side; the cut-out movement holds still.
     if (shot.z <= 1.001) {
+      if (plan.reframe && plan.lead) { var zr = 1 + PLAN.REFRAME + PLAN.REFRAME_PUSH * ease(u), hr = 0.5 / zr; return { z: zr, x: clamp(plan.lead.x, hr, 1 - hr), y: clamp(plan.lead.y, hr, 1 - hr) }; }
+      if (plan.quiet) { var zq = 1 + PLAN.QUIET_PUSH * ease(u), hq = 0.5 / zq, cq = plan.lead || { x: 0.5, y: 0.5 }; return { z: zq, x: clamp(0.5 + (cq.x - 0.5) * (zq - 1) * 6, hq, 1 - hq), y: clamp(0.5 + (cq.y - 0.5) * (zq - 1) * 6, hq, 1 - hq) }; }
       if (CUTOUT || plan.layout !== 'wide' || !plan.lead) return { z: 1, x: 0.5, y: 0.5 };
       var zd = 1 + PLAN.DRIFT * ease(u), hd = 0.5 / zd;
       return { z: zd, x: clamp(0.5 + (plan.lead.x - 0.5) * (zd - 1) * 8, hd, 1 - hd), y: clamp(0.5 + (plan.lead.y - 0.5) * (zd - 1) * 8, hd, 1 - hd) };
@@ -565,6 +569,8 @@ export const MOTION_FIGURES = {
   // point makes the width w (within the limits), and the points the kit returns are mapped through the same stretch.
   // How far an elastic thing's length may follow its box (shorter, longer) before it keeps its shape.
   var ELASTIC = [0.85, 1.3];
+  // A flat thing lying on the ground (a dropped shield) is seen from above at an angle: its drawing squashed to this height.
+  var LIE_FLAT = 0.45;
   var SHAPE_FIT = [0.6, 3];
   var fitted = function (c, K, fn, o, key, extra, fit) {
     if (o.seed == null) o = Object.assign({}, o, { seed: seedOf(o) });
@@ -610,13 +616,14 @@ export const MOTION_FIGURES = {
     // Turned by angle around its ground point; an overturned thing lies upside down in its box.
     if (angle) { c.translate(x, y); c.rotate(angle); c.translate(-x, -y); }
     if (overturned) { c.translate(x, y - h / 2); c.rotate(Math.PI); c.translate(-x, -(y - h / 2)); }
-    c.translate(x, y); c.scale(sx, 1); c.translate(-x, -y);
+    var flat = fn === 'prop' && truthy(o.lying) ? LIE_FLAT : 1;
+    c.translate(x, y); c.scale(sx, flat); c.translate(-x, -y);
     var out;
     try { out = K[fn](c, opt); } finally { c.restore(); }
     var res = out && typeof out === 'object' ? Object.assign({}, out) : {};
     ['head', 'hand', 'backHand', 'back'].forEach(function (name) { if (res[name]) res[name] = map(res[name]); });
     if (res.rider && typeof res.rider === 'object') { res.rider = Object.assign({}, res.rider); ['head', 'hand', 'backHand'].forEach(function (name) { if (res.rider[name]) res.rider[name] = map(res.rider[name]); }); }
-    res.box = { x: x - natural * sx / 2, y: y - h, w: natural * sx, h: h };
+    res.box = { x: x - natural * sx / 2, y: y - h * flat, w: natural * sx, h: h * flat };
     return res;
   };
   var has = function (list, kind) { return Array.isArray(list) && list.indexOf(kind) >= 0; };
@@ -832,7 +839,7 @@ export const MOTION_FIGURES = {
   // Story devices (FIG.device): what a picture cannot show by itself, drawn the same in both renderers through the
   // drawing style, never with words. thought and inset hold a small picture the scene draws inside them.
   // A count shows at most COUNT_MAX figures for its largest group (each one then stands for many).
-  var DEVICE_INK = '#26201c', DEVICE_PAPER = '#fbf8ef', COUNT_MAX = 24;
+  var DEVICE_INK = '#26201c', DEVICE_PAPER = '#fbf8ef', INSET_PAPER = '#efe4cc', COUNT_MAX = 24;
   var devicePath = function (kind, x, y, r) {
     var p = new Path2D();
     if (kind === 'inset') { p.arc(x, y, r, 0, Math.PI * 2); return p; }
@@ -869,7 +876,7 @@ export const MOTION_FIGURES = {
         var p = devicePath(kind, x, y, r), box = kind === 'inset' ? { x: x - r * 0.75, y: y - r * 0.75, w: r * 1.5, h: r * 1.5 } : { x: x - r * 1.1, y: y - r * 0.68, w: r * 2.2, h: r * 1.36 };
         // The centre and radius too (cx, cy, r): pictures drawn around the bubble's centre land inside it.
         box.cx = x; box.cy = y; box.r = r;
-        c.fillStyle = DEVICE_PAPER; c.fill(p);
+        c.fillStyle = kind === 'inset' ? INSET_PAPER : DEVICE_PAPER; c.fill(p);
         if (typeof inner === 'function') { c.save(); c.clip(p); try { inner(c, box); } catch (e) {} c.restore(); }
         c.lineWidth = Math.max(2, r * 0.06); c.stroke(p);
         return { box: { x: x - r * (kind === 'inset' ? 1 : 1.6), y: y - r * (kind === 'inset' ? 1 : 1.05), w: r * (kind === 'inset' ? 2 : 3.2), h: r * (kind === 'inset' ? 2 : 2.1) } };

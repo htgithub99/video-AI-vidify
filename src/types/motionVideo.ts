@@ -620,6 +620,8 @@ export interface MotionThumbnail {
   image: string;
   prompt: string;
   optionIndex?: number;
+  tag?: string;
+  concept?: string;
 }
 export interface MotionSeoPack {
   options: MotionSeoOption[];
@@ -682,6 +684,7 @@ export interface MotionVoiceSpeedTarget {
   source?: "captions" | "audio";
   phrase?: number;
   speechRatio?: number;
+  language?: string;
   at: number;
 }
 export interface MotionVoiceSpeedSettings {
@@ -818,6 +821,7 @@ export interface MotionAiExecution {
   multiSceneRooms?: boolean;
   multiRoom?: boolean;
   singleResponse?: boolean;
+  uncertainRetry?: boolean;
   provider?: string;
   model?: string;
   mode?: string;

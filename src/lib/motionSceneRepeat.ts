@@ -9,12 +9,15 @@ const tokens = (html: string | undefined): Set<string> | undefined => {
 };
 export const motionSceneRepeats = <T extends Scene>(scenes: T[]): T[] => {
   let before: Set<string> | undefined,
-    varied = false;
+    varied = false,
+    run = 0;
   return scenes.map((scene) => {
     const now = tokens(scene.html?.html),
       same = !!now && !!before && [...now].filter((t) => before!.has(t)).length / new Set([...now, ...before]).size >= R.REPEAT.SAME;
     before = now;
+    run = same ? run + 1 : 0;
     varied = same && !varied;
-    return varied ? { ...scene, vary: 1 } : scene;
+    const vary = run >= R.REPEAT.REFRAME_RUN && !varied ? 2 : varied ? 1 : 0;
+    return vary ? { ...scene, vary } : scene;
   });
 };

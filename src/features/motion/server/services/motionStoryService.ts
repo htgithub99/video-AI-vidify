@@ -9,6 +9,7 @@ import { MOTION_WRITING as WRITING } from "../../../../constants/motionWriting.j
 import { MOTION_ILLUSTRATION_PROFILES } from "../../../../constants/motionIllustrationProfiles.js";
 import { parseMotionChapterReply } from "../../../../lib/motionChapterJson.js";
 import { motionGenreCraft } from "../../../../lib/motionGenreCraft.js";
+import { motionTimeCue } from "../../../../lib/motionTimeline.js";
 import { motionSourceSegments, motionSplitUntimed } from "../../../../lib/motionSourceSegments.js";
 import { motionHtmlAuthoringSnapshot, motionHtmlGenreDirection, motionHtmlAnalysisPrompt } from "../../../../lib/motionHtmlAuthoring.js";
 import { motionProportionPlanner } from "../../../../lib/motionDrawStyle.js";
@@ -1120,14 +1121,21 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       const scopedLine = drawing && tabbedLine && !/^\s*\[[^\]]+\]/u.test(tabbedLine) ? `${RT_MAINTENANCE.OPEN_BRACKET}${MOTION_PRODUCTION.STAGES.SCENES}${RT_MAINTENANCE.CLOSE_BRACKET_SPACE}${tabbedLine}` : tabbedLine;
       log?.(scopedLine, activity ? { ...activity, artifact: activity.artifact || artifactType, owner: run.projectId, requestId, phaseStartedAt, roomGeneration: run.roomGenerations.get(workerId), targetIds: contract?.targetIds } : undefined);
     };
+    let retryUncertain = false;
     try {
       signal?.throwIfAborted();
       run.signal.throwIfAborted();
       if (run.halt.error) throw run.halt.error;
       return await motionAiRunStore.run({ ...run, workerId }, () => runMotionAiTask(prompt, artifactType, exec, signal, activityLog, images, attempt, contract));
     } catch (error) {
-      if (!exec.singleResponse && _.get(error, AIR.UNCERTAIN_FLAG)) run.halt.error = error as Error;
-      throw error;
+      if (!exec.singleResponse && _.get(error, AIR.UNCERTAIN_FLAG)) {
+        if (!exec.uncertainRetry && !signal?.aborted && !run.signal.aborted) {
+          run.roomRefreshes.add(workerId);
+          retryUncertain = true;
+          activityLog(AIR.UNCERTAIN_RETRY(String(exec.provider)));
+        } else run.halt.error = error as Error;
+      }
+      if (!retryUncertain) throw error;
     } finally {
       run.lastWorkerId = workerId;
       try {
@@ -1138,6 +1146,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         closeMotionRoomWhenIdle(run, workerId, planning ? MOTION_STORY_CONFIG.PLAN_ROOM_IDLE_CLOSE_MS : MOTION_STORY_CONFIG.ROOM_IDLE_CLOSE_MS, log);
       }
     }
+    return runMotionAi(prompt, artifactType, { ...exec, uncertainRetry: true }, signal, log, images, attempt, contract);
   })();
   pending.catch(_.noop);
   run.pending.add(pending);
@@ -2619,7 +2628,7 @@ export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: Mot
       beat.place = known || (rawPlace ? slugKey(rawPlace) : _.first(placeKeys));
       if (!known && rawPlace) beat.placeName = _.truncate(rawPlace, { length: 60 });
       const place = _.find(analysis.places, { key: beat.place });
-      beat.time = pickEnum(TIMES, v?.time, (place?.time as string) || MOTION_TEXT_DAY);
+      beat.time = pickEnum(TIMES, v?.time, motionTimeCue(narration) || (place?.time as string) || MOTION_TEXT_DAY);
       beat.weather = pickEnum(WEATHERS, v?.weather, MOTION_TEXT_NONE);
       beat.shot = pickEnum(SHOTS, v?.shot, MOTION_TEXT_MEDIUM);
       const castList = _.uniq(_.compact(_.map(_.castArray(v?.cast || v?.actors || []), (a: any) => castOf(_.toString(_.isPlainObject(a) ? a.cast || a.who : a)))));

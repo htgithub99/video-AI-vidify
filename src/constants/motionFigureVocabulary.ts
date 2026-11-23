@@ -48,10 +48,12 @@ const POSES = [
   "tied",
   "huddle",
   "sleep",
+  "blow",
+  "beat",
 ];
 const EXPRESSIONS = ["calm", "happy", "worried", "scared", "angry", "stern", "grave", "sad", "sleep", "shout", "surprised", "dead"];
-const HOLDS = ["spear", "pike", "staff", "flag", "pitchfork", "sword", "sabre", "katana", "axe", "club", "torch", "hammer", "pickaxe", "shovel", "oar", "bowl", "bucket", "sickle", "hoe", "net", "cup", "bow", "crossbow", "musket", "rifle", "smg", "pistol", "shield", "lantern", "scroll", "letter", "book", "basket", "sack", "bundle", "box", "baby", "bread", "horn", "drum"];
-const HEADS = ["kettle", "nasal", "coif", "hood", "veil", "cap", "steppe", "crown", "crownHelmet", "turban", "leafhat", "conical", "highland", "peaked", "beret", "tophat", "bicorne", "tricorne", "shako", "pickelhaube", "adrian", "brodie", "stahlhelm", "m1", "modern", "pith", "roman", "greek", "samurai", "headband", "helmet", "hat", "none"];
+const HOLDS = ["spear", "pike", "staff", "flag", "pitchfork", "sword", "sabre", "katana", "axe", "club", "torch", "hammer", "mallet", "pickaxe", "shovel", "oar", "bowl", "bucket", "sickle", "hoe", "net", "cup", "bow", "crossbow", "musket", "rifle", "smg", "pistol", "shield", "lantern", "scroll", "letter", "book", "basket", "sack", "bundle", "box", "baby", "bread", "horn", "drum"];
+const HEADS = ["kettle", "nasal", "coif", "hood", "veil", "cap", "steppe", "crown", "crownHelmet", "mitre", "turban", "leafhat", "conical", "highland", "peaked", "beret", "tophat", "bicorne", "tricorne", "shako", "pickelhaube", "adrian", "brodie", "stahlhelm", "m1", "modern", "pith", "roman", "greek", "samurai", "headband", "helmet", "hat", "none"];
 const OUTFITS = ["peasant", "levy", "soldier", "officer", "king", "noble", "monk", "scholar", "merchant", "worker", "sailor"];
 const REGIONS = ["europe", "eastAsia", "japan", "vietnam", "middleEast", "southAsia", "africa", "steppe", "americas"];
 const ANIMAL_POSES = ["stand", "walk", "run", "graze", "lie", "rear", "sit", "eat", "drink"];

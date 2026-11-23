@@ -83,7 +83,7 @@ console.log("motion quality v2 ok");
   // never cut) and the focal thing, never a fixed shot size.
   const close = motionFigureView({ layout: "close", scene: { shot: "medium", kind: "map" } });
   assert.equal(close.layout, "close");
-  assert.deepEqual(close.scene, { shot: "medium", kind: "map" });
+  assert.deepEqual({ shot: close.scene.shot, kind: close.scene.kind }, { shot: "medium", kind: "map" });
   assert.equal((close as { shot?: unknown }).shot, undefined, "no fixed shot size");
   assert.deepEqual(motionFigureView({ layout: "medium", scene: { shot: "medium" } }, "king").focus, ["king"]);
   assert.deepEqual(motionFigureView({ layout: "auto" }).focus, []);

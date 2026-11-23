@@ -73,6 +73,7 @@ import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionR
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
 import { releaseMotionEditorialSession } from "../services/motionStoryService.js";
 import { generateMotionThumbnail } from "../services/motionThumbnailService.js";
+import { THUMB_CONCEPTS, type ThumbConcept } from "../../../../constants/thumbConcepts.js";
 import { cleanStorageJunk, scanStorageJunk } from "../../../../server/services/storageService.js";
 import { getPythonCommand, getStaticResourcePath } from "../../../../server/utils/paths.js";
 const fail = (res: Response, status: number, error: unknown) => res.status(status).json({ success: false, error: _.toString(_.get(error, MOTION_TEXT_MESSAGE, error)) });
@@ -196,6 +197,7 @@ export const thumbnailMotionStory = (req: Request, res: Response): void => {
       const result = await generateMotionThumbnail(analysis, seo, {
         script: req.body?.script,
         visualSettings: motionVisualSettingsFor(req.body || {}),
+        ...(THUMB_CONCEPTS.includes(req.body?.concept) ? { concept: req.body.concept as ThumbConcept } : {}),
         language: storyLanguage(req.body?.language),
         aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9),
         note: _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 600 }),

@@ -88,7 +88,7 @@ export const useReupStudio = (lang: Lang) => {
     setJob(res.job);
     setSource(res.job.source);
     setSourcePath(res.job.source.path);
-    setPreset(res.job.preset);
+    setPreset(reupPreset(res.job.preset).id);
   }, []);
   useEffect(() => {
     void (async () => {
@@ -160,12 +160,13 @@ export const useReupStudio = (lang: Lang) => {
     if (!source) return toast.error(text.NEED_SOURCE);
     if (!rights) return toast.error(text.NEED_LICENSE);
     if (rights === "licensed" && !settings.sourceLink.trim()) return toast.error(text.NEED_LICENSE_LINK);
-    if (!def.speech && settings.angle.trim().length < REUP_LIMITS.ANGLE_MIN) return toast.error(text.NEED_ANGLE);
-    if (!def.speech && !settings.voiceChannel) return toast.error(text.NEED_VOICE);
+    if (settings.angle.trim().length < REUP_LIMITS.ANGLE_MIN) return toast.error(text.NEED_ANGLE);
+    if (!settings.voiceChannel) return toast.error(text.NEED_VOICE);
     if (def.bilingual && !settings.voiceChannelAlt) return toast.error(text.NEED_VOICE_ALT);
     void act(REUP_URL.START, { path: source.path, preset, settings, rights });
   }, [act, rights, preset, settings, source, text]);
   const cancel = useCallback(() => job && act(REUP_URL.CANCEL, { jobId: job.id }), [act, job]);
+  const rerollThumb = useCallback(async (index: number) => (job ? act(REUP_URL.THUMB, { jobId: job.id, index }) : undefined), [act, job]);
   const rerun = useCallback((step: ReupStepId) => job && act(REUP_URL.RERUN, { jobId: job.id, step, settings: presetSettings[job.preset] || reupPresetDefaults(job.preset) }), [act, job, presetSettings]);
   const resumeStep = job && (job.status === "cancelled" || job.status === "error") ? REUP_STEPS.find((step, i) => job.steps[step]?.status !== "done" && job.steps[step]?.status !== "waiting" && (i === 0 || ["done", "waiting"].includes(job.steps[REUP_STEPS[i - 1]]?.status))) : undefined;
   const resume = useCallback(() => resumeStep && rerun(resumeStep), [resumeStep, rerun]);
@@ -181,6 +182,6 @@ export const useReupStudio = (lang: Lang) => {
   }, []);
   const newJob = useCallback(() => setJob(null), []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
-  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, reused, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, resume, resumeStep, rerun, exportVideo, approveScript, saveVideo, newJob };
+  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, reused, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, rerollThumb, resume, resumeStep, rerun, exportVideo, approveScript, saveVideo, newJob };
 };
 export type ReupStudio = ReturnType<typeof useReupStudio>;

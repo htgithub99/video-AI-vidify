@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { saveBlobWithDialog } from "../../../lib/fileUtils";
 import { MOTION_SEO } from "../../../constants/motionSeo.js";
 import { MOTION_SEO_CHAPTER_STYLES as CS } from "../constants/motionSeoChapters.js";
+import { THUMB_CONCEPT_TEXT, type ThumbConcept } from "../../../constants/thumbConcepts.js";
 interface MotionSeoCardProps {
   seo: MotionSeoPack | null;
   busy: boolean;
@@ -30,15 +31,24 @@ interface MotionSeoCardProps {
   onThumbnail?: (optionIndex: number) => void;
   thumbnailBusy?: number | null;
   footer?: ReactNode;
+  thumbs?: MotionSeoThumbRow;
 }
-export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail, thumbnailBusy, footer }) => {
+export interface MotionSeoThumbRow {
+  count: number;
+  label: string;
+  refresh: string;
+  row: string;
+  item: string;
+  button: string;
+}
+export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail, thumbnailBusy, footer, thumbs }) => {
   const { copiedKey, copyText: handleCopy } = useClipboardFeedback();
   const [zoomModal, setZoomModal] = useState<{ image: string; prompt: string; optionIndex?: number } | null>(null);
   const t = lang === MR.MOTION_TEXT_EN ? MOTION_SEO_TEXTS.en : MOTION_SEO_TEXTS.vi;
   const thumbList = useMemo(() => {
     const map = thumbnails || {};
     const items: Array<MotionThumbnail & { optionIndex: number }> = [];
-    const totalOptions = seo?.options?.length || 5;
+    const totalOptions = thumbs?.count || seo?.options?.length || 5;
     for (let i = 0; i < totalOptions; i++) {
       if (map[i]) {
         items.push({ ...map[i], optionIndex: i });
@@ -48,7 +58,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
       items.push({ ...thumbnail, optionIndex: thumbnail.optionIndex ?? 0 });
     }
     return items;
-  }, [thumbnails, thumbnail, seo]);
+  }, [thumbnails, thumbnail, seo, thumbs?.count]);
   const all = seo ? seo.options.map((option, index) => renderSeoOptionText(option, seo, index, t)).join(MR.MOTION_TEXT_SYMBOL_4) : "";
   const handleExportText = async () => {
     if (!all) return;
@@ -121,7 +131,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                 <span className={MR.MOTION_TEXT_PX_2_PY_0_5_ROUNDED_FULL_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_50_2}>
                   {thumbList.length}
                   {MR.MOTION_TEXT_SYMBOL_16}
-                  {seo?.options?.length || 5}
+                  {thumbs?.count || seo?.options?.length || 5}
                 </span>
               )}
             </span>
@@ -133,16 +143,22 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
             )}
           </div>
           {thumbList.length > 0 ? (
-            <div className={MR.MOTION_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_2_XL_GRID_COLS_3_GAP_3_PT_1}>
+            <div className={thumbs?.row || MR.MOTION_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_2_XL_GRID_COLS_3_GAP_3_PT_1}>
               {thumbList.map((thumb) => (
-                <div key={thumb.optionIndex} onClick={() => setZoomModal(thumb)} className={MR.MOTION_TEXT_GROUP_RELATIVE_ASPECT_VIDEO_ROUNDED_XL_OVERFLOW_HIDDEN_BORDER_BOR_2}>
+                <div key={thumb.optionIndex} onClick={() => setZoomModal(thumb)} className={cn(MR.MOTION_TEXT_GROUP_RELATIVE_ASPECT_VIDEO_ROUNDED_XL_OVERFLOW_HIDDEN_BORDER_BOR_2, thumbs?.item)}>
                   <img src={thumb.image} alt={MR.MOTION_TEMPLATE_SYMBOL_44(t.thumb, thumb.optionIndex + 1)} className={MR.MOTION_TEXT_W_FULL_H_FULL_OBJECT_COVER_TRANSITION_TRANSFORM_DURATION_500_GROU} loading={MR.MOTION_TEXT_LAZY} />
                   <div className={MR.MOTION_TEXT_ABSOLUTE_INSET_0_BG_GRADIENT_TO_T_FROM_SLATE_950_80_VIA_TRANSPARE_2} />
                   <div className={MR.MOTION_TEXT_ABSOLUTE_TOP_2_LEFT_2_POINTER_EVENTS_NONE}>
                     <span className={MR.MOTION_TEXT_PX_2_PY_0_5_ROUNDED_MD_BG_SLATE_950_85_BACKDROP_BLUR_MD_TEXT_10PX_2}>
-                      {t.option} {thumb.optionIndex + 1}
+                      {thumbs?.label || t.option} {thumb.optionIndex + 1}
+                      {thumb.tag ? ` · ${thumb.tag}` : thumb.concept && thumb.concept in THUMB_CONCEPT_TEXT.vi ? ` · ${THUMB_CONCEPT_TEXT[lang === MR.MOTION_TEXT_EN ? "en" : "vi"][thumb.concept as ThumbConcept]}` : ""}
                     </span>
                   </div>
+                  {thumbs && onThumbnail && (
+                    <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} disabled={busy} onClick={(e) => (e.stopPropagation(), onThumbnail(thumb.optionIndex))} title={thumbs.refresh} aria-label={thumbs.refresh} className={thumbs.button}>
+                      {thumbnailBusy === thumb.optionIndex ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_SHRINK_0} /> : <RefreshCw className={MR.MOTION_TEXT_W_3_5_H_3_5} />}
+                    </Button>
+                  )}
                   <a href={thumb.image} download={MR.MOTION_TEMPLATE_THUMBNAIL_OPTION_PNG(thumb.optionIndex + 1)} onClick={(e) => e.stopPropagation()} title={t.download} aria-label={t.download} className={MR.MOTION_TEXT_ABSOLUTE_TOP_2_RIGHT_2_Z_10_W_7_H_7_ROUNDED_LG_BG_TRANSPARENT_HOV}>
                     <Download className={MR.MOTION_TEXT_W_3_5_H_3_5} />
                   </a>
@@ -227,7 +243,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                       </span>
                     </div>
                     <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_1_5}>
-                      {onThumbnail && (
+                      {onThumbnail && !thumbs && (
                         <Button
                           variant={MR.MOTION_TEXT_UNSTYLED}
                           type={MR.MOTION_TEXT_BUTTON}

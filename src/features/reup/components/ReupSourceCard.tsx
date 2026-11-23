@@ -10,7 +10,7 @@ import { ActionBtn, MotionStatCard, StepHeader, StopBtn } from "../../motion/com
 import { MotionSettingsGroup } from "../../motion/components/MotionSettingsGroup.js";
 import { formatBytes } from "../../motion/components/motionApi.js";
 import { MOTION_SETTINGS_TEXT } from "../../motion/constants/motionSettings.js";
-import { REUP_PRESETS, reupPreset } from "../constants/reupPresets.js";
+import { REUP_LENGTHS, REUP_PRESETS, reupPreset } from "../constants/reupPresets.js";
 import { REUP_STYLES as S } from "../constants/reupStyles.js";
 import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { REUP_LANGUAGES } from "../lib/reupSettings.js";
@@ -19,7 +19,6 @@ import { REUP_LIMITS } from "../constants/reupConfig.js";
 import type { ReupCorner, ReupHighlights, ReupLanguage, ReupMusicChoice, ReupNatural, ReupPresetId, ReupRights } from "../types/reup.js";
 import { ReupSelect, ReupTextArea, ReupTextField, ReupToggle, reupClock, type ReupOption } from "./ReupControls.js";
 const CORNERS: ReupCorner[] = ["tl", "tr", "bl", "br"];
-const SHORTS = [1, 2, 3, 4, 5];
 export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionText: MotionVideoTexts }> = ({ studio, ui, motionText }) => {
   const { text, settings, patch, source, job, running } = studio;
   const def = reupPreset(studio.preset);
@@ -28,7 +27,7 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
   const groups = MOTION_SETTINGS_TEXT[ui];
   const locked = running || studio.busy;
   const folder = def.source === "folder";
-  const advice = source && !def.speech ? reupLengthAdvice(def, settings, source.duration) : undefined;
+  const advice = source ? reupLengthAdvice(def, settings, source.duration) : undefined;
   const languages: ReupOption<ReupLanguage>[] = REUP_LANGUAGES.map((code) => ({ value: code, label: MOTION_LANGUAGES[code].label[ui] }));
   const channels: ReupOption<string>[] = [{ value: "", label: voiceText.NO_CHANNEL }, ...studio.voiceChannels.channels.map((c) => ({ value: c.id, label: c.name }))];
   const logo = settings.logo === "blur" ? settings.logoCorner : settings.logo;
@@ -79,15 +78,14 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
           <MotionSettingsGroup title={groups.CONTENT}>
             <ReupSelect<ReupRights | ""> label={text.LICENSE} title={text.LICENSE_HINT} value={studio.rights} options={(["", "own", "licensed"] as const).map((value) => ({ value, label: text.RIGHTS[value] }))} onChange={studio.setRights} />
             <ReupSelect<ReupPresetId> label={text.TYPE} title={text.TYPE_HINT} value={studio.preset} options={REUP_PRESETS.map((p) => ({ value: p.id, label: text.TYPES[p.id] }))} onChange={studio.selectPreset} />
-            <ReupSelect<number> label={text.LENGTH} value={settings.targetSeconds} options={def.lengths.map((n) => ({ value: n, label: n < 120 ? text.SECONDS(n) : text.MINUTES(n / 60) }))} onChange={(targetSeconds) => patch({ targetSeconds })} />
-            {def.kind === "short" && !def.speech && <ReupSelect<number> label={text.SHORTS} value={settings.shortsCount} options={SHORTS.map((n) => ({ value: n, label: String(n) }))} onChange={(shortsCount) => patch({ shortsCount })} />}
+            <ReupSelect<number> label={text.LENGTH} value={settings.targetSeconds} options={REUP_LENGTHS.map((n) => ({ value: n, label: text.MINUTES(n / 60) }))} onChange={(targetSeconds) => patch({ targetSeconds })} />
             <ReupSelect<ReupLanguage> label={text.LANGUAGE} value={settings.language} options={languages} onChange={(language) => patch({ language })} />
             {def.bilingual && <ReupSelect<ReupLanguage> label={text.LANGUAGE_ALT} value={settings.languageAlt} options={languages.filter((l) => l.value !== settings.language)} onChange={(languageAlt) => patch({ languageAlt })} />}
-            {(!def.speech || studio.rights === "licensed") && <ReupTextField label={text.SOURCE_LINK} value={settings.sourceLink} maxLength={300} onChange={(sourceLink) => patch({ sourceLink })} />}
-            {!def.speech && <ReupTextArea label={text.ANGLE} value={settings.angle} placeholder={text.ANGLE_PLACEHOLDER} maxLength={REUP_LIMITS.NOTE} onChange={(angle) => patch({ angle })} />}
+            <ReupTextField label={text.SOURCE_LINK} value={settings.sourceLink} maxLength={300} onChange={(sourceLink) => patch({ sourceLink })} />
+            <ReupTextArea label={text.ANGLE} value={settings.angle} placeholder={text.ANGLE_PLACEHOLDER} maxLength={REUP_LIMITS.NOTE} onChange={(angle) => patch({ angle })} />
           </MotionSettingsGroup>
           <MotionSettingsGroup title={groups.AUDIO}>
-            {!def.speech && <ReupSelect<string> label={voiceText.PICK_CHANNEL} title={voiceText.CHANNELS_HINT} value={settings.voiceChannel} options={channels} onChange={(voiceChannel) => patch({ voiceChannel })} />}
+            <ReupSelect<string> label={voiceText.PICK_CHANNEL} title={voiceText.CHANNELS_HINT} value={settings.voiceChannel} options={channels} onChange={(voiceChannel) => patch({ voiceChannel })} />
             {def.bilingual && <ReupSelect<string> label={text.VOICE_ALT} value={settings.voiceChannelAlt} options={channels} onChange={(voiceChannelAlt) => patch({ voiceChannelAlt })} />}
             <ReupSelect<ReupMusicChoice>
               label={musicText.LABEL}
@@ -99,7 +97,7 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
               ]}
               onChange={(music) => patch({ music })}
             />
-            {!def.speech && source?.hasAudio !== false && (
+            {source?.hasAudio !== false && (
               <ReupSelect<ReupNatural>
                 label={text.NATURAL}
                 value={settings.natural}
@@ -115,29 +113,20 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
           <MotionSettingsGroup title={groups.VISUAL}>
             {!folder && <ReupSelect<string> label={text.LOGO} value={logo} options={["off", "crop", ...CORNERS].map((value) => ({ value, label: logoText[value] }))} onChange={(value) => patch(CORNERS.includes(value as ReupCorner) ? { logo: "blur", logoCorner: value as ReupCorner } : { logo: value as "off" | "crop" })} />}
             <ReupToggle label={motionText.SUBTITLES_MODE} icon={Captions} checked={settings.subtitles} on={motionText.SUBTITLES_ON} off={motionText.SUBTITLES_OFF} hint={motionText.SUBTITLES_HINT} onChange={(subtitles) => patch({ subtitles })} />
-            {!def.speech && (
-              <ReupSelect<ReupHighlights>
-                label={text.HIGHLIGHTS}
-                title={text.HIGHLIGHTS_HINT}
-                value={settings.highlights}
-                options={[
-                  { value: "off", label: text.HIGHLIGHTS_OFF },
-                  { value: "few", label: text.HIGHLIGHTS_FEW },
-                  { value: "normal", label: text.HIGHLIGHTS_NORMAL },
-                ]}
-                onChange={(highlights) => patch({ highlights })}
-              />
-            )}
+            <ReupSelect<ReupHighlights>
+              label={text.HIGHLIGHTS}
+              title={text.HIGHLIGHTS_HINT}
+              value={settings.highlights}
+              options={[
+                { value: "off", label: text.HIGHLIGHTS_OFF },
+                { value: "few", label: text.HIGHLIGHTS_FEW },
+                { value: "normal", label: text.HIGHLIGHTS_NORMAL },
+              ]}
+              onChange={(highlights) => patch({ highlights })}
+            />
+            <ReupTextField label={text.LOGO_FILE} value={settings.logoFile} onChange={(logoFile) => patch({ logoFile })} />
             <ReupToggle label={text.STOP_SCRIPT} icon={PauseCircle} checked={settings.stopScript} on={text.STOP_ON} off={text.STOP_OFF} onChange={(stopScript) => patch({ stopScript })} />
           </MotionSettingsGroup>
-          {def.speech && (
-            <MotionSettingsGroup title={text.BRAND}>
-              <ReupTextField label={text.BRAND_NAME} value={settings.brandName} maxLength={60} onChange={(brandName) => patch({ brandName })} />
-              <ReupTextField label={text.HOTLINE} value={settings.hotline} maxLength={40} onChange={(hotline) => patch({ hotline })} />
-              <ReupTextField label={text.CTA} value={settings.cta} maxLength={120} onChange={(cta) => patch({ cta })} />
-              <ReupTextField label={text.LOGO_FILE} value={settings.logoFile} onChange={(logoFile) => patch({ logoFile })} />
-            </MotionSettingsGroup>
-          )}
         </StudioFieldset>
         <div className={S.ACTIONS}>
           {running ? (

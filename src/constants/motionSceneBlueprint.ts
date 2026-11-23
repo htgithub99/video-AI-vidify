@@ -13,6 +13,7 @@ export const MOTION_SCENE_BLUEPRINT = {
   PROTAGONISTS: ["protagonist", "you", "hero", "narrator"] as readonly string[],
   CAST_PROMPT: (rows: string[]) => `CAST LOOK (already fixed by earlier scenes: use these ids and these look options for these people, and change only what this scene states, such as a bandage, a lost helmet or what they hold): ${rows.join("; ")}`,
   CAST_SEED: {
+    SELF: ["you", "narrator"],
     FLAG: "_seed",
     COLOURS: {
       red: "#b3362e",

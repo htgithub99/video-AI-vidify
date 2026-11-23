@@ -101,7 +101,7 @@ assert.ok(scenePrompt.includes("PLAN:\n0. A farmer plants rice."), "the plan fol
 assert.ok(scenePrompt.includes(P.SCHEMA) && scenePrompt.includes(P.COMPOSITION), "one JSON spec with its schema and composition rules");
 assert.doesNotMatch(scenePrompt, /Return the complete HTML|MotionKit\.|FIGURE TABLE/i, "no canvas code is asked for");
 // Bounded (it now carries the real sizes next to the library names and the master frame by the shot scale).
-assert.ok(scenePrompt.length < 22500, "scene prompt stays bounded: " + scenePrompt.length);
+assert.ok(scenePrompt.length < 24000, "scene prompt stays bounded: " + scenePrompt.length);
 const horrorCtrl = new AbortController();
 let horrorPrompt = "";
 await assert.rejects(

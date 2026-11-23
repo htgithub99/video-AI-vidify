@@ -24,7 +24,7 @@ const NON_VISUAL = new Set<string>([
   RT_MAINTENANCE.REMOVEDOBJECTS,
 ]);
 const visualScene = (scene: MotionRemotionSpec["scenes"][number]) =>
-  scene.html ? { id: scene.id, renderer: scene.renderer, startFrame: scene.startFrame, endFrame: scene.endFrame, htmlHash: scene.html.hash, seed: scene.html.seed, speaking: scene.speaking, time: scene.time, vary: scene.vary, crossing: scene.crossing } : Object.fromEntries(Object.entries(scene).filter(([key]) => !NON_VISUAL.has(key)));
+  scene.html ? { id: scene.id, renderer: scene.renderer, startFrame: scene.startFrame, endFrame: scene.endFrame, htmlHash: scene.html.hash, seed: scene.html.seed, speaking: scene.speaking, time: scene.time, vary: scene.vary, crossing: scene.crossing, placeLook: scene.placeLook, rest: scene.rest, seen: scene.seen, drawTime: scene.drawTime } : Object.fromEntries(Object.entries(scene).filter(([key]) => !NON_VISUAL.has(key)));
 export interface MotionRemotionSegment {
   index: number;
   start: number;

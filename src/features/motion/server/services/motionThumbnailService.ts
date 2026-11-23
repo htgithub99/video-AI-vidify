@@ -5,7 +5,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import * as MR from "../../../../constants/motionRuntime.js";
-import { MOTION_THUMBNAIL as T } from "../../../../constants/motionThumbnail.js";
+import { MOTION_THUMBNAIL as T, motionThumbConcept } from "../../../../constants/motionThumbnail.js";
+import type { ThumbConcept } from "../../../../constants/thumbConcepts.js";
 import { MOTION_AI_ROLE } from "../../../../constants/motionAiFallback.js";
 import { motionVideoGenrePackaging } from "../../../../constants/motionGenre.js";
 import { motionVisualSettingsFor } from "../../../../lib/motionVisual.js";
@@ -29,7 +30,11 @@ import { openMotionHtmlRuntime } from "./html/sceneRuntime.js";
 const dependencies = { runMotionAi, prepareMotionThumbnailReferences, openMotionHtmlRuntime };
 export const createMotionThumbnailService = (overrides: Partial<typeof dependencies> = {}) => {
   const deps = { ...dependencies, ...overrides };
-  return async (analysis: MotionStoryAnalysis, seo: MotionSeoOption | undefined, opts: { language: string; aspect?: string; note?: string; script?: MotionStoryScript; visualSettings?: MotionVisualSettings; exec: MotionAiExecution; chromeHeadless?: boolean; signal?: AbortSignal; log?: (s: string) => void }): Promise<{ thumbnail: string; prompt: string }> => {
+  return async (
+    analysis: MotionStoryAnalysis,
+    seo: MotionSeoOption | undefined,
+    opts: { language: string; aspect?: string; note?: string; script?: MotionStoryScript; visualSettings?: MotionVisualSettings; concept?: ThumbConcept; exec: MotionAiExecution; chromeHeadless?: boolean; signal?: AbortSignal; log?: (s: string) => void },
+  ): Promise<{ thumbnail: string; prompt: string; concept: ThumbConcept }> => {
     opts.signal?.throwIfAborted();
     const portrait = opts.aspect === MR.MOTION_TEXT_9_16;
     const width = portrait ? T.OUTPUT_HEIGHT : T.OUTPUT_WIDTH;
@@ -75,7 +80,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       opts.log?.(T.LOG_SPEC);
       const render = { profile: settings.profileId, proportion: motionProportionOf(settings), layout: MOTION_LAYOUT_WIDE, year: motionAnalysisEraYear(analysis) };
       const specExec: MotionAiExecution = { ...exec, singleResponse: true };
-      const base = [motionSceneSpecPrompt({}, { year: motionAnalysisEraYear(analysis), task: T.SPEC_TASK(width, height), frame: [width, height] }), T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, T.SPEC_HEADLINE, stringifyJson(brief)].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+      const base = [motionSceneSpecPrompt({}, { year: motionAnalysisEraYear(analysis), task: T.SPEC_TASK(width, height), frame: [width, height] }), T.LAYOUT(opts.concept || motionThumbConcept(analysis.videoGenre)), T.REFERENCE_RULE, T.STYLE_RULE + style, T.SPEC_HEADLINE, stringifyJson(brief)].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
       let reason = "";
       for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
         opts.signal?.throwIfAborted();
@@ -107,7 +112,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
             if (dimensions?.width === width && dimensions.height === height && !blank) {
               await fs.promises.writeFile(file, buffer);
               opts.log?.(MR.MOTION_TEXT_THUMBNAIL_XONG);
-              return { thumbnail: MR.MOTION_TEMPLATE_DATA_BASE64(MR.MOTION_TEXT_IMAGE_PNG, base64), prompt };
+              return { thumbnail: MR.MOTION_TEMPLATE_DATA_BASE64(MR.MOTION_TEXT_IMAGE_PNG, base64), prompt, concept: opts.concept || motionThumbConcept(analysis.videoGenre) };
             }
             reason = blank ? T.BLANK : T.VIEWBOX_ERROR;
             break;

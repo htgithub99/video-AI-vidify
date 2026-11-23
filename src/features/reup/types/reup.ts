@@ -1,8 +1,10 @@
+import type { ThumbConcept } from "../../../constants/thumbConcepts.js";
 import type { MotionSeoOption } from "../../../types/motionVideo.js";
-export type ReupPresetId = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H";
+export type ReupPresetId = "A" | "C" | "D" | "F" | "G" | "H";
+export type ReupLegacyPresetId = "B" | "E";
 export type ReupPresetStage = "ready" | "beta" | "later";
 export type ReupAspect = "16:9" | "9:16";
-export type ReupVertical = "blur" | "crop";
+export type ReupVertical = "blur" | "framed";
 export type ReupLanguage = "vi" | "en" | "ja" | "ko";
 export type ReupQuality = "auto" | "draft" | "standard" | "high" | "ultra";
 export type ReupHighlights = "off" | "few" | "normal";
@@ -13,13 +15,15 @@ export type ReupNatural = "keep" | "low" | "off";
 export type ReupTitleOverlay = "off" | "hook" | "fixed";
 export type ReupLogo = "off" | "crop" | "blur";
 export type ReupCorner = "tl" | "tr" | "bl" | "br";
-export type ReupOutputKind = "long" | "short";
 export type ReupSectionRole = "hook" | "body" | "teaser" | "ending";
 export type ReupMediaType = "photo" | "clip";
 export type ReupStepId = "source" | "scenes" | "script" | "voice" | "build" | "package";
 export type ReupStepStatus = "idle" | "running" | "done" | "error" | "waiting";
 export type ReupJobStatus = "running" | "waiting-script" | "done" | "error" | "cancelled";
-export type ReupThumbLayout = "hero" | "split" | "circle";
+export type ReupThumbLayout = "hero" | "split" | "circle" | "cinema" | "badge" | "collage" | "ai";
+export type ReupThumbKind = "signature" | ThumbConcept;
+export type ReupThumbSpot = "tl" | "tc" | "tr" | "bl" | "bc";
+export type ReupPopLook = "main" | "alt";
 export type ReupRights = "own" | "licensed";
 export type ReupCommentaryVoice = "expert" | "storyteller" | "analyst" | "curious" | "wry" | "coach";
 export type ReupCommentaryHook = "result" | "question" | "contrast" | "stakes" | "tease";
@@ -31,10 +35,11 @@ export interface ReupStyle {
   ending: ReupCommentaryEnding;
   shape?: ReupCommentaryShape;
   track?: string;
+  pop?: ReupPopLook;
 }
 export type ReupMusicChoice = "off" | "library";
 export type ReupReportLevel = "ok" | "review" | "risk";
-export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "shortsLicensed" | "bilingual" | "naturalOff" | "coverage" | "describes" | "extended" | "rewritten" | "overlap";
+export type ReupReportCode = "narration" | "silence" | "padding" | "repeated" | "sourceReused" | "similar" | "titleReused" | "noAngle" | "licensed" | "bilingual" | "naturalOff" | "coverage" | "describes" | "extended" | "rewritten" | "overlap";
 export type ReupScoreGap = "coverage" | "value" | "highlights" | "silence" | "shot" | "source" | "similar" | "angle";
 export interface ReupReport {
   level: ReupReportLevel;
@@ -56,7 +61,6 @@ export interface ReupSettings {
   language: ReupLanguage;
   languageAlt: ReupLanguage;
   targetSeconds: number;
-  shortsCount: number;
   aspect: ReupAspect;
   voiceChannel: string;
   voiceChannelAlt: string;
@@ -68,9 +72,6 @@ export interface ReupSettings {
   stopScript: boolean;
   angle: string;
   sourceLink: string;
-  brandName: string;
-  hotline: string;
-  cta: string;
   logoFile: string;
   quality: ReupQuality;
   encoder: ReupEncoder;
@@ -91,12 +92,11 @@ export interface ReupPresetRules {
   markEvery: number;
   markMax: number;
   markSeconds: number;
-  musicMode: "zones" | "bed" | "chapters" | "gaps";
+  musicMode: "zones" | "chapters";
   narratedMin: number;
   kenBurns: boolean;
   captions: boolean;
   beforeAfter: boolean;
-  viewfinder: boolean;
   darkLevel: number;
   blurLevel: number;
   fillUnused: boolean;
@@ -150,6 +150,11 @@ export interface ReupBadRange {
   end: number;
   reason: "dark" | "blur";
 }
+export interface ReupDimRange {
+  start: number;
+  end: number;
+  luma: number;
+}
 export interface ReupMoment {
   id: string;
   t: number;
@@ -198,17 +203,14 @@ export interface ReupSection {
   shots: ReupShot[];
   cues?: ReupCue[];
   chapter?: string;
-  callout?: string;
   mark?: ReupMark;
+  marks?: ReupMark[];
 }
 export interface ReupOutputScript {
   id: string;
-  kind: ReupOutputKind;
   title: string[];
   sections: ReupSection[];
   lang?: ReupLanguage;
-  speech?: boolean;
-  cta?: string;
 }
 export interface ReupScriptRevision {
   words?: [number, number];
@@ -247,10 +249,21 @@ export interface ReupFrame {
   time: number;
   url: string;
 }
+export interface ReupThumbAi {
+  scene: string;
+  refs: number[];
+  look?: string;
+}
 export interface ReupThumbIdea {
   layout: ReupThumbLayout;
   frames: number[];
   lines: string[];
+  kind?: ReupThumbKind;
+  image?: string;
+  ai?: ReupThumbAi;
+  spot?: ReupThumbSpot;
+  focus?: number;
+  pin?: boolean;
 }
 export interface ReupPackage {
   options: MotionSeoOption[];
@@ -297,7 +310,7 @@ export interface ReupJob {
   id: string;
   createdAt: number;
   updatedAt: number;
-  preset: ReupPresetId;
+  preset: ReupPresetId | ReupLegacyPresetId;
   settings: ReupJobSettings;
   rights: ReupRights;
   fingerprint?: string;
@@ -309,6 +322,8 @@ export interface ReupJob {
   logs: ReupLog[];
   sheets: ReupSheet[];
   bad: ReupBadRange[];
+  dim?: ReupDimRange[];
+  watermark?: ReupCorner;
   sceneMap?: ReupSceneMap;
   script?: ReupScript;
   warnings: string[];

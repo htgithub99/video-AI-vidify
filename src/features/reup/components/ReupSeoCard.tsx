@@ -7,12 +7,17 @@ import type { ReupStudio } from "../hooks/useReupStudio.js";
 import { reupSeoPack } from "../lib/reupSeo.js";
 import { drawReupThumbnail } from "../lib/reupThumbnail.js";
 import { ReupReport } from "./ReupReport.js";
-import type { ReupThumbIdea, ReupThumbLayout } from "../types/reup.js";
-const LAYOUTS: ReupThumbLayout[] = ["hero", "split", "circle"];
+import { REUP_THUMBS } from "../constants/reupConfig.js";
+import { THUMB_CONCEPT_TEXT } from "../../../constants/thumbConcepts.js";
+import type { ReupThumbIdea, ReupThumbLayout, ReupThumbSpot } from "../types/reup.js";
 const variant = (idea: ReupThumbIdea, frames: number[], turn: number): ReupThumbIdea => {
   if (!turn || !frames.length) return idea;
+  const plain = (REUP_THUMBS.PLAIN as readonly string[]).includes(idea.layout);
+  const family = (plain ? REUP_THUMBS.PLAIN : REUP_THUMBS.WORDED) as readonly ReupThumbLayout[];
+  const layout = family[(Math.max(0, family.indexOf(idea.layout)) + turn) % family.length];
+  const spots = REUP_THUMBS.SPOTS[layout] as readonly ReupThumbSpot[];
   const first = Math.max(0, frames.indexOf(idea.frames[0]));
-  return { ...idea, layout: LAYOUTS[(LAYOUTS.indexOf(idea.layout) + turn) % LAYOUTS.length], frames: [frames[(first + turn) % frames.length], frames[(first + turn + 1) % frames.length]] };
+  return { ...idea, layout, pin: true, spot: spots[(Math.max(0, spots.indexOf(idea.spot || spots[0])) + turn) % spots.length], frames: [0, 1, 2].map((k) => frames[(first + turn + k) % frames.length]) };
 };
 const useSame = <T,>(value: T): T => {
   const last = useRef<{ key: string; value: T }>();
@@ -39,8 +44,8 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
     void Promise.all(
       pack.thumbs.map(async (idea, i) => {
         const take = variant(idea, times, turns[i] || 0);
-        const image = await drawReupThumbnail(take.layout, take.frames.map((t) => url.get(t) || "").filter(Boolean), take.lines, job?.settings.language).catch(() => "");
-        return [i, { image, prompt: "", optionIndex: i }] as const;
+        const image = await drawReupThumbnail(take, take.frames.map((t) => url.get(t) || "").filter(Boolean), job?.settings.language, REUP_THUMBS.PREFER[job?.preset || ""]).catch(() => "");
+        return [i, { image, prompt: "", optionIndex: i, ...(idea.kind ? { tag: `${THUMB_CONCEPT_TEXT[lang === "en" ? "en" : "vi"][idea.kind]}${idea.layout === "ai" ? text.THUMB_AI : ""}` } : {}) }] as const;
       }),
     ).then((list) => {
       if (!alive) return;
@@ -50,7 +55,7 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
     return () => {
       alive = false;
     };
-  }, [pack, turns, job?.settings.language]);
+  }, [pack, turns, job?.settings.language, job?.preset, lang, text.THUMB_AI]);
   const packaging = job?.steps.package.status === "running";
   if (!job || (!seo && !packaging && !job.report)) return null;
   return (
@@ -62,8 +67,9 @@ export const ReupSeoCard: FC<{ studio: ReupStudio; lang: string }> = ({ studio, 
       onGenerate={() => void studio.rerun("package")}
       lang={lang}
       thumbnails={thumbnails}
-      onThumbnail={pack?.thumbs.length ? (i) => (setDrawing(i), setTurns((all) => ({ ...all, [i]: (all[i] || 0) + 1 }))) : undefined}
+      onThumbnail={pack?.thumbs.length ? (i) => (setDrawing(i), pack.thumbs[i]?.ai ? void studio.rerollThumb(i).finally(() => setDrawing(null)) : setTurns((all) => ({ ...all, [i]: (all[i] || 0) + 1 }))) : undefined}
       thumbnailBusy={drawing}
+      thumbs={pack?.thumbs.length ? { count: pack.thumbs.length, label: text.THUMB, refresh: text.THUMB_REFRESH, row: S.THUMB_ROW, item: S.THUMB_ITEM, button: S.THUMB_REFRESH } : undefined}
       footer={
         (pack || job.report) && (
           <div className={S.SEO_NOTES}>

@@ -1,5 +1,5 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
-import { MOTION_LANGUAGES, MOTION_LANGUAGE_DEFAULT, MOTION_LANGUAGE_UNITS as U, type MotionLanguageCode } from "../constants/motionLanguages/index.js";
+import { MOTION_LANGUAGES, MOTION_LANGUAGE_DEFAULT, MOTION_LANGUAGE_SCRIPTS, MOTION_LANGUAGE_UNITS as U, type MotionLanguageCode } from "../constants/motionLanguages/index.js";
 import type { MotionLanguageProfile } from "../constants/motionLanguages/types.js";
 export const motionLanguageCode = (value: unknown): MotionLanguageCode => {
   const raw = String(value ?? "")
@@ -28,3 +28,10 @@ export const motionLanguageRate = (value: unknown, dialogue = false): number => 
   return dialogue ? profile.rate.dialogue : profile.rate.narration;
 };
 export const motionLanguageMaxUnits = (value: unknown, genre: string, fallback: number): number => motionLanguage(value).genreMaxUnits[genre] ?? fallback;
+export const motionTextLanguage = (text: unknown): MotionLanguageCode | undefined => {
+  const raw = String(text ?? "");
+  if (!raw.trim()) return undefined;
+  const hit = MOTION_LANGUAGE_SCRIPTS.find(([, re]) => re.test(raw));
+  return motionLanguageCode(hit ? hit[0] : "en");
+};
+export const motionLanguagePace = (to: unknown, from: unknown): number => (from ? motionLanguageRate(to) / motionLanguageRate(from) : 1);

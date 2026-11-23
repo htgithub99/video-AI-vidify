@@ -4,9 +4,11 @@ import { runInMotionAiSession, runMotionAi, type MotionAiImage } from "../../../
 import { isChatAttachmentError } from "../../../../server/services/chatSubmissionRecovery.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../../../../constants/cinematicConstants.js";
 import type { MotionAiExecution } from "../../../../types/motionVideo.js";
-import { REUP_FOLDER, REUP_HIGHLIGHT, REUP_MOMENT, REUP_OVERLAY, REUP_REVIEW, REUP_SPANS, REUP_UPLOAD } from "../../constants/reupConfig.js";
+import { REUP_FOLDER, REUP_HIGHLIGHT, REUP_MOMENT, REUP_REVIEW, REUP_SPANS, REUP_THUMBS, REUP_UPLOAD } from "../../constants/reupConfig.js";
 import { reupTalkShare } from "../../lib/reupTalk.js";
 import { reupHighlightCount } from "../../lib/reupHighlights.js";
+import { reupThumbFallback, reupThumbLines, reupThumbSlots, reupThumbSpots, type ReupThumbPast } from "../../lib/reupThumbPlan.js";
+import { reupStrayWords, reupUsedEvidence } from "../../lib/reupFacts.js";
 import { REUP_ARTIFACT, REUP_FIX, REUP_PROMPT } from "../../constants/reupPrompts.js";
 import { REUP_ERROR, REUP_LOG } from "../../constants/reupServerText.js";
 import { reupPreset } from "../../constants/reupPresets.js";
@@ -14,7 +16,7 @@ import { reupStripToolNotes } from "../../lib/reupSeo.js";
 import { reupIssueScore, reupNarrationShare, reupNeedsRevision, reupPastText, reupScriptReview, reupUnits, reupWordBudget, type ReupScriptIssues } from "../../lib/reupScriptReview.js";
 import { cleanScenePart, mergeSceneParts, reupMoments, reupSheetBatches, reupSheetSpan, reupUploadLimit, type ReupScenePart } from "../../lib/reupSceneMap.js";
 import type { MotionSeoOption } from "../../../../types/motionVideo.js";
-import type { ReupAiChoice, ReupCue, ReupMark, ReupValueBeat, ReupFrame, ReupJob, ReupMoment, ReupOutputScript, ReupPackage, ReupSceneMap, ReupScript, ReupSection, ReupSectionRole, ReupSegment, ReupSheet, ReupShot, ReupThumbIdea, ReupTranscript } from "../../types/reup.js";
+import type { ReupAiChoice, ReupCue, ReupMark, ReupValueBeat, ReupFrame, ReupJob, ReupMoment, ReupOutputScript, ReupPackage, ReupSceneMap, ReupScript, ReupSection, ReupSectionRole, ReupSegment, ReupSheet, ReupShot, ReupThumbIdea, ReupBadRange, ReupDimRange } from "../../types/reup.js";
 import { learnReupUploadLimit, readReupUploadLimits } from "./reupJobStore.js";
 import { cropReupSheet } from "./reupMediaService.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
@@ -166,7 +168,18 @@ export const cleanMomentSections = (raw: any, map: ReupSceneMap, outputIndex: nu
     }
     if (!cues.length) return [];
     const mark = role === "body" || role === "ending" ? markOf(section?.mark, alt, (k) => kept[k]) : undefined;
-    return [{ id: `o${outputIndex + 1}_p${i + 1}${alt ? "_alt" : ""}`, role, text: cues.map((c) => c.text).join(" "), shots: _.uniqBy(cues, "segment").map((c) => _.pick(scenes.get(c.segment)!, ["start", "end"])), cues, ...(mark ? { mark } : {}) }];
+    const marks =
+      role === "teaser"
+        ? []
+        : _.uniqBy(
+            _.compact(
+              _.castArray(section?.marks || [])
+                .slice(0, REUP_HIGHLIGHT.SHORT.PER_SECTION)
+                .map((m) => markOf(m, alt, (k) => kept[k])),
+            ),
+            "cue",
+          );
+    return [{ id: `o${outputIndex + 1}_p${i + 1}${alt ? "_alt" : ""}`, role, text: cues.map((c) => c.text).join(" "), shots: _.uniqBy(cues, "segment").map((c) => _.pick(scenes.get(c.segment)!, ["start", "end"])), cues, ...(mark ? { mark } : {}), ...(marks.length ? { marks } : {}) }];
   });
 };
 const cleanCueSections = (raw: any, map: ReupSceneMap, outputIndex: number): ReupSection[] => {
@@ -187,22 +200,15 @@ const cleanCueSections = (raw: any, map: ReupSceneMap, outputIndex: number): Reu
     return [{ id: `o${outputIndex + 1}_p${i + 1}`, role: section?.role === "ending" ? "ending" : "body", text: cues.map((c) => c.text).join(" "), shots: cues.map((c) => _.pick(byId.get(c.segment)!, ["start", "end"])), cues, ...(chapter ? { chapter } : {}), ...(mark ? { mark } : {}) } as ReupSection];
   });
 };
-const cleanSpeechSections = (raw: any, transcript: ReupTranscript, outputIndex: number, duration: number): ReupSection[] => {
-  const byId = new Map(transcript.phrases.map((p) => [p.id, p]));
-  const calls = new Map(_.castArray(raw?.callouts || []).map((c: any) => [String(c?.phrase ?? ""), line(c?.text, 40)]));
-  return _.uniq(_.castArray(raw?.phrases || []).map(String))
-    .flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []))
-    .map((p, i) => ({ id: `o${outputIndex + 1}_${p.id}`, role: (i ? "body" : "hook") as ReupSection["role"], text: p.text, shots: [{ start: _.round(Math.max(0, p.start - REUP_OVERLAY.CUT_PAD), 2), end: _.round(Math.min(duration, p.end + REUP_OVERLAY.CUT_PAD), 2) }], ...(calls.get(p.id) ? { callout: calls.get(p.id) } : {}) }));
-};
-const scriptUnits = (script: ReupScript, lang: ReupScript["outputs"][number]["lang"]): number => _.sumBy(script.outputs, (o) => (o.lang === lang && !o.speech ? reupUnits(o.sections.map((x) => x.text).join(" "), lang!) : 0));
-const pastSpeechLines = (past: ReupScript[]): string[] => _.uniq(past.flatMap((sc) => sc.outputs.filter((o) => o.speech).flatMap((o) => [...o.title, o.cta || "", ...o.sections.map((x) => x.callout || "")])).filter(Boolean)).slice(0, REUP_REVIEW.QUOTES);
-const fixesOf = (issues: ReupScriptIssues, kind: ReupOutputScript["kind"]): string[] => {
-  const label = (id: string) => REUP_FIX.LABEL(kind, Math.max(0, Number(/^o(\d+)/.exec(id)?.[1] || 1) - 1));
+const scriptUnits = (script: ReupScript, lang: ReupScript["outputs"][number]["lang"]): number => _.sumBy(script.outputs, (o) => (o.lang === lang ? reupUnits(o.sections.map((x) => x.text).join(" "), lang!) : 0));
+const fixesOf = (issues: ReupScriptIssues): string[] => {
+  const label = REUP_FIX.LABEL;
   return [
-    ...issues.short.map((x) => (x.output.includes("_") ? REUP_FIX.SHORT_ALT(label(x.output), x.output.split("_")[1], x.have, x.need, x.unit) : REUP_FIX.SHORT(label(x.output), x.have, x.need, x.aim, x.unit, x.sections))),
-    ...issues.repeats.map((x) => (x.other ? REUP_FIX.TWIN(label(x.output), label(x.other), x.sentences) : REUP_FIX.REPEAT(label(x.output), x.sentences))),
-    ...issues.bare.map((x) => REUP_FIX.BARE(label(x.output), x.sections)),
-    ...issues.long.map((x) => REUP_FIX.LONG(label(x.output), x.sections)),
+    ...issues.short.map((x) => (x.output.includes("_") ? REUP_FIX.SHORT_ALT(label, x.output.split("_")[1], x.have, x.need, x.unit) : REUP_FIX.SHORT(label, x.have, x.need, x.aim, x.unit, x.sections))),
+    ...issues.repeats.map((x) => REUP_FIX.REPEAT(label, x.sentences)),
+    ...issues.bare.map((x) => REUP_FIX.BARE(label, x.sections)),
+    ...issues.long.map((x) => REUP_FIX.LONG(label, x.sections)),
+    ...issues.stray.map((x) => REUP_FIX.STRAY(label, x.words)),
   ];
 };
 const issueSummary = (issues: ReupScriptIssues): string[] => [
@@ -217,27 +223,17 @@ const issueSummary = (issues: ReupScriptIssues): string[] => [
     : []),
   ...(issues.bare.length ? [REUP_LOG.REVISE_BARE(_.sumBy(issues.bare, (x) => x.sections.length))] : []),
   ...(issues.long.length ? [REUP_LOG.REVISE_LONG(_.sumBy(issues.long, (x) => x.sections.length))] : []),
+  ...issues.stray.map((x) => REUP_LOG.REVISE_STRAY(x.words)),
 ];
 export const writeReupScript = async (job: ReupJob, history: { scripts: ReupScript[]; used: ReupShot[] }, log: Log, signal?: AbortSignal): Promise<ReupScript> => {
   const past = history.scripts;
   const preset = reupPreset(job.preset);
   const map = job.sceneMap!;
   const s = job.settings;
-  const count = preset.kind === "short" ? s.shortsCount : 1;
   const exec = reupExec(s.scriptAi);
-  if (preset.speech) {
-    if (!job.transcript?.phrases.length) throw new Error(REUP_ERROR.NO_SPEECH);
-    const raw = await runMotionAi(REUP_PROMPT.SPEECH({ transcript: job.transcript, map, settings: s, rules: preset.rules, count, avoid: pastSpeechLines(past) }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log));
-    const outputs: ReupOutputScript[] = _.castArray(raw?.outputs || [])
-      .slice(0, count)
-      .map((o: any, i: number) => ({ id: `o${i + 1}`, kind: preset.kind, speech: true, lang: s.language, title: titleOf(o?.title), cta: line(o?.cta || s.cta, 80), sections: cleanSpeechSections(o, job.transcript!, i, job.source.duration) }))
-      .filter((o: ReupOutputScript) => o.sections.length);
-    if (!outputs.length) throw new Error(REUP_ERROR.NO_SCRIPT);
-    return { outputs };
-  }
   const folder = preset.source === "folder";
   const hasAudio = job.source.hasAudio;
-  const marks = reupHighlightCount(preset.kind === "long" ? s.targetSeconds : s.targetSeconds * count, s.highlights, s);
+  const marks = reupHighlightCount(s.targetSeconds, s.highlights, s);
   const alt = s.languageAlt;
   const talkPhrases = s.keepTalk && !folder ? job.transcript?.phrases || [] : [];
   const talk = reupTalkShare(talkPhrases, s.targetSeconds);
@@ -246,8 +242,6 @@ export const writeReupScript = async (job: ReupJob, history: { scripts: ReupScri
     map,
     settings: s,
     rules: preset.rules,
-    kind: preset.kind,
-    count,
     duration: job.source.duration,
     style: job.style!,
     bilingual: preset.bilingual,
@@ -262,11 +256,11 @@ export const writeReupScript = async (job: ReupJob, history: { scripts: ReupScri
   });
   const parse = (raw: any): ReupScript => ({
     outputs: _.castArray(raw?.outputs || [])
-      .slice(0, count)
+      .slice(0, 1)
       .flatMap((output: any, i: number) => {
-        const main: ReupOutputScript = { id: `o${i + 1}`, kind: preset.kind, lang: s.language, title: titleOf(output?.title), sections: folder ? cleanCueSections(output, map, i) : cleanMomentSections(output, map, i) };
+        const main: ReupOutputScript = { id: `o${i + 1}`, lang: s.language, title: titleOf(output?.title), sections: folder ? cleanCueSections(output, map, i) : cleanMomentSections(output, map, i) };
         if (!preset.bilingual) return [main];
-        const second: ReupOutputScript = { id: `o${i + 1}_${alt}`, kind: preset.kind, lang: alt, title: titleOf(output?.titleAlt), sections: cleanMomentSections(output, map, i, true) };
+        const second: ReupOutputScript = { id: `o${i + 1}_${alt}`, lang: alt, title: titleOf(output?.titleAlt), sections: cleanMomentSections(output, map, i, true) };
         return [main, second];
       })
       .filter((output: ReupOutputScript) => output.sections.length),
@@ -279,11 +273,12 @@ export const writeReupScript = async (job: ReupJob, history: { scripts: ReupScri
     folder,
     hasAudio,
     talk,
+    map,
     scenes: folder ? Object.fromEntries(map.segments.map((g) => [g.id, g.end - g.start])) : undefined,
     past: past
       .map((sc) =>
         sc.outputs
-          .filter((o) => !o.speech && o.lang === s.language)
+          .filter((o) => o.lang === s.language)
           .flatMap((o) => o.sections.map((x) => x.text))
           .join(" "),
       )
@@ -293,8 +288,8 @@ export const writeReupScript = async (job: ReupJob, history: { scripts: ReupScri
   if (!reupNeedsRevision(issues)) return first;
   log(REUP_LOG.REVISE_START(issueSummary(issues)));
   try {
-    const draft = { outputs: _.castArray(raw?.outputs || []).slice(0, count) };
-    const next = parse(await runMotionAi(REUP_PROMPT.REVISE({ base: prompt, draft, fixes: fixesOf(issues, preset.kind), alt: preset.bilingual ? alt : undefined }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log)));
+    const draft = { outputs: _.castArray(raw?.outputs || []).slice(0, 1) };
+    const next = parse(await runMotionAi(REUP_PROMPT.REVISE({ base: prompt, draft, fixes: fixesOf(issues), alt: preset.bilingual ? alt : undefined }), REUP_ARTIFACT.SCRIPT, exec, signal, aiLog(log)));
     const after = reupScriptReview(next, review);
     if (next.outputs.length === first.outputs.length && reupIssueScore(after) < reupIssueScore(issues)) {
       const words: [number, number] = [scriptUnits(first, s.language), scriptUnits(next, s.language)];
@@ -312,21 +307,35 @@ export const writeReupScript = async (job: ReupJob, history: { scripts: ReupScri
   issues.short.forEach((x) => log(REUP_LOG.STILL_SHORT(x.have, x.need), "warn"));
   return first;
 };
-export const reupCandidateTimes = (map: ReupSceneMap, limit: number): number[] => {
-  const strong = _.orderBy(map.segments, ["value"], ["desc"]).map((s) => _.round((s.start + s.end) / 2, 1));
+export const reupCandidateTimes = (map: ReupSceneMap, limit: number, opts: { dim?: ReupDimRange[]; bad?: ReupBadRange[]; avoid?: number[]; shown?: number[] } = {}): number[] => {
+  const C = REUP_THUMBS.CANDIDATE;
+  const near = (t: number, list: number[] = [], gap: number = C.APART) => list.some((x) => Math.abs(x - t) < gap);
+  const dark = (t: number): number => {
+    const d = (opts.dim || []).find((x) => t >= x.start && t < x.end);
+    return !d ? 0 : d.luma < C.DARK ? C.DARK_PENALTY : C.DIM_PENALTY;
+  };
+  const spots = map.segments
+    .flatMap((g) => (g.moments?.length ? g.moments : [{ id: g.id, t: (g.start + g.end) / 2, what: g.what, pull: g.value }]))
+    .map((m) => ({ t: _.round(m.t + C.LEAD, 1), score: m.pull + (C.SUBJECT.test(m.what) ? C.SUBJECT_BONUS : 0) + (C.PERSON.test(m.what) && C.COMPANION.test(m.what) ? C.PAIR_BONUS : 0) + (near(m.t, map.thumbnails) ? C.PICKED_BONUS : 0) + (near(m.t, opts.shown, C.SHOWN) ? C.SHOWN_BONUS : 0) - dark(m.t) - (near(m.t, opts.avoid) ? C.REPEAT_PENALTY : 0) }))
+    .filter((x) => !(opts.bad || []).some((b) => x.t >= b.start && x.t < b.end));
   const out: number[] = [];
-  for (const t of [...map.thumbnails, ...strong]) if (out.length < limit && out.every((o) => Math.abs(o - t) > 5)) out.push(t);
+  for (const x of _.orderBy(spots, ["score"], ["desc"])) if (out.length < limit && out.every((o) => Math.abs(o - x.t) > C.APART)) out.push(x.t);
   return out;
 };
 const clip = (value: unknown, length: number): string => _.truncate(_.trim(String(value ?? "")), { length });
-export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file: string })[], past: { titles: string[]; layouts: string[] }, log: Log, signal?: AbortSignal): Promise<ReupPackage> => {
+export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file: string })[], past: ReupThumbPast & { titles: string[]; spots: string[] }, log: Log, signal?: AbortSignal): Promise<ReupPackage> => {
   const s = job.settings;
+  const slots = s.thumbnail && frames.length ? reupThumbSlots(past, job.preset, job.id) : [];
+  const asks = slots.map((slot) => ({ ...slot, frames: REUP_THUMBS.FRAMES[slot.ai && slot.kind ? reupThumbFallback(slot.kind) : slot.layout] }));
   const choice = REUP_UPLOAD.NO_VISION.includes(s.scriptAi.provider) && s.scriptAi.mode !== REUP_UPLOAD.API_MODE ? s.visionAi : s.scriptAi;
   let room = s.thumbnail ? Math.min(frames.length, REUP_UPLOAD.PACKAGE_FRAMES, reupUploadLimit(choice.provider, choice.mode, readReupUploadLimits())) : 0;
   const narration = _.truncate((job.script?.outputs || []).flatMap((o) => o.sections.map((x) => x.text)).join(" "), { length: 2500 });
-  const ask = (sent: typeof frames) =>
+  const cues = (job.script?.outputs || []).filter((o) => o.lang === s.language).flatMap((o) => o.sections.flatMap((x) => x.cues || []));
+  const evidence = reupUsedEvidence(job.sceneMap!, cues);
+  const shown = _.uniq(cues.map((c) => job.sceneMap!.segments.find((g) => g.id === c.segment)?.moments?.find((m) => m.id === c.moment)?.what || job.sceneMap!.segments.find((g) => g.id === c.segment)?.what || "")).filter(Boolean);
+  const ask = (sent: typeof frames, avoid?: string[]) =>
     runMotionAi(
-      REUP_PROMPT.PACKAGE({ map: job.sceneMap!, script: narration, settings: s, frames: sent.map((f) => f.time), options: s.seoOptions, thumbnail: s.thumbnail && sent.length > 0, pastTitles: past.titles, pastLayouts: past.layouts }),
+      REUP_PROMPT.PACKAGE({ map: job.sceneMap!, script: narration, settings: s, frames: sent.map((f) => f.time), options: s.seoOptions, thumbs: sent.length ? asks : [], pastTitles: past.titles, shown, avoid }),
       REUP_ARTIFACT.PACKAGE,
       reupExec(choice),
       signal,
@@ -344,6 +353,16 @@ export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file
       log(REUP_LOG.PACKAGE_REFUSED(choice.provider, room, next));
       room = next;
     }
+  }
+  const strayOf = (r: any): string[] => reupStrayWords([..._.castArray(r?.options || []).map((o: any) => String(o?.title || "")), ..._.castArray(r?.thumbs || []).flatMap((t: any) => [..._.castArray(t?.lines || []).map(String), String(t?.scene || "")])].join(" "), evidence);
+  const stray = strayOf(raw);
+  if (stray.length) {
+    log(REUP_LOG.STRAY(stray), "warn");
+    const again = await ask(frames.slice(0, room), stray).catch((error) => {
+      if (signal?.aborted) throw error;
+      return undefined;
+    });
+    if (again && _.castArray(again?.options || []).length && strayOf(again).length < stray.length) raw = again;
   }
   const nearest = (t: unknown): number | undefined => {
     const n = Number(t);
@@ -368,18 +387,38 @@ export const writeReupPackage = async (job: ReupJob, frames: (ReupFrame & { file
     ).slice(0, 20),
     seoScore: _.clamp(Math.round(Number(o.seoScore) || 0), 0, 100),
   }));
-  const thumbs: ReupThumbIdea[] =
-    !s.thumbnail || !frames.length
-      ? []
-      : items.map((o: any, i) => {
-          const t = o?.thumb || {};
-          const layout = (["hero", "split", "circle"].includes(t.layout) ? t.layout : "hero") as ReupThumbIdea["layout"];
-          const picked = _.compact(_.castArray(t.frames || []).map(nearest)).slice(0, 2) as number[];
-          const lines = _.castArray(t.lines || [])
-            .map((l: unknown) => clip(l, 24))
-            .filter(Boolean)
-            .slice(0, 2);
-          return { layout, frames: picked.length ? picked : [frames[i % frames.length].time], lines: lines.length ? lines : [clip(options[i].title, 24)] };
-        });
+  const segments = job.sceneMap?.segments || [];
+  const focusAt = (t: number): number | undefined => segments.find((g) => t >= g.start && t < g.end)?.focusX;
+  const rawThumbs = _.castArray(raw?.thumbs || []);
+  const taken: number[] = [];
+  const drafts = asks.map((ask, i) => {
+    const t = rawThumbs[i] || {};
+    const picked = _.uniq(_.compact(_.castArray(t.frames || []).map(nearest)) as number[]);
+    const refs = _.uniq(_.compact(_.castArray(t.refs || t.frames || []).map(nearest)) as number[]).slice(0, REUP_THUMBS.AI.REFS);
+    const spare = frames.map((f) => f.time).filter((x) => !picked.includes(x));
+    const fresh = [...picked, ...spare].filter((x) => !taken.includes(x));
+    const chosen = _.uniq([...fresh, ...picked, ...spare]).slice(0, ask.frames);
+    taken.push(...chosen);
+    const lines = _.castArray(t.lines || [])
+      .map((l: unknown) => clip(l, ask.lines > 1 ? 24 : 14))
+      .filter(Boolean)
+      .slice(0, ask.lines);
+    const scene = clip(t.scene, 600);
+    const stray = scene ? reupStrayWords(scene, evidence) : [];
+    const ai = ask.ai && scene && !stray.length ? { scene, refs: refs.length ? refs : chosen, ...(ask.look ? { look: ask.look } : {}) } : undefined;
+    const layout = ask.ai && !ai ? reupThumbFallback(ask.kind!) : ask.layout;
+    const want = reupThumbLines(layout, ask.kind);
+    return { layout, ...(ask.kind ? { kind: ask.kind } : {}), ...(ai ? { ai } : {}), frames: chosen.length ? chosen : [frames[i % frames.length].time], lines: want && !lines.length && options[0] ? [clip(options[0].title, 24)] : lines.slice(0, want) };
+  });
+  const spots = reupThumbSpots(
+    drafts.map((d) => ({ layout: d.layout, lines: d.lines.length })),
+    drafts.map((d) => focusAt(d.frames[0])),
+    past.spots,
+    job.id,
+  );
+  const thumbs: ReupThumbIdea[] = drafts.map((d, i) => {
+    const focus = focusAt(d.frames[0]);
+    return { ...d, ...(spots[i] ? { spot: spots[i] } : {}), ...(focus !== undefined ? { focus } : {}) };
+  });
   return { options, thumbs, frames: frames.map(({ time, url }) => ({ time, url })), pinned: clip(raw?.pinned, 300), aiDisclosure: raw?.aiDisclosure === true };
 };

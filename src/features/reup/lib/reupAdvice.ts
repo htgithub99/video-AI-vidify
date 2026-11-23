@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { REUP_LIMITS } from "../constants/reupConfig.js";
-import type { ReupPresetDef } from "../constants/reupPresets.js";
+import { REUP_LENGTHS, type ReupPresetDef } from "../constants/reupPresets.js";
 import type { ReupBadRange, ReupJob, ReupSettings, ReupSource } from "../types/reup.js";
 export interface ReupLengthAdvice {
   need: number;
@@ -8,13 +8,11 @@ export interface ReupLengthAdvice {
   suggest?: number;
 }
 export const reupUsableSeconds = (source: Pick<ReupSource, "duration">, bad: ReupBadRange[] = []): number => Math.max(0, source.duration - _.sumBy(bad, (b) => b.end - b.start));
-export const reupLengthAdvice = (preset: Pick<ReupPresetDef, "kind" | "source" | "speech" | "lengths">, settings: Pick<ReupSettings, "targetSeconds" | "shortsCount">, usable: number): ReupLengthAdvice | undefined => {
-  const kind = preset.speech ? "speech" : preset.source === "folder" ? "folder" : preset.kind;
-  const count = preset.kind === "short" && !preset.speech ? Math.max(1, settings.shortsCount) : 1;
-  const need = settings.targetSeconds * count;
-  const room = usable * REUP_LIMITS.TARGET_SOURCE[kind];
+export const reupLengthAdvice = (preset: Pick<ReupPresetDef, "source">, settings: Pick<ReupSettings, "targetSeconds">, usable: number): ReupLengthAdvice | undefined => {
+  const need = settings.targetSeconds;
+  const room = usable * REUP_LIMITS.TARGET_SOURCE[preset.source];
   if (!usable || need <= room) return undefined;
-  return { need, usable: Math.round(usable), suggest: _.max(preset.lengths.filter((n) => n * count <= room)) };
+  return { need, usable: Math.round(usable), suggest: _.max(REUP_LENGTHS.filter((n) => n <= room)) };
 };
 const names = (source: ReupSource): Set<string> => new Set((source.items || []).map((it) => it.name.toLowerCase()));
 export const reupSameSource = (a: Pick<ReupJob, "fingerprint" | "source">, b: Pick<ReupJob, "fingerprint" | "source">): boolean => {

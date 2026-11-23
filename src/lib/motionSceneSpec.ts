@@ -67,7 +67,7 @@ export const motionSceneSpecPrompt = (scene: { sceneTemplate?: string; shot?: st
     ctx.cast,
     scene.sceneTemplate ? P.PLAN + scene.sceneTemplate : undefined,
     scene.drawingNote ? P.NOTE + scene.drawingNote : undefined,
-    frameLine(scene, ctx),
+    ctx.map ? P.MAP_FRAME(...(ctx.frame || [S.WIDTH, S.HEIGHT])) : frameLine(scene, ctx),
     ctx.map ? P.MAP : P.SCHEMA,
     ctx.map ? undefined : P.DEVICES,
     ctx.map ? undefined : P.LIBRARY(libraryLists(ctx.year)),
@@ -519,10 +519,10 @@ export const motionSceneSpecFix = (spec: MotionSceneSpec, ctx: Ctx = {}): string
   if (missing.length) warn.push(S.WARN.MISSING(missing));
   return warn;
 };
-export const motionSceneSpecCastLearn = (looks: MotionCastLooks, spec: MotionSceneSpec): void => {
+export const motionSceneSpecCastLearn = (looks: MotionCastLooks, spec: MotionSceneSpec, named?: string[]): void => {
   const flag = B.CAST_SEED.FLAG;
   for (const it of spec.items) {
-    if (it.fn !== "person" || it.group || !it.look) continue;
+    if (it.fn !== "person" || it.group || !it.look || (named && !named.includes(it.id))) continue;
     const seed = looks[it.id]?.[flag] ? looks[it.id] : undefined;
     if (looks[it.id] && !seed) continue;
     const look = Object.fromEntries(Object.entries(it.look).filter(([k, v]) => IDENTITY.includes(k) && (typeof v === "string" || typeof v === "number" || typeof v === "boolean"))) as Record<string, string | number | boolean>;

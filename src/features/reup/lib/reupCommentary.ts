@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { REUP_COMMENTARY_ENDINGS, REUP_COMMENTARY_HOOKS, REUP_COMMENTARY_VOICES } from "../constants/reupCommentary.js";
+import { REUP_HIGHLIGHT } from "../constants/reupConfig.js";
 import type { ReupPresetRules, ReupStyle } from "../types/reup.js";
 const seedOf = (text: string): number => [...text].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const leastRecent = <T extends string>(options: readonly T[], used: (T | undefined)[], seed: number): T => {
@@ -45,6 +46,11 @@ export const pickReupStyle = (rules: Pick<ReupPresetRules, "voices" | "hooks" | 
           ),
         }
       : {}),
+    pop: leastRecent(
+      REUP_HIGHLIGHT.SHORT.LOOKS,
+      history.map((h) => h.pop),
+      seed >>> 11,
+    ),
   };
 };
 export const reupPickTrack = (tracks: string[], history: ReupStyle[], seedText: string): string | undefined =>

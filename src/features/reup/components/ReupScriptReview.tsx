@@ -46,17 +46,11 @@ export const ReupScriptReview: FC<{ studio: ReupStudio }> = ({ studio }) => {
                 </label>
               ))}
             </div>
-            {output.speech && (
-              <label className={S.FIELD}>
-                <span className={S.FIELD_LABEL}>{text.CTA}</span>
-                <StudioInput className={S.INPUT} value={output.cta || ""} maxLength={80} onChange={(e) => edit((d) => void (d.outputs[o].cta = e.target.value))} />
-              </label>
-            )}
             {output.sections.map((section, i) => (
               <div key={section.id} className={S.SECTION}>
                 <div className={S.SECTION_HEAD}>
                   <span>
-                    {i + 1}. {output.speech ? text.KEPT_PHRASE : text.ROLES[section.role]}
+                    {i + 1}. {text.ROLES[section.role]}
                     {section.chapter ? ` · ${text.CHAPTER}: ${section.chapter}` : ""}
                   </span>
                   <span>{text.WORDS(words(section.text))}</span>
@@ -71,15 +65,7 @@ export const ReupScriptReview: FC<{ studio: ReupStudio }> = ({ studio }) => {
                     <StudioInput className={S.INPUT} value={section.mark.title} maxLength={70} onChange={(e) => edit((d) => void (d.outputs[o].sections[i].mark!.title = e.target.value))} />
                   </label>
                 )}
-                {output.speech ? (
-                  <>
-                    <p className={S.HINT}>{section.text}</p>
-                    <label className={S.FIELD}>
-                      <span className={S.FIELD_LABEL}>{text.CALLOUT}</span>
-                      <StudioInput className={S.INPUT} value={section.callout || ""} maxLength={40} onChange={(e) => edit((d) => void (d.outputs[o].sections[i].callout = e.target.value))} />
-                    </label>
-                  </>
-                ) : section.cues?.length ? (
+                {section.cues?.length ? (
                   section.cues.map((cue, k) => {
                     const at = (cue.moment && moments.get(cue.moment)) ?? scenes.get(cue.segment);
                     return (

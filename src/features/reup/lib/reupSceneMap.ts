@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { REUP_MOMENT, REUP_UPLOAD } from "../constants/reupConfig.js";
-import type { ReupBadRange, ReupMoment, ReupSceneMap, ReupSegment, ReupSheet } from "../types/reup.js";
+import type { ReupBadRange, ReupDimRange, ReupMoment, ReupSceneMap, ReupSegment, ReupSheet } from "../types/reup.js";
 import { mergeSpans, subtractSpans } from "./reupTimeline.js";
 export const reupUploadLimit = (provider: string, mode: string, learned: Record<string, number> = {}): number => {
   if (mode === REUP_UPLOAD.API_MODE) return Number.MAX_SAFE_INTEGER;
@@ -38,6 +38,24 @@ export const reupBadRanges = (samples: { t: number; y: number; blur?: number }[]
   const dark = darkLevel > 0 ? pick("dark", (s) => s.y < darkLevel) : [];
   const blur = blurLevel > 0 ? pick("blur", (s) => s.blur !== undefined && s.blur > blurLevel) : [];
   return _.sortBy([...dark, ...blur.flatMap((b) => subtractSpans([b], dark).map((s) => ({ ...s, reason: "blur" as const })))], "start");
+};
+export const reupDimRanges = (samples: { t: number; y: number }[], darkLevel: number, dimLevel: number, gap: number, minLength: number): ReupDimRange[] => {
+  const sorted = _.sortBy(samples, "t");
+  const dim = (y: number) => y >= darkLevel && y < dimLevel;
+  const spans = sorted.flatMap((s, i) => (dim(s.y) ? [{ start: s.t, end: sorted[i + 1]?.t ?? s.t + 1 }] : []));
+  return mergeSpans(spans, gap)
+    .filter((s) => s.end - s.start >= minLength)
+    .map((s) => ({
+      start: _.round(s.start, 2),
+      end: _.round(s.end, 2),
+      luma: _.round(
+        _.meanBy(
+          sorted.filter((x) => x.t >= s.start && x.t < s.end && dim(x.y)),
+          "y",
+        ) || dimLevel,
+        1,
+      ),
+    }));
 };
 const TAG_RE = /^[a-z][a-z-]{1,23}$/;
 const time = (value: unknown): number => {

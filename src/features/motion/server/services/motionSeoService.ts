@@ -81,7 +81,7 @@ export const generateMotionSeo = async (analysis: MotionStoryAnalysis, script: M
     genre: motionVideoGenrePackaging(analysis.videoGenre) || undefined,
   };
   const example = {
-    seoOptions: _.times(SEO_OPTION_COUNT, (i) => ({ title: i === 0 && sourceTitle ? sourceTitle : MR.MOTION_TEMPLATE_TITLE_OPTION(i + 1), description: MR.MOTION_TEMPLATE_HOOK_PARAGRAPH_CLOSING_LINE(SEO_CHAPTERS_TOKEN), hashtags: [MR.MOTION_TEXT_TAGONE, MR.MOTION_TEXT_TAGTWO], tags: [MR.MOTION_TEXT_TAG_ONE, MR.MOTION_TEXT_TAG_TWO], seoScore: 85 + i })),
+    seoOptions: _.times(SEO_OPTION_COUNT, (i) => ({ title: i === 0 && sourceTitle ? sourceTitle : MR.MOTION_TEMPLATE_TITLE_OPTION(i + 1), description: MR.MOTION_TEMPLATE_HOOK_PARAGRAPH_CLOSING_LINE(SEO_CHAPTERS_TOKEN), hashtags: [MR.MOTION_TEXT_TAGONE, MR.MOTION_TEXT_TAGTWO], tags: [MR.MOTION_TEXT_TAG_ONE, MR.MOTION_TEXT_TAG_TWO] })),
     chapterTitles: [{ id: MR.MOTION_TEXT_C1, title: MR.MOTION_TEXT_SYMBOL }],
   };
   const prompt = ([MR.MOTION_TEMPLATE_ACT_AS_AN_EXCELLENT_YOUTUBE_SEO_COPYWRITER_AND_CHANNEL_EDITOR_FOR(SEO_OPTION_COUNT, stringifyJson(brief), brief.language, SEO_CHAPTERS_TOKEN, brief.language, stringifyJson(example)), motionResponsePrompt(ARTIFACT), ...(sourceTitle ? [MOTION_SEO.SOURCE_TITLE_RULE] : []), ...(renameMap.length ? [RENAME.PROMPT.SEO] : [])] as string[]).join(

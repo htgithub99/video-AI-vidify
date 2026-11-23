@@ -1,6 +1,10 @@
 import { motionStoryTimes } from "../../../../../lib/motionTimeline.js";
 import { motionSceneRepeats } from "../../../../../lib/motionSceneRepeat.js";
 import { motionCrossingSites } from "../../../../../lib/motionCrossingSites.js";
+import { motionDeviceRests } from "../../../../../lib/motionDeviceRests.js";
+import { motionDrawnTimes } from "../../../../../lib/motionDrawnTimes.js";
+import { motionSceneCastLooks, motionMergeMarks } from "../../../../../lib/motionSceneCast.js";
+import { motionPlaceLooks } from "../../../../../lib/motionPlaceLooks.js";
 import { motionCastMarks } from "../../../../../lib/motionCastMarks.js";
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionLanguage } from "../../../../../lib/motionLanguage.js";
@@ -119,7 +123,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     frame = endFrame;
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
-  scenes.splice(0, scenes.length, ...motionCrossingSites(motionSceneRepeats(scenes), script.beats));
+  scenes.splice(0, scenes.length, ...motionDrawnTimes(motionDeviceRests(motionPlaceLooks(motionCrossingSites(motionSceneRepeats(scenes), script.beats), script.beats), script.beats), script.beats));
   if (analysis)
     motionSceneOnScreen(
       scenes.map((scene) => ({ scene, beats: (scene.sourceBeatIds || []).map((id) => script.beats.find((beat) => beat.id === id)).filter((beat): beat is MotionBeat => !!beat) })),
@@ -145,7 +149,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     proportion: motionProportionOf(settings),
     movement: motionMovementOf(settings),
     layout: motionLayoutOf(settings),
-    castMarks: motionCastMarks(analysis?.cast),
+    castMarks: motionMergeMarks(motionSceneCastLooks(scenes), motionCastMarks(analysis?.cast)),
     assets: Object.fromEntries(Object.entries(state.assets).filter(([key]) => used.has(key))),
     scenes: timedScenes.map(compactTimedScene),
     subtitles,

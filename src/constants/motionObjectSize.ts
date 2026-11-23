@@ -105,7 +105,7 @@ const PROPS = [
     ledger 0.15 0.12, paperMoney 0.05 0.1, rosary 0.15 0.05, mask 0.14 0.1, mirror 0.14 0.1, doll 0.15 0.08, crown 0.1 0.12, skull 0.1 0.12,
     hourglass 0.12 0.06, medal 0.05 0.03, sewingNeedle 0.03 0.01, syringe 0.07 0.01, bandageRoll 0.05 0.05, medicineBag 0.15 0.2, herbBasket 0.12 0.2,
     talisman 0.1 0.05, jossPaper 0.1 0.08, firecrackers 0.2 0.05, paperLantern 0.25 0.18, kite 0.6 0.5 air, fireArrow 0.06 0.45 air, arrowVolley 0.6 3 air, arrow 0.06 0.45 air, bolt 0.06 0.25 air, thrownSpear 0.06 1.3 air,
-    cannonShot 0.08 0.25 air, slingStone 0.06 0.2 air, firePot 0.25 0.25 air,
+    cannonShot 0.08 0.25 air, slingStone 0.06 0.2 air, siegeStone 0.5 0.5 air, firePot 0.25 0.25 air,
     lock 0.05 0.04, threshingFlail 0.9 0.1, chain 0.05 0.6, rope 0.05 0.8, net 0.05 1, bundle 0.25 0.35, backpack 0.3 0.2, carryingPole 0.5 1.1,
     tray 0.05 0.3, teaSet 0.08 0.3, samovar 0.3 0.2, clock 0.15 0.15, calendar 0.2 0.15, wallPhone 0.15 0.08, candlestickPhone 0.18 0.06, radio 0.15 0.25,
     lute 0.4 0.15, corinthianHelmet 0.15 0.12, galeaHelmet 0.15 0.12, nasalHelmet 0.15 0.12, greatHelm 0.18 0.13, morionHelmet 0.15 0.18,

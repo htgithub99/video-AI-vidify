@@ -9,7 +9,7 @@ import type { ReupJob, ReupStepId } from "../../types/reup.js";
 import { deleteReupJobs, getReupJob, listReupJobs } from "../services/reupJobStore.js";
 import { inspectReupSource, reupFingerprint, reupFrame } from "../services/reupMediaService.js";
 import { reupSourceReuses } from "../../lib/reupAdvice.js";
-import { approveReupScript, cancelReup, exportReup, rerunReup, startReup } from "../services/reupPipeline.js";
+import { approveReupScript, cancelReup, exportReup, rerollReupThumb, rerunReup, startReup } from "../services/reupPipeline.js";
 const fail = (res: Response, status: number, error: unknown): void => void res.status(status).json({ success: false, error: String((error as Error)?.message || error) });
 const view = (job: ReupJob) => ({ ...job, sheets: job.sheets.map(({ file: _file, ...sheet }) => sheet), voices: undefined, transcript: job.transcript ? { text: job.transcript.text, words: [], phrases: [] } : undefined });
 export const inspectReupSourceController = async (req: Request, res: Response): Promise<void> => {
@@ -47,6 +47,13 @@ export const rerunReupController = (req: Request, res: Response): void => {
     fail(res, 400, error);
   }
 };
+export const rerollReupThumbController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, job: view(await rerollReupThumb(String(req.body?.jobId || ""), Number(req.body?.index))) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
 export const exportReupController = (req: Request, res: Response): void => {
   try {
     res.json({ success: true, job: view(exportReup(String(req.body?.jobId || ""), req.body?.settings)) });
@@ -63,7 +70,7 @@ export const reupFrameController = async (req: Request, res: Response): Promise<
   const time = Number(req.query.t);
   if (!job || !Number.isFinite(time)) return fail(res, 404, REUP_ERROR.NO_JOB);
   try {
-    res.sendFile(await reupFrame(job.id, job.source, _.clamp(time, 0, Math.max(0, job.source.duration - 0.1)), Number(req.query.w) === 1280 ? 1280 : 480));
+    res.sendFile(await reupFrame(job.id, job.source, _.clamp(time, 0, Math.max(0, job.source.duration - 0.1)), Number(req.query.w) === 1280 ? 1280 : 480, undefined, Number(req.query.w) === 1280 ? job.watermark : undefined));
   } catch (error) {
     fail(res, 500, error);
   }

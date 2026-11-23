@@ -50,6 +50,7 @@ export const MOTION_AI_RECOVERY = {
   RESUME: (provider: string): string => `Đã có lần gửi tới ${provider} – kiểm tra phản hồi của yêu cầu cũ trước khi tiếp tục.`,
   RESUME_RELOAD: (provider: string, attempt: number, total: number): string => `Tải lại room ${provider} để đọc kết quả yêu cầu cũ (${attempt}/${total}), chưa gửi lại yêu cầu.`,
   RESTART: (provider: string): string => `Room ${provider} không phục hồi được sau hai lần tải lại – đóng room lỗi rồi tạo lại yêu cầu trong room mới, giữ nguyên model và ảnh tham chiếu.`,
+  UNCERTAIN_RETRY: (provider: string): string => `Chưa xác định được kết quả từ ${provider}: mở phòng mới và gửi lại 1 lần với cùng mô hình.`,
   UNCERTAIN: (provider: string): string => `Chưa xác định được kết quả yêu cầu đã gửi tới ${provider}. Đã dừng phiên để tránh gửi trùng; hãy kiểm tra phòng chat trước khi chạy lại.`,
   MODEL_SKIP: (provider: string, model: string): string => `Tạm bỏ qua model ${model} của ${provider} vì không khả dụng; các model khác vẫn được dùng.`,
   DISPLAY: (provider: string, model: string, phase: string): string => `${provider} · ${model} · ${phase}`,

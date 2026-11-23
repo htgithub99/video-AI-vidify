@@ -4,9 +4,9 @@ import { randomUUID } from "crypto";
 import _ from "lodash";
 import { logger } from "../../../../lib/logger.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
-import { REUP_DIR, REUP_LIMITS, REUP_STEPS } from "../../constants/reupConfig.js";
+import { REUP_DIR, REUP_LIMITS, REUP_STEPS, REUP_THUMBS } from "../../constants/reupConfig.js";
 import { REUP_ERROR, REUP_LOG, REUP_REPORT_ITEM, REUP_REPORT_LEVEL_NAME, REUP_STEP_NAME, REUP_STYLE_NAME } from "../../constants/reupServerText.js";
-import { reupJobSettings, reupPreset } from "../../constants/reupPresets.js";
+import { reupJobSettings, reupLegacyPreset, reupPreset } from "../../constants/reupPresets.js";
 import { MOTION_TEXT_SYMBOL_4 } from "../../../../constants/motionRuntime.js";
 import { MOTION_SEO } from "../../../../constants/motionSeo.js";
 import { MOTION_SEO_TEXTS } from "../../../../constants/motionVideoTexts.js";
@@ -18,11 +18,14 @@ import { reupReport } from "../../lib/reupCompliance.js";
 import { reupLengthAdvice, reupSameSource, reupSourceReuses, reupUsableSeconds } from "../../lib/reupAdvice.js";
 import { mergeSpans, spanLength } from "../../lib/reupTimeline.js";
 import { reupTalkPhrases } from "../../lib/reupTalk.js";
-import { reupUnbackedClaims } from "../../lib/reupFacts.js";
+import { reupStrayWords, reupUnbackedClaims, reupUsedEvidence } from "../../lib/reupFacts.js";
 import { reupSeoChapters } from "../../lib/reupSeo.js";
 import { cleanReupSettings } from "../../lib/reupSettings.js";
 import type { ReupJob, ReupPackage, ReupPresetId, ReupRights, ReupScript, ReupShot, ReupStepId } from "../../types/reup.js";
 import { buildReupSceneMap, reupCandidateTimes, withReupAi, writeReupPackage, writeReupScript } from "./reupAiService.js";
+import { reupClearAiThumbs, reupDrawAiThumb, reupDrawAiThumbs } from "./reupThumbAiService.js";
+import { reupNextLook } from "../../lib/reupThumbPlan.js";
+import { retainGlobalBrowser } from "../../../../server/services/imageGeneratorService.js";
 import { buildReupJob } from "./reupBuildService.js";
 import { REUP_ABORTED, isReupAbort } from "./reupFfmpeg.js";
 import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
@@ -34,6 +37,7 @@ import { closeMotionStandaloneBrowser } from "../../../motion/server/services/mo
 const clearFrom = (job: ReupJob, step: ReupStepId): void => {
   const at = REUP_STEPS.indexOf(step);
   const before = (id: ReupStepId) => at <= REUP_STEPS.indexOf(id);
+  if (before("package")) reupClearAiThumbs(job);
   if (step === "package") {
     job.package = undefined;
     job.packageDir = undefined;
@@ -43,6 +47,7 @@ const clearFrom = (job: ReupJob, step: ReupStepId): void => {
   if (before("source")) {
     job.sheets = [];
     job.bad = [];
+    job.dim = [];
     job.transcript = undefined;
   }
   if (before("scenes")) job.sceneMap = undefined;
@@ -77,11 +82,20 @@ const checkPolicy = (job: ReupJob): void => {
   reupLog(job, REUP_LOG.REPORT(REUP_REPORT_LEVEL_NAME[job.report.level], flagged.length ? flagged : [REUP_REPORT_ITEM.narration!(String(Math.round(job.report.narrated * 100)))]), job.report.level === "ok" ? "info" : "warn");
 };
 const scriptWords = (script: ReupScript): number => _.sumBy(script.outputs, (o) => _.sumBy(o.sections, (s) => s.text.split(/\s+/).filter(Boolean).length));
-const checkClaims = (job: ReupJob, text: string): void => {
+const checkClaims = (job: ReupJob, text: string, shown = text): void => {
   const claims = reupUnbackedClaims(text, job.sceneMap!);
+  const stray = reupStrayWords(
+    shown,
+    reupUsedEvidence(
+      job.sceneMap!,
+      (job.script?.outputs || []).flatMap((o) => o.sections.flatMap((x) => x.cues || [])),
+    ),
+  );
+  if (stray.length) reupLog(job, REUP_LOG.STRAY(stray), "warn");
   if (claims.length) reupLog(job, REUP_LOG.CLAIM(claims.join(", ")), "warn");
 };
-const scriptClaimText = (script: ReupScript): string => script.outputs.flatMap((o) => [...o.title, o.cta || "", ...o.sections.flatMap((s) => (o.speech ? [s.callout || ""] : [s.text]))]).join("\n");
+const scriptShownText = (script: ReupScript): string => script.outputs.flatMap((o) => [...o.title, ...o.sections.flatMap((x) => [...(x.marks || []), ...(x.mark ? [x.mark] : [])].flatMap((m) => [m.label, m.title, m.sub || ""]))]).join("\n");
+const scriptClaimText = (script: ReupScript): string => script.outputs.flatMap((o) => [...o.title, ...o.sections.map((s) => s.text)]).join("\n");
 const closeReupBrowser = async (job: ReupJob, signal: AbortSignal): Promise<void> => {
   for (let attempt = 0; attempt < REUP_LIMITS.BROWSER_CLOSE_TRIES; attempt++) {
     if (signal.aborted) return;
@@ -105,13 +119,8 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     job.fingerprint = await reupFingerprint(job.source);
     const reused = reupSourceReuses(job, finishedRuns(job));
     if (reused) reupLog(job, REUP_LOG.SOURCE_REUSED(reused), "warn");
-    const speech = preset.speech
-      ? transcribeReupSource(job.id, job.source, job.settings.language, signal, (line) => line && reupLog(job, line)).then((t) => {
-          job.transcript = t;
-          reupLog(job, REUP_LOG.ASR(t.words.length, t.phrases.length));
-          if (!t.phrases.length) throw new Error(REUP_ERROR.NO_SPEECH);
-        })
-      : job.settings.keepTalk && job.source.hasAudio && job.settings.natural !== "off"
+    const talk =
+      job.settings.keepTalk && job.source.hasAudio && job.settings.natural !== "off"
         ? transcribeReupSource(job.id, job.source, "", signal, (line) => line && reupLog(job, line))
             .then((t) => {
               job.transcript = { ...t, phrases: reupTalkPhrases(t.phrases) };
@@ -128,9 +137,20 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
               reupLog(job, REUP_LOG.TALK_FAILED(String((error as Error)?.message || error)), "warn");
             })
         : Promise.resolve();
-    const [sheets, quality] = await Promise.all([makeReupSheets(job.id, job.source, job.settings.sheetInterval, signal, () => reupLog(job, REUP_LOG.FONT_MISSING, "warn")), measureReupQuality(job.source, job.settings.darkLevel, job.settings.blurLevel, signal)]);
+    const [{ sheets, watermark }, quality] = await Promise.all([makeReupSheets(job.id, job.source, job.settings.sheetInterval, signal, () => reupLog(job, REUP_LOG.FONT_MISSING, "warn")), measureReupQuality(job.source, job.settings.darkLevel, job.settings.blurLevel, signal)]);
     job.sheets = sheets;
+    job.watermark = watermark;
+    if (watermark) reupLog(job, REUP_LOG.WATERMARK(watermark, job.settings.logo === "crop" || (job.settings.logo !== "off" && job.settings.logoCorner === watermark)), "warn");
     job.bad = quality.bad;
+    job.dim = quality.dim;
+    if (quality.dim.length)
+      reupLog(
+        job,
+        REUP_LOG.DIM(
+          quality.dim.length,
+          _.sumBy(quality.dim, (d) => d.end - d.start),
+        ),
+      );
     reupLog(job, REUP_LOG.SHEETS(sheets.length, sheets[0]?.interval || job.settings.sheetInterval));
     if (!quality.blurMeasured && job.settings.blurLevel > 0) reupLog(job, REUP_LOG.QUALITY_NO_BLUR);
     reupLog(
@@ -140,10 +160,9 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
         _.sumBy(quality.bad, (b) => b.end - b.start),
       ),
     );
-    await speech;
-    const usable = preset.speech ? _.sumBy(job.transcript?.phrases || [], (p) => p.end - p.start) : reupUsableSeconds(job.source, job.bad);
-    const advice = reupLengthAdvice(preset, job.settings, usable);
-    if (advice) reupLog(job, preset.speech ? REUP_LOG.SPEECH_ADVICE(advice.need, advice.usable) : REUP_LOG.LENGTH_ADVICE(advice.need, advice.usable, advice.suggest), "warn");
+    await talk;
+    const advice = reupLengthAdvice(preset, job.settings, reupUsableSeconds(job.source, job.bad));
+    if (advice) reupLog(job, REUP_LOG.LENGTH_ADVICE(advice.need, advice.usable, advice.suggest), "warn");
     return "next";
   },
   scenes: async (job, signal) => {
@@ -171,17 +190,12 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
       signal,
     );
     reupLog(job, REUP_LOG.SCRIPT(job.script.outputs.length, scriptWords(job.script)));
-    checkClaims(job, scriptClaimText(job.script));
+    checkClaims(job, scriptClaimText(job.script), scriptShownText(job.script));
     if (!job.settings.stopScript) return "next";
     reupLog(job, REUP_LOG.WAIT_SCRIPT);
     return "stop";
   },
   voice: async (job, signal) => {
-    if (reupPreset(job.preset).speech) {
-      job.voices = {};
-      reupLog(job, REUP_LOG.SPEECH_ONLY);
-      return "next";
-    }
     const voiced = stepClock();
     const { voices, credits } = await heavy(job, HEAVY_VOICE, REUP_STEP_NAME.voice, signal, () =>
       voiceReupJob(
@@ -231,21 +245,27 @@ const STEP_RUN: Record<ReupStepId, (job: ReupJob, signal: AbortSignal) => Promis
     return "next";
   },
   package: async (job, signal) => {
-    const times = job.settings.thumbnail ? reupCandidateTimes(job.sceneMap!, REUP_LIMITS.FRAMES) : [];
+    const moments = new Map(job.sceneMap!.segments.flatMap((g) => (g.moments || []).map((m) => [m.id, m.t] as const)));
+    const shown = (job.script?.outputs || []).flatMap((o) => o.sections.flatMap((x) => (x.cues || []).flatMap((c) => (c.moment && moments.has(c.moment) ? [moments.get(c.moment)!] : []))));
+    const avoid = finishedRuns(job)
+      .filter((p) => reupSameSource(job, p))
+      .flatMap((p) => (p.package?.thumbs || []).flatMap((t) => t.frames));
+    const times = job.settings.thumbnail ? reupCandidateTimes(job.sceneMap!, REUP_LIMITS.FRAMES, { dim: job.dim, bad: job.bad, avoid, shown }) : [];
     const frames = await Promise.all(
       times.map(async (time) => {
-        const file = await reupFrame(job.id, job.source, time, 1280, signal);
+        const file = await reupFrame(job.id, job.source, time, 1280, signal, job.watermark);
         return { time, file, url: reupFileUrl(file) };
       }),
     );
     const past = pastRuns(job);
-    const recent = { titles: past.flatMap((p) => (p.package?.options || []).map((o) => o.title)).slice(0, 20), layouts: _.compact(past.slice(0, 3).map((p) => p.package?.thumbs[0]?.layout)) };
+    const recent = { titles: past.flatMap((p) => (p.package?.options || []).map((o) => o.title)).slice(0, 20), ...reupThumbHistory(past) };
     job.package = await withReupAi(
       job,
       () => writeReupPackage(job, frames, recent, (t, l) => reupLog(job, t, l), signal),
       (t) => reupLog(job, t),
       signal,
     );
+    await reupDrawAiThumbs(job, (t, l) => reupLog(job, t, l), signal);
     reupLog(job, REUP_LOG.PACKAGE(job.package.options.length, job.package.thumbs.length));
     checkClaims(job, [...job.package.options.map((o) => o.title), ...job.package.thumbs.flatMap((t) => t.lines)].join("\n"));
     if (job.outputs.length) {
@@ -302,6 +322,7 @@ const launch = (job: ReupJob, from: ReupStepId, until?: ReupStepId): void => {
   void run(job, from, until);
 };
 const busy = (job: ReupJob): void => {
+  if (reupLegacyPreset(job.preset)) throw new Error(REUP_ERROR.LEGACY);
   if (job.status === "running" && reupController(job.id)) throw new Error(REUP_ERROR.BUSY);
 };
 export const startReup = async (input: { path: string; preset: ReupPresetId; settings: unknown; rights: unknown }): Promise<ReupJob> => {
@@ -313,7 +334,7 @@ export const startReup = async (input: { path: string; preset: ReupPresetId; set
   const now = Date.now();
   const settings = reupJobSettings(preset.id, cleanReupSettings(input.settings, preset.id));
   if (rights === "licensed" && !settings.sourceLink.trim()) throw new Error(REUP_ERROR.LICENSE_LINK);
-  if (!preset.speech && settings.angle.trim().length < REUP_LIMITS.ANGLE_MIN) throw new Error(REUP_ERROR.NO_ANGLE);
+  if (settings.angle.trim().length < REUP_LIMITS.ANGLE_MIN) throw new Error(REUP_ERROR.NO_ANGLE);
   const job: ReupJob = { id: randomUUID(), createdAt: now, updatedAt: now, preset: preset.id, settings, rights, source, status: "running", steps: reupEmptySteps(), logs: [], sheets: [], bad: [], warnings: [], outputs: [] };
   saveReupJob(job, true);
   reupLog(job, REUP_LOG.START(source.name, preset.id));
@@ -327,7 +348,7 @@ export const rerunReup = (id: string, step: ReupStepId, settings?: unknown): Reu
   busy(job);
   const at = REUP_STEPS.indexOf(step);
   if (at > 0 && job.steps[REUP_STEPS[at - 1]].status !== "done" && job.steps[REUP_STEPS[at - 1]].status !== "waiting") throw new Error(REUP_ERROR.NEED_STEP);
-  if (settings) job.settings = reupJobSettings(job.preset, cleanReupSettings(settings, job.preset));
+  if (settings) job.settings = reupJobSettings(reupPreset(job.preset).id, cleanReupSettings(settings, job.preset));
   clearFrom(job, step);
   launch(job, step, step === "package" && job.steps.build.status === "done" ? "package" : undefined);
   return job;
@@ -350,6 +371,7 @@ export const exportReup = (id: string, settings: unknown): ReupJob => {
 export const approveReupScript = (id: string, edited: unknown): ReupJob => {
   const job = getReupJob(id);
   if (!job?.script) throw new Error(REUP_ERROR.NO_JOB);
+  busy(job);
   if (job.status !== "waiting-script") throw new Error(REUP_ERROR.NOT_WAITING);
   const outs = new Map<string, any>(_.castArray((edited as ReupScript)?.outputs || []).map((o: any) => [String(o?.id), o]));
   const clip = (v: unknown, n: number) => _.truncate(_.trim(String(v ?? "")), { length: n });
@@ -365,11 +387,9 @@ export const approveReupScript = (id: string, edited: unknown): ReupJob => {
           .map((l) => clip(l, 40))
           .filter(Boolean)
           .slice(0, 2),
-        ...(o.cta !== undefined ? { cta: clip(e?.cta ?? o.cta, 80) } : {}),
         sections: o.sections
           .map((sec) => {
             const x = secs.get(sec.id);
-            if (o.speech) return { ...sec, ...(x?.callout !== undefined ? { callout: clip(x.callout, 40) || undefined } : {}) };
             if (sec.cues) {
               const cues = sec.cues.map((c, k) => ({ ...c, text: clip(_.castArray(x?.cues || [])[k]?.text ?? c.text, 600) })).filter((c) => c.text);
               const shots = _.uniqBy(cues, "segment").flatMap((c) => (scenes.has(c.segment) ? [_.pick(scenes.get(c.segment)!, ["start", "end"])] : []));
@@ -383,10 +403,39 @@ export const approveReupScript = (id: string, edited: unknown): ReupJob => {
   };
   if (!job.script.outputs.some((o) => o.sections.length)) throw new Error(REUP_ERROR.EMPTY_SCRIPT);
   job.warnings = [];
-  checkClaims(job, scriptClaimText(job.script));
+  checkClaims(job, scriptClaimText(job.script), scriptShownText(job.script));
   reupStep(job, "script", { status: "done", progress: 1 });
   launch(job, "package");
   return job;
+};
+const reupThumbHistory = (past: ReupJob[]) => {
+  const thumbs = past.slice(0, REUP_THUMBS.HISTORY).flatMap((p) => p.package?.thumbs || []);
+  return { layouts: thumbs.map((t) => t.layout), kinds: _.compact(thumbs.map((t) => (t.kind === "signature" ? undefined : t.kind))), looks: _.compact(thumbs.map((t) => t.ai?.look)), spots: _.compact(thumbs.map((t) => t.spot)) };
+};
+const rerolling = new Set<string>();
+export const rerollReupThumb = async (id: string, index: number): Promise<ReupJob> => {
+  const job = getReupJob(id);
+  if (!job) throw new Error(REUP_ERROR.NO_JOB);
+  busy(job);
+  const idea = job.package?.thumbs[index];
+  if (!idea?.ai || !idea.kind) throw new Error(REUP_ERROR.NO_AI_THUMB);
+  if (rerolling.has(id)) throw new Error(REUP_ERROR.BUSY);
+  rerolling.add(id);
+  const controller = new AbortController();
+  try {
+    if (idea.kind === "signature") idea.ai = { ...idea.ai, look: reupNextLook(idea.ai.look, reupThumbHistory(pastRuns(job)).looks) };
+    const release = retainGlobalBrowser();
+    try {
+      await reupDrawAiThumb(job, index, (t, l) => reupLog(job, t, l), controller.signal);
+    } finally {
+      release();
+    }
+    await closeReupBrowser(job, controller.signal);
+    saveReupJob(job, true);
+    return job;
+  } finally {
+    rerolling.delete(id);
+  }
 };
 const writePackage = (job: ReupJob, pack: ReupPackage): void => {
   const dir = reupJobDir(job.id, REUP_DIR.PACKAGE);

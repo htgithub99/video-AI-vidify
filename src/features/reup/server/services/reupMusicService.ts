@@ -25,7 +25,7 @@ export const reupTrackPreset = (relative: string): ReupPresetId | undefined => {
   const id = REUP_MUSIC.NAME.exec(path.basename(relative))?.[1]?.toUpperCase();
   return id && PRESET_IDS.has(id) ? (id as ReupPresetId) : undefined;
 };
-export const reupTracks = (preset?: ReupPresetId): ReupTrack[] => {
+export const reupTracks = (preset?: string): ReupTrack[] => {
   const dir = reupMusicDir();
   const files = fs.readdirSync(dir, { recursive: true, encoding: "utf8" }).filter((f) => REUP_MUSIC.EXT.test(f));
   return _.sortBy(

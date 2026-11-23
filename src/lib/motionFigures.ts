@@ -10,7 +10,8 @@ import { MOTION_SCENE_ENGINE } from "../constants/motionSceneEngine.js";
 import { MOTION_SCENE_REVISE as R, MOTION_SCENE_SPEC as S } from "../constants/motionSceneSpec.js";
 import { motionHtmlRequired } from "./motionHtmlQuality.js";
 import type { MotionCrossing } from "./motionCrossingSites.js";
-export type MotionFigureScene = { shot?: string; kind?: string; sceneTemplate?: string; text?: string; time?: string; vary?: number; crossing?: MotionCrossing; html?: { language?: string } };
+import type { MotionPlaceLook } from "./motionPlaceLooks.js";
+export type MotionFigureScene = { shot?: string; kind?: string; sceneTemplate?: string; text?: string; time?: string; vary?: number; crossing?: MotionCrossing; placeLook?: MotionPlaceLook; rest?: boolean; seen?: string[]; drawTime?: string; html?: { language?: string } };
 export type MotionFigureRender = { profile?: string; proportion?: string; layout?: string; movement?: string; year?: number; cast?: Record<string, Record<string, string>>; scene?: MotionFigureScene };
 export const motionFigureRenderOf = (spec: { profileId?: string; proportion?: string; layout?: string; movement?: string; eraYear?: number; castMarks?: Record<string, Record<string, string>> } | undefined, scene?: MotionFigureScene): MotionFigureRender => ({
   year: spec?.eraYear,
@@ -19,7 +20,7 @@ export const motionFigureRenderOf = (spec: { profileId?: string; proportion?: st
   proportion: spec?.proportion,
   movement: spec?.movement,
   layout: motionLayoutOf({ layout: spec?.layout }),
-  scene: scene && { shot: scene.shot, kind: scene.kind, sceneTemplate: scene.sceneTemplate, text: scene.text, time: scene.time, vary: scene.vary, crossing: scene.crossing, html: scene.html?.language ? { language: scene.html.language } : undefined },
+  scene: scene && { shot: scene.shot, kind: scene.kind, sceneTemplate: scene.sceneTemplate, text: scene.text, time: scene.time, vary: scene.vary, crossing: scene.crossing, placeLook: scene.placeLook, rest: scene.rest, seen: scene.seen, drawTime: scene.drawTime, html: scene.html?.language ? { language: scene.html.language } : undefined },
 });
 export const motionFigureRenderKey = (render: MotionFigureRender | undefined): string => `kit:${render?.profile || ""}:${render?.proportion || ""}|${motionLayoutOf({ layout: render?.layout })}|${motionMovementOf({ profileId: render?.profile, movement: render?.movement })}|r${F.RENDER_REVISION}e${S.ENGINE}v${R.REVISION}`;
 export const motionFigureView = (render: MotionFigureRender | undefined, focus?: string) => {
@@ -30,12 +31,13 @@ export const motionFigureView = (render: MotionFigureRender | undefined, focus?:
   return {
     style,
     layout: motionLayoutOf({ layout: render?.layout }),
-    scene: { shot: scene?.shot, kind: scene?.kind, text: scene?.text, time: scene?.time, vary: scene?.vary, language: scene?.html?.language, required: motionHtmlRequired(scene?.sceneTemplate).map((r) => r.id) },
+    scene: { shot: scene?.shot, kind: scene?.kind, text: scene?.text, time: scene?.time, vary: scene?.vary, rest: scene?.rest, seen: scene?.seen, drawTime: scene?.drawTime, language: scene?.html?.language, required: motionHtmlRequired(scene?.sceneTemplate).map((r) => r.id) },
     profile: render?.profile,
     focus: focus ? [focus] : [],
     ...(pairs.length ? { pairs } : {}),
     ...(render?.cast ? { cast: render.cast } : {}),
     ...(scene?.crossing ? { crossing: scene.crossing } : {}),
+    ...(scene?.placeLook ? { placeLook: scene.placeLook } : {}),
     movement,
     ...(Number.isFinite(render?.year) ? { year: render!.year } : {}),
   };

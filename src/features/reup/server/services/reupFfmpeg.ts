@@ -2,7 +2,9 @@ import { spawn } from "child_process";
 import fs from "fs";
 import _ from "lodash";
 import { getFfmpegPath } from "../../../../server/services/shortsPreprocessService.js";
-import { REUP_FONTS, reupFontScript, type ReupFontFace, type ReupFontWeight } from "../../constants/reupConfig.js";
+import path from "path";
+import { getStaticResourcePath } from "../../../../server/utils/paths.js";
+import { REUP_FONTS, REUP_HIGHLIGHT, REUP_TYPE, reupFontScript, type ReupFontFace, type ReupFontWeight } from "../../constants/reupConfig.js";
 import { REUP_ERROR } from "../../constants/reupServerText.js";
 export const REUP_ABORTED = "REUP_ABORTED";
 export const isReupAbort = (error: unknown): boolean => (error as Error)?.message === REUP_ABORTED;
@@ -60,7 +62,12 @@ export const reupProbe = (file: string): Promise<{ duration: number; width: numb
     child.on("close", done);
   });
 export const reupFilterValue = (value: string): string => value.replace(/\\/g, "/").replace(/'/g, "'\\''").replace(/:/g, "\\:");
-export const reupFontFor = (lang = "en", weight: ReupFontWeight = "bold"): ReupFontFace | undefined => REUP_FONTS[reupFontScript(lang)][weight].find((f) => fs.existsSync(f.file)) || REUP_FONTS.latin[weight].find((f) => fs.existsSync(f.file));
+const bundled = (weight: ReupFontWeight): ReupFontFace | undefined => {
+  const face = weight === "heavy" ? REUP_TYPE.HEAVY : undefined;
+  const file = face && path.join(getStaticResourcePath(REUP_HIGHLIGHT.FONT_DIR), face.file);
+  return file && fs.existsSync(file) ? { file, family: face.family } : undefined;
+};
+export const reupFontFor = (lang = "en", weight: ReupFontWeight = "bold"): ReupFontFace | undefined => (reupFontScript(lang) === "latin" ? bundled(weight) : undefined) || REUP_FONTS[reupFontScript(lang)][weight].find((f) => fs.existsSync(f.file)) || REUP_FONTS.latin[weight].find((f) => fs.existsSync(f.file));
 export const reupFont = (lang?: string, weight: ReupFontWeight = "bold"): string | undefined => reupFontFor(lang, weight)?.file;
 export const reupAssertVideo = (ok: boolean): void => {
   if (!ok) throw new Error(REUP_ERROR.NO_VIDEO);

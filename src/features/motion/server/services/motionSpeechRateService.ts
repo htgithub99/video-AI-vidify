@@ -76,7 +76,7 @@ export const recordSpeechRate = (script: MotionStoryScript, totalSeconds: number
   const lang = languageOf(script.language);
   const channel = channelOf(script.voiceChannel);
   const store = readStore();
-  const blend = (previous?: number) => _.round(previous ? previous * (1 - C.SPEECH_RATE_WEIGHT) + measured * C.SPEECH_RATE_WEIGHT : measured, 3);
+  const blend = (previous?: number) => _.round(previous && Math.abs(measured / previous - 1) <= C.SPEECH_RATE_JUMP ? previous * (1 - C.SPEECH_RATE_WEIGHT) + measured * C.SPEECH_RATE_WEIGHT : measured, 3);
   store.channels[channel] = { ...(store.channels[channel] || {}), [lang]: blend(store.channels[channel]?.[lang]) };
   store.global[lang] = blend(store.global[lang]);
   const previous = store.profiles[profile.key];

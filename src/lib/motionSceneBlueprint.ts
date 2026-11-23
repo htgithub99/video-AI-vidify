@@ -255,6 +255,16 @@ export const motionSceneCastSeed = (looks: MotionCastLooks, cast: { key?: string
     for (const id of new Set(ids)) if (!looks[id]) looks[id] = { ...look, [C.FLAG]: true };
   }
 };
+export const motionSceneCastNames = (cast: { key?: string; name?: string }[] | undefined, narrator?: string): string[] => [
+  ...new Set(
+    [...B.CAST_SEED.SELF, String(narrator || ""), ...(cast || []).flatMap((person) => [String(person.key || ""), String(person.key || "").replace(/_/g, ""), ...String(person.name || "").split(/\s+/)])]
+      .map((id) => id.toLowerCase().replace(/[^a-z0-9_]+/g, ""))
+      .filter((id) => id.length >= B.CAST_SEED.NAME_MIN || (B.CAST_SEED.SELF as readonly string[]).includes(id) || (!!narrator && id === narrator)),
+  ),
+];
+export const motionSceneCastKeep = (looks: MotionCastLooks, named: string[]): void => {
+  for (const id of Object.keys(looks)) if (!named.includes(id)) delete looks[id];
+};
 export const motionSceneCastPrompt = (looks: MotionCastLooks | undefined, ids: string[]): string | undefined => {
   const rows = ids.filter((id) => looks?.[id]).map((id) => `${id} ${JSON.stringify(looks![id])}`);
   return rows.length ? B.CAST_PROMPT(rows) : undefined;

@@ -46,7 +46,7 @@ export const ReupResultsPanel: FC<{ studio: ReupStudio; ui: "vi" | "en"; onOpen:
             </div>
             <div className={S.RESULT_FOOT}>
               <div className={S.RESULT_META}>
-                <span>{text.TYPES[run.preset].split(" · ")[0]}</span>
+                <span>{(text.TYPES[run.preset] || run.preset).split(" · ")[0]}</span>
                 <span>{text.STATUS[run.status]}</span>
                 {run.outputs.length > 1 && <span>{text.OUTPUT(run.outputs.length)}</span>}
                 <span>{new Date(run.updatedAt).toLocaleString()}</span>

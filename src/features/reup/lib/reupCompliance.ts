@@ -41,12 +41,11 @@ export const reupReport = (job: ReupJob, past: ReupJob[]): ReupReport => {
   const narrated = total ? _.round(_.sumBy(job.outputs, (o) => o.narrated ?? o.duration) / total, 2) : 0;
   const silentMax = _.max(job.outputs.map((o) => o.silentMax || 0)) || 0;
   const padding = total ? _.sumBy(job.outputs, (o) => o.padding || 0) / total : 0;
-  const speech = job.script?.outputs.some((o) => o.speech);
   add("narration", narrated < REUP_CHECK.NARRATED_RISK ? "risk" : narrated < REUP_CHECK.NARRATED_REVIEW ? "review" : "ok", Math.round(narrated * 100));
   if (silentMax > REUP_CHECK.SILENT_REVIEW) add("silence", "review", Math.round(silentMax));
   if (padding > REUP_CHECK.PADDING_REVIEW) add("padding", "review", Math.round(padding * 100));
   if (job.outputs.some((o) => o.repeated)) add("repeated", "review");
-  if (!speech && job.settings.natural === "off" && job.source?.hasAudio && job.source.kind === "video") add("naturalOff", "ok");
+  if (job.settings.natural === "off" && job.source?.hasAudio && job.source.kind === "video") add("naturalOff", "ok");
   const others = past.filter((p) => p.id !== job.id);
   const sameSource = others.filter((p) => p.outputs.length > 0 && reupSameSource(job, p));
   if (sameSource.length) add("sourceReused", job.rights === "own" ? "review" : "risk", sameSource.length);
@@ -56,36 +55,35 @@ export const reupReport = (job: ReupJob, past: ReupJob[]): ReupReport => {
   );
   if (overlap >= REUP_SPANS.OVERLAP_REVIEW) add("overlap", "review", Math.round(overlap * 100));
   const voiced = total ? _.sumBy(job.outputs, (o) => (o.voiced ?? o.narrated ?? o.duration) + (o.talk || 0)) / total : 0;
-  const coverage = speech || !job.settings.narratedMin ? 1 : Math.min(1, voiced / Math.max(0.01, job.settings.narratedMin - REUP_NARRATION.COVER_SLACK));
+  const coverage = !job.settings.narratedMin ? 1 : Math.min(1, voiced / Math.max(0.01, job.settings.narratedMin - REUP_NARRATION.COVER_SLACK));
   if (coverage < 1) add("coverage", "review", `${Math.round(voiced * 100)}|${Math.round(job.settings.narratedMin * 100)}`);
-  const written = (job.script?.outputs || []).filter((o) => !o.speech && o.lang === job.script?.outputs[0].lang);
-  const cued = written.flatMap((o, k) => (o.kind === "short" ? (o.sections.some((s) => s.cues?.length) ? [{ cues: o.sections.flatMap((s) => s.cues || []), n: `#${k + 1}` }] : []) : o.sections.flatMap((s, i) => (s.role === "body" && s.cues?.length ? [{ cues: s.cues, n: String(i + 1) }] : []))));
+  const written = (job.script?.outputs || []).filter((o) => o.lang === job.script?.outputs[0].lang);
+  const cued = written.flatMap((o) => o.sections.flatMap((s, i) => (s.role === "body" && s.cues?.length ? [{ cues: s.cues, n: String(i + 1) }] : [])));
   const bare = cued.flatMap(({ cues, n }) => (cues.some((c) => c.value) ? [] : [n]));
-  const value = speech || !cued.length ? 1 : 1 - bare.length / cued.length;
+  const value = !cued.length ? 1 : 1 - bare.length / cued.length;
   if (bare.length && value < 1) add("describes", value < REUP_CHECK.VALUE_MIN ? "review" : "ok", bare.join(", "));
   const text = scriptText(job);
-  const best = text && !speech ? _.max(others.map((p) => reupTextSimilarity(text, scriptText(p)))) || 0 : 0;
+  const best = text ? _.max(others.map((p) => reupTextSimilarity(text, scriptText(p)))) || 0 : 0;
   if (best >= REUP_CHECK.SIMILAR_REVIEW) add("similar", best >= REUP_CHECK.SIMILAR_RISK ? "risk" : "review", Math.round(best * 100));
   const used = new Set(others.flatMap(titles));
   const echoed = titles(job).filter((t) => used.has(t));
   if (echoed.length) add("titleReused", "review", echoed.length);
-  if (!speech && !job.settings.angle.trim()) add("noAngle", "review");
+  if (!job.settings.angle.trim()) add("noAngle", "review");
   const revision = job.script?.revision;
   if (revision?.words) add("extended", "ok", revision.words.join("|"));
   if (revision?.rewritten) add("rewritten", "ok", revision.rewritten);
   if (job.rights === "licensed") add("licensed", "ok");
-  if (job.rights === "licensed" && job.script?.outputs.some((o) => o.kind === "short" && !o.speech)) add("shortsLicensed", "review");
   if (job.outputs.length > 1 && new Set(job.script?.outputs.map((o) => o.lang)).size > 1) add("bilingual", "review");
   const marks = _.sumBy(job.outputs, (o) => o.highlights || 0);
   const parts: Record<ReupScoreGap, number> = {
     coverage,
     value,
-    highlights: speech ? 1 : marks ? 1 : 0,
+    highlights: marks ? 1 : 0,
     silence: _.clamp(1 - (silentMax - REUP_CHECK.SILENT_OK) / REUP_CHECK.SILENT_REVIEW, 0, 1),
     shot: _.clamp(1 - ((_.max(job.outputs.map((o) => o.longestShot || 0)) || 0) - REUP_SCORE_LIMIT.SHOT_OK) / REUP_SCORE_LIMIT.SHOT_SPAN, 0, 1),
     source: (sameSource.length ? (job.rights === "own" ? 0.5 : 0) : 1) * ((_.max(job.outputs.map((o) => o.sourceShare || 0)) || 0) > REUP_SCORE_LIMIT.SHARE_HIGH ? REUP_SCORE_LIMIT.SHARE_FACTOR : 1),
     similar: _.clamp(1 - best / REUP_CHECK.SIMILAR_RISK, 0, 1),
-    angle: speech || job.settings.angle.trim() ? 1 : 0,
+    angle: job.settings.angle.trim() ? 1 : 0,
   };
   const score = Math.round(_.sum(_.map(parts, (v, k) => v * REUP_SCORE[k as ReupScoreGap])));
   const gaps = _.sortBy(

@@ -36,7 +36,7 @@ import { openMotionHtmlRuntime, withMotionThumbnailBrowser } from "./sceneRuntim
 import { isLowSpecMode } from "../../../../../server/services/chromeBackupService.js";
 import { AI_LOAD } from "../../../../../constants/aiLoad.js";
 import { motionHtmlStore } from "./sceneStore.js";
-import { motionSceneCastPrompt, motionSceneCastSeed, type MotionCastLooks } from "../../../../../lib/motionSceneBlueprint.js";
+import { motionSceneCastKeep, motionSceneCastNames, motionSceneCastPrompt, motionSceneCastSeed, type MotionCastLooks } from "../../../../../lib/motionSceneBlueprint.js";
 import type { MotionCatalogGap } from "../../../../../lib/motionObjectCatalog.js";
 import { MOTION_SCENE_BLUEPRINT } from "../../../../../constants/motionSceneBlueprint.js";
 import { MOTION_SCENE_SPEC, MOTION_SCENE_SPEC_PROMPT } from "../../../../../constants/motionSceneSpec.js";
@@ -276,7 +276,7 @@ const reviewMotionHtmlScene = async (scene: MotionRemotionScene, image: string, 
     fs.writeFileSync(path.join(dir, name), buffer);
     const template = scene.sceneTemplate || "";
     const pick = (re: RegExp) => template.match(re)?.[1]?.trim() || "";
-    const prompt = MOTION_HTML_QUALITY.REVIEW_PROMPT({ narration: scene.text || "", message: scene.message || "", keyVisual: scene.keyVisual || "", required: pick(MOTION_HTML_QUALITY.REQUIRED_LINE), motion: pick(MOTION_HTML_QUALITY.MOTION_LINE), event: pick(MOTION_HTML_QUALITY.EVENT_LINE) });
+    const prompt = MOTION_HTML_QUALITY.REVIEW_PROMPT({ narration: scene.text || "", message: scene.message || "", keyVisual: scene.keyVisual || "", required: pick(MOTION_HTML_QUALITY.REQUIRED_LINE), motion: pick(MOTION_HTML_QUALITY.MOTION_LINE), event: pick(MOTION_HTML_QUALITY.EVENT_LINE) || pick(MOTION_HTML_QUALITY.EVENT_SECTION) });
     const exec: MotionAiExecution = { ...target, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(target) };
     const images = [{ name: path.basename(file), mimeType: match[1], path: file }];
     const raw = await (opts.ai ? opts.ai(prompt, MOTION_HTML_QUALITY.REVIEW_ARTIFACT, exec, opts.signal, opts.log, images) : runMotionAi(prompt, MOTION_HTML_QUALITY.REVIEW_ARTIFACT, exec, opts.signal, opts.log, images));
@@ -302,7 +302,7 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
 };
 export const generateMotionHtmlScene = async (
   scene: MotionRemotionScene,
-  settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; movement?: string; scope?: string; language?: string; cast?: string; continuity?: string; kind?: string; shot?: string; castLooks?: MotionCastLooks; variety?: string; year?: number; genre?: string },
+  settings: { width: number; height: number; seconds: number; profile: string; proportion?: string; movement?: string; scope?: string; language?: string; cast?: string; continuity?: string; kind?: string; shot?: string; castLooks?: MotionCastLooks; castNames?: string[]; variety?: string; year?: number; genre?: string },
   opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log" | "review"> & { pool?: MotionPriorityPool; priority?: number },
   save: () => void = () => undefined,
 ): Promise<void> => {
@@ -487,15 +487,15 @@ export const generateMotionHtmlScene = async (
           opts.log(MOTION_HTML_QUALITY.REVIEW_LOG(scene.id, problems));
           feedback = MOTION_SCENE_SPEC_PROMPT.REVIEW(problems);
           kept = scene.html;
-          if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec);
+          if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec, settings.castNames);
           scene.htmlRequest = { id: randomUUID(), attempt: attempt.attempt + 1, status: RT_MAINTENANCE.RUNNING };
           continue;
         }
-        if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec);
+        if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec, settings.castNames);
         return;
       }
       finalize(html, image, warnings, attempt.attempt, false);
-      if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec);
+      if (settings.castLooks) motionSceneSpecCastLearn(settings.castLooks, spec, settings.castNames);
       return;
     } catch (error) {
       clearInterval(journal);
@@ -904,6 +904,8 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
     const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
     const cast = scene.kind === MOTION_HTML_WRITING.MAP_KIND ? undefined : motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
     motionSceneCastSeed((state.castLooks ||= {}), analysis.cast);
+    const castNames = motionSceneCastNames(analysis.cast, motionNarratorCastKey(analysis));
+    motionSceneCastKeep(state.castLooks, castNames);
     await generateMotionHtmlScene(
       scene,
       {
@@ -918,6 +920,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
         cast,
         continuity: motionHtmlContinuity(scene.continuityIn) || undefined,
         castLooks: (state.castLooks ||= {}),
+        castNames,
         kind: scene.kind,
         shot: scene.shot,
         year: state.eraYear,

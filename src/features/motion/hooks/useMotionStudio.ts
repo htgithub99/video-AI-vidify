@@ -1,6 +1,7 @@
 import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../../../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { motionThumbConcept } from "../../../constants/motionThumbnail.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_PROGRESS as MOTION_LOG_PROGRESS } from "../../../constants/motionProgress.js";
 import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
@@ -916,8 +917,10 @@ export function useMotionStudio() {
       setThumbnailBusy(optionIndex);
       await inFlow(async () => {
         try {
-          const result = (await runStoryJob(API_ROUTES.MOTION_STORY_THUMBNAIL, { analysis: now.analysis, script: now.script, ...motionVisualRequest(now), seo: now.seo?.options?.[optionIndex], language: now.language, aspect: now.aspect, aiExecution: motionSceneAiExecution(now) })) as { thumbnail: string; prompt: string };
-          const newThumb: MotionThumbnail = { image: result.thumbnail, prompt: result.prompt, optionIndex };
+          const others = Object.entries(now.thumbnails || {}).flatMap(([k, t]) => (Number(k) !== optionIndex && t.concept ? [t.concept] : []));
+          const concept = motionThumbConcept(now.analysis.videoGenre, others, now.thumbnails?.[optionIndex]?.concept);
+          const result = (await runStoryJob(API_ROUTES.MOTION_STORY_THUMBNAIL, { concept, analysis: now.analysis, script: now.script, ...motionVisualRequest(now), seo: now.seo?.options?.[optionIndex], language: now.language, aspect: now.aspect, aiExecution: motionSceneAiExecution(now) })) as { thumbnail: string; prompt: string; concept?: string };
+          const newThumb: MotionThumbnail = { image: result.thumbnail, prompt: result.prompt, optionIndex, concept: result.concept || concept };
           patch({ thumbnail: newThumb, thumbnails: { ...(stateRef.current.thumbnails || {}), [optionIndex]: newThumb } });
         } catch (e: any) {
           reportStoryError(e);

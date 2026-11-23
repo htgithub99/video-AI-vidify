@@ -1,6 +1,8 @@
+import { THUMB_CONCEPT_TEXT } from "../../../constants/thumbConcepts.js";
 import type { ReupReportCode } from "../types/reup.js";
 const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const REUP_LOG_CORNER: Record<string, string> = { tl: "góc trên trái", tr: "góc trên phải", bl: "góc dưới trái", br: "góc dưới phải" };
 export const REUP_LOG = {
   START: (name: string, preset: string): string => `Bắt đầu: ${name} · loại ${preset}`,
   STYLE: (voice: string, hook: string, ending: string, shape: string): string => `Phong cách bình phẩm lần này: ${voice}${hook ? ` · mở đầu ${hook}` : ""}${shape ? ` · bố cục ${shape}` : ""} · kết ${ending} (đổi so với các video trước)`,
@@ -9,11 +11,16 @@ export const REUP_LOG = {
   PROXY: "Đã tạo bản xem nhanh của thư mục",
   BROWSER_CLOSED: "Xong các bước AI (bản đồ cảnh, kịch bản, SEO & thumbnail) – đã đóng Chrome để dành RAM cho bước giọng đọc và dựng video",
   BROWSER_KEPT: "Chrome đang được màn khác dùng (còn phòng chat AI mở) nên chưa đóng – bước giọng đọc và dựng vẫn chạy bình thường",
-  ASR: (words: number, phrases: number): string => `Nhận giọng: ${words} từ, ${phrases} cụm`,
   CREDITS: (chars: number): string => `ai33: khoảng ${chars} credit (ước tính theo số ký tự đã gửi)`,
-  SPEECH_ONLY: "Loại E dùng chính lời nói trong video, không tạo giọng đọc",
   SOURCE: (seconds: number, w: number, h: number, audio: boolean): string => `Nguồn ${mmss(seconds)} · ${w}×${h} · ${audio ? "có tiếng" : "không có tiếng"}`,
   SHEETS: (count: number, interval: number): string => `Đã tạo ${count} ảnh ghép (${interval} giây/khung)`,
+  DIM: (count: number, seconds: number): string => `${count} đoạn hơi tối (${Math.round(seconds)} giây): khi dựng sẽ làm sáng và cắt ngắn hơn`,
+  LIFTED: (count: number): string => `Làm sáng ${count} cảnh tối`,
+  THUMB_AI: (n: number, kind: string): string => `Thumbnail ${n} (${THUMB_CONCEPT_TEXT.vi[kind as keyof typeof THUMB_CONCEPT_TEXT.vi] || kind}): đang tạo ảnh AI từ khung hình thật của video…`,
+  THUMB_AI_FAILED: (n: number, kind: string, reason: string): string => `Thumbnail ${n} (${THUMB_CONCEPT_TEXT.vi[kind as keyof typeof THUMB_CONCEPT_TEXT.vi] || kind}): chưa tạo được ảnh AI (${reason}) – dùng khung hình thật cho kiểu này`,
+  THUMB_AI_DONE: (made: number, total: number): string => `Thumbnail AI: xong ${made}/${total} ảnh`,
+  THUMB_AI_EMPTY: "AI không trả ảnh",
+  WATERMARK: (corner: string, hidden: boolean): string => `Nguồn có chữ/logo cố định ở ${REUP_LOG_CORNER[corner] || corner}: thumbnail đã tự cắt bỏ góc này${hidden ? "" : "; trong video vẫn còn – bật Che logo ở góc này nếu muốn ẩn"}`,
   QUALITY: (count: number, seconds: number): string => (count ? `Bỏ qua ${count} đoạn tối/mờ (${Math.round(seconds)} giây)` : "Không có đoạn tối/mờ cần bỏ"),
   QUALITY_NO_BLUR: "Bản ffmpeg này không đo được độ mờ — chỉ lọc đoạn tối",
   FONT_MISSING: "Không tìm thấy font để in mốc giờ/tiêu đề — bỏ phần chữ trên hình",
@@ -33,6 +40,8 @@ export const REUP_LOG = {
   REVISE_SHORT: (have: number, need: number): string => `thiếu ${need - have} từ (${have}/${need})`,
   REVISE_REPEAT: (sentences: number, similar: number): string => `${sentences} câu giống video trước${similar ? ` (giống ${similar}%)` : ""}`,
   REVISE_BARE: (sections: number): string => `${sections} phần chỉ tả cảnh`,
+  REVISE_STRAY: (words: string[]): string => `tiêu đề/chữ trên hình nói "${words.join(", ")}" nhưng cảnh đã chọn không có`,
+  STRAY: (words: string[]): string => `Tiêu đề/thumbnail nói "${words.join(", ")}" nhưng các cảnh dùng trong video không có — nên sửa trước khi đăng`,
   REVISE_LONG: (sections: number): string => `${sections} chương nhiều lời hơn số ảnh (ảnh phải giữ quá lâu)`,
   REVISED: (before: number, after: number, rewritten: number, valued: number): string => `Đã sửa kịch bản: ${before} → ${after} từ${rewritten ? ` · viết lại ${rewritten} câu trùng video trước` : ""}${valued ? ` · thêm ý giá trị cho ${valued} phần` : ""}`,
   REVISE_KEPT: "Bản sửa không tốt hơn bản đầu — giữ bản đầu",
@@ -57,7 +66,6 @@ export const REUP_LOG = {
   BUILD_DONE: (file: string, seconds: number): string => `Xong: ${file} (${mmss(seconds)})`,
   SHORT_TARGET: (seconds: number): string => `Video ngắn hơn độ dài đích ${Math.round(seconds)} giây: lời thuyết minh chưa đủ dài và tool không kéo dài video bằng footage không lời quá giới hạn (chính sách nội dung dùng lại). Viết thêm lời hoặc chọn độ dài ngắn hơn.`,
   LENGTH_ADVICE: (need: number, usable: number, suggest?: number): string => `Độ dài chọn (${mmss(need)}) gần bằng hoặc vượt phần nguồn dùng được (${mmss(usable)}) – dễ phải lặp hình hoặc video ngắn hơn đích${suggest ? `; đề xuất ${mmss(suggest)}` : ""}`,
-  SPEECH_ADVICE: (need: number, usable: number): string => `Lời nói rõ trong video chỉ khoảng ${mmss(usable)} – clip ${mmss(need)} có thể ngắn hơn hoặc phải dùng câu yếu`,
   SOURCE_REUSED: (count: number): string => `Nguồn này đã dựng ${count} video trước – đăng nhiều video từ cùng một nguồn dễ bị YouTube coi là nội dung lặp lại`,
   TALK: (phrases: number, seconds: number): string => `Lời nói của người làm trong video: ${phrases} câu (${Math.round(seconds)} giây) – giữ lại ở các khoảng nghỉ, kênh viết ít lời hơn tương ứng`,
   TALK_FAILED: (message: string): string => `Không nhận được lời nói gốc (${message}) – dựng như bình thường, không trừ lời của người làm`,
@@ -80,17 +88,18 @@ export const REUP_LOG = {
   STEP_FAILED: (step: string, message: string): string => `Lỗi ở bước ${step}: ${message}`,
 } as const;
 export const REUP_ERROR = {
+  NO_AI_THUMB: "Thumbnail này không phải ảnh AI",
   NO_SOURCE: "Không tìm thấy file video nguồn",
   NO_VIDEO: "File không đọc được hình (không phải video?)",
   NO_MEDIA: "Thư mục không có ảnh hoặc clip đọc được",
   NEED_FOLDER: "Loại D cần một thư mục ảnh/clip, không phải một file video",
   NEED_VIDEO: "Loại này cần một file video, không phải thư mục",
-  NO_SPEECH: "Không nhận ra lời nói trong video — loại E cần video có người nói",
   LICENSE: "Cần xác nhận footage là của bạn hoặc có giấy phép",
   LICENSE_LINK: "Footage có giấy phép: hãy điền link nguồn hoặc ghi chú giấy phép",
   NO_ANGLE: 'Hãy điền "Góc nhìn của kênh": kiến thức hoặc quan điểm riêng của bạn (ít nhất một câu) để video được xem là nội dung của bạn',
   PRESET_LATER: "Loại video này thuộc giai đoạn sau, chưa dùng được",
   NO_JOB: "Không tìm thấy lần dựng này",
+  LEGACY: "Loại này đã bỏ (Shorts dọc, cắt lời nói) — chỉ xem và tải lại được. Hãy tạo lần dựng mới với loại khác",
   BUSY: "Lần dựng đang chạy — chờ xong hoặc huỷ trước",
   NO_VISION: "AI đang chọn chỉ đọc chữ trong ảnh, không nhìn được cảnh — hãy chọn Gemini, ChatGPT hoặc Claude cho bước xem ảnh",
   NO_SCENES: "AI không trả về đoạn cảnh hợp lệ nào",
@@ -135,7 +144,6 @@ export const REUP_REPORT_ITEM: Partial<Record<ReupReportCode, (v: string) => str
   similar: (v) => `lời giống video trước ${v}%`,
   titleReused: (v) => `${v} tiêu đề trùng video trước`,
   noAngle: () => "chưa có góc nhìn của kênh",
-  shortsLicensed: () => "shorts từ nguồn có giấy phép",
   bilingual: () => "hai ngôn ngữ cần kiểm tra",
   describes: (v) => `phần chỉ tả cảnh: ${v}`,
   overlap: (v) => `${v}% hình trùng đoạn đã đăng từ cùng nguồn`,

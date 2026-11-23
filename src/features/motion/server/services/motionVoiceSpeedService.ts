@@ -5,6 +5,7 @@ import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { cleanVoiceSpeed, motionVoiceLibraryFile, readMotionVoiceLibraryJson, readVoiceLibrary } from "./motionVoiceLibraryService.js";
 import { fetchLinkSource } from "../../../../server/services/linkSourceFetchService.js";
 import { speechUnits } from "./motionSpeechRateService.js";
+import { motionTextLanguage } from "../../../../lib/motionLanguage.js";
 import os from "os";
 import path from "path";
 import fs from "fs";
@@ -77,7 +78,7 @@ export const measureVoiceSpeedReference = async (url: string, signal?: AbortSign
   if (!fetched.ok) throw new Error(fetched.note || V.ERRORS.NO_TRANSCRIPT);
   const focus = Number(V.TIME_PARAM_RE.exec(url)?.[1]);
   const measured = measureTranscriptRate(fetched.raw, Number.isFinite(focus) ? focus : undefined);
-  const target: MotionVoiceSpeedTarget = { rateBasis: V.BASIS.TEXT, rate: measured.rate, url, title: fetched.title, ...(measured.window ? { window: measured.window } : {}), ...(measured.pauses ? { pauses: measured.pauses } : {}), at: Date.now() };
+  const target: MotionVoiceSpeedTarget = { rateBasis: V.BASIS.TEXT, rate: measured.rate, url, title: fetched.title, ...(motionTextLanguage(fetched.raw) ? { language: motionTextLanguage(fetched.raw) } : {}), ...(measured.window ? { window: measured.window } : {}), ...(measured.pauses ? { pauses: measured.pauses } : {}), at: Date.now() };
   return writeVoiceSpeedSettings({ ...readVoiceSpeedSettings(), target, correction: 1, rates: {}, acousticRates: {} });
 };
 export const measureVoiceSpeedAudio = async (name: string, base64: string, signal?: AbortSignal): Promise<MotionVoiceSpeedSettings> => {
@@ -90,10 +91,12 @@ export const measureVoiceSpeedAudio = async (name: string, base64: string, signa
   try {
     await fs.promises.writeFile(file, buf);
     const r = await measureVoicePaceFile(file, signal);
-    let units = 0;
+    let units = 0,
+      transcriptText = "";
     try {
       await runMotionAudioProcess([MR.MOTION_TEXT_I, file, MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_AR, String(V.AUDIO.SAMPLE_RATE), MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, transcriptFile], signal);
       const transcript = await transcribeVieneuAudio(transcriptFile, MR.MOTION_TEXT_EMPTY, signal);
+      transcriptText = transcript.text;
       const count = speechUnits(transcript.text);
       if (count / r.seconds >= V.RATE_RANGE[0] && count / r.seconds <= V.RATE_RANGE[1]) units = count;
     } catch (error) {
@@ -107,6 +110,7 @@ export const measureVoiceSpeedAudio = async (name: string, base64: string, signa
       title: path.basename(name),
       fingerprint: createHash(MR.MOTION_TEXT_SHA256).update(buf).digest(MR.MOTION_TEXT_HEX),
       source: V.SOURCE_AUDIO,
+      ...(transcriptText && motionTextLanguage(transcriptText) ? { language: motionTextLanguage(transcriptText) } : {}),
       pauses: { ...r.pauses, articulation: _.round(rate / r.speechRatio, 2) },
       phrase: r.phrase,
       speechRatio: r.speechRatio,

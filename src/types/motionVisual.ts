@@ -173,6 +173,10 @@ export interface MotionRemotionScene {
   time?: string;
   vary?: number;
   crossing?: import("../lib/motionCrossingSites.js").MotionCrossing;
+  placeLook?: import("../lib/motionPlaceLooks.js").MotionPlaceLook;
+  rest?: boolean;
+  seen?: string[];
+  drawTime?: string;
   weather?: string;
   declaredTime?: string;
   declaredWeather?: string;

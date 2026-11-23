@@ -28,7 +28,7 @@ import { motionAudioHash as hash, motionWavData, motionWavFileInfo } from "./mot
 import { motionVoiceSignal, trimMotionVoiceEdges, motionVoiceBoundaryPadding, compareMotionVoiceText, motionSupportedTranscript } from "./motionVoiceQualityService.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import { motionStorytellingPreset, motionStorytellingSilent } from "../../../../lib/motionStorytelling.js";
-import { motionLanguage, motionLanguageRate } from "../../../../lib/motionLanguage.js";
+import { motionLanguage, motionLanguagePace, motionLanguageRate, motionTextLanguage } from "../../../../lib/motionLanguage.js";
 import { hasMisassignedMotionSpeech } from "../../../../lib/motionSpeech.js";
 import type { MotionStorytellingSilent } from "../../../../constants/motionStorytelling.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
@@ -36,13 +36,14 @@ const voiceTrackSpeedKey = (plan: MotionVoicePlan): string => hash([PACE.VERSION
 const flowingRead = new AsyncLocalStorage<boolean>();
 const isHorror = (analysis: MotionStoryAnalysis | null): boolean => !!analysis && PACE.HORROR_RE.test([analysis.videoGenre, analysis.genre, analysis.genre2, analysis.sfxMood, analysis.musicMood].join(MR.MOTION_TEXT_SYMBOL_13));
 const flowPauses = <T extends { clause?: number; sentence: number; suspense: number; beat: number }>(pauses: T): T => (flowingRead.getStore() ? { ...pauses, clause: Math.min(pauses.clause ?? pauses.sentence, PACE.FLOW.CLAUSE), sentence: Math.min(pauses.sentence, PACE.FLOW.SENTENCE), suspense: Math.min(pauses.suspense, PACE.FLOW.SUSPENSE), beat: Math.min(pauses.beat, PACE.FLOW.BEAT) } : pauses);
-const cadenceProfile = () => {
-  const profile = referenceCadenceProfile(readVoiceSpeedSettings().target, readVoiceSpeedSettings().correction);
+const cadenceProfile = (language?: unknown) => {
+  const target = readVoiceSpeedSettings().target,
+    profile = referenceCadenceProfile(target, readVoiceSpeedSettings().correction * (language ? motionLanguagePace(language, target?.language || motionTextLanguage(target?.title)) : 1));
   return profile && flowPauses(profile);
 };
-const referenceCadence = (line: MotionUtterance, voiceId: string, paced: boolean, delivery?: MotionVoiceDelivery) => {
+const referenceCadence = (line: MotionUtterance, voiceId: string, paced: boolean, delivery: MotionVoiceDelivery | undefined, language: unknown) => {
   if (!paced || !voiceUsesReferenceSpeed(voiceId)) return undefined;
-  const profile = cadenceProfile();
+  const profile = cadenceProfile(language);
   if (!profile || line.role === MR.MOTION_TEXT_NARRATION || !delivery) return profile;
   return { ...profile, articulation: profile.articulation * deliveryTempo(line, delivery) };
 };
@@ -62,7 +63,7 @@ const speechTokens = (text: string): string[] => _.compact(text.toLowerCase().no
 const voiceTextPassed = (result: { error: number; errorRun: number }): boolean => result.error <= C.ASR.MAX_ERROR && result.errorRun < C.ASR.MAX_ERROR_RUN;
 const voiceClipRateLimit = (line: MotionUtterance, language: unknown): number | undefined => {
   const target = readVoiceSpeedSettings().target;
-  const reference = target?.rateBasis === MOTION_VOICE_SPEED.BASIS.TEXT ? target.rate * PACE.REFERENCE_RATE_MARGIN : undefined;
+  const reference = target?.rateBasis === MOTION_VOICE_SPEED.BASIS.TEXT ? target.rate * PACE.REFERENCE_RATE_MARGIN * motionLanguagePace(language, target.language || motionTextLanguage(target.title)) : undefined;
   const dialogue = line.role !== MR.MOTION_TEXT_NARRATION ? (PACE.DIALOGUE_RATE[motionLanguageCode(language)] ?? motionLanguageRate(language, true)) : undefined;
   return reference && dialogue ? Math.min(reference, dialogue) : reference || dialogue;
 };
@@ -122,7 +123,7 @@ const normalizeClip = (wav: Buffer): Buffer => {
 };
 const clipJobs = new Map<string, Promise<SpeechClipAudio>>();
 const speechClip = (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false, preset?: number | null): Promise<SpeechClipAudio> => {
-  const key = hash([line.text, line.speed, line.rateFix, line.emotion, line.intensity, line.role, voiceId, language, delivery, engineDelivery(voiceId, delivery), voiceSpeedKey(voiceId), voiceClipRateLimit(line, language), referenceCadence(line, voiceId, paced, delivery), paced, preset, opts.asr === true]);
+  const key = hash([line.text, line.speed, line.rateFix, line.emotion, line.intensity, line.role, voiceId, language, delivery, engineDelivery(voiceId, delivery), voiceSpeedKey(voiceId), voiceClipRateLimit(line, language), referenceCadence(line, voiceId, paced, delivery, language), paced, preset, opts.asr === true]);
   const running = clipJobs.get(key);
   if (running) return running;
   const job = speechClipOnce(line, voiceId, language, opts, deps, delivery, paced, preset).finally(() => clipJobs.delete(key));
@@ -132,7 +133,7 @@ const speechClip = (line: MotionUtterance, voiceId: string, language: unknown, o
 const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false, preset?: number | null): Promise<SpeechClipAudio> => {
   const spoken = directedSpeechText(line);
   const known = preset !== undefined ? preset : knownVoiceTempoFactor(voiceId);
-  const reference = referenceCadence(line, voiceId, paced, delivery);
+  const reference = referenceCadence(line, voiceId, paced, delivery, language);
   const legacyRawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, legacyEngineDelivery(voiceId, delivery), ...(spoken !== directedBase(line) ? [spoken] : [])]) + MR.MOTION_TEXT_WAV;
   const rawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, engineDelivery(voiceId, delivery), ...(spoken !== directedBase(line) ? [spoken] : [])]) + MR.MOTION_TEXT_WAV,
     id = C.CLIP_PREFIX + hash([rawId, C.TEMPO, line.role, line.speed, line.rateFix, delivery.tempo, known, FX.VERSION, Q.VERSION, opts.asr === true, C.ASR.VERSION, motionVoiceFilter(line, delivery, 1), paced, reference, ...(paced ? [PACE.VERSION, PACE.DIALOGUE_RATE, voiceClipRateLimit(line, language)] : [])]) + MR.MOTION_TEXT_WAV,
@@ -336,7 +337,7 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
   const middle = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
   let adjusted = 0;
   const speeds = clips.map(() => line.rateFix || 1);
-  if (middle && (!referenceCadence(line, voiceId, paced, delivery) || clips.every((clip) => clip.cadence?.unfit)))
+  if (middle && (!referenceCadence(line, voiceId, paced, delivery, language) || clips.every((clip) => clip.cadence?.unfit)))
     for (let pass = 0; pass < S.PASSES; pass++)
       for (let index = 0; index < clips.length; index++) {
         const factor = rates[index] ? middle / rates[index] : 1;
@@ -496,7 +497,7 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
   const factors: Record<string, number | null> = Object.fromEntries(_.map(_.uniq(_.map(flat, (item) => item.voiceId)), (voiceId) => [voiceId, knownVoiceTempoFactor(voiceId)]));
   for (const voiceId of Object.keys(factors))
     if (factors[voiceId] === null) {
-      if (flat.filter((item) => item.voiceId === voiceId).every((item) => item.pieces.every((piece) => !!referenceCadence(piece.line, voiceId, !!pacing, item.paced)))) {
+      if (flat.filter((item) => item.voiceId === voiceId).every((item) => item.pieces.every((piece) => !!referenceCadence(piece.line, voiceId, !!pacing, item.paced, script.language)))) {
         factors[voiceId] = 1;
         continue;
       }

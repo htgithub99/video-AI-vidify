@@ -37,6 +37,9 @@ export interface ReupTimelineOptions {
   maxShot: number;
   hookCut: number;
   guard?: number;
+  dim?: ReupShot[];
+  dimShot?: number;
+  spacing?: number;
 }
 export interface ReupPlannedSection {
   shots: ReupShot[];
@@ -48,6 +51,7 @@ export interface ReupPlannedSection {
 }
 export class ReupFootageLedger {
   private used: ReupShot[] = [];
+  private last?: number;
   constructor(private readonly opts: ReupTimelineOptions) {}
   free(spans: ReupShot[] = [{ start: 0, end: this.opts.duration }]): ReupShot[] {
     const inside = spans.map((s) => ({ start: _.clamp(s.start, 0, this.opts.duration), end: _.clamp(s.end, 0, this.opts.duration) }));
@@ -60,6 +64,7 @@ export class ReupFootageLedger {
     const shot = { start: round(span.start), end: round(span.end) };
     const guard = this.opts.guard || 0;
     this.used = mergeSpans([...this.used, { start: shot.start - guard, end: shot.end + guard }]);
+    this.last = shot.start;
     return shot;
   }
   private cut(spans: ReupShot[], seconds: number, hook: boolean, out: ReupShot[], opts: { piece?: number; jump?: number; shortest?: number; seen?: Set<number> } = {}): number {
@@ -69,14 +74,17 @@ export class ReupFootageLedger {
     const shortest = opts.shortest ?? (hook ? Math.min(this.opts.minShot, this.opts.hookCut) : this.opts.minShot);
     for (const [at, wanted] of spans.entries()) {
       for (const span of this.free([wanted])) {
-        let cursor = span.start;
+        const gap = this.opts.spacing || 0;
+        let cursor = gap && this.last !== undefined && Math.abs(span.start - this.last) < gap ? this.last + gap : span.start;
         while (left > EPS && span.end - cursor > EPS) {
-          const len = Math.min(piece, left, span.end - cursor);
-          if (len < shortest - EPS && left > len + EPS) break;
+          const pos = cursor;
+          const dark = this.opts.dimShot && this.opts.dim?.some((d) => pos >= d.start && pos < d.end);
+          const len = Math.min(dark ? Math.min(piece, this.opts.dimShot!) : piece, left, span.end - cursor);
+          if (len < (dark ? Math.min(shortest, this.opts.dimShot!) : shortest) - EPS && left > len + EPS) break;
           opts.seen?.add(at);
           out.push(this.take({ start: cursor, end: cursor + len }));
           left -= len;
-          cursor += len * jump;
+          cursor += Math.max(len * jump, gap);
         }
         if (left <= EPS) return seconds;
       }
@@ -114,10 +122,10 @@ export class ReupFootageLedger {
     }
     return this.finish(shots, covered, seconds, filled, seen.size, shrink);
   }
-  planCue(at: number, scene: ReupShot, seconds: number, fills: ReupShot[], piece: number, shortest = this.opts.minShot, shrink = 0, jump = 1.25): ReupPlannedSection {
+  planCue(at: number, scene: ReupShot, seconds: number, fills: ReupShot[], piece: number, shortest = this.opts.minShot, shrink = 0, jump = 1.25, once = false): ReupPlannedSection {
     const shots: ReupShot[] = [];
     const from = _.clamp(at, scene.start, scene.end);
-    let covered = this.cut([{ start: from, end: scene.end }], seconds, false, shots, { piece, jump, shortest });
+    let covered = this.cut([{ start: from, end: scene.end }], once ? Math.min(seconds, piece) : seconds, false, shots, { piece, jump, shortest });
     let filled = 0;
     const seen = new Set<number>();
     if (covered < seconds - EPS) {

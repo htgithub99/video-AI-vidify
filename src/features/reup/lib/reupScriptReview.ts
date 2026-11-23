@@ -1,8 +1,9 @@
 import _ from "lodash";
-import { REUP_HOLD, REUP_LANG_UNIT, REUP_NARRATION, REUP_REVIEW } from "../constants/reupConfig.js";
+import { REUP_HOLD, REUP_LANG_UNIT, REUP_NARRATION, REUP_PACE, REUP_REVIEW } from "../constants/reupConfig.js";
 import { REUP_CHECK, reupTextGrams, reupTextSimilarity } from "./reupCompliance.js";
 import { reupPacing } from "./reupTimeline.js";
-import type { ReupJobSettings, ReupLanguage, ReupOutputScript, ReupScript } from "../types/reup.js";
+import type { ReupJobSettings, ReupLanguage, ReupOutputScript, ReupSceneMap, ReupScript } from "../types/reup.js";
+import { reupStrayWords, reupUsedEvidence } from "./reupFacts.js";
 type Pace = Pick<ReupJobSettings, "targetSeconds" | "wordsPerSecond" | "natural" | "narratedMin">;
 export interface ReupWordBudget {
   min: number;
@@ -18,9 +19,10 @@ export interface ReupPastText {
 }
 export interface ReupScriptIssues {
   short: { output: string; have: number; need: number; aim: number; unit: string; sections: number[] }[];
-  repeats: { output: string; sentences: string[]; other?: string }[];
+  repeats: { output: string; sentences: string[] }[];
   bare: { output: string; sections: number[] }[];
   long: { output: string; sections: { n: number; have: number; cap: number }[] }[];
+  stray: { output: string; words: string[] }[];
   similar: number;
 }
 export const reupHoldWords = (seconds: number, rate: number): number => Math.max(3, Math.round(seconds * REUP_HOLD.FOLDER_FACTOR * rate));
@@ -46,7 +48,7 @@ export const reupWordBudget = (s: Pace, lang: ReupLanguage, opts: { folder?: boo
 };
 const outputText = (o: ReupOutputScript): string => o.sections.map((x) => x.text).join(" ");
 export const reupPastText = (scripts: ReupScript[], lang: ReupLanguage): ReupPastText => {
-  const outs = scripts.map((sc) => sc.outputs.filter((o) => !o.speech && o.lang === lang)).filter((o) => o.length);
+  const outs = scripts.map((sc) => sc.outputs.filter((o) => o.lang === lang)).filter((o) => o.length);
   const first = (o?: ReupOutputScript) => reupSentences(o?.sections[0]?.text || "")[0];
   const last = (o?: ReupOutputScript) => _.last(reupSentences(_.last(o?.sections)?.text || ""));
   const openings = _.uniq(_.compact(outs.map((o) => first(o[0])))).slice(0, REUP_REVIEW.PAST_RUNS);
@@ -82,13 +84,12 @@ const overlap = (sentence: string, pool: Set<string>): number => {
 };
 const echoes = (o: ReupOutputScript, pool: Set<string>): string[] => (pool.size ? _.flatMap(o.sections, (x) => reupSentences(x.text)).filter((t) => reupUnits(t, o.lang || "en") >= REUP_REVIEW.SENTENCE_UNITS && overlap(t, pool) >= REUP_REVIEW.SENTENCE_OVERLAP) : []);
 const VALUE_ROLES = new Set(["body"]);
-export const reupScriptReview = (script: ReupScript, input: { settings: Pace & Pick<ReupJobSettings, "language">; folder?: boolean; hasAudio?: boolean; talk?: number; scenes?: Record<string, number>; past: string[] }): ReupScriptIssues => {
-  const issues: ReupScriptIssues = { short: [], repeats: [], bare: [], long: [], similar: 0 };
-  const written = script.outputs.filter((o) => !o.speech);
+export const reupScriptReview = (script: ReupScript, input: { settings: Pace & Pick<ReupJobSettings, "language">; folder?: boolean; hasAudio?: boolean; talk?: number; scenes?: Record<string, number>; past: string[]; map?: Pick<ReupSceneMap, "segments"> }): ReupScriptIssues => {
+  const issues: ReupScriptIssues = { short: [], repeats: [], bare: [], long: [], stray: [], similar: 0 };
   const main = input.settings.language;
   const pastPool = new Set(input.past.flatMap((t) => [...reupTextGrams(t)]));
   let quotes = 0;
-  written.forEach((o, i) => {
+  script.outputs.forEach((o) => {
     const lang = o.lang || main;
     const budget = reupWordBudget(input.settings, lang, input);
     const have = reupUnits(outputText(o), lang);
@@ -103,31 +104,33 @@ export const reupScriptReview = (script: ReupScript, input: { settings: Pace & P
       });
       if (over.length) issues.long.push({ output: o.id, sections: over });
     }
-    if (have < need * REUP_NARRATION.SHORT_OK) {
+    if (have < need * (input.settings.targetSeconds < REUP_PACE.QUICK ? REUP_NARRATION.QUICK_OK : REUP_NARRATION.SHORT_OK)) {
       const open = o.sections.map((x, k) => ({ k: k + 1, role: x.role, n: reupUnits(x.text, lang) })).filter((x) => x.role === "body" || x.role === "ending");
       issues.short.push({ output: o.id, have, need, aim: need < budget.min ? need : budget.aim, unit: budget.unit, sections: _.sortBy(_.sortBy(open, "n").slice(0, REUP_REVIEW.EXTEND_SECTIONS), "k").map((x) => x.k) });
+    }
+    if (input.map) {
+      const shown = [...o.title, ...o.sections.flatMap((x) => [...(x.marks || []), ...(x.mark ? [x.mark] : [])].flatMap((m) => [m.label, m.title, m.sub || ""]))].join(" ");
+      const words = reupStrayWords(
+        shown,
+        reupUsedEvidence(
+          input.map,
+          o.sections.flatMap((x) => x.cues || []),
+        ),
+      );
+      if (words.length) issues.stray.push({ output: o.id, words });
     }
     const left = REUP_REVIEW.QUOTES - quotes;
     const past = left > 0 ? echoes(o, pastPool).slice(0, left) : [];
     if (past.length) issues.repeats.push({ output: o.id, sentences: past });
     quotes += past.length;
-    for (const prev of written.slice(0, i).filter((p) => (p.lang || main) === lang && o.kind === "short")) {
-      const room = REUP_REVIEW.QUOTES - quotes;
-      const twin = room > 0 ? echoes(o, reupTextGrams(outputText(prev))).slice(0, room) : [];
-      if (twin.length) issues.repeats.push({ output: o.id, sentences: twin, other: prev.id });
-      quotes += twin.length;
-    }
     if (lang !== main) return;
     issues.similar = Math.max(issues.similar, _.max(input.past.map((t) => reupTextSimilarity(outputText(o), t))) || 0);
     const valued = (k: number) => o.sections[k].cues?.some((c) => c.value);
-    if (o.kind === "short") {
-      if (o.sections.some((x) => x.cues?.length) && !o.sections.some((_x, k) => valued(k))) issues.bare.push({ output: o.id, sections: [1] });
-      return;
-    }
     const bare = o.sections.flatMap((x, k) => (VALUE_ROLES.has(x.role) && x.cues?.length && !valued(k) ? [k + 1] : []));
     if (bare.length) issues.bare.push({ output: o.id, sections: bare });
   });
   return issues;
 };
-export const reupIssueScore = (issues: ReupScriptIssues): number => _.sumBy(issues.short, (x) => ((x.need - x.have) / Math.max(1, x.need)) * REUP_REVIEW.SHORT_WEIGHT) + _.sumBy(issues.repeats, (x) => x.sentences.length) + _.sumBy(issues.bare, (x) => x.sections.length) + _.sumBy(issues.long, (x) => x.sections.length) + issues.similar * REUP_REVIEW.SHORT_WEIGHT;
-export const reupNeedsRevision = (issues: ReupScriptIssues): boolean => issues.short.length > 0 || issues.long.length > 0 || issues.similar >= REUP_CHECK.SIMILAR_REVIEW || issues.repeats.some((x) => x.other) || _.sumBy(issues.repeats, (x) => x.sentences.length) >= REUP_REVIEW.REWRITE_MIN;
+export const reupIssueScore = (issues: ReupScriptIssues): number =>
+  _.sumBy(issues.short, (x) => ((x.need - x.have) / Math.max(1, x.need)) * REUP_REVIEW.SHORT_WEIGHT) + _.sumBy(issues.stray, (x) => x.words.length * REUP_REVIEW.STRAY_WEIGHT) + _.sumBy(issues.repeats, (x) => x.sentences.length) + _.sumBy(issues.bare, (x) => x.sections.length) + _.sumBy(issues.long, (x) => x.sections.length) + issues.similar * REUP_REVIEW.SHORT_WEIGHT;
+export const reupNeedsRevision = (issues: ReupScriptIssues): boolean => issues.short.length > 0 || issues.stray.length > 0 || issues.long.length > 0 || issues.similar >= REUP_CHECK.SIMILAR_REVIEW || _.sumBy(issues.repeats, (x) => x.sentences.length) >= REUP_REVIEW.REWRITE_MIN;

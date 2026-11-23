@@ -29,8 +29,6 @@ const merge = (zones: ReupMusicZone[], total: number): ReupMusicZone[] => {
 const gaps = (silences: [number, number][]): ReupMusicZone[] => silences.filter(([a, b]) => b - a >= Z.GAP).map(([a, b]) => ({ start: a + Z.GAP_PAD, end: b - Z.GAP_PAD, kind: "gap" as const }));
 export const reupMusicZones = (input: ReupZoneInput): ReupMusicZone[] => {
   const { total } = input;
-  if (input.mode === "bed") return merge([{ start: 0, end: total, kind: "bed" }], total);
-  if (input.mode === "gaps") return merge([...gaps(input.silences), ...input.stings.map((t) => ({ start: t, end: total, kind: "ending" as const }))], total);
   if (input.mode === "chapters") {
     const starts = _.sortedUniq(_.sortBy([0, ...input.chapters.filter((t) => t > Z.MIN && t < total)].map((t) => _.round(t, 2))));
     return starts.map((t, i) => ({ start: t, end: i < starts.length - 1 ? starts[i + 1] - Z.REST : total, kind: i === starts.length - 1 ? ("ending" as const) : ("bed" as const) })).filter((z) => z.end - z.start >= Z.MIN);

@@ -167,30 +167,6 @@ export const reupSubtitleAss = (lines: ReupSubLine[], opt: { width: number; heig
   const events = lines.filter((l) => l.end > l.start && reupAssText(l.text)).map((l) => `Dialogue: 0,${reupAssTime(l.start)},${reupAssTime(l.end)},S,,0,0,0,,${reupAssText(l.text)}`);
   return [...head, ...events, ""].join("\n");
 };
-export const reupKaraokeAss = (words: (ReupWord & { cut?: boolean })[], opt: { width: number; height: number; font: string; color: string; perLine: number; gap: number }): string => {
-  const size = Math.round(Math.min(opt.width, opt.height) * 0.075);
-  const lines: ReupWord[][] = [];
-  words.forEach((w, i) => {
-    const line = _.last(lines);
-    if (!line || line.length >= opt.perLine || w.cut || w.s - words[i - 1].e > opt.gap) lines.push([w]);
-    else line.push(w);
-  });
-  const head = reupAssHead(opt.width, opt.height, `K,${opt.font},${size},${reupAssColor(opt.color)},&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,${Math.round(size * 0.09)},${Math.round(size * 0.05)},2,40,40,${Math.round(opt.height * 0.2)},1`);
-  const events = lines.map((line) => {
-    const start = line[0].s;
-    const text = line
-      .map(
-        (w, i) =>
-          `{\\k${Math.max(1, Math.round(((line[i + 1]?.s ?? w.e) - w.s) * 100))}}${w.w
-            .trim()
-            .toUpperCase()
-            .replace(/[{}\\]/g, "")}`,
-      )
-      .join(" ");
-    return `Dialogue: 0,${reupAssTime(start)},${reupAssTime(_.last(line)!.e + 0.15)},K,,0,0,0,,${text}`;
-  });
-  return [...head, ...events, ""].join("\n");
-};
 const ASS_TIME = /^(\d+):(\d{2}):(\d{2})\.(\d{2})$/;
 const fromAssTime = (t: string): number => {
   const m = ASS_TIME.exec(t.trim());

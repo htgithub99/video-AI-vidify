@@ -1,5 +1,8 @@
 import { MOTION_CHAPTER_CARD as C } from "../../../../../constants/motionChapterCard.js";
 import { pickHighlightAnchor } from "../../../../../lib/highlightAnchor.js";
+import { motionSceneSpecOf } from "../../../../../lib/motionSceneSpec.js";
+import { motionDrawnTime } from "../../../../../lib/motionTimeline.js";
+import { MOTION_TIMELINE as T } from "../../../../../constants/motionTimeline.js";
 import type { MotionBeat, MotionChapter, MotionPlace } from "../../../../../types/motionVideo.js";
 import type { MotionRemotionTimedScene } from "../../../../../types/motionVisual.js";
 export const motionApplyChapterTitles = (scenes: MotionRemotionTimedScene[], args: { beats: MotionBeat[]; chapters: MotionChapter[]; places: MotionPlace[]; fps: number; language: string; aspect?: string; subtitles?: boolean }): MotionRemotionTimedScene[] => {
@@ -18,7 +21,8 @@ export const motionApplyChapterTitles = (scenes: MotionRemotionTimedScene[], arg
     const seconds = Math.min(C.SECONDS, length - C.TAIL_SECONDS);
     if (!chapter?.title || seconds < C.MIN_SECONDS) return scene;
     const place = args.places.find((item) => item.key === beat.place)?.name;
-    const time = scene.time || beat.time,
+    const said = scene.time || beat.time,
+      time = typeof said === "string" && (T.ORDER as readonly string[]).includes(said) ? scene.drawTime || (scene.html?.html ? motionDrawnTime(motionSceneSpecOf(scene.html.html)?.time, scene.text, said) : undefined) || said : said,
       subtitle = [place, typeof time === "string" ? time.trim() : ""].filter(Boolean).join(C.SUBTITLE_SEP);
     return { ...scene, titleCard: { kicker: kicker(index + 1), title: chapter.title, ...(subtitle ? { subtitle } : {}), seconds, anchor, ...(lift ? { lift } : {}) } };
   });
