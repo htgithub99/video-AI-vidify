@@ -3524,6 +3524,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
             await enterGeminiPrompt(activePage!, finalPrompt, visualConfig);
             if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
             const initialResponseCount = await activePage!.locator(GeminiChatSelector.Response).count();
+            const knownImages = new Set(await readGeminiImageSources(activePage!));
             await waitForGeminiRequestSlot(reloadAttempts);
             await waitHumanSendTurn(activePage!);
             if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
@@ -3543,7 +3544,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
               appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
             }
             roomReferenceSignatureMap.delete(activePage!);
-            base64Result = await waitForGeminiMediaWithRetryClicks(activePage!, visualConfig, initialResponseCount);
+            base64Result = await waitForGeminiMediaWithRetryClicks(activePage!, visualConfig, initialResponseCount, knownImages);
           }
           if (base64Result) {
             success = true;
@@ -3859,6 +3860,7 @@ async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], vi
               if (forceSetting) batchPagesConfigs.set(page, currentConfigState);
               await enterGeminiPrompt(page, finalPrompt, itemVisualConfig);
               const initialResponseCount = await page.locator(GeminiChatSelector.Response).count();
+              const knownImages = new Set(await readGeminiImageSources(page));
               await waitForGeminiRequestSlot(reloadAttempts);
               await waitHumanSendTurn(page);
               const sendBtn = page.locator(GeminiChatSelector.SendButton).first();
@@ -3876,7 +3878,7 @@ async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], vi
                 await page.keyboard.press(SOURCE_TEXT_ENTER);
                 appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()).replace(SOURCE_TEXT_1_3, SOURCE_TEMPLATE_SYMBOL_20(`${item.sceneId}`, `${BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER}`)));
               }
-              base64Result = await waitForGeminiMediaWithRetryClicks(page, itemVisualConfig, initialResponseCount);
+              base64Result = await waitForGeminiMediaWithRetryClicks(page, itemVisualConfig, initialResponseCount, knownImages);
               if (base64Result) {
                 success = true;
                 batchPagesErrors.set(page, 0);
@@ -4900,7 +4902,28 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
   }
   return null;
 }
-async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
+const readGeminiImageSources = (scope: Page | Locator): Promise<string[]> =>
+  scope
+    .locator(GEMINI_MEDIA_EXTRACTION_CONFIG.UNEXPECTED_IMAGE_SELECTOR)
+    .evaluateAll((images) => images.map((image) => (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src).filter(Boolean))
+    .catch(() => []);
+const waitForFreshGeminiImage = async (page: Page, response: Locator, known?: Set<string>): Promise<void> => {
+  if (!known?.size) return;
+  const deadline = Date.now() + GEMINI_MEDIA_EXTRACTION_CONFIG.STALE_IMAGE_WAIT_MS;
+  let warned = false;
+  while (Date.now() < deadline) {
+    const sources = await readGeminiImageSources(response);
+    if (sources.some((source) => !known.has(source))) return;
+    if (!warned && sources.length) {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_STALE_IMAGE);
+      warned = true;
+    }
+    await delayAsync(GEMINI_MEDIA_EXTRACTION_CONFIG.FINISH_POLL_INTERVAL_MS);
+    response = page.locator(GeminiChatSelector.Response).last();
+  }
+  throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_NO_NEW_RESPONSE);
+};
+async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number, known?: Set<string>): Promise<string | null> {
   const generationRevision = mediaGenerationRevision;
   let lastError: unknown;
   let previousErrorText: string = XRT.EMPTY;
@@ -4922,7 +4945,7 @@ async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: Gemin
           await delayAsync(400);
         }
       }
-      return await waitForDownloadAndGetBase64(page, visualConfig, retryClick === SecurityConstants.ZERO ? initialResponseCount : undefined, retryClick > SecurityConstants.ZERO ? previousErrorText : undefined);
+      return await waitForDownloadAndGetBase64(page, visualConfig, retryClick === SecurityConstants.ZERO ? initialResponseCount : undefined, retryClick > SecurityConstants.ZERO ? previousErrorText : undefined, known);
     } catch (error) {
       lastError = error;
       if (isMediaGenerationCancelled(generationRevision) || page.isClosed()) throw error;
@@ -4944,10 +4967,11 @@ async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: Gemin
   }
   throw lastError;
 }
-async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number, previousErrorText?: string): Promise<string | null> {
+async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number, previousErrorText?: string, known?: Set<string>): Promise<string | null> {
   await waitForGeminiFinished(page, visualConfig, initialResponseCount, previousErrorText);
   const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
   const finalizeVideo = (value: string): Promise<string> => (visualConfig?.preserveVideoAudio ? Promise.resolve(value) : removeVideoAudioTrack(value));
+  if (!isVideoGeneration) await waitForFreshGeminiImage(page, page.locator(GeminiChatSelector.Response).last(), known);
   const latestResponse = page.locator(GeminiChatSelector.Response).last();
   const mediaSelector = isVideoGeneration ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO : GEMINI_CHAT_MEDIA_SELECTORS.image;
   const mediaLoc = latestResponse.locator(mediaSelector).first();

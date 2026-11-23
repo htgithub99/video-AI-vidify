@@ -10,11 +10,14 @@ export const THUMB_CONCEPT_BRIEF: Record<ThumbConcept, string> = {
 };
 export type ThumbCaption = "top" | "topleft" | "topright" | "bottom";
 export const THUMB_CAPTION: Record<ThumbConcept, ThumbCaption> = { trophy: "topleft", split: "top", action: "topright", curiosity: "topleft", mood: "bottom" };
+export const THUMB_CAPTION_BOX = { WIDTH: 0.62, HEIGHT: 0.36 };
+const CAPTION_W = Math.round(THUMB_CAPTION_BOX.WIDTH * 100),
+  CAPTION_H = Math.round(THUMB_CAPTION_BOX.HEIGHT * 100);
 export const THUMB_CAPTION_SPACE: Record<ThumbCaption, string> = {
-  top: "Caption space: keep the top 26% of the frame calm and darker (sky, wall, roof or shadow) with nothing important in it; every head sits below that band.",
-  topleft: "Caption space: keep the top-left area (left 60%, top 34% of the frame) calm and simple (sky, wall, trees or shadow) with nothing important in it; the main character and the highlight stay out of it.",
-  topright: "Caption space: keep the top-right area (right 60%, top 34% of the frame) calm and simple (sky, wall, trees or shadow) with nothing important in it; the main character and the highlight stay out of it.",
-  bottom: "Caption space: keep the bottom 26% of the frame calm and darker (floor, ground, table edge or shadow) with nothing important in it; faces and the highlight sit above it.",
+  top: `Caption space: the app prints big text over the top ${CAPTION_H}% of the frame, so keep that band empty and calm (sky, wall, roof, trees or shadow): every head, face, hand and the highlight sit fully below it.`,
+  topleft: `Caption space: the app prints big text over the top-left area (left ${CAPTION_W}%, top ${CAPTION_H}% of the frame), so keep it empty and calm (sky, wall, trees or shadow): the person, the face and the highlight stay fully outside it.`,
+  topright: `Caption space: the app prints big text over the top-right area (right ${CAPTION_W}%, top ${CAPTION_H}% of the frame), so keep it empty and calm (sky, wall, trees or shadow): the person, the face and the highlight stay fully outside it.`,
+  bottom: `Caption space: the app prints big text over the bottom ${CAPTION_H}% of the frame, so keep that band empty and calm (floor, ground, table edge or shadow): faces, hands and the highlight sit fully above it.`,
 };
 export const THUMB_GOLDEN_RULES = "Thumbnail rules: one single focal point that is still recognisable when the picture is shrunk to the size of a thumb; no clutter of small details; text (if any) 2-4 words that add emotion or a surprise and never repeat the title, numbers only if the video shows them.";
 export const thumbConceptPick = <T extends string>(order: readonly T[], taken: readonly string[], previous?: string): T => order.find((c) => c !== previous && !taken.includes(c)) || order.find((c) => c !== previous) || order[0];

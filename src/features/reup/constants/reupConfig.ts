@@ -1,4 +1,4 @@
-import type { ThumbCaption, ThumbConcept } from "../../../constants/thumbConcepts.js";
+import { THUMB_CAPTION_BOX, type ThumbCaption, type ThumbConcept } from "../../../constants/thumbConcepts.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import type { ReupQuality, ReupStepId } from "../types/reup.js";
 export const REUP_STEPS: readonly ReupStepId[] = ["source", "scenes", "script", "package", "voice", "build"];
@@ -133,7 +133,7 @@ export const REUP_THUMBS = {
   CONCEPTS: { A: ["action", "trophy", "split"], C: ["curiosity", "trophy", "action"], D: ["trophy", "action", "split"], F: ["split", "trophy", "action"], G: ["split", "trophy", "curiosity"], H: ["trophy", "action", "split"] } as Record<string, readonly ThumbConcept[]>,
   FALLBACK: { signature: "cinema", trophy: "hero", split: "split", action: "hero", curiosity: "circle", mood: "cinema" },
   LOOKS: ["right:door", "left:back", "right:tool", "left:door", "right:back", "left:tool"],
-  AI: { ATTEMPTS: 2, MIN_BYTES: 20000, REFS: 3, STYLE_REFS: 1, TEXT_MIN: 110, KEEP_MIN: 90, BAND: 0.36, CORNER: 0.62, BAND_LINES: 2, WORDS: 4, SMALL: 168, FLAT: 30, PUNCH: 1.18 },
+  AI: { ATTEMPTS: 2, MIN_BYTES: 20000, REFS: 3, STYLE_REFS: 1, TEXT_MIN: 110, KEEP_MIN: 90, BAND: THUMB_CAPTION_BOX.HEIGHT, CORNER: THUMB_CAPTION_BOX.WIDTH, BAND_LINES: 2, WORDS: 4, SMALL: 168, FLAT: 30, PUNCH: 1.18 },
   STYLE: { MAX: 8, DIR: "style", WIDTH: 1280, BYTES: 15 * 1024 * 1024, MIME: /^data:image\/(png|jpe?g|webp);base64,/ },
   SUBJECT_LEFT: 0.4,
   SUBJECT_RIGHT: 0.6,

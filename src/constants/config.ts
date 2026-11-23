@@ -665,6 +665,7 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   STATES: { EXTRACT_START: "media_extract_start", SOURCE_MISSING: "media_src_missing", URL_DETECTED: "media_url_detected", IMAGE_SUCCESS: "image_extract_success", VIDEO_SUCCESS: "video_extract_success" },
   SOURCE_SELECTOR: "source[src]",
   UNEXPECTED_IMAGE_SELECTOR: ".attachment-container.generated-images img, generated-image img, download-generated-image-button img",
+  STALE_IMAGE_WAIT_MS: 45000,
   ERROR_PREFIX: "ERROR:",
   HTTP_ERROR_TEMPLATE: "HTTP {0}",
   EMPTY_SOURCE_ERROR: "Không tìm thấy URL media trong phản hồi Gemini.",

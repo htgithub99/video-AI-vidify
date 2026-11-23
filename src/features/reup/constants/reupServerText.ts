@@ -20,6 +20,7 @@ export const REUP_LOG = {
   THUMB_AI_FAILED: (n: number, kind: string, reason: string): string => `Thumbnail ${n} (${THUMB_CONCEPT_TEXT.vi[kind as keyof typeof THUMB_CONCEPT_TEXT.vi] || kind}): chưa tạo được ảnh AI (${reason}) – dùng khung hình thật cho kiểu này`,
   THUMB_AI_DONE: (made: number, total: number): string => `Thumbnail AI: xong ${made}/${total} ảnh`,
   THUMB_AI_EMPTY: "AI không trả ảnh",
+  THUMB_AI_SAME: "AI trả lại ảnh của thumbnail khác – tạo lại",
   WATERMARK: (corner: string, video: "auto" | "hidden" | "other"): string =>
     `Nguồn có chữ/logo cố định ở ${REUP_LOG_CORNER[corner] || corner}: thumbnail đã tự cắt bỏ góc này; ${video === "auto" ? "khi dựng video sẽ tự làm mờ góc này (Che logo đang tắt, cấu hình giữ nguyên)" : video === "hidden" ? "trong video đã được che theo cấu hình Che logo" : "Che logo đang chọn góc khác – đổi sang góc này nếu muốn ẩn trong video"}`,
   QUALITY: (count: number, seconds: number): string => (count ? `Bỏ qua ${count} đoạn tối/mờ (${Math.round(seconds)} giây)` : "Không có đoạn tối/mờ cần bỏ"),

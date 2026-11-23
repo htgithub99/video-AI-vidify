@@ -22,6 +22,7 @@ const styleFile = (url: string): string | undefined => {
   const file = path.join(reupRoot(), REUP_THUMBS.STYLE.DIR, name);
   return /^[a-f0-9]{40}\.jpg$/.test(name) && fs.existsSync(file) ? file : undefined;
 };
+const digest = (buffer: Buffer): string => createHash("sha1").update(buffer).digest("hex");
 export const reupSaveStyle = async (image: string): Promise<string> => {
   const match = REUP_THUMBS.STYLE.MIME.exec(image);
   if (!match) throw new Error(REUP_ERROR.STYLE_IMAGE);
@@ -29,7 +30,7 @@ export const reupSaveStyle = async (image: string): Promise<string> => {
   if (!buffer.length || buffer.length > REUP_THUMBS.STYLE.BYTES || !getDownloadedImageMimeType(buffer)) throw new Error(REUP_ERROR.STYLE_IMAGE);
   const dir = path.join(reupRoot(), REUP_THUMBS.STYLE.DIR);
   fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${createHash("sha1").update(buffer).digest("hex")}.jpg`);
+  const file = path.join(dir, `${digest(buffer)}.jpg`);
   if (!fs.existsSync(file)) {
     const raw = `${file}.src`;
     fs.writeFileSync(raw, buffer);
@@ -42,6 +43,14 @@ export const reupSaveStyle = async (image: string): Promise<string> => {
   return reupFileUrl(file);
 };
 const seedOf = (text: string): number => [...text].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+const takenImages = (job: ReupJob, index: number): Set<string> =>
+  new Set(
+    (job.package?.thumbs || []).flatMap((t, i) => {
+      const name = i === index || !t.image ? "" : decodeURIComponent(_.last(t.image.split("/")) || "");
+      const file = name ? reupJobDir(job.id, REUP_DIR.PACKAGE, name) : "";
+      return file && fs.existsSync(file) ? [digest(fs.readFileSync(file))] : [];
+    }),
+  );
 const draw = async (job: ReupJob, idea: ReupThumbIdea, index: number, signal?: AbortSignal): Promise<{ image?: string; warning: string }> => {
   const styles = _.compact((job.settings.thumbStyles || []).map(styleFile));
   const style = styles.length ? styles[(index + seedOf(job.id) + (idea.image ? 1 : 0)) % styles.length] : undefined;
@@ -49,6 +58,7 @@ const draw = async (job: ReupJob, idea: ReupThumbIdea, index: number, signal?: A
   const refs = style ? [...frames, style] : frames;
   const prompt = REUP_PROMPT.THUMB_IMAGE(idea.kind || "signature", idea.ai!.scene, idea.ai!.look, !!style);
   let warning = "";
+  const taken = takenImages(job, index);
   for (let attempt = 0; attempt < REUP_THUMBS.AI.ATTEMPTS; attempt++) {
     signal?.throwIfAborted();
     const result = await generateImageWithPlaywright({
@@ -60,6 +70,10 @@ const draw = async (job: ReupJob, idea: ReupThumbIdea, index: number, signal?: A
     const encoded = _.toString(result.base64).replace(/^data:[^,]+,/, "");
     const buffer = result.success && encoded ? Buffer.from(encoded, "base64") : undefined;
     const mime = buffer && buffer.length >= REUP_THUMBS.AI.MIN_BYTES ? getDownloadedImageMimeType(buffer) : undefined;
+    if (buffer && mime && taken.has(digest(buffer))) {
+      warning = REUP_LOG.THUMB_AI_SAME;
+      continue;
+    }
     if (buffer && mime) {
       const file = reupJobDir(job.id, REUP_DIR.PACKAGE, `thumb_${index + 1}_${Date.now()}.${MIME_EXT[mime] || "png"}`);
       fs.writeFileSync(file, buffer);
