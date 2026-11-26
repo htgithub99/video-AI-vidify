@@ -121,6 +121,8 @@ export interface BornasBgAnn {
   water: number | null;
   free: [number, number, number, number][];
   seats?: BornasSeat[];
+  rails?: [number, number, number, number] | null;
+  boats?: [number, number, number] | null;
 }
 export interface BornasSprite {
   name: string;

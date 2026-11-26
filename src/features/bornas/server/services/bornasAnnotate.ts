@@ -93,7 +93,7 @@ export const annotateSprites = async (list: AnnSprite[], ai: BornasAiSettings, l
         facing: a.facing === "l" ? "l" : "r",
         text: a.text === true,
         double: a.double === true,
-        cut: a.cut === true,
+        cut: a.cut === true || (s.kind === "person" && !!face && m.aspect <= BORNAS_ANN.LIE_ASPECT && face.b - face.t > BORNAS_ANN.BUST_FACE),
       };
     }
     const bad = Object.entries(out)
@@ -138,7 +138,22 @@ const cleanBg = (raw: Obj, free: [number, number, number, number][]): BornasBgAn
     .map((x) => ({ k: String(x.k || ""), x0: num(x.x0), x1: num(x.x1), y: num(x.y) }))
     .filter((x): x is BornasSeat => BORNAS_ANN.SEATS.includes(x.k as (typeof BORNAS_ANN.SEATS)[number]) && x.x0 !== null && x.x1 !== null && x.y !== null && x.x1 - x.x0 > 40 && x.y > 200 && x.y < 1075)
     .slice(0, 4);
-  return { v: BORNAS_ANN.BG_VERSION, ground, person, spots: _.sortBy(spots, (s) => s[0]), walls, table: table && table[1] > table[0] ? table : null, water: water && water > 100 && water < 1075 ? water : null, free, seats };
+  const r4 = Array.isArray(raw.rails) ? raw.rails.map(num) : [];
+  const rails = r4.length >= 4 && r4.slice(0, 4).every((x) => x !== null) ? (r4.slice(0, 4) as [number, number, number, number]) : null;
+  const boats = triple(raw.boats);
+  return {
+    v: BORNAS_ANN.BG_VERSION,
+    ground,
+    person,
+    spots: _.sortBy(spots, (s) => s[0]),
+    walls,
+    table: table && table[1] > table[0] ? table : null,
+    water: water && water > 100 && water < 1075 ? water : null,
+    free,
+    seats,
+    rails: rails && rails[2] - rails[0] > 200 && [rails[1], rails[3]].every((y) => y > 200 && y < 1075) ? rails : null,
+    boats: boats && boats[1] - boats[0] > 200 && boats[2] > 200 && boats[2] < 1075 ? boats : null,
+  };
 };
 export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, log: Log, signal?: AbortSignal): Promise<Record<string, BornasBgAnn>> => {
   if (!list.length) return {};

@@ -13,7 +13,7 @@ import { annotateBackgrounds, annotateSprites } from "./bornasAnnotate.js";
 import { bornasVideoDir } from "./bornasVoice.js";
 import { BORNAS_ABORTED, bornasDraw, bornasLib, isBornasAbort, readJson, runKitPy, slug, writeJson } from "./bornasTools.js";
 const sizeOf = (name: string, kind: string, guess: number): number => {
-  const n = name.toLowerCase(),
+  const n = name.toLowerCase().replace(/_/g, " "),
     r = BORNAS_SIZES.find((x) => x.re.test(n)) || BORNAS_KIND_SIZES[kind] || BORNAS_KIND_SIZES.prop;
   return Number.isFinite(guess) && guess >= r.min && guess <= r.max ? guess : r.std;
 };
@@ -221,7 +221,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     const cat = readCatalog(home);
     for (const { name, it } of pairs) {
       const [w, h] = pngSize(bornasLib(home, "sprites", `${name}.png`));
-      cat.items[name] = { sheet, era: job.channel.topic, kind: it.kind, heightM: it.heightM, facing: "r", px: [w, h], note: it.desc };
+      cat.items[name] = { ...cat.items[name], sheet, era: job.channel.topic, kind: it.kind, heightM: it.heightM, facing: "r", px: [w, h], note: it.desc };
       cats[home].items[name] = cat.items[name];
       itemLib[name] = home;
       plan.items.push(name);
@@ -248,7 +248,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
   for (const name of plan.items) {
     const it = cats[itemLib[name]].items[name];
     const file = bornasLib(itemLib[name], "sprites", `${name}.png`);
-    if (fs.existsSync(file)) add(name, file, it.kind, it.heightM, it.facing === "l" ? "l" : "r", it.note || words(name));
+    if (fs.existsSync(file)) add(name, file, it.kind, it.kind === "person" ? it.heightM : sizeOf(name.split("__").pop() || name, it.kind, it.heightM), it.facing === "l" ? "l" : "r", it.note || words(name));
   }
   const usedBgs = plan.backgrounds.filter((n) => fs.existsSync(bornasLib(bgLib[n], "bg", `${n}.jpg`)));
   for (const n of usedBgs) await reupFfmpeg(["-y", "-i", bornasLib(bgLib[n], "bg", `${n}.jpg`), "-vf", `scale=${BORNAS_RENDER.WIDTH}:${BORNAS_RENDER.HEIGHT}:flags=lanczos`, path.join(render, `${n}.png`)], { signal });

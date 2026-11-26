@@ -999,7 +999,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     if (!isBusy && Date.now() >= activityDeadline) break;
     if (
       !isBusy &&
-      responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR &&
+      page.url().includes(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_HOST) &&
       Date.now() - startedAt >= CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_TURN_WAIT_MS * 2 &&
       (!CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CHAT_URL.test(page.url()) ||
         (count === 0 &&

@@ -176,6 +176,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   NAVIGATION_TIMEOUT_MS: 60000,
   GEMINI_USER_TURN_SELECTOR: "user-query",
   GEMINI_CHAT_URL: /\/app\/[0-9a-f]{8,}/i,
+  GEMINI_HOST: "gemini.google.com",
   GEMINI_USER_TURN_WAIT_MS: 12000,
   GEMINI_SETTLE_MS: 15000,
   GEMINI_VANISHED_LOG: "Gemini mất cuộc trò chuyện vừa gửi (trang trống) – gửi lại yêu cầu trong room hiện tại.",

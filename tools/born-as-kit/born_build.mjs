@@ -12,6 +12,7 @@ const FIX = new Map(Array.isArray(FIXRAW) ? FIXRAW.map((id) => [id, ["tag", "wid
 const planShots = plan.beats ? direct(plan) : plan.shots;
 const TOTAL = plan.total;
 const safe = (s) => String(s ?? "").replace(/'/g, "’").replace(/[\\`$]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\s+/g, " ").trim();
+const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
 const DEFS = `<defs><filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter></defs>`;
 const fitPlate = (text, sub, size) => {
   let z = size;
@@ -47,7 +48,7 @@ const spread = (actors) => {
   if (over) for (const a of solid) a.x = Math.max(40 + width(a) / 2, a.x - over);
 };
 for (const s of planShots) {
-  const o = { id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], safe(g[1]), safe(g[2]), g[3], g[4]]), labels: (s.labels || []).map((l) => [l[0], safe(l[1]), safe(l[2]), l[3], l[4], l[5]]), plates: (s.plates || []).map((p) => [p[0], safe(p[1]), safe(p[2]), p[3], p[4], p[5] ?? null, fitPlate(safe(p[1]), safe(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, shake: s.shake, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, endCard: s.endCard, moves: "" };
+  const o = { id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, shake: s.shake, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, endCard: s.endCard, moves: "" };
   if (FIX.has(o.id)) {
     const acts = FIX.get(o.id);
     if (acts.includes("tag")) {
@@ -161,7 +162,7 @@ for (const s of shots) {
   if (s.focusAt) js += `{const f=BORN.focus(${ov},'${s.id}fo',${s.focusAt[0]},${s.focusAt[1]},150,560,.75);BORN.fadeIn(tl,f,${s.focusAt[2]},.6);}`;
   if (s.flashAt !== undefined) js += `{const e=document.createElement('div');e.className='bw';${ov}.appendChild(e);tl.fromTo(e,{opacity:.95},{opacity:0,duration:.25,immediateRender:false},${s.flashAt});}`;
   if (s.smoke) js += `{const e=document.createElement('div');e.className='haze';${ov}.appendChild(e);tl.fromTo(e,{x:-200,opacity:0},{x:200,opacity:.45,duration:${(s.t1 - s.t0).toFixed(2)},ease:'none'},${s.t0});}`;
-  if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${safe(s.endCard.text)}',sub:'${safe(s.endCard.sub)}',x:960,y:190,size:64,rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
+  if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:190,size:64,rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
 }
 const css = fs.readFileSync(path.join(KIT, "born_style.css"), "utf8");
 const scripts = ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js", "MotionPathPlugin.min.js", "SplitText.min.js", "CustomEase.min.js", "CustomWiggle.min.js", "noise.min.js", "kit.js"].map((f) => `<script src="${f}"></script>`).join("");

@@ -89,6 +89,11 @@ export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: Abor
       const left = await narrationIssues(script, job, rate, log, signal);
       log(left.length ? BORNAS_LOG.SCRIPT_STYLE_LEFT(left) : BORNAS_LOG.SCRIPT_STYLE_OK, left.length ? "warn" : "info");
     } else log(BORNAS_LOG.SCRIPT_STYLE_OK);
+    const checked = await runMotionAi(BORNAS_PROMPT.FACTS(script), BORNAS_ARTIFACT.FACTS, exec, signal, (line) => line && log(line)).catch(() => undefined);
+    const fixedScript = cleanBornasScript(checked);
+    const fixed = Array.isArray(checked?.fixed) ? (checked.fixed as unknown[]).length : 0;
+    if (fixedScript && fixedScript.lines.length >= script.lines.length - 1) script = fixedScript;
+    log(BORNAS_LOG.SCRIPT_FACTS(fixedScript ? fixed : -1));
     out.push(script);
   }
   log(BORNAS_LOG.SCRIPTS_DONE(out.map((s) => s.title)));

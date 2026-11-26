@@ -27,6 +27,20 @@ const RULE = {
   rideM: 2.6,
   seatTop: 0.42,
   bedTop: 0.3,
+  endLead: 0.4,
+  bustFace: 0.33,
+  cutGap: 8,
+  couple: 20,
+  railFit: 0.7,
+  coupleSteps: 80,
+  coupleStep: 10,
+  coupleOverlap: 0.15,
+  waterPad: 12,
+  eyeShare: 0.92,
+  minDepth: 0.05,
+  builtKinds: new Set(["structure", "building"]),
+  railRe: /locomotive|train|boxcar|railcar|railroad|caboose|freight_car|tender/i,
+  boatRe: /steamship|steamer|liner|ship|ferry|rowboat|canoe|raft|skiff|boat/i,
   textLead: 0.8,
   lieRoom: 1.1,
   lieOn: /bed|cot|couch|sofa|bench/i,
@@ -48,6 +62,7 @@ const poseHeight = (n, base) => {
   return base;
 };
 const BACK = new Set(["building", "structure", "nature"]);
+const railY = (A, x) => A.rails[1] + ((A.rails[3] - A.rails[1]) * (x - A.rails[0])) / Math.max(1, A.rails[2] - A.rails[0]);
 const lerp3 = (v, x) => (x <= 320 ? v[0] : x <= 960 ? v[0] + ((v[1] - v[0]) * (x - 320)) / 640 : x <= 1600 ? v[1] + ((v[2] - v[1]) * (x - 960)) / 640 : v[2]);
 const anchorsOf = (plan, bg) => {
   const a = plan.bgAnn?.[bg];
@@ -60,7 +75,10 @@ const anchorsOf = (plan, bg) => {
     table: a?.table || null,
     free: a?.free || [],
     seats: a?.seats || [],
-    depth: a ? depthOf([...a.ground.map((g, i) => [g, a.person[i]]), ...a.spots.map((p) => [p[1], p[2]])]) : null,
+    rails: a?.rails ? (a.rails.length >= 4 ? a.rails : [a.rails[0], a.rails[2], a.rails[1], a.rails[2]]) : null,
+    water: a?.water ?? null,
+    boats: a?.boats || null,
+    depth: a ? depthOf([...a.ground.map((g, i) => [g, a.person[i]]), ...a.spots.map((p) => [p[1], p[2]])]) || { k: 1 / RULE.eyeShare, hz: a.ground[1] - RULE.eyeShare * a.person[1] } : { k: 1 / RULE.eyeShare, hz: g - RULE.eyeShare * plan.pxPerM * 1.75 },
   };
 };
 const depthOf = (pts) => {
@@ -102,7 +120,13 @@ const layout = (beat, plan, refs) => {
   const isSeat = (n) => poseWords(n).some((v) => RULE.furniture.test(v) && RULE.furnitureEnd.test(v));
   const seatKind = (v) => RULE.seatKinds[v.match(RULE.furnitureEnd)?.[1]?.toLowerCase()] || null;
   const bgHas = (n) => poseWords(n).some((v) => seatKind(v) && A.seats.some((x) => x.k === seatKind(v)));
-  const held = new Set(beat.cast.map((c, i) => (info(c.sprite).kind !== "person" && ((!isSeat(c.sprite) && people.some((p) => sameWord(poseWords(c.sprite), p))) || (isSeat(c.sprite) && bgHas(c.sprite))) ? i : -1)).filter((i) => i >= 0));
+  const half = (n) => {
+    const f = plan.sprites[n]?.ann?.face, m = meta(n);
+    return info(n).kind === "person" && n.includes("__") && f && m.w / m.h <= RULE.lieAspect && f.b - f.t > RULE.bustFace;
+  };
+  const bgWords = `${beat.bg || ""} ${plan.bgDesc?.[beat.bg] || ""}`.toLowerCase().split(/[^a-z]+/).filter((w) => w.length >= 4 && !RULE.plainWords.has(w));
+  const inBg = (n) => RULE.builtKinds.has(info(n).kind) && poseWords(n).some((v) => bgWords.some((w) => w === v || (w.length >= 4 && v.length >= 4 && (w.startsWith(v) || v.startsWith(w)))));
+  const held = new Set(beat.cast.map((c, i) => (half(c.sprite) || inBg(c.sprite) || (RULE.boatRe.test(c.sprite) && !A.boats) || (info(c.sprite).kind !== "person" && ((!isSeat(c.sprite) && people.some((p) => sameWord(poseWords(c.sprite), p))) || (isSeat(c.sprite) && bgHas(c.sprite)))) ? i : -1)).filter((i) => i >= 0));
   const isBack = (k) => BACK.has(k.kind) || (k.kind === "vehicle" && k.heightM >= 3);
   const main = [];
   const crowds = [];
@@ -128,7 +152,24 @@ const layout = (beat, plan, refs) => {
     let x = RULE.slots[c.slot] ?? RULE.slots.c;
     let y = A.groundAt(x);
     let per = A.personAt(x);
-    if (!back && place === "wall" && A.walls.length) {
+    const onRails = RULE.railRe.test(c.sprite) && A.rails, onWater = RULE.boatRe.test(c.sprite) && A.boats;
+    if (onRails || onWater) {
+      if (onRails) {
+        const [x0, y0, x1, y1] = A.rails, near = y1 >= y0 ? [x1, y1] : [x0, y0], far = y1 >= y0 ? [x0, y0] : [x1, y1];
+        const want = A.depth ? A.depth.hz + (RULE.railFit * RULE.backMax * 1.75) / (k.heightM * A.depth.k) : near[1];
+        const yy = clamp(want, Math.min(far[1], near[1]), near[1]);
+        x = Math.abs(near[1] - far[1]) < 1 ? clamp(x, Math.min(x0, x1), Math.max(x0, x1)) : far[0] + ((near[0] - far[0]) * (yy - far[1])) / (near[1] - far[1]);
+        y = railY(A, x);
+      } else {
+        x = clamp(x, A.boats[0], A.boats[1]);
+        y = A.boats[2];
+        const far = A.water !== null && A.water < y ? A.water + RULE.waterPad : y, hz = A.groundAt(x) - RULE.eyeShare * A.personAt(x);
+        const hAt = (yy) => (k.heightM * A.personAt(x) * clamp((yy - hz) / Math.max(1, A.groundAt(x) - hz), RULE.minDepth, 1.5)) / 1.75;
+        while (y > far && hAt(y) > RULE.backMax * RULE.railFit) y -= RULE.coupleStep;
+      }
+      const hz = A.depth && y > A.depth.hz ? A.depth.hz : A.groundAt(x) - RULE.eyeShare * A.personAt(x);
+      per = A.personAt(x) * clamp((y - hz) / Math.max(1, A.groundAt(x) - hz), RULE.minDepth, 1.5);
+    } else if (!back && place === "wall" && A.walls.length) {
       const w = A.walls.reduce((b, z) => (Math.abs((z[0] + z[1]) / 2 - x) < Math.abs((b[0] + b[1]) / 2 - x) ? z : b));
       x = clamp(x, w[0] + 60, w[1] - 60);
       y = w[2];
@@ -141,7 +182,7 @@ const layout = (beat, plan, refs) => {
     }
     const pxm = per / 1.75;
     const base = k.heightM * pxm;
-    if (back && base > RULE.backMax && A.depth) {
+    if (back && !onRails && !onWater && base > RULE.backMax && A.depth) {
       const yb = A.depth.hz + (RULE.backMax * 1.75) / (k.heightM * A.depth.k);
       if (yb < y) [y, per] = [yb, A.depth.k * (yb - A.depth.hz)];
     }
@@ -155,7 +196,7 @@ const layout = (beat, plan, refs) => {
       }
       continue;
     }
-    main[i] = { sprite: c.sprite, x, y: y + pad * h, h, base, pxm, dir, cast: i, kind: k.kind, back, place, anchorX: foot, pad, swap: c.swap || [], move: c.move && !back ? (c.move === "r" ? 1 : -1) * pxm * 1.6 : 0, onGround: !back && place !== "wall" && place !== "table" };
+    main[i] = { sprite: c.sprite, x, y: y + pad * h, h, hm: k.heightM, base, pxm, dir, cast: i, kind: k.kind, back, place, anchorX: foot, pad, swap: c.swap || [], move: c.move && !back ? (c.move === "r" ? 1 : -1) * pxm * 1.6 : 0, onGround: !back && !onRails && !onWater && place !== "wall" && place !== "table" };
   }
   const width = (a) => (meta(a.sprite).w / meta(a.sprite).h) * a.h;
   const subj = main[subject];
@@ -165,6 +206,29 @@ const layout = (beat, plan, refs) => {
       a.y = A.groundAt(a.x) + a.pad * a.h;
     }
   for (const a of main) if (a && a.back && subj && Math.abs(a.x - subj.x) < (width(a) + width(subj)) / 2) a.x = subj.x < 960 ? Math.min(1920 - width(a) * 0.35, subj.x + (width(a) + width(subj)) / 2) : Math.max(width(a) * 0.35, subj.x - (width(a) + width(subj)) / 2);
+  const toFar = A.rails ? Math.sign((A.rails[3] >= A.rails[1] ? A.rails[0] : A.rails[2]) - (A.rails[3] >= A.rails[1] ? A.rails[2] : A.rails[0])) || 1 : 1;
+  const train = main.filter((a) => a && RULE.railRe.test(a.sprite) && A.rails).sort((a, b) => a.cast - b.cast);
+  const railLo = A.rails ? Math.min(A.rails[0], A.rails[2]) : 0, railHi = A.rails ? Math.max(A.rails[0], A.rails[2]) : 0;
+  for (let i = 1; i < train.length; i++) {
+    const t = train[i], p = train[i - 1];
+    for (let n = 0; n < 4; n++) {
+      t.x = p.x + toFar * ((width(p) + width(t)) / 2 - RULE.couple);
+      const ry = railY(A, clamp(t.x, railLo, railHi));
+      if (A.depth && ry > A.depth.hz) t.h = (t.hm * A.depth.k * (ry - A.depth.hz)) / 1.75;
+    }
+    const box = (o) => ({ l: o.x - width(o) / 2, r: o.x + width(o) / 2, t: o.y - o.h, b: o.y });
+    for (let n = 0; n < RULE.coupleSteps; n++) {
+      t.y = railY(A, clamp(t.x, railLo, railHi)) + (t.pad || 0) * t.h;
+      const a1 = box(p), a2 = box(t), ov = Math.max(0, Math.min(a1.r, a2.r) - Math.max(a1.l, a2.l)) * Math.max(0, Math.min(a1.b, a2.b) - Math.max(a1.t, a2.t));
+      if (ov <= RULE.coupleOverlap * width(t) * t.h) break;
+      t.x += toFar * RULE.coupleStep;
+      const ry = railY(A, clamp(t.x, railLo, railHi));
+      if (A.depth && ry > A.depth.hz) t.h = (t.hm * A.depth.k * (ry - A.depth.hz)) / 1.75;
+    }
+    if (t.x < railLo - width(t) / 2 || t.x > railHi + width(t) / 2) t.gone = true;
+    t.y = railY(A, clamp(t.x, railLo, railHi)) + (t.pad || 0) * t.h;
+  }
+  for (const t of train) if (t.gone) main[main.indexOf(t)] = undefined;
   const solid = main.filter((a) => a && a.onGround);
   solid.sort((a, b) => a.x - b.x);
   for (let i = 1; i < solid.length; i++) {
@@ -262,6 +326,7 @@ export const direct = (plan) => {
     const t1 = bi + 1 < beats.length ? beats[bi + 1].t0 : plan.total;
     const hook = beat.t0 < plan.turnT;
     if (hook && beat.bg && !hookBgs.includes(beat.bg)) hookBgs.push(beat.bg);
+    if (beat.endCard) beat.endCard = { ...beat.endCard, t: Math.min(beat.endCard.t, beat.t0 + RULE.endLead) };
     const base = { kind: beat.kind, endCard: beat.endCard };
     if (beat.kind === "rew") {
       shots.push({ ...base, id: sid(), t0: beat.t0, rew: (beat.rew?.length ? beat.rew : hookBgs).slice(0, 4) });
@@ -315,6 +380,17 @@ export const direct = (plan) => {
       const sp0 = subjA && subjectPoint(subjA, offAt(c0)), sp1 = subjA && subjectPoint(subjA, offAt(c1));
       if (frames[ci] === "glide" && beat.label && beat.label.t >= c0 - 0.001 && beat.label.t < c1) frames[ci] = "wide";
       shot.cam = cameraFor(frames[ci], d, hook, sp0, sp1, actors);
+      const topAt = (k, wy) => clamp((k.sy ?? 540) - k.s * k.y, 1080 - 1080 * k.s, 0) + k.s * wy;
+      const headCut = (o) => {
+        if (plan.sprites[o.sprite]?.kind !== "person" || (subjA && o.sprite === subjA.sprite)) return false;
+        const { fb } = faceBox(o.sprite, o.x, o.y, o.h, o.dir, o.anchorX ?? 0.5);
+        return shot.cam.some((k) => topAt(k, fb.t) < -RULE.cutGap && topAt(k, fb.b) > 0);
+      };
+      const cut = new Set(shot.actors.filter(headCut).map((o) => o.sprite));
+      if (cut.size) {
+        shot.actors = shot.actors.filter((o) => !cut.has(o.sprite));
+        shot.swaps = shot.swaps.filter((w) => !cut.has(w.from));
+      }
       const inside = (t) => t >= c0 - 0.001 && t < c1;
       if (beat.tag && inside(beat.tag.t)) shot.tags.push(["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]);
       if (beat.label && inside(beat.label.t) && actors[beat.label.cast] && !actors[beat.label.cast].crowd) {
