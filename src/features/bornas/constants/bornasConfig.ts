@@ -61,6 +61,7 @@ export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }
 ];
 export const BORNAS_KIND_SIZES: Record<string, { min: number; max: number; std: number }> = { person: { min: 1, max: 2.1, std: 1.75 }, animal: { min: 0.2, max: 3, std: 1 }, vehicle: { min: 1, max: 6, std: 2.4 }, weapon: { min: 0.08, max: 1.5, std: 0.3 }, prop: { min: 0.03, max: 3, std: 0.5 }, structure: { min: 0.8, max: 30, std: 3 }, nature: { min: 0.3, max: 30, std: 2 } };
 export const BORNAS_CTA: Record<string, { TITLE: string; SUB: string }> = { vi: { TITLE: "BÌNH LUẬN NGAY", SUB: "NHÂN VẬT TIẾP THEO LÀ AI?" }, en: { TITLE: "COMMENT BELOW", SUB: "WHO SHOULD BE NEXT?" }, ja: { TITLE: "コメントで教えて", SUB: "次は誰がいい？" }, ko: { TITLE: "댓글을 남겨주세요", SUB: "다음 인물은 누구?" } };
+export const BORNAS_SCALE = { EYE_M: 1.6, PERSON_M: 1.75, REFS: { door: 2.05, table: 0.78, counter: 1.05, chair: 0.9, barrel: 0.9, fence: 1.2, wagon_wheel: 1.3 } as Record<string, number>, MIN_PX: 25, HORIZON_MIN: -2000, GROUND_GAP: 60 } as const;
 export const BORNAS_SEO = { OPTIONS: 2, TITLE_MAX: 70, WORD_MAX: 14, NAME_MAX: 16, DIR: "seo", FILE: "seo.txt", BABY: "thumb_baby" } as const;
 export const BORNAS_THUMB_TEXT: Record<string, { AGE: string; BORN: string }> = { vi: { AGE: "0 TUỔI", BORN: "BẠN SINH RA LÀ" }, en: { AGE: "AGE 0", BORN: "YOU WERE BORN AS" }, ja: { AGE: "0歳", BORN: "あなたの正体は" }, ko: { AGE: "0세", BORN: "당신은 태어났다" } };
 export const BORNAS_CHAPTER = { MIN_SECONDS: 180, CARD_SECONDS: 1.8, LEAD: 0.15, TITLE_MAX: 40, MAX: 8 } as const;
@@ -68,7 +69,7 @@ export const bornasChapterLines = (lines: BornasLine[], seconds: number): number
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 export const BORNAS_CHAPTER_LABEL: Record<string, (n: number) => string> = { vi: (n) => `CHƯƠNG ${ROMAN[n - 1] || n}`, en: (n) => `CHAPTER ${ROMAN[n - 1] || n}`, ja: (n) => `第${n}章`, ko: (n) => `제${n}장` };
 export const BORNAS_SIZE_RANGE: Record<string, [number, number]> = { person: [0.5, 2.3], bust: [0.5, 2.3], animal: [0.08, 4.5], vehicle: [0.8, 7], prop: [0.02, 3], weapon: [0.1, 2.6], structure: [0.8, 60], building: [2, 80], nature: [0.1, 45] };
-export const BORNAS_ANN = { VERSION: 2, BG_VERSION: 5, BUST_FACE: 0.33, LIE_ASPECT: 1.25, SEATS: ["bed", "bench", "sofa", "chair"], TMP_PREFIX: "bornas_ann_", CAST_FILE: "ann.json", GROUND_MIN: 420, GROUND_MAX: 1075, PERSON_MIN: 80, PERSON_MAX: 820, PERSON_DEFAULT: 420, LIB_BATCH: 240 } as const;
+export const BORNAS_ANN = { VERSION: 2, BG_VERSION: 6, BUST_FACE: 0.33, LIE_ASPECT: 1.25, SEATS: ["bed", "bench", "sofa", "chair"], TMP_PREFIX: "bornas_ann_", CAST_FILE: "ann.json", GROUND_MIN: 420, GROUND_MAX: 1075, PERSON_MIN: 80, PERSON_MAX: 820, PERSON_DEFAULT: 420, LIB_BATCH: 240 } as const;
 export const BORNAS_REVIEW = { TEXT_DELAY: 0.7, SNAP_BATCH: 40, FIXES: ["wide", "tag", "drop_text", "apart"], TARGET_FIXES: ["drop", "flip"] } as const;
 export const BORNAS_TOPIC_GRADE: Partial<Record<BornasTopic, string>> = { wildwest: "old" };
 export const BORNAS_TOPICS = Object.keys(BORNAS_TOPIC_LIBS) as BornasTopic[];

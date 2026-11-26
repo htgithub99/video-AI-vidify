@@ -21,6 +21,8 @@ const RULE = {
   slots: { l: 520, cl: 760, c: 960, cr: 1160, r: 1400 },
   backMax: 980,
   lieAspect: 1.25,
+  personM: 1.75,
+  eyeM: 1.6,
   nearMin: 0.6,
   nearPull: 0.5,
   lieBedFill: 0.95,
@@ -96,7 +98,7 @@ const anchorsOf = (plan, bg) => {
     rails: a?.rails ? (a.rails.length >= 4 ? a.rails : [a.rails[0], a.rails[2], a.rails[1], a.rails[2]]) : null,
     water: a?.water ?? null,
     boats: a?.boats || null,
-    depth: a ? depthOf([...a.ground.map((g, i) => [g, a.person[i]]), ...a.spots.map((p) => [p[1], p[2]])]) || { k: 1 / RULE.eyeShare, hz: a.ground[1] - RULE.eyeShare * a.person[1] } : { k: 1 / RULE.eyeShare, hz: g - RULE.eyeShare * plan.pxPerM * 1.75 },
+    depth: a && Number.isFinite(a.horizon) ? { k: RULE.personM / RULE.eyeM, hz: a.horizon } : a ? depthOf([...a.ground.map((g, i) => [g, a.person[i]]), ...a.spots.map((p) => [p[1], p[2]])]) || { k: 1 / RULE.eyeShare, hz: a.ground[1] - RULE.eyeShare * a.person[1] } : { k: 1 / RULE.eyeShare, hz: g - RULE.eyeShare * plan.pxPerM * 1.75 },
   };
 };
 const depthOf = (pts) => {

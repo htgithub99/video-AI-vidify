@@ -143,6 +143,7 @@ export interface BornasBgAnn {
   seats?: BornasSeat[];
   rails?: [number, number, number, number] | null;
   boats?: [number, number, number] | null;
+  horizon?: number;
 }
 export interface BornasSprite {
   name: string;

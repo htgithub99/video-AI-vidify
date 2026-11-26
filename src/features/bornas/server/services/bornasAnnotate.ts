@@ -4,7 +4,7 @@ import path from "path";
 import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_ANN, BORNAS_LIMITS } from "../../constants/bornasConfig.js";
+import { BORNAS_ANN, BORNAS_LIMITS, BORNAS_SCALE } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasBgAnn, BornasFace, BornasSeat, BornasSpriteAnn } from "../../types/bornas.js";
@@ -117,6 +117,22 @@ export const annotateSprites = async (list: AnnSprite[], ai: BornasAiSettings, l
     fs.rmSync(dir, { recursive: true, force: true });
   }
 };
+const horizonOf = (raw: Obj, ground: [number, number, number]): number | null => {
+  const top = Math.min(...ground) - BORNAS_SCALE.GROUND_GAP;
+  const fromRefs = (Array.isArray(raw.refs) ? raw.refs : [])
+    .map((r) => r as Obj)
+    .flatMap((r) => {
+      const size = BORNAS_SCALE.REFS[String(r.k || "")];
+      const t = num(r.top),
+        b = num(r.bottom);
+      return size && t !== null && b !== null && b - t >= BORNAS_SCALE.MIN_PX ? [b - ((b - t) * BORNAS_SCALE.EYE_M) / size] : [];
+    });
+  const seen = num(raw.horizon);
+  const marks = [...fromRefs, ...(seen !== null ? [seen] : [])].filter((h) => h > BORNAS_SCALE.HORIZON_MIN && h < top);
+  if (!marks.length) return null;
+  const sorted = _.sortBy(marks);
+  return (sorted[Math.floor((sorted.length - 1) / 2)] + sorted[Math.ceil((sorted.length - 1) / 2)]) / 2;
+};
 const cleanBg = (raw: Obj, free: [number, number, number, number][]): BornasBgAnn | undefined => {
   const sea = num(raw.water);
   const g = (Array.isArray(raw.ground) ? raw.ground : []).map(num);
@@ -155,11 +171,14 @@ const cleanBg = (raw: Obj, free: [number, number, number, number][]): BornasBgAn
   const r4 = Array.isArray(raw.rails) ? raw.rails.map(num) : [];
   const rails = r4.length >= 4 && r4.slice(0, 4).every((x) => x !== null) ? (r4.slice(0, 4) as [number, number, number, number]) : null;
   const boats = triple(raw.boats);
+  const hz = horizonOf(raw, ground);
+  const scaled = (y: number): number => Math.round(_.clamp(((y - hz!) * BORNAS_SCALE.PERSON_M) / BORNAS_SCALE.EYE_M, BORNAS_ANN.PERSON_MIN * 0.6, BORNAS_ANN.PERSON_MAX * 1.6));
   return {
     v: BORNAS_ANN.BG_VERSION,
     ground,
-    person,
-    spots: _.sortBy(spots, (s) => s[0]),
+    person: hz === null ? person : (ground.map(scaled) as [number, number, number]),
+    ...(hz === null ? {} : { horizon: Math.round(hz) }),
+    spots: _.sortBy(hz === null ? spots : spots.map((t) => [t[0], t[1], scaled(t[1])] as [number, number, number]), (s) => s[0]),
     walls,
     table: table && table[1] > table[0] ? table : null,
     water: water && water > 100 && water < 1075 ? water : null,
