@@ -151,8 +151,8 @@ export const STUDIO_PLAYER_STEP_SECONDS = 5;
 export const STUDIO_PLAYER_HOVER_WORDS = 3;
 export const STUDIO_PLAYER_PLAY_EVENT = "studio-player-play";
 export const STUDIO_DOWNLOAD = {
-  BUTTON: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-950/85 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 border border-slate-700/80 hover:border-purple-400 text-slate-200 hover:text-white backdrop-blur-md shadow-lg transition-all cursor-pointer group/download disabled:opacity-60 disabled:cursor-wait",
-  ICON: "w-3.5 h-3.5 shrink-0 text-purple-300 group-hover/download:text-white",
+  BUTTON: "inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-xl studio-download text-xs font-bold text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-400/20 shadow-lg transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait",
+  ICON: "w-3.5 h-3.5 shrink-0",
   SPIN: "w-3.5 h-3.5 shrink-0 animate-spin",
   WIDE: "h-10 justify-center",
 } as const;

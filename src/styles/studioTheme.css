@@ -97,6 +97,9 @@
   color: var(--studio-accent);
   border: 1px solid var(--studio-border);
 }
+:root:is(.light, .dark) .studio-button.studio-download:not(:hover) {
+  background: linear-gradient(var(--studio-accent-soft), var(--studio-accent-soft)), var(--studio-surface-raised);
+}
 :root:is(.light, .dark) .studio-button[data-variant="accent"]:hover:not(:disabled) {
   background: var(--studio-primary);
   color: var(--studio-on-primary);

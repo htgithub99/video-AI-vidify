@@ -52,7 +52,7 @@ export const REUP_STYLES = {
   SCORE: "text-xs font-semibold leading-relaxed",
   HINT_WARN: "text-[11px] leading-relaxed text-amber-300",
   HINT_ERROR: "text-[11px] leading-relaxed text-rose-300",
-  LINK_BUTTON: "px-2.5 py-1 rounded-xl text-[11px] font-bold text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 transition-colors",
+  LINK_BUTTON: "inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1 rounded-xl text-[11px] font-bold text-purple-300 bg-purple-500/15 hover:bg-purple-500/25 transition-colors",
   LOG_HEAD: M.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_2,
   LOG_TITLE: M.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO,
   LOG_PERCENT: M.TEXT_10PX_FONT_MONO_TEXT_EMERALD_400_FONT_BOLD,
