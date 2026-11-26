@@ -216,12 +216,14 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
   const castRef: Record<string, string> = {};
   const personOf = (id: string): string => id.split("_")[0];
   for (const c of _.sortBy(plan.cast, (c) => (c.poses.some((p) => /bust/.test(p.name)) ? 0 : 1))) {
-    const raw = path.join(raws, `cast_${c.id}.png`);
-    const ref = castRef[personOf(c.id)];
-    const ok = fs.existsSync(raw) || (await drawSheet(BORNAS_PROMPT.CAST_SHEET(c.desc, c.poses, !!ref), raw, c.id, job.ai.drawAi, log, misses, signal, ref ? [ref] : []));
-    if (ok && !ref) castRef[personOf(c.id)] = raw;
-    if (!ok) continue;
-    const files = await keyedSplit(job, raw, path.join(raws, `cast_${c.id}`), c.poses, log, signal);
+    const files: (string | undefined)[] = [];
+    for (const [k, group] of _.chunk(c.poses, BORNAS_LIMITS.CAST_ROW).entries()) {
+      const raw = path.join(raws, `cast_${c.id}_${k}.png`);
+      const ref = castRef[personOf(c.id)];
+      const ok = fs.existsSync(raw) || (await drawSheet(BORNAS_PROMPT.CAST_SHEET(c.desc, group, !!ref), raw, c.id, job.ai.drawAi, log, misses, signal, ref ? [ref] : []));
+      if (ok && !ref) castRef[personOf(c.id)] = raw;
+      files.push(...(ok ? await keyedSplit(job, raw, path.join(raws, `cast_${c.id}_${k}`), group, log, signal) : group.map(() => undefined)));
+    }
     const poses = c.poses.filter((_p, i) => files[i]);
     const names = poses.map((p) => {
       const name = `${c.id}_${p.name}`;

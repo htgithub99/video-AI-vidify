@@ -18,6 +18,7 @@ const PAPER_W = 1640;
 const PAPER_BIG = 1.6;
 const PAPER_OPTICAL = 0.92;
 const PAPER_STAMP_GAP = 150;
+const PAPER_LEAD = 0.15;
 const DEFS = `<defs><filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter></defs>`;
 const TAG_MAX_W = 600;
 const fitPlate = (text, sub, size) => {
@@ -147,7 +148,7 @@ for (const s of shots) {
     const block = sizes.reduce((n, z) => n + Math.round(z * 1.35) + 24, -24) + (s.paper.stamp ? PAPER_STAMP_GAP : 0);
     let y = Math.max(60, Math.round(540 * PAPER_OPTICAL - block / 2));
     inner = `<div class="paper" id="${s.id}p">${lines.map((l, i) => { const [, col, w] = tops[l.size] || tops.l, size = sizes[i]; const el = `<div class="pl" id="${s.id}p${i}" style="top:${y}px;font:${w} ${size}px 'Alegreya Sans';color:${col}">${safe(l.text)}</div>`; y += Math.round(size * 1.35) + 24; return el; }).join("")}</div>`;
-    js += lines.map((l, i) => `tl.fromTo('#${s.id}p${i}',{opacity:0,y:-20},{opacity:1,y:0,duration:.3},${l.t.toFixed(3)});`).join("");
+    js += lines.map((l, i) => `tl.fromTo('#${s.id}p${i}',{opacity:0,y:-20},{opacity:1,y:0,duration:.3},${(i ? l.t : Math.min(l.t, s.t0 + PAPER_LEAD)).toFixed(3)});`).join("");
     if (s.paper.stamp) js += `{const r=BORN.rubber(document.getElementById('${s.id}p'),{id:'${s.id}st',text:'${safe(s.paper.stamp.text)}',x:960,y:${Math.min(960, y + 90)},size:104,rot:-6});BORN.rubberIn(tl,r,${s.paper.stamp.t});}`;
   } else if (s.kind === "montage" && s.montage) {
     const m = s.montage, n = m.bgs.length, gap = 1920 / n;

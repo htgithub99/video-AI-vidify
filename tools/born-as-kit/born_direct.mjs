@@ -81,8 +81,8 @@ const RULE = {
   thirdClose: 0,
   nativeMax: 1.15,
   groupRe: /pallbearers|irregulars|group|column|squad|troop|testudo|family|crowd|riders|_men_/i,
-  personMin: 0.3,
-  personMax: 0.52,
+  personMin: 0.34,
+  personMax: 0.6,
   vehicleMax: 1.6,
   vehicleFrame: 0.42,
   vehicleWidth: 0.55,
@@ -93,6 +93,11 @@ const RULE = {
   tourPan: 220,
   tourSpeed: 70,
   tourZoom: 0.05,
+  insertUp: 1.6,
+  wideFill: 0.55,
+  wideMax: 1.35,
+  wideFollow: 0.6,
+  labelZoom: 1.2,
   softRoll: 1.5,
   clearShare: 0.2,
   clearPad: 30,
@@ -566,8 +571,10 @@ const cameraFor = (frame, d, hook, subj, subjEnd, actors, look) => {
     return [{ t: 0, ...k, s: r3(a) }, { t: r3(d), ...k, x: r3(k.x + pan(b)), s: r3(b) }];
   };
   if (!subj || frame === "wide" || frame === "glide") {
-    const tx = subj ? 960 + (subj.bx - 960) * 0.25 : 960;
-    return move({ s: 1.0, x: r3(tx), y: 540, sx: 960, sy: 540 });
+    const fill = subj && look.person ? clamp((1080 * RULE.wideFill) / Math.max(1, subj.body.b - subj.body.t), 1, Math.max(1, Math.min(cap, RULE.wideMax))) : 1;
+    const tx = subj ? 960 + (subj.bx - 960) * (fill > 1 ? RULE.wideFollow : 0.25) : 960;
+    const ty = fill > 1 ? 540 + (subj.by - 540) * RULE.wideFollow : 540;
+    return move({ s: r3(fill), x: r3(tx), y: r3(ty), sx: 960, sy: 540 });
   }
   const wide = subj.body.r - subj.body.l > subj.body.b - subj.body.t;
   const fit = Math.min((1920 * 0.6) / Math.max(1, subj.body.r - subj.body.l), ((1080 * 0.8) / Math.max(1, subj.body.b - subj.body.t)) * (wide ? 1 : 9));
@@ -652,7 +659,7 @@ export const direct = (plan) => {
       return;
     }
     if (lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal"))) {
-      const m = meta(lead.sprite), asp = m.w / m.h, h = Math.min(RULE.insertH, RULE.insertW / asp), d = t1 - beat.t0;
+      const m = meta(lead.sprite), asp = m.w / m.h, h = Math.min(RULE.insertH, RULE.insertW / asp, m.h * RULE.insertUp), d = t1 - beat.t0;
       const one = { sprite: lead.sprite, x: 960, y: 820, h: r3(h) };
       const top = [960, 820 - h * 0.7];
       const inBeat = (o) => o && o.t >= beat.t0 - 0.001 && o.t < t1;
@@ -704,9 +711,10 @@ export const direct = (plan) => {
         const sIn = Math.max(1, Math.min(RULE.tourIn, capS));
         const goal = step === "out" ? { s: 1, x: 960, y: 540 } : { s: sIn, x: cx + (step === "left" ? -1 : step === "right" ? 1 : 0) * RULE.tourPan, y: cy };
         const e = lastLook.end, go = (from, to, max) => from + clamp(to - from, -max, max);
-        const sGo = clamp(goal.s, e.s * (1 - RULE.tourZoom * d), e.s * (1 + RULE.tourZoom * d));
+        const sGo = beat.label ? Math.min(e.s, goal.s) : clamp(goal.s, e.s * (1 - RULE.tourZoom * d), e.s * (1 + RULE.tourZoom * d));
         shot.cam = [{ t: 0, ...e }, { t: r3(d), ...e, s: r3(sGo), x: r3(go(e.x, goal.x, RULE.tourSpeed * d)), y: r3(go(e.y, goal.y, RULE.tourSpeed * d * 0.5)) }];
       }
+      if (beat.label && beat.label.t < c1) shot.cam = shot.cam.map((k) => ({ ...k, s: r3(Math.min(k.s, RULE.labelZoom)) }));
       lastLook = { key: lookKey, side, frame: frames[ci], tour: repeat ? (lastLook.tour || 0) + 1 : 0, end: (({ t, ...k }) => k)(shot.cam[shot.cam.length - 1]) };
       const topAt = (k, wy) => clamp((k.sy ?? 540) - k.s * k.y, 1080 - 1080 * k.s, 0) + k.s * wy;
       const headCut = (o) => {

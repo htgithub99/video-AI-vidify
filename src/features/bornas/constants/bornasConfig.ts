@@ -99,6 +99,7 @@ export const BORNAS_LIMITS = {
   SCENE_CUT: 0.12,
   CAST_MAX: 4,
   POSES_MAX: 6,
+  CAST_ROW: 3,
   NEW_ITEMS_MAX: 12,
   NEW_BG_MAX: 4,
   SHEET_ITEMS: 12,
