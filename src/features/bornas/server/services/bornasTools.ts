@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import _ from "lodash";
 import { getDataDirectory, getPythonCommand, getStaticResourcePath } from "../../../../server/utils/paths.js";
+import { getFfmpegPath } from "../../../../server/services/shortsPreprocessService.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
 import { generateImageWithGeminiChat, generateImageWithPlaywright } from "../../../../server/services/imageGeneratorService.js";
 import { GenerateType, ImageGenerationMode } from "../../../../types.js";
@@ -66,7 +67,7 @@ export const bornasPython = (log: (line: string) => void, signal?: AbortSignal):
 export const runKitPy = async (script: string, args: string[], log: (line: string) => void, signal?: AbortSignal): Promise<string> => runTool(await bornasPython(log, signal), [bornasKit(script), ...args], { signal });
 export const runKitNode = (script: string, args: string[], env: NodeJS.ProcessEnv, signal?: AbortSignal): Promise<string> => {
   if (!fs.existsSync(bornasKit(script))) throw new Error(BORNAS_ERROR.KIT(bornasKit()));
-  return runTool(process.execPath, [bornasKit(script), ...args], { signal, env: { ELECTRON_RUN_AS_NODE: "1", ...env } });
+  return runTool(process.execPath, [bornasKit(script), ...args], { signal, env: { ELECTRON_RUN_AS_NODE: "1", FFMPEG: getFfmpegPath(), ...env } });
 };
 export const playwrightEnv = (): NodeJS.ProcessEnv => {
   const pw = path.join(process.cwd(), "node_modules", "playwright", "index.mjs");

@@ -161,7 +161,7 @@ export const renderBornasVideo = async (video: BornasVideo, log: Log, signal?: A
   fs.rmSync(out, { force: true });
   const win = process.platform === "win32";
   try {
-    await runTool(win ? "npx.cmd" : "npx", ["-y", BORNAS_RENDER.HYPERFRAMES, "render", ".", "-f", String(BORNAS_RENDER.FPS), "-w", "auto", "-o", "out.mp4"], { cwd: dir, signal, shell: win });
+    await runTool(win ? "npx.cmd" : "npx", ["-y", BORNAS_RENDER.HYPERFRAMES, "render", ".", "-f", String(BORNAS_RENDER.FPS), "-w", "auto", ...BORNAS_RENDER.ENCODE, "-o", "out.mp4"], { cwd: dir, signal, shell: win });
   } catch (error) {
     throw new Error(BORNAS_ERROR.RENDER(String((error as Error)?.message || error)));
   }

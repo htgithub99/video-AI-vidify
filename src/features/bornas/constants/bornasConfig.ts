@@ -116,7 +116,7 @@ export const BORNAS_LIMITS = {
   NAME_MAX: 40,
   CATALOG_PROMPT_MAX: 260,
 } as const;
-export const BORNAS_RENDER = { FPS: 30, WIDTH: 1920, HEIGHT: 1080, HYPERFRAMES: "hyperframes@0.9.87", PREVIEW_HEIGHT: 720, PREVIEW_CRF: 24, SHEET_TILES: "8x6", RUNTIME: ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js", "MotionPathPlugin.min.js", "SplitText.min.js", "CustomEase.min.js", "CustomWiggle.min.js", "noise.min.js", "kit.js", "grain.png", "fonts"] } as const;
+export const BORNAS_RENDER = { FPS: 30, WIDTH: 1920, HEIGHT: 1080, HYPERFRAMES: "hyperframes@0.9.87", ENCODE: ["--crf", "20", "--max-bitrate", "12M", "--keyframe-interval", "2"], PREVIEW_HEIGHT: 720, PREVIEW_CRF: 24, SHEET_TILES: "8x6", RUNTIME: ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js", "MotionPathPlugin.min.js", "SplitText.min.js", "CustomEase.min.js", "CustomWiggle.min.js", "noise.min.js", "kit.js", "grain.png", "fonts"] } as const;
 export const BORNAS_PY = { PACKAGES: ["pillow", "numpy", "scipy", "rembg", "onnxruntime", "opencv-python-headless"], READY: "ready.json", VERSION: 2 } as const;
 export const BORNAS_SAME_PERSON = " This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.";
 export const BORNAS_REVIEW_CONTEXT = "These are original drawings for a family-friendly educational cartoon about history: no real people, no photos, any fight shown only as cartoon falls. Your job is only a layout check of positions, sizes, text and picture edges; describe problems in neutral words.";

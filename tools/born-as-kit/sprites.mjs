@@ -34,7 +34,7 @@ export const sp = (n, x, y, h, o = {}) => {
   const fb = f && { l: flip ? L + m.w * s * (1 - f.r) : L + m.w * s * f.l, r: flip ? L + m.w * s * (1 - f.l) : L + m.w * s * f.r, t: y - h + h * f.t, b: y - h + h * f.b };
   if (!o.noBox) BOXES.push({ n, l: L, r: L + m.w * s, t: y - h, b: y, fb, actor: !o.crowd && ACTOR.test(n), allow: !!o.allow, soft: !!o.soft });
   const inner = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(flip ? -s : s).toFixed(4)} ${s.toFixed(4)}) translate(${(-(m.x + m.w * ax)).toFixed(1)} ${(-(m.y + m.h)).toFixed(1)})"><use href="#S_${n}"/></g>`;
-  const shadow = o.shadow === false ? "" : `<ellipse cx="${x.toFixed(1)}" cy="${(y - 4).toFixed(1)}" rx="${(m.w * s * 0.42).toFixed(1)}" ry="${(h * 0.035).toFixed(1)}" fill="#120a06" opacity=".35" filter="url(#blur6)"/>`;
+  const shadow = o.shadow === false ? "" : `<ellipse cx="${x.toFixed(1)}" cy="${(y - 4).toFixed(1)}" rx="${(m.w * s * 0.42 + 6).toFixed(1)}" ry="${(h * 0.035 + 6).toFixed(1)}" fill="url(#shd)"/>`;
   return `<g ${o.id ? `id="${o.id}"` : ""} ${o.cls ? `class="${o.cls}"` : ""}>${shadow}${inner}</g>`;
 };
 export const pngUsed = () => [...used].filter((n) => load(n).png);

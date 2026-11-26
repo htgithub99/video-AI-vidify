@@ -1,4 +1,5 @@
 import fs from "fs";
+import { execFileSync } from "child_process";
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 const KIT = path.dirname(fileURLToPath(import.meta.url));
@@ -19,7 +20,7 @@ const PAPER_BIG = 1.6;
 const PAPER_OPTICAL = 0.92;
 const PAPER_STAMP_GAP = 150;
 const PAPER_LEAD = 0.15;
-const DEFS = `<defs><filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter></defs>`;
+const DEFS = `<defs><radialGradient id="shd"><stop offset="0" stop-color="#120a06" stop-opacity=".4"/><stop offset=".55" stop-color="#120a06" stop-opacity=".3"/><stop offset="1" stop-color="#120a06" stop-opacity="0"/></radialGradient></defs>`;
 const TAG_MAX_W = 600;
 const fitPlate = (text, sub, size) => {
   let z = size;
@@ -120,7 +121,26 @@ for (const s of planShots) {
 }
 for (let i = 0; i < shots.length; i++) shots[i].t1 = i + 1 < shots.length ? shots[i + 1].t0 : TOTAL;
 const camAt = (s, t) => camState(s.cam, s.t0, t);
-const BG = (k) => `${k}.png`;
+const FFMPEG = process.env.FFMPEG || "ffmpeg";
+const SEPIA = "colorchannelmixer=rr=.6965:rg=.3845:rb=.0945:gr=.1745:gg=.843:gb=.084:br=.136:bg=.267:bb=.5655";
+const GRADE = plan.grade === "old" ? `${SEPIA},eq=saturation=0.68:contrast=1.06:brightness=-0.015` : "";
+const BG_Q = "3";
+const BLUR = { W: 1920, SIGMA: 18, DIM: 0.7 };
+const ff = (args) => execFileSync(FFMPEG, ["-y", "-loglevel", "error", ...args], { windowsHide: true });
+const chain = (...f) => f.filter(Boolean).join(",") || "null";
+const baked = new Set();
+const bakeBg = (k) => {
+  const src = path.join(jobDir, `${k}.png`), dst = path.join(jobDir, `${k}.jpg`);
+  if (!baked.has(k) && fs.existsSync(src)) {
+    ff(["-i", src, "-vf", chain(GRADE), "-q:v", BG_Q, dst]);
+    ff(["-i", src, "-vf", chain(`scale=${BLUR.W}:-2`, `gblur=sigma=${BLUR.SIGMA}`, GRADE, `colorchannelmixer=rr=${BLUR.DIM}:gg=${BLUR.DIM}:bb=${BLUR.DIM}`), "-q:v", BG_Q, path.join(jobDir, `${k}_blur.jpg`)]);
+    fs.rmSync(src);
+    baked.add(k);
+  }
+  return fs.existsSync(dst);
+};
+const BG = (k) => (bakeBg(k) ? `${k}.jpg` : `${k}.png`);
+const BG_BLUR = (k) => (bakeBg(k) ? `${k}_blur.jpg` : `${k}.png`);
 const TEXTEV = [];
 let html = "", js = "";
 const camJs = (s) => ["c", "t"].map((k) => `BORN.camPath(tl,'#${s.id}${k}',[${s.cam.map((c) => `{t:${(s.t0 + c.t).toFixed(3)},v:BORN.cam(${c.s},${c.tx},${c.ty},${c.sx},${c.sy})${c.ease ? `,ease:'${c.ease}'` : ""}}`).join(",")}]);`).join("");
@@ -160,7 +180,7 @@ for (const s of shots) {
   } else if (s.kind === "black") {
     inner = `<div class="blk"></div><div class="hud" id="${s.id}h"></div>`;
   } else {
-    inner = `<div class="shake" id="${s.id}k"><div class="cam" id="${s.id}c"><img${s.blur ? ' class="blurbg"' : ""} src="${BG(s.bg)}">${s.blur ? '<div class="dim"></div>' : ""}<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">${DEFS}<g>${s.svg}</g></svg></div></div><div class="ov" id="${s.id}o"></div><div class="cam txt" id="${s.id}t"></div><div class="hud" id="${s.id}h"></div>`;
+    inner = `<div class="shake" id="${s.id}k"><div class="cam" id="${s.id}c"><img${s.blur ? ' class="blurbg"' : ""} src="${s.blur ? BG_BLUR(s.bg) : BG(s.bg)}">${s.blur ? '<div class="dim"></div>' : ""}<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">${DEFS}<g>${s.svg}</g></svg></div></div><div class="ov" id="${s.id}o"></div><div class="cam txt" id="${s.id}t"></div><div class="hud" id="${s.id}h"></div>`;
     js += camJs(s);
     if (s.svg && !s.blur) js += breath(s);
     js += s.moves;
@@ -201,7 +221,11 @@ const scripts = ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js",
 const out = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts/fonts.css"><style>${css}</style></head><body>${spriteDefs()}<div id="root"${plan.grade ? ` class="grade-${plan.grade}"` : ""} data-composition-id="root" data-width="1920" data-height="1080" data-start="0" data-duration="${TOTAL}">\n${html}<div class="grain"></div><div class="vig"></div><audio id="vo" src="voice.wav" data-start="0" data-duration="${TOTAL}" data-volume="1"></audio></div>${scripts}<script>document.head.insertAdjacentHTML('beforeend','<style>'+BORN_CSS+'</style>');const tl=gsap.timeline({paused:true});\n${js}\ntl.to({},{duration:${TOTAL}},0);window.__timelines={root:tl};</script></body></html>`;
 fs.mkdirSync(path.join(jobDir, "png"), { recursive: true });
 fs.writeFileSync(path.join(jobDir, "index.html"), out);
-for (const n of pngUsed()) fs.copyFileSync(path.join(process.env.BORN_ASSETS, "png", `${n}.png`), path.join(jobDir, "png", `${n}.png`));
+for (const n of pngUsed()) {
+  const src = path.join(process.env.BORN_ASSETS, "png", `${n}.png`), dst = path.join(jobDir, "png", `${n}.png`);
+  if (GRADE) ff(["-i", src, "-vf", GRADE, "-pix_fmt", "rgba", dst]);
+  else fs.copyFileSync(src, dst);
+}
 fs.writeFileSync(path.join(jobDir, "texts.json"), JSON.stringify(TEXTEV));
 fs.writeFileSync(path.join(jobDir, "shots.json"), JSON.stringify(shots.map((s) => ({ id: s.id, t0: s.t0, t1: s.t1, kind: s.kind }))));
 fs.writeFileSync(path.join(jobDir, "faces_all.json"), JSON.stringify(FACEMAP()));
