@@ -16,6 +16,7 @@ const safe = (s) => String(s ?? "").replace(/'/g, "’").replace(/[\\`$]/g, "").
 const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
 const PAPER_W = 1640;
 const DEFS = `<defs><filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter></defs>`;
+const TAG_MAX_W = 600;
 const fitPlate = (text, sub, size) => {
   let z = size;
   while (z > 34 && plateSize(text, sub, z).w > 860) z -= 2;
@@ -51,6 +52,11 @@ const spread = (actors) => {
 };
 for (const s of planShots) {
   const o = { id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, shake: s.shake, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, chapter: s.chapter, endCard: s.endCard, moves: "" };
+  const wide = o.tags.filter((g) => plateSize(g[1], g[2], 52).w > TAG_MAX_W);
+  if (wide.length) {
+    o.tags = o.tags.filter((g) => !wide.includes(g));
+    o.plates.push(...wide.map((g) => [g[0], g[1], g[2], g[3], [960, 150], null, fitPlate(g[1], g[2], 52)]));
+  }
   if (FIX.has(o.id)) {
     const acts = FIX.get(o.id);
     if (acts.includes("tag")) {

@@ -61,7 +61,7 @@ export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }
 ];
 export const BORNAS_KIND_SIZES: Record<string, { min: number; max: number; std: number }> = { person: { min: 1, max: 2.1, std: 1.75 }, animal: { min: 0.2, max: 3, std: 1 }, vehicle: { min: 1, max: 6, std: 2.4 }, weapon: { min: 0.08, max: 1.5, std: 0.3 }, prop: { min: 0.03, max: 3, std: 0.5 }, structure: { min: 0.8, max: 30, std: 3 }, nature: { min: 0.3, max: 30, std: 2 } };
 export const BORNAS_CTA: Record<string, { TITLE: string; SUB: string }> = { vi: { TITLE: "BÌNH LUẬN NGAY", SUB: "NHÂN VẬT TIẾP THEO LÀ AI?" }, en: { TITLE: "COMMENT BELOW", SUB: "WHO SHOULD BE NEXT?" }, ja: { TITLE: "コメントで教えて", SUB: "次は誰がいい？" }, ko: { TITLE: "댓글을 남겨주세요", SUB: "다음 인물은 누구?" } };
-export const BORNAS_SEO = { OPTIONS: 2, TITLE_MAX: 70, WORD_MAX: 14, NAME_MAX: 12, DIR: "seo", FILE: "seo.txt", BABY: "thumb_baby" } as const;
+export const BORNAS_SEO = { OPTIONS: 2, TITLE_MAX: 70, WORD_MAX: 14, NAME_MAX: 16, DIR: "seo", FILE: "seo.txt", BABY: "thumb_baby" } as const;
 export const BORNAS_THUMB_TEXT: Record<string, { AGE: string; BORN: string }> = { vi: { AGE: "0 TUỔI", BORN: "BẠN SINH RA LÀ" }, en: { AGE: "AGE 0", BORN: "YOU WERE BORN AS" }, ja: { AGE: "0歳", BORN: "あなたの正体は" }, ko: { AGE: "0세", BORN: "당신은 태어났다" } };
 export const BORNAS_CHAPTER = { MIN_SECONDS: 180, CARD_SECONDS: 1.8, LEAD: 0.15, TITLE_MAX: 40, MAX: 8 } as const;
 export const bornasChapterLines = (lines: BornasLine[], seconds: number): number[] => (seconds >= BORNAS_CHAPTER.MIN_SECONDS ? lines.flatMap((l, i) => (i && l.chapter ? [i] : [])).slice(0, BORNAS_CHAPTER.MAX) : []);

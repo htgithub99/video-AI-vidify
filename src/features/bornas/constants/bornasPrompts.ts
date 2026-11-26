@@ -188,7 +188,7 @@ export const BORNAS_PROMPT = {
   SEO: (a: { title: string; hero: string; lines: string[]; language: BornasLanguage; genre: BornasGenre; seconds: number; chapters: string[]; avoid: string[] }) =>
     [
       `Prepare YouTube SEO for an animated history explainer in second person ("what if you were born as…"). Write titles, descriptions, tags, hashtags, the pinned question and the thumbnail texts in ${motionLanguage(a.language).promptName}.`,
-      `Working title: ${a.title}. Main character: ${a.hero}. Length: ${Math.round(a.seconds / 60)} min ${Math.round(a.seconds % 60)} s.`,
+      `Working title: ${a.title}. Main character: ${a.hero}. Length: ${Math.floor(a.seconds / 60)} min ${Math.round(a.seconds % 60)} s; when a title states the length, say ${Math.max(1, Math.round(a.seconds / 60))} minute(s), never more.`,
       `Narration:\n${a.lines.join("\n")}`,
       a.chapters.length ? `Chapters, in order: ${a.chapters.join("; ")}.` : "",
       `Write ${BORNAS_SEO.OPTIONS} clearly different options, best first. ${a.genre === "bornas" ? `Option 1 follows the pattern "What If You Were Born as <name>? | <short context>" in the target language; option 2 follows "Live <name>'s Entire Life in <N> Minutes" in the target language.` : "Option 1 is a curiosity question about the character's fate; option 2 promises the whole story in a few minutes."} Titles max ${BORNAS_SEO.TITLE_MAX} characters, the name early. Descriptions: 2 hook lines with the main keywords, then 2–4 short lines about what the viewer lives through; no chapter list, no links.`,
@@ -200,6 +200,7 @@ export const BORNAS_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n\n"),
-  BABY: (desc: string) => `${BORNAS_STYLE_LINE}. On a plain pure white background: this character as a baby at age 0, sitting in a simple wooden crib, front view facing the viewer, a cross angry frown, arms crossed, whole crib visible and not cut off. ${desc}. Same face features and hair colour as the reference picture. No text, no captions, no ground shadow, no room behind.`,
+  BABY: (desc: string) =>
+    `${BORNAS_STYLE_LINE}. On a plain pure white background: this character as a newborn baby at age 0, sitting in a simple wooden crib, front view facing the viewer, a cross angry frown, arms crossed, whole crib visible and not cut off. The baby wears only simple baby clothes of the era (a plain gown or swaddle): no hat, no weapon, no belt, no adult costume. Same face features and hair colour as the reference picture of this character: ${desc}. No text, no captions, no ground shadow, no room behind.`,
   BACKGROUND: (desc: string) => `${BORNAS_STYLE_LINE}. A 16:9 background scene at eye level: ${desc}. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.`,
 } as const;

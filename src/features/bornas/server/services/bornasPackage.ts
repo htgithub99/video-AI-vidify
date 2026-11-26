@@ -17,11 +17,14 @@ import { playwrightEnv, readJson, runKitNode, writeJson } from "./bornasTools.js
 import { bornasVideoDir } from "./bornasVoice.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 type Obj = Record<string, unknown>;
-const text = (v: unknown, max: number): string =>
-  String(v ?? "")
+const text = (v: unknown, max: number): string => {
+  const s = String(v ?? "")
     .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, max);
+    .trim();
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max + 1);
+  return (cut.includes(" ") ? cut.slice(0, cut.lastIndexOf(" ")) : s.slice(0, max)).trim();
+};
 const cleanOption = (raw: Obj): BornasSeoOption | undefined => {
   const title = text(raw.title, BORNAS_SEO.TITLE_MAX);
   if (!title) return undefined;
