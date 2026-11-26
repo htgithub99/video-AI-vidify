@@ -6,6 +6,7 @@ export const CHAT_SPEED = {
   BUSY_POLL_MS: 750,
   MODEL_REUSE_MS: 600_000,
   TIMING_FILE: "gemini-timing.jsonl",
+  TIMEOUT_SHOT: "chat-timeout-latest.jpg",
   NEWLINE: "\n",
   MARK: { UPLOADED: "uploaded", COMPOSE: "compose", WRITTEN: "written", SENT: "sent", FIRST_TEXT: "firstText" },
 } as const;

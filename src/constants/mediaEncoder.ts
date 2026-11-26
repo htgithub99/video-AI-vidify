@@ -18,7 +18,7 @@ export const HEAVY_JOB = { RENDER: "render", VOICE: "voice", SLOTS: { render: 1,
 export const HEAVY_JOB_TEXT = {
   WAIT: (kind: string, holder: string): string => (kind === "voice" ? `Đang chờ việc tạo giọng khác xong: ${holder}` : `Đang chờ việc xuất video khác xong (${holder}) để không tranh CPU/GPU`),
   START: (label: string, waitedSeconds: number): string => `Bắt đầu ${label}${waitedSeconds >= 1 ? ` (đã chờ ${Math.round(waitedSeconds)} giây)` : ""}`,
-  SCREEN: { REUP: "Reup", EXPORT: "Xuất Video", SHORTS: "Tạo Shorts", VIDEO: "Tạo video", MOTION: "Video Motion" },
+  SCREEN: { REUP: "Reup", EXPORT: "Xuất Video", SHORTS: "Tạo Shorts", VIDEO: "Tạo video", MOTION: "Video Motion", BORNAS: "Video HyperFrames" },
   LABEL: (screen: string, name: string): string => `${screen} · ${name}`,
   ENCODER: (encoder: string): string => `Bộ mã hoá video: ${encoder}`,
   GPU_FALLBACK: (encoder: string): string => `GPU (${encoder}) lỗi, dựng lại bằng CPU`,

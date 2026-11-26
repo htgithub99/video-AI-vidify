@@ -58,7 +58,6 @@ export const REUP_BUILD = {
   GUARD: 2,
   LONG_MARGIN: 6,
   LOGO_ZOOM: 1.08,
-  VERTICAL: { BAND: 1, TOP: 0.18, BLUR: "boxblur=24:2,eq=brightness=-0.08:saturation=0.85" },
   LOGO_BOX: 0.16,
   TITLE_HOOK_SECONDS: 4,
   TRUE_PEAK: -1.5,
@@ -180,8 +179,6 @@ export const REUP_TEXT = {
   TITLE_FIT: 0.9,
   TITLE_GLYPH: 0.68,
   TITLE_GLYPH_CJK: 1.05,
-  TITLE_GAP: 0.3,
-  TITLE_TOP_MIN: 0.09,
 } as const;
 export const REUP_HIGHLIGHT = {
   FONT_DIR: "assets/fonts/reup",

@@ -12,7 +12,6 @@ import {
   SOURCE_TEXT_TEXT_PURPLE_100_HOVER_TEXT_WHITE,
   SOURCE_TEXT_BORDER_WHITE_20_TEXT_PURPLE_100,
   SOURCE_TEXT_TEXT_10PX_FONT_BOLD_TEXT_WHITE_FLEX,
-  SOURCE_TEXT_TEXT_WHITE_TRANSLATE_X_0_5,
   SOURCE_TEXT_W_3_5_H_3_5_TEXT_10,
   SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_2,
   SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_3,
@@ -193,8 +192,6 @@ import {
   SOURCE_TEXT_TEXT_SLATE_500_FLEX_ITEMS_CENTER_GAP,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_TEXT_SLATE,
   SOURCE_TEXT_AUTH,
-  SOURCE_TEXT_W_3_5_H_3_5_TRANSITION,
-  SOURCE_TEXT_TEXT_SLATE_600,
   SOURCE_TEXT_FLEX_1_FLEX_FLEX_COL_ITEMS_CENTER,
   SOURCE_TEXT_W_9_H_9_TEXT_SLATE_600,
   SOURCE_TEXT_TEXT_11PX_TEXT_SLATE_500_MT_1,
@@ -319,6 +316,8 @@ import {
   SOURCE_TEXT_SUBMIT,
   SOURCE_TEXT_TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_2,
   SOURCE_TEXT_TEXT_11PX_FONT_BOLD_TEXT_PURPLE_400,
+  SOURCE_TEXT_PROXY_UPPER_BTN,
+  SOURCE_TEXT_PROXY_NAME_TOOLS,
   SOURCE_TEXT_FONT_MONO_TEXT_XS_CUSTOM_SCROLLBAR,
   SOURCE_TEXT_127_0_0_1_8080_USERNAME_PASSWORD,
   SOURCE_TEXT_ROUNDED_XL_BORDER_BORDER_SLATE_800_OVERFLOW,
@@ -347,7 +346,7 @@ import { requestProxyApi as api } from "../services/proxyApi";
 import { ProxyConnectionBadge } from "./ProxyConnectionBadge";
 import { getErrorMessage } from "../../../utils/errorUtils";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Activity, AlertTriangle, ArrowUpRight, Check, CheckCircle2, ChevronRight, Clapperboard, Copy, Download, Eye, EyeOff, FileText, Globe, KeyRound, Layers, Monitor, Pencil, Play, Plus, RefreshCw, Search, Shield, ShieldCheck, Sparkles, Trash2, X, XCircle } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpRight, CaseUpper, Check, CheckCircle2, Clapperboard, ClipboardPaste, Copy, Download, Eye, EyeOff, FileText, Globe, KeyRound, Layers, Monitor, Pencil, Play, Plus, RefreshCw, Search, Shield, ShieldCheck, Sparkles, Trash2, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { PROXY_REFRESH_MS, PROXY_TEXTS } from "../../../constants/proxy";
 import { parseProxyImport, proxyServer, validateProxyInput } from "../../../lib/proxyValidation";
@@ -593,7 +592,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                   onClick={() => {
                     setImportOpen(true);
                     setImportError("");
-                  }}>
+                  }}
+                >
                   <Download className={SOURCE_TEXT_W_4_H_4_TEXT_PURPLE_400} />
                   <span>{t.import}</span>
                 </Button>
@@ -606,7 +606,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 </Button>
               </div>
             </>
-          }>
+          }
+        >
           <span className={SOURCE_TEXT_PX_2_PY_0_5_ROUNDED_FULL_2}>{SOURCE_TEXT_ANTI_DETECT_ISOLATED}</span>
         </StudioHeader>
         <div className={SOURCE_TEXT_GRID_GRID_COLS_2_LG_GRID_COLS}>
@@ -692,7 +693,6 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                           <span className={cn(SOURCE_TEXT_TEXT_XS_FONT_BLACK_TRUNCATE, isSelected ? SOURCE_TEXT_TEXT_PURPLE_200 : SOURCE_TEXT_TEXT_SLATE_100_GROUP_HOVER_TEXT_PURPLE)}>{profile.name}</span>
                           <span className={cn(SOURCE_TEXT_PX_1_5_PY_0_2_ROUNDED, isSelected && SOURCE_TEXT_BG_WHITE_20_TEXT_WHITE_BORDER_WHITE)}>{profile.protocol}</span>
                         </div>
-                        {<ProxyConnectionBadge profile={profile} checking={pending[profile.id] === SOURCE_TEXT_CHECK} texts={t} />}
                       </div>
                       <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_2}>
                         <span className={cn(SOURCE_TEXT_FONT_MONO_TEXT_11PX_TEXT_SLATE_400, isSelected && SOURCE_TEXT_TEXT_PURPLE_100)}>{serverStr}</span>
@@ -704,12 +704,13 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                             handleCopy(SOURCE_TEMPLATE_SYMBOL_78(`${profile.host}`, `${profile.port}`), profile.id);
                           }}
                           title={t.copyHostPort}
-                          className={cn(SOURCE_TEXT_P_1_ROUNDED_MD_BG_SLATE_800, isSelected && SOURCE_TEXT_TEXT_PURPLE_100_HOVER_TEXT_WHITE)}>
+                          className={cn(SOURCE_TEXT_P_1_ROUNDED_MD_BG_SLATE_800, isSelected && SOURCE_TEXT_TEXT_PURPLE_100_HOVER_TEXT_WHITE)}
+                        >
                           {copiedKey === profile.id ? <Check className={SOURCE_TEXT_W_3_H_3_TEXT_EMERALD_400} /> : <Copy className={SOURCE_TEXT_W_3_H_3} />}
                         </Button>
                       </div>
                       <div className={cn(SOURCE_TEXT_MT_2_5_PT_2_BORDER_T, isSelected && SOURCE_TEXT_BORDER_WHITE_20_TEXT_PURPLE_100)}>
-                        <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
+                        <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_MIN_W}>
                           {isSessionActive ? (
                             <span className={isSelected ? SOURCE_TEXT_TEXT_10PX_FONT_BOLD_TEXT_WHITE_FLEX : SOURCE_TEXT_TEXT_10PX_FONT_BOLD_TEXT_CYAN_300}>
                               <span className={SOURCE_TEXT_W_1_5_H_1_5_ROUNDED} />
@@ -729,7 +730,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                             </span>
                           )}
                         </div>
-                        <ChevronRight className={cn(SOURCE_TEXT_W_3_5_H_3_5_TRANSITION, isSelected ? SOURCE_TEXT_TEXT_WHITE_TRANSLATE_X_0_5 : SOURCE_TEXT_TEXT_SLATE_600)} />
+                        <ProxyConnectionBadge profile={profile} checking={pending[profile.id] === SOURCE_TEXT_CHECK} texts={t} />
                       </div>
                     </div>
                   );
@@ -757,7 +758,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                         onClick={() => {
                           setQuery("");
                           setFilterTab(SOURCE_TEXT_ALL);
-                        }}>
+                        }}
+                      >
                         {t.refresh}
                       </Button>
                     )}
@@ -891,7 +893,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                               await api(SOURCE_TEMPLATE_CLOSE(`${selected.id}`), SOURCE_TEXT_POST);
                               if (mounted.current) toast.success(t.sessionClosed);
                             })
-                          }>
+                          }
+                        >
                           {pending[selected.id] === SOURCE_TEXT_CLOSE_2 ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_5} /> : <X className={SOURCE_TEXT_W_4_H_4} />}
                           <span>{pending[selected.id] === SOURCE_TEXT_CLOSE_2 ? t.working : t.close}</span>
                         </Button>
@@ -1003,7 +1006,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
             </div>
           </div>
         }
-        maxWidth={SOURCE_TEXT_XL}>
+        maxWidth={SOURCE_TEXT_XL}
+      >
         <form onSubmit={save} className={SOURCE_TEXT_SPACE_Y_4}>
           <label className={SOURCE_TEXT_BLOCK_SPACE_Y_1_5_TEXT_XS}>
             <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN}>
@@ -1012,7 +1016,22 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                 <span>{t.name}</span>
                 <span className={SOURCE_TEXT_TEXT_PINK_400_FONT_BLACK}>{SOURCE_BROWSER_TEXT_SYMBOL}</span>
               </span>
-              <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TEN_GOI_NHO}</span>
+              <span className={SOURCE_TEXT_PROXY_NAME_TOOLS}>
+                <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TEN_GOI_NHO}</span>
+                <button
+                  type={SOURCE_TEXT_BUTTON}
+                  title={t.upperNameTitle}
+                  disabled={!form.name || form.name === form.name.toLocaleUpperCase()}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setForm({ ...form, name: form.name.toLocaleUpperCase() });
+                  }}
+                  className={SOURCE_TEXT_PROXY_UPPER_BTN}
+                >
+                  <CaseUpper className={SOURCE_TEXT_W_3_5_H_3_5} />
+                  {t.upperName}
+                </button>
+              </span>
             </div>
             <StudioInput autoFocus required maxLength={100} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={controlClass} placeholder={SOURCE_TEXT_YOUTUBE_STUDIO_01} />
           </label>
@@ -1098,7 +1117,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                   setForm({ ...form, clearPassword: !form.clearPassword, password: "" });
                 }
               }}
-              className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_3, form.clearPassword ? SOURCE_TEXT_BORDER_PINK_500_50_BG_GRADIENT_TO : SOURCE_TEXT_BORDER_SLATE_800_80_BG_SLATE_900)}>
+              className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_3, form.clearPassword ? SOURCE_TEXT_BORDER_PINK_500_50_BG_GRADIENT_TO : SOURCE_TEXT_BORDER_SLATE_800_80_BG_SLATE_900)}
+            >
               <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN}>
                 <div className={cn(SOURCE_TEXT_W_8_H_8_ROUNDED_LG_FLEX, form.clearPassword ? SOURCE_TEXT_BG_PINK_500_20_TEXT_PINK_300 : SOURCE_TEXT_BG_SLATE_800_TEXT_SLATE_400)}>
                   <KeyRound className={SOURCE_TEXT_W_4_H_4} />
@@ -1120,7 +1140,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                     e.stopPropagation();
                     setForm({ ...form, clearPassword: !form.clearPassword, password: "" });
                   }}
-                  className={cn(SOURCE_TEXT_TOGGLE_SWITCH_SELECT_NONE_FOCUS_OUTLINE_NONE, form.clearPassword ? SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600 : SOURCE_TEXT_BG_SLATE_800_BORDER_BORDER_SLATE_700)}>
+                  className={cn(SOURCE_TEXT_TOGGLE_SWITCH_SELECT_NONE_FOCUS_OUTLINE_NONE, form.clearPassword ? SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600 : SOURCE_TEXT_BG_SLATE_800_BORDER_BORDER_SLATE_700)}
+                >
                   <span aria-hidden={true} className={cn(SOURCE_TEXT_TOGGLE_SWITCH_THUMB_SHADOW_MD_TRANSITION_TRANSFORM, form.clearPassword ? SOURCE_TEXT_TRANSLATE_X_20PX_BG_WHITE : SOURCE_TEXT_TRANSLATE_X_0_BG_SLATE_300)} />
                 </Button>
               </div>
@@ -1157,7 +1178,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               onClick={() => {
                 setEditor(null);
                 setForm(emptyForm());
-              }}>
+              }}
+            >
               {t.cancel}
             </Button>
             <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_SUBMIT} className={cn(actionBtnClass, primaryBtnClass, SOURCE_TEXT_PX_5_PY_2_5_TEXT_XS)} disabled={saving}>
@@ -1176,11 +1198,13 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
           }
         }}
         title={t.import}
-        maxWidth={SOURCE_TEXT_XL}>
+        maxWidth={SOURCE_TEXT_XL}
+      >
         <div className={SOURCE_TEXT_SPACE_Y_4}>
           <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
             <p className={SOURCE_TEXT_TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_2}>{t.importHint}</p>
             <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handlePasteSampleImport} className={SOURCE_TEXT_TEXT_11PX_FONT_BOLD_TEXT_PURPLE_400}>
+              <ClipboardPaste className={SOURCE_TEXT_W_3_5_H_3_5} />
               {t.sampleImport}
             </Button>
           </div>
@@ -1242,7 +1266,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               onClick={() => {
                 setImportOpen(false);
                 setImportText("");
-              }}>
+              }}
+            >
               {t.cancel}
             </Button>
             <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, primaryBtnClass)} disabled={saving || !validCount || validCount !== importRows.length || validCount > 200} onClick={importList}>
@@ -1257,7 +1282,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
         onClose={() => {
           if (!deleteProfile || !pending[deleteProfile.id]) setDeleteProfile(null);
         }}
-        title={t.deleteTitle}>
+        title={t.deleteTitle}
+      >
         <div className={SOURCE_TEXT_SPACE_Y_4}>
           <div className={SOURCE_TEXT_P_3_ROUNDED_XL_BG_SLATE_950}>
             <p className={SOURCE_TEXT_TEXT_SM_FONT_BOLD_TEXT_SLATE_100}>{deleteProfile?.name}</p>
@@ -1281,7 +1307,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                     toast.success(t.deleted);
                   }
                 })
-              }>
+              }
+            >
               <Trash2 className={SOURCE_TEXT_W_3_5_H_3_5} />
               <span>{t.remove}</span>
             </Button>

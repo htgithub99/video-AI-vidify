@@ -96,13 +96,9 @@ const pictureFilter = (i: number, s: ReupJobSettings, p: Piece, w: number, h: nu
   }
   if (same) return `${head}scale=${w}:${h}${tail}`;
   const portrait = h > w && !p.still && p.width > p.height;
-  if (portrait && s.vertical === "framed") {
-    const V = REUP_BUILD.VERTICAL,
-      fx = _.clamp(p.focusX ?? 0.5, 0, 1).toFixed(3),
-      crop = `'min(max(iw*${fx}-ow/2,0),iw-ow)'`;
-    const bh = Math.min(h, even(w * V.BAND)),
-      top = Math.round(Math.min(h - bh, h * V.TOP));
-    return `${head}split=2[bg${i}][fg${i}];[bg${i}]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},${V.BLUR}[bb${i}];[fg${i}]scale=${w}:${bh}:force_original_aspect_ratio=increase,crop=${w}:${bh}:${crop}:(ih-oh)/2[ff${i}];[bb${i}][ff${i}]overlay=0:${top}${tail}`;
+  if (portrait) {
+    const fx = _.clamp(p.focusX ?? 0.5, 0, 1).toFixed(3);
+    return `${head}scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}:'min(max(iw*${fx}-ow/2,0),iw-ow)':(ih-oh)/2${tail}`;
   }
   if (close && p.still) return `${head}scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}${tail}`;
   return `${head}split=2[bg${i}][fg${i}];[bg${i}]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},boxblur=20:2[bb${i}];[fg${i}]scale=${w}:${h}:force_original_aspect_ratio=decrease[ff${i}];[bb${i}][ff${i}]overlay=(W-w)/2:(H-h)/2${tail}`;
@@ -146,11 +142,8 @@ const renderSection = async (job: ReupJob, pieces: Piece[], file: string, opts: 
   graph.push(`${pieces.map((_p, i) => `[v${i}][a${i}]`).join("")}concat=n=${pieces.length}:v=1:a=1[vc][ac]`);
   let video = "vc";
   if (opts.title?.lines.length && heavy) {
-    const n = opts.title.lines.length,
-      band = h > w && s.vertical === "framed" ? h * REUP_BUILD.VERTICAL.TOP : 0,
-      room = band ? (band - h * REUP_TEXT.TITLE_TOP_MIN) / (n * REUP_TEXT.LINE_HEIGHT + REUP_TEXT.TITLE_GAP) : Infinity,
-      size = Math.round(Math.min(titleFit(opts.title.lines, Math.min(w, h) * (opts.title.kind === "fixed" ? 0.075 : 0.085), w), room)),
-      top = band ? Math.round(Math.max(h * REUP_TEXT.TITLE_TOP_MIN, band - size * (n * REUP_TEXT.LINE_HEIGHT + REUP_TEXT.TITLE_GAP))) : Math.round(h * (opts.title.kind === "fixed" ? 0.1 : 0.14));
+    const size = Math.round(titleFit(opts.title.lines, Math.min(w, h) * (opts.title.kind === "fixed" ? 0.075 : 0.085), w)),
+      top = Math.round(h * (opts.title.kind === "fixed" ? 0.1 : 0.14));
     const enable = opts.title.kind === "hook" ? `:enable='lt(t,${REUP_BUILD.TITLE_HOOK_SECONDS})'` : "";
     const box = opts.title.kind === "fixed" ? ":box=1:boxcolor=black@0.55:boxborderw=16" : outline(size);
     const draws = opts.title.lines.map((line, i) => draw(heavy, textFile(`${file}.t${i}.txt`, line), size, "(w-text_w)/2", String(top + Math.round(i * size * REUP_TEXT.LINE_HEIGHT)), i ? "0xFFD400" : "white", box + enable));
@@ -238,20 +231,16 @@ const focusAt = (planned: PlannedSection[], t: number): number | undefined => {
   }
   return undefined;
 };
-export const reupTextArea = (s: Pick<ReupJobSettings, "vertical" | "subtitles">, [w, h]: [number, number]): ReupTextArea => {
-  if (h > w && s.vertical === "framed") {
-    const top = Math.round(h * REUP_BUILD.VERTICAL.TOP);
-    return { top, bottom: top + Math.min(h - top, even(w * REUP_BUILD.VERTICAL.BAND)) };
-  }
+export const reupTextArea = (s: Pick<ReupJobSettings, "subtitles">, size: [number, number]): ReupTextArea => {
+  const h = size[1];
   return { top: Math.round(h * REUP_TYPE.SAFE_TOP), bottom: Math.round(h * (1 - (s.subtitles ? REUP_TYPE.SUBS_BOTTOM : REUP_TYPE.SAFE_BOTTOM))) };
 };
 const popLayer = (job: ReupJob, output: ReupOutputScript, marks: ReupHighlightEvent[], planned: PlannedSection[], size: [number, number]): { ass: string; fonts: string } | undefined => {
   if (!marks.length) return undefined;
   const lang = output.lang || job.settings.language;
   const cjk = lang === "ja" || lang === "ko" ? reupFontFor(lang, "heavy") : undefined;
-  const framed = size[1] > size[0] && job.settings.vertical === "framed";
   const look = (REUP_HIGHLIGHT.SHORT.LOOKS as readonly string[]).includes(job.style?.pop || "") ? job.style!.pop! : REUP_HIGHLIGHT.SHORT.LOOKS[0];
-  return { ass: reupPopAss(marks, { width: size[0], height: size[1], look, theme: REUP_POP_THEME[job.preset] || REUP_POP_THEME.A, lang, area: reupTextArea(job.settings, size), cjk: cjk?.family, focus: marks.map((m) => (framed ? undefined : focusAt(planned, m.start))) }), fonts: cjk ? path.dirname(cjk.file) : highlightFonts() };
+  return { ass: reupPopAss(marks, { width: size[0], height: size[1], look, theme: REUP_POP_THEME[job.preset] || REUP_POP_THEME.A, lang, area: reupTextArea(job.settings, size), cjk: cjk?.family, focus: marks.map((m) => focusAt(planned, m.start)) }), fonts: cjk ? path.dirname(cjk.file) : highlightFonts() };
 };
 const highlightEvents = (job: ReupJob, output: ReupOutputScript, planned: PlannedSection[], total: number): ReupHighlightEvent[] => {
   const s = job.settings;

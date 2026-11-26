@@ -29,7 +29,7 @@ import {
   SOURCE_TEXT_UNSTYLED,
 } from "../constants/sourceText.js";
 import _ from "lodash";
-import { ChevronLeft, ChevronRight, Clapperboard, Film, FolderKanban, Globe, LayoutDashboard, LucideIcon, Music2, Repeat, Scissors, Settings, Shuffle, Sparkles, Video, X, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clapperboard, Copy, Film, FolderKanban, Globe, LayoutDashboard, LucideIcon, Music2, Repeat, Scissors, Settings, Shuffle, Sparkles, Video, X, Zap } from "lucide-react";
 import { FC, useState } from "react";
 import { AppTab } from "../constants/enums";
 import { PlanType } from "../constants/security";
@@ -78,7 +78,8 @@ const SidebarItem: FC<SidebarItemProps> = ({ item, isSelected, isDisabled, isCol
         "justify-center px-0": isCollapsed,
         "text-left": !isCollapsed,
       })}
-      title={item.label}>
+      title={item.label}
+    >
       <div className={cn(SOURCE_TEXT_APP_NAV_ICON_W_8_H_8, { "bg-rose-600 text-white shadow-sm": isSelected, "bg-slate-900 text-slate-600": isDisabled && !isSelected, "bg-slate-900/80 border border-slate-800 text-slate-400 group-hover:text-slate-200 group-hover:border-slate-700": !isSelected && !isDisabled })}>
         <Icon className={cn(SOURCE_TEXT_W_4_H_4)} />
       </div>
@@ -92,7 +93,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
   const texts = _.get(SIDEBAR_TEXTS, currentLang, SIDEBAR_TEXTS.vi);
   const hasSelectedProject = Boolean(selectedProjectId);
   const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS, AppTab.PROXY], activeTab as AppTab);
-  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR, AppTab.VIDEO_EXPORT, AppTab.MOTION_VIDEO, AppTab.REUP_VIDEO], activeTab as AppTab);
+  const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR, AppTab.VIDEO_EXPORT, AppTab.MOTION_VIDEO, AppTab.REUP_VIDEO, AppTab.BORNAS_VIDEO], activeTab as AppTab);
   const menuItems: MenuItemConfig[] = [
     { id: AppTab.DASHBOARD, label: texts.DASHBOARD, icon: LayoutDashboard, requiresProject: false },
     { id: AppTab.PROJECTS, label: texts.CONTENT, icon: FolderKanban, requiresProject: false },
@@ -106,6 +107,7 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
     { id: AppTab.VIDEO_EXPORT, label: texts.VIDEO_EXPORT, icon: Film, requiresProject: false },
     { id: AppTab.MOTION_VIDEO, label: texts.MOTION_VIDEO, icon: Sparkles, requiresProject: false },
     { id: AppTab.REUP_VIDEO, label: texts.REUP_VIDEO, icon: Repeat, requiresProject: false },
+    { id: AppTab.BORNAS_VIDEO, label: texts.BORNAS_VIDEO, icon: Copy, requiresProject: false },
     { id: AppTab.SETTINGS, label: texts.SETTINGS, icon: Settings, requiresProject: false, hide: _.isEqual(licenseInfo?.plan_type, PlanType.FREE) },
   ];
   const handleItemSelect = (id: AppTab) => {

@@ -10,5 +10,6 @@ export const ShortsExtractor = lazy(() => import("./shorts/components/ShortsExtr
 export const VideoExporter = lazy(() => import("./video-export/components/VideoExporter.js"));
 export const MotionVideoCreator = lazy(() => import("./motion/components/MotionVideoCreator.js"));
 export const ReupVideoCreator = lazy(() => import("./reup/components/ReupVideoCreator.js"));
+export const BornasVideoCreator = lazy(() => import("./bornas/components/BornasVideoCreator.js"));
 export const ProxyManager = lazy(() => import("./proxy/components/ProxyManager.js"));
 export const SettingsView = lazy(() => import("./settings/components/SettingsView.js"));

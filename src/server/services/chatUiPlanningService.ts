@@ -93,6 +93,7 @@ import {
   SOURCE_TEXT_MODEL_PICKER,
   SOURCE_TEXT_MODEL_UNAVAILABLE,
   SOURCE_TEXT_MUSIC_MIXER_RANKING,
+  SOURCE_TEXT_NETWORKIDLE,
   SOURCE_TEXT_NONE,
   SOURCE_TEXT_NOT_REQUIRED,
   SOURCE_TEXT_OPTION,
@@ -163,7 +164,7 @@ import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
 import { acquireGeminiActivityUse } from "./geminiActivityCleanupService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
-import { closeAppBrowserAfterTask, closeIdleProviderChrome, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGrokBrowser, getOrLaunchProviderBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
+import { closeAppBrowserAfterTask, closeIdleProviderChrome, ensureGeminiDesktopViewport, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGrokBrowser, getOrLaunchProviderBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
 import { musicErrorDetails, musicUploadDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
@@ -996,10 +997,24 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       previousText = latestText;
     }
     if (!isBusy && Date.now() >= activityDeadline) break;
+    if (
+      !isBusy &&
+      responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR &&
+      Date.now() - startedAt >= CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_TURN_WAIT_MS * 2 &&
+      (!CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CHAT_URL.test(page.url()) ||
+        (count === 0 &&
+          !(await page
+            .locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_TURN_SELECTOR)
+            .filter({ visible: true })
+            .count()
+            .catch(() => 1))))
+    )
+      break;
     if (!isBusy && count === initialCount && !regenerationObserved && _.isEmpty(responseCandidates) && Date.now() - startedAt >= CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS) break;
     await delayAsync(isBusy ? CHAT_SPEED.BUSY_POLL_MS : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
   }
   appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_TIMEOUT_LOG(lastResponseCount, initialCount, lastCandidateLength, lastBusyState, lastIdentityMatch, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
+  await page.screenshot({ path: path.join(getLogsDirectory(), CHAT_SPEED.TIMEOUT_SHOT), type: "jpeg", quality: 60, fullPage: false }).catch(_.noop);
   await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_TIMEOUT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseCount: lastResponseCount, candidateChars: lastCandidateLength, busy: lastBusyState, identityMatch: lastIdentityMatch, elapsedMs: Date.now() - startedAt });
   const timeoutError = new Error(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE);
   Object.defineProperty(timeoutError, MOTION_TEXT_ROOMPAGE, { value: page, enumerable: false });
@@ -1166,6 +1181,38 @@ const waitForSubmissionConfirmation = async (input: Locator, page: Page, respons
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
   }
   return false;
+};
+const waitGeminiUserTurn = async (page: Page, before: number, signal?: AbortSignal): Promise<boolean> => {
+  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_TURN_WAIT_MS;
+  while (Date.now() < deadline) {
+    throwIfPlanningCancelled(signal);
+    if (
+      (await page
+        .locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_TURN_SELECTOR)
+        .count()
+        .catch(() => 0)) > before
+    )
+      return true;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
+  }
+  return false;
+};
+const geminiChatVanished = async (request: ChatPlanningRoomIdentity): Promise<boolean> => {
+  if (request.provider !== AiPlanningFallbackProvider.GeminiChat) return false;
+  const page = getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
+  if (!page || page.isClosed()) return false;
+  if (!CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CHAT_URL.test(page.url())) return true;
+  const turns = await page
+    .locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_TURN_SELECTOR)
+    .filter({ visible: true })
+    .count()
+    .catch(() => 1);
+  const answers = await page
+    .locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR)
+    .filter({ visible: true })
+    .count()
+    .catch(() => 1);
+  return turns === 0 && answers === 0;
 };
 const composerGates = new Map<string, Promise<void>>();
 const withComposerGate = async <T>(key: string, signal: AbortSignal | undefined, fn: () => Promise<T>): Promise<T> => {
@@ -1430,6 +1477,8 @@ const submitPrompt = async (
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_INPUT_FAILED, { runId: diagnosticRunId, stage: artifactType, status: String(selectorMatches), ...musicErrorDetails(error) });
         throw new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_NOT_FOUND_DETAIL(page.url(), title, selectorMatches, _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error))));
       }
+      if (isGemini) await ensureGeminiDesktopViewport(page);
+      if (isGemini && !CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CHAT_URL.test(page.url())) await page.waitForLoadState(SOURCE_TEXT_NETWORKIDLE, { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SETTLE_MS }).catch(_.noop);
       appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_INPUT_READY(Date.now() - uiReadyStartedAt));
       let initialResponseSnapshots: ChatResponseSnapshot[] = [];
       let initialCount = 0;
@@ -1572,6 +1621,7 @@ const submitPrompt = async (
             throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
           }
           {
+            let userTurnsBefore = 0;
             const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
             const semanticSendButton = page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN }).filter({ visible: true }).last();
             let sendButton = await waitForSendButtonReady([configuredSendButton, semanticSendButton], _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, page, busySelector);
@@ -1589,6 +1639,12 @@ const submitPrompt = async (
                 else await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
                 if (!(await sendButton.isEnabled())) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
               }
+              userTurnsBefore = isGemini
+                ? await page
+                    .locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_TURN_SELECTOR)
+                    .count()
+                    .catch(() => 0)
+                : 0;
               markPendingSubmission();
               await clickSendButton(page, sendButton, signal);
               markRoomTiming(page, CHAT_SPEED.MARK.SENT);
@@ -1605,6 +1661,13 @@ const submitPrompt = async (
               await input.focus().catch(() => undefined);
               await input.press(ST.SOURCE_TEXT_ENTER).catch(() => undefined);
               submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
+            }
+            if (isGemini && submissionConfirmed && !(await waitGeminiUserTurn(page, userTurnsBefore, signal))) {
+              appLog(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESEND_LOG);
+              await writeComposer(page, input, submittedPrompt, responseDirective, requestId, signal);
+              await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
+              await clickSendButton(page, page.locator(sendSelector).filter({ visible: true }).last(), signal);
+              submissionConfirmed = (await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal)) && (await waitGeminiUserTurn(page, userTurnsBefore, signal));
             }
             await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: submissionConfirmed ? SOURCE_TEXT_CONFIRMED : SOURCE_TEXT_UNCONFIRMED, attachmentCount: attachments.length });
             if (submission?.pending && new URL(submission.pending.url).origin === new URL(page.url()).origin) submission.pending.url = page.url();
@@ -2361,6 +2424,14 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
           roomRetryClicks = 0;
           if (request.restoreContext) request.prompt = request.restoreContext();
           if (request.submission) Object.assign(request.submission, { attempted: false, completed: false, abandoned: false, pending: undefined });
+          continue;
+        }
+        if (request.submission?.attempted && !request.submission.completed && (await geminiChatVanished(request))) {
+          request.onRecovery?.(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_VANISHED_LOG);
+          appLog(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_VANISHED_LOG);
+          pendingRoomResponses.delete(roomKey);
+          if (request.restoreContext) request.prompt = request.restoreContext();
+          Object.assign(request.submission, { attempted: false, completed: false, abandoned: false, pending: undefined });
           continue;
         }
         if (request.submission?.attempted && !request.submission.completed) {

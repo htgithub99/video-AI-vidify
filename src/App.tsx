@@ -1,6 +1,6 @@
 import { FeatureWorkspace } from "./components/common/FeatureWorkspace.js";
 import { loadLowSpec } from "./lib/lowSpecClient.js";
-import { AutoVideoGenerator, CinematicFilmStudio, DashboardView, FlowVideoCreator, MotionVideoCreator, ReupVideoCreator, MusicCreator, MusicMixer, ProjectList, SettingsView, ShortsExtractor, VideoExporter, ProxyManager } from "./features/screens.js";
+import { AutoVideoGenerator, CinematicFilmStudio, DashboardView, FlowVideoCreator, MotionVideoCreator, ReupVideoCreator, BornasVideoCreator, MusicCreator, MusicMixer, ProjectList, SettingsView, ShortsExtractor, VideoExporter, ProxyManager } from "./features/screens.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_86,
   SOURCE_TEMPLATE_SYMBOL_75,
@@ -496,6 +496,9 @@ export default function App() {
           </FeatureWorkspace>
           <FeatureWorkspace feature={AppTab.REUP_VIDEO} active={activeTab === AppTab.REUP_VIDEO} language={currentLang}>
             <ReupVideoCreator currentLang={currentLang} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.BORNAS_VIDEO} active={activeTab === AppTab.BORNAS_VIDEO} language={currentLang}>
+            <BornasVideoCreator currentLang={currentLang} />
           </FeatureWorkspace>
           <FeatureWorkspace feature={AppTab.SETTINGS} active={activeTab === AppTab.SETTINGS} language={currentLang}>
             <SettingsView currentLang={currentLang} isLoading={isLoadingProjects} />

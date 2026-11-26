@@ -1,0 +1,12 @@
+{
+  "actor": "^(sh|qingGeneral|samFall|bust)",
+  "facing": { "qingSoldier": "l", "qingFlee": "l", "refugees": "l" },
+  "faceFix": {
+    "bustArmor": { "l": 0.33, "r": 0.67, "t": 0.02, "b": 0.66 },
+    "samFall": { "l": 0.04, "r": 0.24, "t": 0.3, "b": 0.55 },
+    "shBrothers_0": { "l": 0, "r": 1, "t": 0, "b": 0.16 },
+    "shBrothers_2": { "l": 0, "r": 1, "t": 0, "b": 0.16 },
+    "shTeacher_2": { "l": 0, "r": 1, "t": 0, "b": 0.3 },
+    "refugees": { "l": 0, "r": 1, "t": 0, "b": 0.3 }
+  }
+}

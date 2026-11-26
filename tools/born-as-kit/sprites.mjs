@@ -1,0 +1,48 @@
+import fs from "fs";
+import path from "path";
+const ROOT = process.env.BORN_ASSETS || "./assets";
+const CAT = JSON.parse(fs.readFileSync(path.join(ROOT, "catalog.json"), "utf8"));
+const FACES = fs.existsSync(path.join(ROOT, "faces.json")) ? JSON.parse(fs.readFileSync(path.join(ROOT, "faces.json"), "utf8")) : {};
+const FACING = CAT.facing || {};
+const FACE_FIX = CAT.faceFix || {};
+const ACTOR = new RegExp(CAT.actor || "^$");
+const cache = {};
+const load = (n) => {
+  if (cache[n]) return cache[n];
+  const p = [path.join(ROOT, `${n}.json`), path.join(ROOT, "pose", `${n}.json`)].find((q) => fs.existsSync(q));
+  if (p) return (cache[n] = JSON.parse(fs.readFileSync(p, "utf8")));
+  const png = path.join(ROOT, "png", `${n}.png`);
+  if (!fs.existsSync(png)) throw new Error(`sprite ${n} not found in ${ROOT}`);
+  const b = fs.readFileSync(png), w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+  return (cache[n] = { meta: { x: 0, y: 0, w, h }, body: `<image href="png/${n}.png" width="${w}" height="${h}"/>`, png: true });
+};
+const used = new Set();
+let BOXES = [];
+let MARK = 0;
+export const FACEMAP = () => ({ ...FACES, ...FACE_FIX });
+export const faces = (n) => FACING[n] || "r";
+export const markGroup = (id) => { for (let i = MARK; i < BOXES.length; i++) BOXES[i].grp = id; MARK = BOXES.length; };
+export const takeBoxes = () => { const b = BOXES; BOXES = []; MARK = 0; return b; };
+export const spriteDefs = () => `<svg width="0" height="0" style="position:absolute"><defs>${[...used].map((n) => `<g id="S_${n}">${load(n).body}</g>`).join("")}</defs></svg>`;
+export const sp = (n, x, y, h, o = {}) => {
+  const a = load(n), m = a.meta, s = h / m.h;
+  used.add(n);
+  const ax = o.anchorX ?? 0.5;
+  const flip = o.dir ? o.dir !== faces(n) : !!o.flip;
+  const al = flip ? 1 - ax : ax;
+  const L = x - m.w * s * al, f = FACE_FIX[n] || FACES[n];
+  const fb = f && { l: flip ? L + m.w * s * (1 - f.r) : L + m.w * s * f.l, r: flip ? L + m.w * s * (1 - f.l) : L + m.w * s * f.r, t: y - h + h * f.t, b: y - h + h * f.b };
+  if (!o.noBox) BOXES.push({ n, l: L, r: L + m.w * s, t: y - h, b: y, fb, actor: !o.crowd && ACTOR.test(n), allow: !!o.allow, soft: !!o.soft });
+  const inner = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(flip ? -s : s).toFixed(4)} ${s.toFixed(4)}) translate(${(-(m.x + m.w * ax)).toFixed(1)} ${(-(m.y + m.h)).toFixed(1)})"><use href="#S_${n}"/></g>`;
+  const shadow = o.shadow === false ? "" : `<ellipse cx="${x.toFixed(1)}" cy="${(y - 4).toFixed(1)}" rx="${(m.w * s * 0.42).toFixed(1)}" ry="${(h * 0.035).toFixed(1)}" fill="#120a06" opacity=".35" filter="url(#blur6)"/>`;
+  return `<g ${o.id ? `id="${o.id}"` : ""} ${o.cls ? `class="${o.cls}"` : ""}>${shadow}${inner}</g>`;
+};
+export const pngUsed = () => [...used].filter((n) => load(n).png);
+export const box = (n, x, y, h) => { const m = load(n).meta, s = h / m.h; return { l: x - (m.w * s) / 2, r: x + (m.w * s) / 2, t: y - h, b: y, cx: x, headY: y - h * 0.88 }; };
+export const meta = (n) => load(n).meta;
+export const faceBox = (n, x, y, h, dir, ax = 0.5) => {
+  const m = load(n).meta, s = h / m.h, flip = dir ? dir !== faces(n) : false, al = flip ? 1 - ax : ax, L = x - m.w * s * al, f = FACE_FIX[n] || FACES[n];
+  const body = { l: L, r: L + m.w * s, t: y - h, b: y };
+  const fb = f ? { l: flip ? L + m.w * s * (1 - f.r) : L + m.w * s * f.l, r: flip ? L + m.w * s * (1 - f.l) : L + m.w * s * f.r, t: y - h + h * f.t, b: y - h + h * f.b } : { l: x - h * 0.08, r: x + h * 0.08, t: y - h, b: y - h * 0.82 };
+  return { body, fb };
+};

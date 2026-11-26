@@ -1558,6 +1558,12 @@ const configureFlowDirectVideoSettings = async (page: Page, visualConfig?: Image
   const finalSummary = _.replace(_.defaultTo(await configButton.textContent().catch(() => XRT.EMPTY), XRT.EMPTY), /\s+/g, SRT.SOURCE_TEXT_SYMBOL_52);
   return isFlowVideoConfigSummaryMatching(finalSummary, visualConfig);
 };
+export const ensureGeminiDesktopViewport = async (page: Page): Promise<void> => {
+  const target = GEMINI_MODEL_SELECTION_CONFIG.DESKTOP_VIEWPORT;
+  const size = page.viewportSize() || (await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight })).catch(() => null));
+  if (size && size.width >= target.width && size.height >= target.height) return;
+  await page.setViewportSize({ width: Math.max(size?.width || 0, target.width), height: Math.max(size?.height || 0, target.height) }).catch(() => undefined);
+};
 const captureGeminiDomState = (page: Page, state: string): Promise<void> =>
   captureDomDiagnostics(page, state, {
     fileName: GEMINI_DOM_DIAGNOSTICS_CONFIG.FILE_NAME,
@@ -4057,14 +4063,7 @@ const waitForGeminiModelOptionSelected = async (option: Locator): Promise<boolea
   }
   return false;
 };
-const readGeminiOptionLabel = async (option: Locator): Promise<string> => {
-  const labelNode = option.locator(GeminiChatSelector.ModelLabel).first();
-  if ((await labelNode.count().catch(() => 0)) > 0) {
-    const text = _.trim(await labelNode.textContent().catch(() => XRT.EMPTY));
-    if (text) return text;
-  }
-  return _.trim(await option.textContent().catch(() => XRT.EMPTY));
-};
+const readGeminiOptionLabel = async (option: Locator): Promise<string> => _.trim(await option.textContent().catch(() => XRT.EMPTY));
 const findGeminiModelOption = async (menu: Locator, modelRegex: RegExp): Promise<Locator | null> => {
   const options = menu.locator(GeminiChatSelector.ModelOption);
   const optionCount = await options.count();
@@ -4197,6 +4196,7 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
   return false;
 }
 export async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig): Promise<boolean> {
+  await ensureGeminiDesktopViewport(page);
   if (visualConfig?.skipGenerateTypeSelection) {
     const selectedModeChip = page.locator(SOURCE_TEXT_GEM_BUTTON_DATA_TEST_ID_DESELECT).first();
     if (await selectedModeChip.isVisible().catch(() => false)) {
@@ -4802,9 +4802,10 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
             try {
               const imageElement = imgEl as HTMLImageElement;
               const sourceUrl = imageElement.currentSrc ? imageElement.currentSrc : imageElement.src ? imageElement.src : imageElement.getAttribute(SOURCE_BROWSER_TEXT_SRC) ? String(imageElement.getAttribute(SOURCE_BROWSER_TEXT_SRC)) : extractionConfig.emptyValue;
-              if (sourceUrl) {
+              const originalSizeUrl = sourceUrl.replace(new RegExp(extractionConfig.originalSizeUrlPattern), extractionConfig.originalSizeUrlReplacement);
+              for (const candidateUrl of sourceUrl ? [...new Set([originalSizeUrl, sourceUrl])] : []) {
                 try {
-                  const response = await fetch(sourceUrl);
+                  const response = await fetch(candidateUrl);
                   if (response.ok) {
                     const blob = await response.blob();
                     const converted = blob.type.startsWith(RT_SERVER.IMAGE)
@@ -4838,7 +4839,17 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
             }
           },
           {
-            value: { payload: { errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX, emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE, dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR, dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX }, texts: { SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG } },
+            value: {
+              payload: {
+                errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX,
+                emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE,
+                dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR,
+                dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX,
+                originalSizeUrlPattern: GEMINI_MEDIA_EXTRACTION_CONFIG.ORIGINAL_SIZE_URL_PATTERN.source,
+                originalSizeUrlReplacement: GEMINI_MEDIA_EXTRACTION_CONFIG.ORIGINAL_SIZE_URL_REPLACEMENT,
+              },
+              texts: { SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG },
+            },
             texts: { RT_SERVER: { IMAGE: RT_SERVER.IMAGE } },
           },
         )

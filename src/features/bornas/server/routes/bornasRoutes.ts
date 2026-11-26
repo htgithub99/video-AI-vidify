@@ -1,0 +1,16 @@
+import express from "express";
+import { BORNAS_API } from "../../constants/bornasConfig.js";
+import { bornasAnnotateController, bornasApproveController, bornasCancelController, bornasDeleteController, bornasJobsController, bornasRerunController, bornasSaveVideoController, bornasSourceController, bornasStartController, bornasStatusController } from "../controllers/bornasController.js";
+const router = express.Router();
+router.post(BORNAS_API.SOURCE, bornasSourceController);
+router.post(BORNAS_API.START, bornasStartController);
+router.get(BORNAS_API.STATUS, bornasStatusController);
+router.post(BORNAS_API.APPROVE, bornasApproveController);
+router.post(BORNAS_API.RERUN, bornasRerunController);
+router.post(BORNAS_API.CANCEL, bornasCancelController);
+router.get(BORNAS_API.JOBS, bornasJobsController);
+router.post(BORNAS_API.DELETE, bornasDeleteController);
+router.post(BORNAS_API.SAVE_VIDEO, bornasSaveVideoController);
+router.post(BORNAS_API.ANNOTATE, bornasAnnotateController);
+router.get(BORNAS_API.ANNOTATE, bornasAnnotateController);
+export default router;

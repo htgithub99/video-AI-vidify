@@ -662,6 +662,8 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   PAGE_IDLE_TIMEOUT_MS: 180000,
   MIN_IMAGE_DIMENSION_PX: 256,
   IMAGE_READY_POLL_MS: 250,
+  ORIGINAL_SIZE_URL_PATTERN: /^(https:\/\/lh\d+\.googleusercontent\.com\/[^=]+)=[\w-]+$/,
+  ORIGINAL_SIZE_URL_REPLACEMENT: "$1=s0",
   STATES: { EXTRACT_START: "media_extract_start", SOURCE_MISSING: "media_src_missing", URL_DETECTED: "media_url_detected", IMAGE_SUCCESS: "image_extract_success", VIDEO_SUCCESS: "video_extract_success" },
   SOURCE_SELECTOR: "source[src]",
   UNEXPECTED_IMAGE_SELECTOR: ".attachment-container.generated-images img, generated-image img, download-generated-image-button img",
@@ -856,6 +858,7 @@ export const GEMINI_MODEL_SELECTION_CONFIG = {
   SELECTED_CLASS: "selected",
   ACTIVE_ATTRIBUTE: "data-active",
   ACTIVE_VALUE: "true",
+  DESKTOP_VIEWPORT: { width: 1366, height: 900 },
 } as const;
 export const SYSTEM_FETCH_CONFIG = { STREAM_INACTIVITY_TIMEOUT_MS: 90_000, VIDEO_STREAM_INACTIVITY_TIMEOUT_MS: 6 * 60_000, STREAM_HEARTBEAT_MS: 15_000, STREAM_ABORT_REASON_TIMEOUT: "stream_inactivity_timeout", STREAM_ABORT_REASON_CANCELLED: "stream_cancelled", NDJSON_LINE_SEPARATOR: "\n" } as const;
 export const PIPELINE_COMPLETION_CONFIG = {

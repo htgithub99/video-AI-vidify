@@ -1,0 +1,169 @@
+{
+ "lang": "en",
+ "rate_units_per_s": 2.673076923076923,
+ "sentences": 287,
+ "units": 2085,
+ "sentence_seconds": {
+  "p10": 1.12,
+  "p25": 1.5,
+  "median": 2.24,
+  "p75": 3.37,
+  "p90": 4.86
+ },
+ "fragment_share": 0.192,
+ "one_word_share": 0.007,
+ "question_share": 0.042,
+ "exclaim_share": 0.003,
+ "second_person_per_100": 9.5,
+ "past_marker_per_100": 0.72,
+ "digits_per_100": 0.53,
+ "anaphora_share": 0.07,
+ "max_fragment_run": 3,
+ "top_starters": [
+  [
+   "you",
+   47
+  ],
+  [
+   "and",
+   22
+  ],
+  [
+   "he",
+   18
+  ],
+  [
+   "then",
+   17
+  ],
+  [
+   "the",
+   17
+  ],
+  [
+   "your",
+   12
+  ],
+  [
+   "a",
+   10
+  ],
+  [
+   "in",
+   9
+  ],
+  [
+   "but",
+   6
+  ],
+  [
+   "one",
+   6
+  ],
+  [
+   "so",
+   6
+  ],
+  [
+   "no",
+   5
+  ],
+  [
+   "now",
+   5
+  ],
+  [
+   "roba",
+   5
+  ],
+  [
+   "when",
+   4
+  ]
+ ],
+ "top_starters_2": [
+  [
+   "and you",
+   5
+  ],
+  [
+   "then the",
+   4
+  ],
+  [
+   "then he",
+   4
+  ],
+  [
+   "then you",
+   4
+  ],
+  [
+   "and the",
+   3
+  ],
+  [
+   "you take",
+   3
+  ],
+  [
+   "in the",
+   3
+  ],
+  [
+   "your dad",
+   2
+  ],
+  [
+   "and he",
+   2
+  ],
+  [
+   "a year",
+   2
+  ],
+  [
+   "you drag",
+   2
+  ],
+  [
+   "now he's",
+   2
+  ],
+  [
+   "and your",
+   2
+  ],
+  [
+   "it's a",
+   2
+  ],
+  [
+   "one night",
+   2
+  ]
+ ],
+ "repeated_phrases": [
+  [
+   "you take the",
+   3
+  ],
+  [
+   "task force 141",
+   3
+  ],
+  [
+   "your own general",
+   3
+  ],
+  [
+   "the man behind",
+   3
+  ]
+ ],
+ "measured_rate_units_per_s": 2.67,
+ "pause_seconds": {
+  "median": 0.58,
+  "p90": 1.16
+ }
+}

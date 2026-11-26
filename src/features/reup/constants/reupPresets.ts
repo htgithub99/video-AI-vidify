@@ -36,7 +36,6 @@ export const REUP_BASE_SETTINGS: ReupSettings = {
   scriptAi: AI_DEFAULT,
 };
 const BASE_RULES: ReupPresetRules = {
-  vertical: "framed",
   brandColor: "#ff3b30",
   wordsPerSecond: [1.9, 2.3],
   hook: true,

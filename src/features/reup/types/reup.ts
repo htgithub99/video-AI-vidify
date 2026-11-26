@@ -4,7 +4,6 @@ export type ReupPresetId = "A" | "C" | "D" | "F" | "G" | "H";
 export type ReupLegacyPresetId = "B" | "E";
 export type ReupPresetStage = "ready" | "beta" | "later";
 export type ReupAspect = "16:9" | "9:16";
-export type ReupVertical = "blur" | "framed";
 export type ReupLanguage = "vi" | "en" | "ja" | "ko";
 export type ReupQuality = "auto" | "draft" | "standard" | "high" | "ultra";
 export type ReupHighlights = "off" | "few" | "normal";
@@ -82,7 +81,6 @@ export interface ReupSettings {
   scriptAi: ReupAiChoice;
 }
 export interface ReupPresetRules {
-  vertical: ReupVertical;
   brandColor: string;
   wordsPerSecond: [number, number];
   hook: boolean;

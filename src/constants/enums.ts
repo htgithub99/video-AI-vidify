@@ -122,6 +122,7 @@ export enum AppTab {
   VIDEO_EXPORT = "video-export",
   MOTION_VIDEO = "motion-video",
   REUP_VIDEO = "reup-video",
+  BORNAS_VIDEO = "bornas-video",
   SETTINGS = "settings",
   DASHBOARD = "dashboard",
 }
