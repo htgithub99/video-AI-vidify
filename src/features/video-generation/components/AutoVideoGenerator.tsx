@@ -50,6 +50,7 @@ import { genreLabels } from "../../../constants/data";
 import { AutoVideoStudioSkeleton } from "../../../components/ui/Skeleton";
 import { ProgressLogContext } from "../../../constants/progressLog";
 import { normalizeVideoModelSettings } from "../../../services/videoModelCapabilityService";
+import { StudioDeleteConfirm, useStudioDeleteConfirm } from "../../../components/common/StudioDeleteConfirm.js";
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
   projects: VideoProject[];
@@ -63,6 +64,7 @@ interface AutoVideoGeneratorProps {
 }
 export default function AutoVideoGenerator({ currentLang, projects, selectedProjectId, onSelectProject: _onSelectProject, onUpdateProject, theme = AppTheme.DARK, cinematicMode = false, CinematicSetupSection }: AutoVideoGeneratorProps) {
   const T = useMemo(() => getAutoVideoTexts(currentLang), [currentLang]);
+  const confirmDel = useStudioDeleteConfirm();
   const mediaMixTexts = useMemo(() => _.get(MEDIA_MIX_TEXTS, currentLang, MEDIA_MIX_TEXTS.vi), [currentLang]);
   const splitLabelMap = useMemo(() => getSplitLabels(T), [T]);
   const stateScope = cinematicMode ? CINEMATIC_CONFIG.STATE_SCOPE : SOURCE_TEXT_AUTO;
@@ -454,8 +456,21 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
   return (
     <StudioPage>
       <StudioCanvas>
+        <StudioDeleteConfirm request={confirmDel.request} onClose={confirmDel.close} lang={currentLang} />
         <StudioHeader icon={Sparkles} title={cinematicMode ? STUDIO_TEXTS[currentLang].CINEMATIC_TITLE : STUDIO_TEXTS[currentLang].AUTO_TITLE} description={cinematicMode ? STUDIO_TEXTS[currentLang].CINEMATIC_DESCRIPTION : STUDIO_TEXTS[currentLang].AUTO_DESCRIPTION} />
-        {!cinematicMode && <PresetSection presets={presets} selectedPresetId={selectedPresetId} presetNameInputState={presetNameInputState} setPresetNameInputState={setPresetNameInputState} handleSavePreset={handleSavePreset} handleApplyPreset={handleApplyPreset} handleDeletePreset={handleDeletePreset} T={T} truncateWords={truncateWords} />}
+        {!cinematicMode && (
+          <PresetSection
+            presets={presets}
+            selectedPresetId={selectedPresetId}
+            presetNameInputState={presetNameInputState}
+            setPresetNameInputState={setPresetNameInputState}
+            handleSavePreset={handleSavePreset}
+            handleApplyPreset={handleApplyPreset}
+            handleDeletePreset={(id: string) => confirmDel.ask({ names: [presets.find((p) => p.id === id)?.name || id], message: T.deletePresetConfirm, run: () => handleDeletePreset(id) })}
+            T={T}
+            truncateWords={truncateWords}
+          />
+        )}
         <div className={cn(AV.GRID)}>
           <div className={cn(AV.MAIN_COLUMN)}>
             {cinematicMode && CinematicSetupSection ? (

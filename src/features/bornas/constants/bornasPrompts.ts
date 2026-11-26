@@ -1,7 +1,18 @@
 import { BORNAS_LIMITS, BORNAS_REVIEW_CONTEXT, BORNAS_SAME_PERSON, BORNAS_STYLE_LINE } from "./bornasConfig.js";
 import type { BornasAnalysis, BornasBackground, BornasLine, BornasScript, BornasSprite, BornasTopic } from "../types/bornas.js";
-export const BORNAS_ARTIFACT = { ANALYZE: "bornas-analyze", SCRIPTS: "bornas-scripts", STYLE: "bornas-style", TRIM: "bornas-trim", MATCH: "bornas-match", ASSETS: "bornas-assets", SPRITE_REVIEW: "bornas-sprite-review", SNAP_REVIEW: "bornas-snap-review", BG_MEASURE: "bornas-bg-measure", SHOTS: "bornas-shots", FACTS: "bornas-facts" } as const;
+export const BORNAS_ARTIFACT = { ANALYZE: "bornas-analyze", SCRIPTS: "bornas-scripts", STYLE: "bornas-style", TRIM: "bornas-trim", MATCH: "bornas-match", ASSETS: "bornas-assets", SPRITE_REVIEW: "bornas-sprite-review", SNAP_REVIEW: "bornas-snap-review", BG_MEASURE: "bornas-bg-measure", SHOTS: "bornas-shots", FACTS: "bornas-facts", REPLACE: "bornas-replace" } as const;
 const LANG = { vi: "Vietnamese", en: "English" } as const;
+const SUBJECT: Record<BornasTopic, string> = {
+  world: "each script follows a different famous or controversial person from a different country and era",
+  ww: "each script follows a different famous or controversial figure (commander, soldier, pilot, spy, leader) in a different battle or campaign of WW1 or WW2 (e.g. Verdun, the Somme, Gallipoli, Stalingrad, Midway, Normandy); never two scripts in the same battle or about the same side's same unit",
+  ancient: "each script follows a different person from a different civilisation or war of the ancient world",
+  medieval: "each script follows a different person from a different kingdom, crusade or campaign of the Middle Ages",
+  eastasia: "each script follows a different person from a different East Asian country, dynasty or war",
+  vietnam: "each script follows a different Vietnamese historical figure from a different dynasty, uprising or war",
+  modern: "each script follows a different modern job, army or famous modern person in a different country",
+  game: "each script is set in a different original game world of a different genre (fantasy RPG, sci-fi shooter, survival, racing…) with its own original main character; no real game titles or characters",
+  wildwest: "each script follows a different outlaw, lawman, scout or pioneer of the American frontier, each tied to a different place and event",
+};
 const TOPIC: Record<BornasTopic, string> = {
   world: "world history (any era or country: ancient, medieval, Asian dynasties, world wars, modern history)",
   ww: "World War I and World War II",
@@ -32,6 +43,7 @@ export const BORNAS_PROMPT = {
       `Narration card (follow it closely): ${a.analysis.narration}`,
       `On-screen text habits: ${a.analysis.texts}`,
       a.avoid.length ? `Already made on this channel, do not repeat these subjects: ${a.avoid.join("; ")}.` : "",
+      `Subjects: ${SUBJECT[a.topic]}. All ${a.count} scripts must be about clearly different people and different events; the "hero" field names that person.`,
       "Every script: a different real person or a clearly typical person of the topic, facts checked and dated (say when sources disagree), second person, present tense, a hook with 3 shocking beats, then the turn, then life in order with each stage opened by a time or place, 2–3 planted details each called back once, a one-line verdict, a recap, a closing question for the comments. Show actions, never name feelings. Violence only as falls or silhouettes, never gore. Never invent quotes, vows, plans, motives, numbers or comparisons: only events, words and numbers that sources record.",
       `${a.rhythm} Write numbers and years in words in "text" so the voice reads them; put digits only in "screen".`,
       'For each line: "screen" = the on-screen text for that moment (an age like "16 TUỔI", a place and year, a name, a number) or "" when none; "sub" = an optional small second line; "kind" = "tag" (age/time, corner), "plate" (place, title, fact), "label" (a person\'s name with an arrow) or "none"; "idea" = what the picture shows (who, doing what, where), concrete; "pause" = true on the last line of the hook and of each chapter.',
@@ -40,6 +52,15 @@ export const BORNAS_PROMPT = {
     ]
       .filter(Boolean)
       .join("\n\n"),
+  REPLACE: (scripts: BornasScript[], replace: number[], topic: BornasTopic, avoid: string[]) =>
+    [
+      `These video scripts repeat subjects. Write new scripts to replace scripts ${replace.map((i) => `#${i + 1}`).join(", ")}, about people who are not in this list: ${avoid.join("; ")}.`,
+      `Subjects: ${SUBJECT[topic]}. Keep the same language, style, length and line fields as the others.`,
+      `Scripts:\n${JSON.stringify(scripts.map((s, i) => ({ n: i + 1, title: s.title, hero: s.hero })))}`,
+      `Example of the full shape:\n${JSON.stringify(scripts[0])}`,
+      'JSON: {"scripts": [full scripts in the same shape, one per replaced number, in order]}',
+      JSON_ONLY,
+    ].join("\n\n"),
   STYLE: (script: BornasScript, issues: string[], rhythm: string) =>
     [
       `This script does not match the sample's narration rhythm. Measured problems: ${issues.join("; ")}.`,

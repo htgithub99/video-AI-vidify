@@ -14,6 +14,7 @@ export interface BornasChannel {
   count: number;
   seconds: number;
   review: boolean;
+  sample?: string;
 }
 export interface BornasAiSettings {
   mainAi: ReupAiChoice;
@@ -181,5 +182,5 @@ export interface BornasJobSummary {
   channelName: string;
   status: BornasJobStatus;
   updatedAt: number;
-  videos: Pick<BornasVideo, "index" | "title" | "status" | "seconds" | "outputUrl" | "previewUrl" | "sheetUrl">[];
+  videos: (Pick<BornasVideo, "index" | "title" | "status" | "seconds" | "outputUrl" | "previewUrl" | "sheetUrl"> & { sizeBytes?: number })[];
 }

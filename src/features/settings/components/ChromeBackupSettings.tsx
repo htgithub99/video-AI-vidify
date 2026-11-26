@@ -14,6 +14,7 @@ import { CHROME_MANAGER_UI as U } from "../../../constants/chromeManagerUi.js";
 import { AI_AVAILABILITY as A } from "../../../constants/aiAvailability.js";
 import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../../../constants/cinematicConstants.js";
 import type { AiPlanningFallbackProvider } from "../../../types.js";
+import { StudioDeleteConfirm, useStudioDeleteConfirm } from "../../../components/common/StudioDeleteConfirm.js";
 type ChromeItem = { id: string; name: string; ready: boolean; port?: number };
 type ChainRoute = { provider: string; model: string; enabled: boolean };
 type Availability = { chromeId: string; chromeName: string; provider: string; kind: string; kindLabel: string; untilText: string; notice: string };
@@ -25,6 +26,7 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
   const lang = language === C.EN ? C.EN : C.VI;
   const M = C.MANAGER;
   const T = U.TEXT;
+  const confirmDel = useStudioDeleteConfirm();
   const [settings, setSettings] = useState<Settings>();
   const [pending, setPending] = useState<Task | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -235,7 +237,8 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
                       isLoading={isPending(U.KEY.REMOVE(chrome.id))}
                       title={M.REMOVE[lang]}
                       aria-label={M.REMOVE[lang]}
-                      onClick={() => window.confirm(M.CONFIRM_REMOVE[lang]) && void send({ keys: [U.KEY.REMOVE(chrome.id)], label: T.ACTIVITY.REMOVE[lang](chrome.name) }, C.ITEM_API(chrome.id), C.DELETE)}>
+                      onClick={() => confirmDel.ask({ names: [chrome.name], message: M.CONFIRM_REMOVE[lang], run: () => send({ keys: [U.KEY.REMOVE(chrome.id)], label: T.ACTIVITY.REMOVE[lang](chrome.name) }, C.ITEM_API(chrome.id), C.DELETE) })}
+                    >
                       <Trash2 className={U.BUTTON_ICON} />
                     </Button>
                   )}
@@ -270,7 +273,8 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
                 setOverIndex(null);
               }}
               onDrop={(event) => dropOn(event, index)}
-              className={cn(U.CHAIN_ROW, isPending(U.KEY.CHAIN(route.provider)) && BUTTON_CLASS_NAME.LOADING, dragIndex === index && U.CHAIN_DRAGGING, overIndex === index && dragIndex !== index && U.CHAIN_OVER, !route.enabled && U.CHAIN_OFF)}>
+              className={cn(U.CHAIN_ROW, isPending(U.KEY.CHAIN(route.provider)) && BUTTON_CLASS_NAME.LOADING, dragIndex === index && U.CHAIN_DRAGGING, overIndex === index && dragIndex !== index && U.CHAIN_OVER, !route.enabled && U.CHAIN_OFF)}
+            >
               <span className={U.HANDLE} title={T.DRAG[lang]}>
                 {isPending(U.KEY.CHAIN(route.provider)) ? <LoadingIcon className={cn(U.HANDLE_ICON, U.SPIN)} /> : <GripVertical className={U.HANDLE_ICON} />}
               </span>
@@ -285,7 +289,8 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
                     chain.map((item) => (item.provider === route.provider ? { ...item, model: event.target.value } : item)),
                     route.provider,
                   )
-                }>
+                }
+              >
                 {modelOptions(route).map((option) => (
                   <option key={option.value || U.SITE_DEFAULT} value={option.value}>
                     {option.label}
@@ -303,7 +308,8 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
                     chain.map((item) => (item.provider === route.provider ? { ...item, enabled: !item.enabled } : item)),
                     route.provider,
                   )
-                }>
+                }
+              >
                 <ToggleIndicator checked={route.enabled} />
               </Button>
             </div>
@@ -348,6 +354,7 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
           {settings.error}
         </p>
       )}
+      <StudioDeleteConfirm request={confirmDel.request} onClose={confirmDel.close} lang={lang} />
     </StudioCard>
   );
 };

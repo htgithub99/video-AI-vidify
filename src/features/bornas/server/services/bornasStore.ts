@@ -98,3 +98,38 @@ export const deleteBornasJobs = async (ids: unknown): Promise<OutputDeleteResult
   const result = await deleteOutputEntries(bornasRoot(), gone);
   return { freedBytes: result.freedBytes, failed: [...running, ...result.failed] };
 };
+export const deleteBornasVideos = async (items: unknown): Promise<OutputDeleteResult> => {
+  const list = (Array.isArray(items) ? items : []).map((it) => ({ jobId: _.toString(_.get(it, "jobId")), video: Number(_.get(it, "video")) })).filter((it) => ID_RE.test(it.jobId) && Number.isInteger(it.video));
+  const failed: string[] = [];
+  const emptyJobs: string[] = [];
+  let freedBytes = 0;
+  for (const [jobId, group] of Object.entries(_.groupBy(list, "jobId"))) {
+    const job = getBornasJob(jobId);
+    if (!job || job.status === "running") {
+      failed.push(...group.map((it) => `${jobId}:${it.video}`));
+      continue;
+    }
+    for (const it of group) {
+      const video = job.videos.find((v) => v.index === it.video);
+      if (!video) continue;
+      for (const file of _.compact([video.outputFile, video.outputFile && path.join(path.dirname(video.outputFile), BORNAS_DIR.PREVIEW)])) {
+        try {
+          if (fs.existsSync(file)) {
+            freedBytes += fs.statSync(file).size;
+            fs.rmSync(file, { force: true });
+          }
+        } catch {
+          failed.push(`${jobId}:${it.video}`);
+        }
+      }
+      Object.assign(video, { outputFile: undefined, outputUrl: undefined, previewUrl: undefined });
+    }
+    if (!job.videos.some((v) => v.outputUrl)) emptyJobs.push(jobId);
+    else saveBornasJob(job);
+  }
+  if (emptyJobs.length) {
+    const res = await deleteBornasJobs(emptyJobs);
+    freedBytes += res.freedBytes || 0;
+  }
+  return { freedBytes, failed };
+};

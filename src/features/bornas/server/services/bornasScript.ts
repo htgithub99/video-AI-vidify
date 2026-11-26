@@ -61,19 +61,42 @@ const voiceRate = (job: BornasJob): number => {
   const [w, s] = done.reduce(([a, b], [c, d]) => [a + c, b + d], [0, 0]);
   return s > 20 ? w / s : BORNAS_LIMITS.WORDS_PER_SECOND;
 };
+const heroTokens = (hero: string): string[] =>
+  _.deburr(hero.replace(/\([^)]*\)/g, " "))
+    .toLowerCase()
+    .replace(/đ/g, "d")
+    .split(/[^a-z]+/)
+    .filter((w) => w.length >= 3 && !(BORNAS_LIMITS.HERO_STOP as readonly string[]).includes(w));
+const sameHero = (a: string, b: string): boolean => {
+  const x = heroTokens(a),
+    y = heroTokens(b);
+  if (!x.length || !y.length) return false;
+  const shared = x.filter((w) => y.includes(w)).length;
+  return shared / Math.min(x.length, y.length) >= BORNAS_LIMITS.HERO_SAME;
+};
+const repeatedSubjects = (scripts: BornasScript[], past: string[]): number[] => scripts.flatMap((s, i) => (past.some((p) => sameHero(s.hero, p)) || scripts.slice(0, i).some((o) => sameHero(s.hero, o.hero)) ? [i] : []));
 export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: AbortSignal): Promise<BornasScript[]> => {
-  const avoid = _.uniq(
-    listBornasJobs(60)
-      .filter((p) => p.id !== job.id && p.channel.id === job.channel.id)
-      .flatMap((p) => (p.scripts || []).map((s) => s.title)),
-  ).slice(0, 40);
+  const past = listBornasJobs(60)
+    .filter((p) => p.id !== job.id && p.channel.id === job.channel.id)
+    .flatMap((p) => p.scripts || []);
+  const avoid = _.uniq(past.map((s) => `${s.hero}: ${s.title}`)).slice(0, 40);
+  const pastHeroes = _.uniq(past.map((s) => s.hero));
   log(BORNAS_LOG.SCRIPTS(job.channel.count));
   const exec = reupExec(job.ai.mainAi);
   const rate = voiceRate(job);
   const rhythm = rhythmOf(readJson<Profile>(bornasKit(SAMPLE_PROFILE), { sentence_seconds: { median: 2.24, p90: 4.86 }, fragment_share: 0.19, question_share: 0.04, second_person_per_100: 9.5 }), rate);
   const raw = await runMotionAi(BORNAS_PROMPT.SCRIPTS({ count: job.channel.count, topic: job.channel.topic, language: job.channel.language, seconds: job.channel.seconds, rate, rhythm, analysis: job.analysis!, avoid, channel: job.channel.name }), BORNAS_ARTIFACT.SCRIPTS, exec, signal, (line) => line && log(line));
-  const scripts: BornasScript[] = _.compact((Array.isArray(raw?.scripts) ? (raw.scripts as unknown[]) : []).map(cleanBornasScript)).slice(0, job.channel.count);
+  let scripts: BornasScript[] = _.compact((Array.isArray(raw?.scripts) ? (raw.scripts as unknown[]) : []).map(cleanBornasScript)).slice(0, job.channel.count);
   if (!scripts.length) throw new Error(BORNAS_ERROR.NO_SCRIPTS);
+  const repeats = repeatedSubjects(scripts, pastHeroes);
+  if (repeats.length) {
+    log(BORNAS_LOG.SCRIPT_REPEATS(repeats.map((i) => scripts[i].hero)), "warn");
+    const fresh = await runMotionAi(BORNAS_PROMPT.REPLACE(scripts, repeats, job.channel.topic, [...pastHeroes, ...scripts.map((s) => s.hero)]), BORNAS_ARTIFACT.REPLACE, exec, signal, (line) => line && log(line)).catch(() => undefined);
+    const swaps = _.compact((Array.isArray(fresh?.scripts) ? (fresh.scripts as unknown[]) : []).map(cleanBornasScript));
+    scripts = scripts.map((s, i) => (repeats.includes(i) && swaps[repeats.indexOf(i)] ? swaps[repeats.indexOf(i)] : s));
+    const left = repeatedSubjects(scripts, pastHeroes);
+    if (left.length) log(BORNAS_LOG.SCRIPT_REPEATS(left.map((i) => scripts[i].hero)), "warn");
+  }
   const max = Math.round(job.channel.seconds * rate * 1.1);
   const out: BornasScript[] = [];
   for (let script of scripts) {

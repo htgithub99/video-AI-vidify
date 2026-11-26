@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import { PauseCircle, Plus, Radio, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.js";
+import { StudioDeleteConfirm, useStudioDeleteConfirm } from "../../../components/common/StudioDeleteConfirm.js";
 import { StudioCard, StudioFieldset } from "../../../components/ui/Studio.js";
 import { MOTION_VOICE_CHANNEL_TEXT } from "../../../constants/motionVoice.js";
 import { cn } from "../../../lib/utils.js";
@@ -16,6 +17,7 @@ export const BornasChannelCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = 
   const { text, channel, channels, patchChannel } = studio;
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[ui];
   const locked = studio.running || studio.busy;
+  const confirmDel = useStudioDeleteConfirm();
   if (!channel) return null;
   return (
     <StudioCard className={S.CARD}>
@@ -25,7 +27,7 @@ export const BornasChannelCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = 
         title={text.CHANNELS}
         hint={text.CHANNEL_SAVED}
         right={
-          <Button variant="unstyled" className={B.CHANNEL_DELETE} disabled={locked} onClick={() => window.confirm(text.CHANNEL_DELETE_CONFIRM(channel.name)) && studio.removeChannel(channel.id)}>
+          <Button variant="unstyled" className={B.CHANNEL_DELETE} disabled={locked} onClick={() => confirmDel.ask({ names: [channel.name], message: text.CHANNEL_DELETE_CONFIRM(channel.name), run: () => studio.removeChannel(channel.id) })}>
             <Trash2 className={S.ICON} />
             <span>{text.CHANNEL_DELETE}</span>
           </Button>
@@ -55,6 +57,7 @@ export const BornasChannelCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = 
           </MotionSettingsGroup>
         </StudioFieldset>
       </div>
+      <StudioDeleteConfirm request={confirmDel.request} onClose={confirmDel.close} lang={ui} />
     </StudioCard>
   );
 };

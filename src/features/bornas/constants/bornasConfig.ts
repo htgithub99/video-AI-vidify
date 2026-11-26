@@ -3,7 +3,7 @@ import type { ReupAiChoice } from "../../reup/types/reup.js";
 import type { BornasAiSettings, BornasChannel, BornasStepId, BornasTopic } from "../types/bornas.js";
 export const BORNAS_STEPS: readonly BornasStepId[] = ["sample", "script", "voice", "assets", "shots", "build", "render"];
 export const BORNAS_VIDEO_STEPS: readonly BornasStepId[] = ["voice", "assets", "shots", "build", "render"];
-export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate" } as const;
+export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate", DELETE_VIDEOS: "/delete-videos" } as const;
 export const BORNAS_URL = {
   SOURCE: "/api/bornas/source",
   START: "/api/bornas/start",
@@ -14,9 +14,10 @@ export const BORNAS_URL = {
   JOBS: "/api/bornas/jobs",
   DELETE: "/api/bornas/delete",
   SAVE_VIDEO: "/api/bornas/save-video",
+  DELETE_VIDEOS: "/api/bornas/delete-videos",
 } as const;
 export const BORNAS_STORAGE = { STATE: "bornas_state_v1" } as const;
-export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", VOICE: "voice", SHOTS: "shots" } as const;
+export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4" } as const;
 export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = {
   world: ["ancient", "medieval", "eastasia", "ww", "modern"],
   ww: ["ww"],
@@ -64,6 +65,8 @@ export const BORNAS_TOPICS = Object.keys(BORNAS_TOPIC_LIBS) as BornasTopic[];
 export const BORNAS_LENGTHS = [60, 120, 180, 300, 480, 600] as const;
 export const BORNAS_COUNTS = [1, 2, 3, 4, 5, 6, 8, 10] as const;
 export const BORNAS_LIMITS = {
+  HERO_SAME: 0.6,
+  HERO_STOP: ["the", "and", "von", "van", "der", "del", "tuoi", "age", "ages", "years", "nam"],
   POLL_MS: 2500,
   LOGS: 1500,
   SHEETS: 4,

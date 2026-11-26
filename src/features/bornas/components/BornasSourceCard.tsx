@@ -17,6 +17,7 @@ export const BornasSourceCard: FC<{ studio: BornasStudio }> = ({ studio }) => {
         n="02"
         icon={Film}
         title={text.STEP_SOURCE}
+        hint={studio.channel ? text.SOURCE_HINT(studio.channel.name, studio.channel.count) : undefined}
         right={
           <Button variant="unstyled" onClick={() => void studio.pickSource()} disabled={locked} className={S.LINK_BUTTON}>
             {text.PICK_FILE}
@@ -53,7 +54,7 @@ export const BornasSourceCard: FC<{ studio: BornasStudio }> = ({ studio }) => {
                 </ActionBtn>
               )}
               {studio.resumeStep && (
-                <ActionBtn icon={Play} onClick={() => void studio.resume()} disabled={studio.busy}>
+                <ActionBtn icon={Play} onClick={() => void studio.resume()} disabled={studio.busy} title={text.RESUME_HINT}>
                   {text.RESUME}
                 </ActionBtn>
               )}

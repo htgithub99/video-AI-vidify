@@ -54,6 +54,7 @@ export const BORNAS_LOG = {
   LIB_ADD: (n: number, lib: string) => `Thêm ${n} hình vào kho ${lib}`,
   ANN_SPRITES: (n: number) => `Đo và duyệt ${n} hình (code đo trước, AI xem tờ ghép)`,
   ANN_SPRITES_DONE: (n: number, bad: number) => `Đã đánh dấu ${n} hình${bad ? ` · ${bad} hình hỏng (icon, vẽ đôi, bị cắt)` : ""}`,
+  SCRIPT_REPEATS: (heroes: string[]) => `Kịch bản trùng nhân vật, viết lại: ${heroes.join(", ")}`,
   SCRIPT_FACTS: (n: number) => (n < 0 ? "Chưa soát được sử liệu, giữ kịch bản" : n ? `Soát sử liệu: sửa ${n} câu sai hoặc bịa` : "Soát sử liệu: không có câu sai"),
   REDRAW: (names: string[]) => `Vẽ lại 1 lần ${names.length} hình hỏng: ${names.slice(0, 6).join(", ")}`,
   REDRAW_OK: (ok: number, all: number) => `Vẽ lại dùng được ${ok}/${all} hình`,

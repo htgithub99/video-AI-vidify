@@ -5,7 +5,7 @@ import { pickMotionSaveFile } from "../../../motion/server/controllers/motionVid
 import { BORNAS_ERROR } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasJobSummary, BornasStepId } from "../../types/bornas.js";
 import { annotateLibrary, approveBornas, bornasLibraryAnnotation, cancelBornas, inspectBornasSource, rerunBornas, startBornas } from "../services/bornasPipeline.js";
-import { deleteBornasJobs, getBornasJob, listBornasJobs } from "../services/bornasStore.js";
+import { deleteBornasJobs, deleteBornasVideos, getBornasJob, listBornasJobs } from "../services/bornasStore.js";
 const fail = (res: Response, status: number, error: unknown): void => void res.status(status).json({ success: false, error: String((error as Error)?.message || error) });
 const view = (job: BornasJob) => ({ ...job, analysis: job.analysis ? { ...job.analysis, transcript: "" } : undefined, videos: job.videos.map(({ words: _words, lineStarts: _starts, ...v }) => v) });
 export const bornasSourceController = async (req: Request, res: Response): Promise<void> => {
@@ -47,12 +47,26 @@ export const bornasCancelController = (req: Request, res: Response): void => {
   res.json({ success: true, job: job ? view(job) : null });
 };
 export const bornasJobsController = (_req: Request, res: Response): void => {
-  const jobs: BornasJobSummary[] = listBornasJobs().map((job) => ({ id: job.id, channelId: job.channel.id, channelName: job.channel.name, status: job.status, updatedAt: job.updatedAt, videos: job.videos.map(({ index, title, status, seconds, outputUrl, previewUrl, sheetUrl }) => ({ index, title, status, seconds, outputUrl, previewUrl, sheetUrl })) }));
+  const jobs: BornasJobSummary[] = listBornasJobs().map((job) => ({
+    id: job.id,
+    channelId: job.channel.id,
+    channelName: job.channel.name,
+    status: job.status,
+    updatedAt: job.updatedAt,
+    videos: job.videos.map(({ index, title, status, seconds, outputUrl, previewUrl, sheetUrl, outputFile }) => ({ index, title, status, seconds, outputUrl, previewUrl, sheetUrl, sizeBytes: outputFile && fs.existsSync(outputFile) ? fs.statSync(outputFile).size : undefined })),
+  }));
   res.json({ success: true, jobs });
 };
 export const bornasDeleteController = async (req: Request, res: Response): Promise<void> => {
   try {
     res.json({ success: true, ...(await deleteBornasJobs(req.body?.ids)) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const bornasDeleteVideosController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, ...(await deleteBornasVideos(req.body?.items)) });
   } catch (error) {
     fail(res, 400, error);
   }

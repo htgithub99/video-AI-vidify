@@ -1,60 +1,75 @@
+import _ from "lodash";
 import type { FC } from "react";
-import { FolderOpen, Trash2 } from "lucide-react";
-import { Button } from "../../../components/ui/Button.js";
+import { FolderKanban } from "lucide-react";
+import { StudioResults, type StudioDeleteOutcome } from "../../../components/common/StudioResults.js";
+import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
+import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
+import { STUDIO_RESULTS } from "../../../constants/studioResults.js";
+import type { Lang } from "../../../lib/lang.js";
 import { cn } from "../../../lib/utils.js";
+import { formatBytes } from "../../motion/components/motionApi.js";
+import { motionAspect } from "../../motion/components/MotionMediaFrame.js";
 import { reupClock } from "../../reup/components/ReupControls.js";
-import { REUP_STYLES as S } from "../../reup/constants/reupStyles.js";
+import { BORNAS_RENDER } from "../constants/bornasConfig.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import type { BornasStudio } from "../hooks/useBornasStudio.js";
-export const BornasResultsPanel: FC<{ studio: BornasStudio; onOpen: () => void }> = ({ studio, onOpen }) => {
-  const { text, results } = studio;
-  if (!results.length) return <p className={S.HINT}>{text.RESULTS_EMPTY}</p>;
+interface ResultItem {
+  id: string;
+  jobId: string;
+  index: number;
+  title: string;
+  channel: string;
+  updatedAt: number;
+  url: string;
+  seconds?: number;
+  sizeBytes?: number;
+}
+export const BornasResultsPanel: FC<{ studio: BornasStudio; lang: Lang }> = ({ studio, lang }) => {
+  const { text } = studio;
+  const items: ResultItem[] = studio.results.flatMap((run) => run.videos.filter((v) => v.outputUrl).map((v) => ({ id: `${run.id}:${v.index}`, jobId: run.id, index: v.index, title: v.title, channel: run.channelName, updatedAt: run.updatedAt, url: v.previewUrl || v.outputUrl!, seconds: v.seconds, sizeBytes: v.sizeBytes })));
+  const remove = async (list: ResultItem[], all: boolean): Promise<StudioDeleteOutcome> => {
+    const res = await studio.deleteVideos((all ? items : list).map((it) => ({ jobId: it.jobId, video: it.index })));
+    return { freedBytes: res.freedBytes, failed: (res.failed || []).filter((id) => items.some((it) => it.id === id)) };
+  };
+  if (!items.length) {
+    return (
+      <StudioCard className={B.RESULTS_EMPTY}>
+        <FolderKanban className={B.RESULTS_EMPTY_ICON} />
+        <span>{text.RESULTS_EMPTY}</span>
+      </StudioCard>
+    );
+  }
   return (
-    <div className={S.PAGE}>
-      {results.map((run) => (
-        <StudioCard key={run.id} className={B.RESULT}>
-          <div className={B.RESULT_HEAD}>
-            <span className={B.RESULT_TITLE}>
-              {run.channelName} · {new Date(run.updatedAt).toLocaleString()} · {text.JOB_STATES[run.status]}
-            </span>
-            <div className={B.ROW_ACTIONS}>
-              <Button
-                variant="unstyled"
-                className={S.LINK_BUTTON}
-                onClick={() => {
-                  void studio.openJob(run.id);
-                  onOpen();
-                }}
-              >
-                <FolderOpen className={S.ICON} />
-                <span>{text.OPEN}</span>
-              </Button>
-              <Button variant="unstyled" className={cn(S.LINK_BUTTON)} disabled={run.status === "running"} onClick={() => window.confirm(text.RESULTS_DELETE_CONFIRM) && void studio.deleteResults([run.id])}>
-                <Trash2 className={S.ICON} />
-                <span>{text.RESULTS_DELETE}</span>
-              </Button>
+    <StudioResults
+      items={items}
+      lang={lang}
+      getId={(r) => r.id}
+      getTitle={(r) => r.title}
+      remove={remove}
+      disabled={studio.running}
+      summary={text.RESULTS_SUMMARY(formatBytes(_.sumBy(items, (r) => r.sizeBytes || 0)))}
+      gridClassName={B.RESULTS_GRID}
+      renderItem={(r, slots) => (
+        <StudioCard className={cn(B.RESULT_CARD, slots.selected && STUDIO_RESULTS.SELECTED)}>
+          <div className={B.RESULT_MEDIA}>
+            <StudioVideoPlayer src={r.url} aspect={motionAspect(BORNAS_RENDER.WIDTH, BORNAS_RENDER.HEIGHT)} />
+            <div className={B.RESULT_TOOLS}>
+              <StudioDownloadButton onClick={() => void studio.saveVideo(r.jobId, r.index)} />
+              {slots.remove}
             </div>
           </div>
-          <div className={B.RESULT_GRID}>
-            {run.videos.map((v) => (
-              <div key={v.index} className={B.RESULT_CARD}>
-                {v.previewUrl ? <video className={B.PLAYER} src={v.previewUrl} controls preload="metadata" /> : v.sheetUrl ? <img className={B.SHEET_IMG} src={v.sheetUrl} alt={text.SHEET} /> : null}
-                <p className={B.VIDEO_TITLE}>{v.title}</p>
-                <p className={B.VIDEO_META}>
-                  {text.VIDEO_STATES[v.status]}
-                  {v.seconds ? ` · ${reupClock(v.seconds)}` : ""}
-                </p>
-                {v.outputUrl && (
-                  <Button variant="unstyled" className={S.LINK_BUTTON} onClick={() => void studio.saveVideo(run.id, v.index)}>
-                    {text.SAVE}
-                  </Button>
-                )}
+          <div className={B.RESULT_INFO}>
+            <div className={STUDIO_RESULTS.TITLE_ROW}>
+              {slots.select}
+              <div className={cn(B.RESULT_NAME, STUDIO_RESULTS.TITLE_TEXT)} title={r.title}>
+                {r.title}
               </div>
-            ))}
+            </div>
+            <div className={B.RESULT_META}>{text.RESULT_META(r.channel, `${BORNAS_RENDER.WIDTH}×${BORNAS_RENDER.HEIGHT}`, BORNAS_RENDER.FPS, reupClock(r.seconds || 0), formatBytes(r.sizeBytes || 0), new Date(r.updatedAt).toLocaleString())}</div>
           </div>
         </StudioCard>
-      ))}
-    </div>
+      )}
+    />
   );
 };

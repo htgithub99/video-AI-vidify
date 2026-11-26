@@ -21,6 +21,7 @@ import { MotionVoiceSpeedPanel } from "./MotionVoiceSpeedPanel";
 import { MotionVoiceField } from "./MotionVoiceWorkspace.js";
 import { motionWorkspaceLanguage } from "../lib/motionWorkspace.js";
 import { VoiceSelectionDialog, type Voice } from "../../../components/VoiceSelectionDialog";
+import { StudioDeleteConfirm, useStudioDeleteConfirm } from "../../../components/common/StudioDeleteConfirm.js";
 type Draft = { id?: string; name: string; narratorVoiceId: string; roleVoices: Partial<Record<MotionVoiceGroup, string>> };
 type VoiceFilter = (typeof F)[keyof typeof F];
 const emptyDraft = (voiceId: string = MR.MOTION_TEXT_EMPTY): Draft => ({ name: MR.MOTION_TEXT_EMPTY, narratorVoiceId: voiceId, roleVoices: {} });
@@ -44,6 +45,7 @@ export const MotionVoicePanel: FC<{ studio: Pick<MotionStudio, "voiceChannels" |
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const { channels, defaultId } = studio.voiceChannels;
+  const confirmDel = useStudioDeleteConfirm();
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -333,7 +335,7 @@ export const MotionVoicePanel: FC<{ studio: Pick<MotionStudio, "voiceChannels" |
                           <Button variant={MR.MOTION_TEXT_UNSTYLED} title={t.RENAME} disabled={!!busy} onClick={() => openEditChannelModal(channel)} className={S.ICON_BTN}>
                             <Pencil className={S.ICON} />
                           </Button>
-                          <Button variant={MR.MOTION_TEXT_UNSTYLED} title={t.DELETE} disabled={!!busy} onClick={() => removeChannel(channel)} className={S.ICON_BTN_DANGER}>
+                          <Button variant={MR.MOTION_TEXT_UNSTYLED} title={t.DELETE} disabled={!!busy} onClick={() => confirmDel.ask({ names: [channel.name], message: t.CONFIRM_CHANNEL, run: () => removeChannel(channel) })} className={S.ICON_BTN_DANGER}>
                             <Trash2 className={S.ICON} />
                           </Button>
                         </div>
@@ -458,7 +460,8 @@ export const MotionVoicePanel: FC<{ studio: Pick<MotionStudio, "voiceChannels" |
                           e.stopPropagation();
                           fileInputRef.current?.click();
                         }}
-                        className={S.CHANGE_FILE_BUTTON}>
+                        className={S.CHANGE_FILE_BUTTON}
+                      >
                         {t.CHANGE_FILE}
                       </Button>
                     </div>
@@ -620,7 +623,7 @@ export const MotionVoicePanel: FC<{ studio: Pick<MotionStudio, "voiceChannels" |
                           <Button variant={MR.MOTION_TEXT_UNSTYLED} title={t.RENAME} disabled={!!busy} onClick={() => setEditing({ id: voice.id, name: voice.name })} className={S.ICON_BTN}>
                             <Pencil className={S.ICON} />
                           </Button>
-                          <Button variant={MR.MOTION_TEXT_UNSTYLED} title={t.DELETE} disabled={!!busy} onClick={() => removeVoice(voice)} className={S.ICON_BTN_DANGER}>
+                          <Button variant={MR.MOTION_TEXT_UNSTYLED} title={t.DELETE} disabled={!!busy} onClick={() => confirmDel.ask({ names: [voice.name], message: t.CONFIRM_VOICE, run: () => removeVoice(voice) })} className={S.ICON_BTN_DANGER}>
                             <Trash2 className={S.ICON} />
                           </Button>
                         </div>
@@ -640,7 +643,8 @@ export const MotionVoicePanel: FC<{ studio: Pick<MotionStudio, "voiceChannels" |
                       setSearchQuery(MR.MOTION_TEXT_EMPTY);
                       setFilter(F.ALL);
                     }}
-                    className={S.FILTER_RESET}>
+                    className={S.FILTER_RESET}
+                  >
                     {t.RESET_FILTER}
                   </Button>
                 )}
@@ -692,6 +696,7 @@ export const MotionVoicePanel: FC<{ studio: Pick<MotionStudio, "voiceChannels" |
           </div>
         )}
       </Modal>
+      <StudioDeleteConfirm request={confirmDel.request} onClose={confirmDel.close} lang={currentLang} />
       <VoiceSelectionDialog isOpen={showAi33} onClose={() => setShowAi33(false)} onSelectVoice={addAi33} currentLang={motionWorkspaceLanguage(currentLang)} favoriteVoices={[]} onToggleFavoriteVoice={_.noop} persistenceScope={L.AI33_SCOPE} />
     </div>
   );

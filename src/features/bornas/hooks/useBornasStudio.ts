@@ -25,14 +25,15 @@ export const useBornasStudio = (lang: Lang) => {
   const [channels, setChannels] = useState<BornasChannel[]>([]);
   const [channelId, setChannelId] = useState("");
   const [ai, setAi] = useState<BornasAiSettings>(BORNAS_AI_DEFAULT);
-  const [sourcePath, setSourcePath] = useState("");
   const [sample, setSample] = useState<BornasSample | null>(null);
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<BornasJob | null>(null);
   const [results, setResults] = useState<BornasJobSummary[]>([]);
   const [voiceChannels, setVoiceChannels] = useState<MotionVoiceChannels>({ channels: [] });
   const channelsRef = useRef<MotionVoiceChannels>({ channels: [] });
+  const channelIdRef = useRef("");
   const channel = useMemo(() => channels.find((c) => c.id === channelId) || channels[0], [channels, channelId]);
+  const sourcePath = channel?.sample || "";
   const running = job?.status === "running";
   const reloadVoiceChannels = useCallback(async (): Promise<MotionVoiceChannels> => {
     try {
@@ -46,6 +47,7 @@ export const useBornasStudio = (lang: Lang) => {
     const res = await motionRequest<{ jobs: BornasJobSummary[] }>(BORNAS_URL.JOBS).catch(() => null);
     if (res) setResults(res.jobs || []);
   }, []);
+  const setSourcePath = useCallback((path: string) => setChannels((all) => all.map((c) => (c.id === channelIdRef.current ? { ...c, sample: path } : c))), []);
   const loadSource = useCallback(async (file: string) => {
     const path = file.trim();
     if (!path) return;
@@ -65,19 +67,20 @@ export const useBornasStudio = (lang: Lang) => {
     if (!res?.job) return;
     setJob(res.job);
     setSample(res.job.sample);
-    setSourcePath(res.job.sample.path);
+    channelIdRef.current = res.job.channel.id;
     setChannelId(res.job.channel.id);
   }, []);
   useEffect(() => {
     void (async () => {
       const saved = await jsonUtils.getAsyncItem<Stored>(BORNAS_STORAGE.STATE, {});
-      const list = saved.channels?.length ? saved.channels : [bornasNewChannel(newId(), text.CHANNEL_NEW)];
+      const base = saved.channels?.length ? saved.channels : [bornasNewChannel(newId(), text.CHANNEL_NEW)];
+      const list = base.map((c) => (c.sample || !saved.sourcePath ? c : { ...c, sample: saved.sourcePath }));
+      const first = saved.channelId && list.some((c) => c.id === saved.channelId) ? saved.channelId : list[0].id;
       setChannels(list);
-      setChannelId(saved.channelId && list.some((c) => c.id === saved.channelId) ? saved.channelId : list[0].id);
+      channelIdRef.current = first;
+      setChannelId(first);
       if (saved.ai) setAi({ ...BORNAS_AI_DEFAULT, ...saved.ai });
-      if (saved.sourcePath) setSourcePath(saved.sourcePath);
       if (saved.jobId) await openJob(saved.jobId);
-      else if (saved.sourcePath) await motionRequest<{ sample: BornasSample }>(BORNAS_URL.SOURCE, { path: saved.sourcePath }).then((r) => setSample(r.sample), _.noop);
       setLoaded(true);
     })();
     void reloadVoiceChannels();
@@ -85,8 +88,15 @@ export const useBornasStudio = (lang: Lang) => {
   }, [openJob, reloadResults, reloadVoiceChannels, text.CHANNEL_NEW]);
   useEffect(() => {
     if (!loaded) return;
-    void jsonUtils.setAsyncItem<Stored>(BORNAS_STORAGE.STATE, { channels, channelId, ai, jobId: job?.id, sourcePath });
-  }, [loaded, channels, channelId, ai, job?.id, sourcePath]);
+    void jsonUtils.setAsyncItem<Stored>(BORNAS_STORAGE.STATE, { channels, channelId, ai, jobId: job?.id });
+  }, [loaded, channels, channelId, ai, job?.id]);
+  useEffect(() => {
+    if (!loaded || !sourcePath || sample?.path === sourcePath) return;
+    void motionRequest<{ sample: BornasSample }>(BORNAS_URL.SOURCE, { path: sourcePath }).then(
+      (r) => setSample(r.sample),
+      () => setSample(null),
+    );
+  }, [loaded, sourcePath, sample?.path]);
   useEffect(() => {
     if (!job || job.status !== "running") return;
     const timer = setInterval(() => {
@@ -99,21 +109,29 @@ export const useBornasStudio = (lang: Lang) => {
     }, BORNAS_LIMITS.POLL_MS);
     return () => clearInterval(timer);
   }, [job?.id, job?.status, reloadResults]);
+  const selectChannel = useCallback((id: string) => {
+    channelIdRef.current = id;
+    setChannelId(id);
+    setSample(null);
+  }, []);
   const patchChannel = useCallback((value: Partial<BornasChannel>) => setChannels((all) => all.map((c) => (c.id === channel?.id ? { ...c, ...value } : c))), [channel?.id]);
   const addChannel = useCallback(() => {
     const created = bornasNewChannel(newId(), `${text.CHANNEL_NEW} ${channels.length + 1}`);
     setChannels((all) => [...all, created]);
+    channelIdRef.current = created.id;
     setChannelId(created.id);
+    setSample(null);
   }, [channels.length, text.CHANNEL_NEW]);
   const removeChannel = useCallback(
     (id: string) => {
-      setChannels((all) => {
-        const next = all.filter((c) => c.id !== id);
-        return next.length ? next : [bornasNewChannel(newId(), text.CHANNEL_NEW)];
-      });
-      setChannelId("");
+      const next = channels.filter((c) => c.id !== id);
+      const list = next.length ? next : [bornasNewChannel(newId(), text.CHANNEL_NEW)];
+      channelIdRef.current = list[0].id;
+      setChannels(list);
+      setChannelId(list[0].id);
+      setSample(null);
     },
-    [text.CHANNEL_NEW],
+    [channels, text.CHANNEL_NEW],
   );
   const pickSource = useCallback(async () => {
     const res = await motionRequest<{ filePath?: string }>(API_ROUTES.PIPELINE_SELECT_FILE, {}).catch(() => null);
@@ -139,8 +157,12 @@ export const useBornasStudio = (lang: Lang) => {
   const cancel = useCallback(() => job && act(BORNAS_URL.CANCEL, { jobId: job.id }), [act, job]);
   const approve = useCallback((scripts: BornasScript[]) => job && act(BORNAS_URL.APPROVE, { jobId: job.id, scripts }), [act, job]);
   const rerun = useCallback((step: BornasStepId, video?: number) => job && act(BORNAS_URL.RERUN, { jobId: job.id, step, video, ai }), [act, ai, job]);
-  const resumeStep = job && (job.status === "cancelled" || job.status === "error") ? BORNAS_STEPS.find((step) => job.steps[step]?.status !== "done") : undefined;
-  const resume = useCallback(() => resumeStep && rerun(resumeStep), [resumeStep, rerun]);
+  const resumeStep = job && (["cancelled", "error"].includes(job.status) || (job.status === "waiting" && job.videos.some((v) => v.status === "waiting"))) ? BORNAS_STEPS.find((step) => job.steps[step]?.status !== "done") : undefined;
+  const resume = useCallback(() => {
+    if (!job || !resumeStep) return;
+    if (job.status === "waiting") return approve([]);
+    return rerun(resumeStep);
+  }, [approve, job, resumeStep, rerun]);
   const saveVideo = useCallback(async (jobId: string, video: number) => {
     try {
       const res = await motionRequest<{ savedPath?: string }>(BORNAS_URL.SAVE_VIDEO, { jobId, video });
@@ -155,7 +177,16 @@ export const useBornasStudio = (lang: Lang) => {
     setResults((list) => list.filter((r) => failed.has(r.id) || !ids.includes(r.id)));
     setJob((current) => (current && ids.includes(current.id) && !failed.has(current.id) ? null : current));
   }, []);
+  const deleteVideos = useCallback(
+    async (items: { jobId: string; video: number }[]) => {
+      const res = await motionRequest<{ failed?: string[]; freedBytes?: number }>(BORNAS_URL.DELETE_VIDEOS, { items });
+      await reloadResults();
+      if (job && items.some((it) => it.jobId === job.id)) await openJob(job.id);
+      return res;
+    },
+    [job, openJob, reloadResults],
+  );
   const newJob = useCallback(() => setJob(null), []);
-  return { text, loaded, channels, channel, selectChannel: setChannelId, patchChannel, addChannel, removeChannel, ai, setAi, sourcePath, setSourcePath, sample, loadSource, pickSource, busy, running, job, openJob, results, reloadResults, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, approve, rerun, resume, resumeStep, saveVideo, newJob };
+  return { lang, text, loaded, channels, channel, selectChannel, patchChannel, addChannel, removeChannel, ai, setAi, sourcePath, setSourcePath, sample, loadSource, pickSource, busy, running, job, openJob, results, reloadResults, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, approve, rerun, resume, resumeStep, saveVideo, deleteVideos, newJob };
 };
 export type BornasStudio = ReturnType<typeof useBornasStudio>;

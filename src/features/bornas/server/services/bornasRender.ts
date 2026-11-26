@@ -156,7 +156,7 @@ export const renderBornasVideo = async (video: BornasVideo, log: Log, signal?: A
   const mean = Number(loud.match(/mean_volume:\s*(-?[\d.]+)/)?.[1]);
   log(BORNAS_LOG.RENDER_PROBE(probe.width, probe.height, probe.duration, Number.isFinite(mean) ? mean : null), probe.width === BORNAS_RENDER.WIDTH && probe.height === BORNAS_RENDER.HEIGHT && probe.hasAudio ? "info" : "warn");
   log(BORNAS_LOG.PREVIEW);
-  const preview = path.join(dir, "preview_720p.mp4");
+  const preview = path.join(dir, BORNAS_DIR.PREVIEW);
   await reupFfmpeg(["-y", "-i", out, "-vf", `scale=-2:${BORNAS_RENDER.PREVIEW_HEIGHT}`, "-c:v", "libx264", "-preset", "veryfast", "-crf", String(BORNAS_RENDER.PREVIEW_CRF), "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", preview], { signal });
   video.outputFile = out;
   video.outputUrl = `${bornasUrl(out)}?v=${Date.now()}`;

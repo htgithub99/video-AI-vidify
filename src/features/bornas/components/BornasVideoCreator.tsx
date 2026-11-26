@@ -76,7 +76,7 @@ const BornasVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" as 
   const tabs = [
     { id: "create" as const, label: motionText.TAB_CREATE, icon: Wand2 },
     { id: "voices" as const, label: MOTION_VOICE_CHANNEL_TEXT[ui].TAB, icon: Mic2 },
-    { id: "results" as const, label: `${motionText.TAB_RESULTS} (${studio.results.length})`, icon: FolderKanban },
+    { id: "results" as const, label: `${motionText.TAB_RESULTS} (${studio.results.reduce((n, r) => n + r.videos.filter((v) => v.outputUrl).length, 0)})`, icon: FolderKanban },
   ];
   return (
     <StudioPage aria-busy={studio.running}>
@@ -131,7 +131,7 @@ const BornasVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" as 
           </div>
         )}
         {tab === "voices" && <MotionVoicePanel studio={studio} currentLang={currentLang} />}
-        {tab === "results" && <BornasResultsPanel studio={studio} onOpen={() => setTab("create")} />}
+        {tab === "results" && <BornasResultsPanel studio={studio} lang={currentLang} />}
       </StudioCanvas>
     </StudioPage>
   );
