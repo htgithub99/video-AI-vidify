@@ -17,12 +17,10 @@ import type { BornasAiField, BornasDrawChoice, BornasDrawProvider } from "../typ
 import { CINEMATIC_SETUP_TEXTS } from "../../../constants/texts.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import { useBornasStudio, type BornasStudio } from "../hooks/useBornasStudio.js";
-import { BornasChannelCard } from "./BornasChannelCard.js";
 import { BornasLogCard } from "./BornasLogCard.js";
 import { BornasResultsPanel } from "./BornasResultsPanel.js";
-import { BornasSeoCard } from "./BornasSeoCard.js";
-import { BornasScriptsCard } from "./BornasScriptsCard.js";
-import { BornasSourceCard } from "./BornasSourceCard.js";
+import { BornasStoryCard } from "./BornasStoryCard.js";
+import { BornasSetupCard } from "./BornasSetupCard.js";
 import { BornasVideosCard } from "./BornasVideosCard.js";
 type Tab = "create" | "voices" | "results";
 const AiBlock: FC<{ studio: BornasStudio; field: BornasAiField; lang: Lang }> = ({ studio, field, lang }) => {
@@ -146,10 +144,8 @@ const BornasVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" as 
             <Stepper studio={studio} />
             <div className={S.GRID}>
               <div className={S.LEFT}>
-                <BornasChannelCard studio={studio} ui={ui} />
-                <BornasSourceCard studio={studio} />
-                <BornasScriptsCard studio={studio} />
-                <BornasSeoCard studio={studio} lang={currentLang} />
+                <BornasSetupCard studio={studio} ui={ui} />
+                <BornasStoryCard studio={studio} lang={currentLang} />
               </div>
               <div className={B.RIGHT}>
                 <BornasVideosCard studio={studio} />
