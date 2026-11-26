@@ -31,7 +31,10 @@ export const runTool = (cmd: string, args: string[], opts: { signal?: AbortSigna
       out += c.toString();
       if (opts.onLine) for (const line of c.toString().split(/\r?\n/)) if (line.trim()) opts.onLine(line.trim());
     });
-    child.stderr.on("data", (c: Buffer) => (err = (err + c.toString()).slice(-4000)));
+    child.stderr.on("data", (c: Buffer) => {
+      err = (err + c.toString()).slice(-4000);
+      if (opts.onLine) for (const line of c.toString().split(/\r?\n/)) if (line.trim()) opts.onLine(line.trim());
+    });
     child.on("error", (error) => {
       opts.signal?.removeEventListener("abort", abort);
       reject(error);

@@ -160,10 +160,20 @@ export const renderBornasVideo = async (video: BornasVideo, log: Log, signal?: A
   const out = path.join(dir, "out.mp4");
   fs.rmSync(out, { force: true });
   const win = process.platform === "win32";
+  const tmp = path.join(path.dirname(dir), `${BORNAS_RENDER.TMP_DIR}_${path.basename(dir)}`);
+  fs.mkdirSync(tmp, { recursive: true });
+  let diskFull = false;
+  const render = (extra: readonly string[]) => runTool(win ? "npx.cmd" : "npx", ["-y", BORNAS_RENDER.HYPERFRAMES, "render", ".", "-f", String(BORNAS_RENDER.FPS), "-w", "auto", ...BORNAS_RENDER.ENCODE, ...extra, "-o", "out.mp4"], { cwd: dir, signal, shell: win, env: { TEMP: tmp, TMP: tmp, TMPDIR: tmp }, onLine: (line) => (diskFull ||= BORNAS_RENDER.DISK_FULL.test(line)) });
   try {
-    await runTool(win ? "npx.cmd" : "npx", ["-y", BORNAS_RENDER.HYPERFRAMES, "render", ".", "-f", String(BORNAS_RENDER.FPS), "-w", "auto", ...BORNAS_RENDER.ENCODE, "-o", "out.mp4"], { cwd: dir, signal, shell: win });
+    await render([]).catch((error) => {
+      if (!diskFull) throw error;
+      log(BORNAS_LOG.RENDER_ONE_WORKER, "warn");
+      return render(BORNAS_RENDER.ONE_WORKER);
+    });
   } catch (error) {
     throw new Error(BORNAS_ERROR.RENDER(String((error as Error)?.message || error)));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
   }
   if (!fs.existsSync(out)) throw new Error(BORNAS_ERROR.RENDER("out.mp4"));
   log(BORNAS_LOG.RENDER_DONE(video.seconds || 0));

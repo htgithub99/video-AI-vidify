@@ -86,6 +86,7 @@ export const BORNAS_LOG = {
   LINT_ERRORS: (n: number) => `HyperFrames lint báo ${n} lỗi trong trang dựng`,
   RENDER_PROBE: (w: number, h: number, sec: number, mean: number | null) => `Kiểm tra file: ${w}×${h}, ${sec.toFixed(1)} s${mean === null ? "" : `, âm lượng trung bình ${mean} dB`}`,
   RENDER: "Render video (HyperFrames)…",
+  RENDER_ONE_WORKER: "Ổ đĩa không đủ chỗ cho khung hình tạm, render lại với 1 worker (chậm hơn)",
   RENDER_DONE: (seconds: number) => `Render xong: ${clock(seconds)}`,
   PREVIEW: "Tạo bản xem trước 720p và bảng ảnh các cảnh",
   VIDEO_DONE: (i: number) => `Video ${i} xong`,
