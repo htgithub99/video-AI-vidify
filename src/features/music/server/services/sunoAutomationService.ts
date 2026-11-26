@@ -42,6 +42,7 @@ import {
   SOURCE_TEXT_CREATE_PLAYLIST_BUTTON,
   SOURCE_TEXT_DATA_SELECTED,
   SOURCE_TEXT_DURATION_2,
+  SOURCE_TEXT_BASE64,
   SOURCE_TEXT_END,
   SOURCE_TEXT_ERROR,
   SOURCE_TEXT_EXCLUDE_STYLES,
@@ -168,6 +169,120 @@ const resolveAvailableFilePath = (folderPath: string, fileName: string): string 
   for (let suffix = 2; fs.existsSync(candidate); suffix += 1) candidate = path.join(folderPath, SOURCE_TEMPLATE_SYMBOL_66(`${baseName}`, `${suffix}`, `${extension}`));
   return candidate;
 };
+const connectSunoBrowser = async (): Promise<any> => {
+  let browser: any;
+  try {
+    browser = await chromium.connectOverCDP(SUNO_CDP_URL);
+  } catch {
+    await launchSunoLoginBrowser();
+    for (let attempt = 0; attempt < 30 && !browser; attempt += 1) {
+      await delayAsync(500);
+      browser = await chromium.connectOverCDP(SUNO_CDP_URL).catch(() => null);
+    }
+  }
+  if (!browser) throw new Error(SUNO_AUTOMATION_TEXTS.CONNECT_CDP_ERR);
+  return browser;
+};
+const installSunoAudioCapture = (): void => {
+  const target = window as any;
+  target.__sunoAudioChunks = [];
+  target.__sunoAudioBytes = 0;
+  const subtle = window.crypto?.subtle;
+  if (!subtle) return;
+  const decrypt = subtle.decrypt;
+  subtle.decrypt = async function (this: SubtleCrypto, ...args: Parameters<SubtleCrypto["decrypt"]>) {
+    const result = await decrypt.apply(this, args);
+    const algorithm = args[0] as any;
+    if (algorithm?.name === "AES-CTR" && result?.byteLength) {
+      target.__sunoAudioChunks.push(new Uint8Array(result));
+      target.__sunoAudioBytes += result.byteLength;
+    }
+    return result;
+  } as SubtleCrypto["decrypt"];
+};
+const readSunoCaptureStatus = (): { bytes: number; buffered: number; duration: number } => {
+  const audio = document.querySelector("audio");
+  let buffered = 0;
+  if (audio?.buffered?.length) buffered = audio.buffered.end(audio.buffered.length - 1);
+  if (audio?.paused) audio.play().catch(() => undefined);
+  return { bytes: (window as any).__sunoAudioBytes || 0, buffered, duration: audio && Number.isFinite(audio.duration) ? audio.duration : 0 };
+};
+const readSunoCaptureBase64 = (): string => {
+  const chunks: Uint8Array[] = (window as any).__sunoAudioChunks || [];
+  const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+  const combined = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  let binary = "";
+  for (let index = 0; index < combined.byteLength; index += 32768) binary += String.fromCharCode(...combined.subarray(index, index + 32768));
+  return btoa(binary);
+};
+const fetchSunoClipDuration = async (songId: string): Promise<number> => {
+  const response = await fetch(SUNO_AUTOMATION_CONFIG.formatClipApiUrl(songId), { signal: AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.CAPTURE_METADATA_TIMEOUT_MS) }).catch(() => null);
+  const data = response?.ok ? await response.json().catch(() => null) : null;
+  return Number(data?.metadata?.duration || data?.duration || 0);
+};
+const convertCapturedAudioToWav = (sourcePath: string, wavPath: string, duration: number): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
+    const command = ffmpeg(sourcePath).noVideo().audioCodec(SUNO_AUTOMATION_CONFIG.CAPTURE_WAV_CODEC).audioFrequency(SUNO_AUTOMATION_CONFIG.CAPTURE_WAV_RATE).audioChannels(SUNO_AUTOMATION_CONFIG.CAPTURE_WAV_CHANNELS).format(SUNO_AUTOMATION_CONFIG.FORMAT_WAV);
+    if (duration > 0) command.duration(duration);
+    command
+      .on(SOURCE_TEXT_END, () => resolve())
+      .on(SOURCE_TEXT_ERROR, reject)
+      .save(wavPath);
+  });
+const probeAudioSeconds = (filePath: string): Promise<number> => new Promise<number>((resolve) => ffmpeg.ffprobe(filePath, (error, data) => resolve(error ? 0 : Number(data?.format?.duration || 0))));
+const captureSunoAudioOnce = async (songId: string, wavPath: string, signal?: AbortSignal): Promise<void> => {
+  const expected = await fetchSunoClipDuration(songId);
+  const browser = await connectSunoBrowser();
+  const context = browser.contexts()[0];
+  if (!context) throw new Error(SUNO_AUTOMATION_TEXTS.CONNECT_CDP_ERR);
+  const page: Page = await context.newPage();
+  const rawPath = `${wavPath}${SUNO_AUTOMATION_CONFIG.CAPTURE_RAW_SUFFIX}`;
+  try {
+    await page.addInitScript(installSunoAudioCapture);
+    await page.goto(SUNO_AUTOMATION_CONFIG.formatSongPageUrl(songId), { waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED, timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
+    await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.CAPTURE_SETTLE_MS);
+    await dismissCookieConsent(page).catch(() => undefined);
+    const playButton = page.locator(SUNO_AUTOMATION_SELECTORS.CAPTURE_PLAY_BUTTONS.join(", ")).first();
+    await playButton.click({ timeout: SUNO_AUTOMATION_CONFIG.CAPTURE_PLAY_TIMEOUT_MS, force: true }).catch(() => undefined);
+    let lastBytes = 0;
+    let stablePolls = 0;
+    for (let poll = 0; poll < SUNO_AUTOMATION_CONFIG.CAPTURE_MAX_POLLS; poll += 1) {
+      signal?.throwIfAborted();
+      await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.CAPTURE_POLL_MS);
+      const status = await page.evaluate(readSunoCaptureStatus);
+      if (!status.bytes && poll % SUNO_AUTOMATION_CONFIG.CAPTURE_REPLAY_EVERY === SUNO_AUTOMATION_CONFIG.CAPTURE_REPLAY_EVERY - 1) await playButton.click({ timeout: SUNO_AUTOMATION_CONFIG.CAPTURE_PLAY_TIMEOUT_MS, force: true }).catch(() => undefined);
+      const fullyBuffered = status.duration > 0 && status.buffered >= status.duration - 1;
+      stablePolls = status.bytes > 0 && status.bytes === lastBytes ? stablePolls + 1 : 0;
+      if ((fullyBuffered && stablePolls >= SUNO_AUTOMATION_CONFIG.CAPTURE_STABLE_BUFFERED) || stablePolls >= SUNO_AUTOMATION_CONFIG.CAPTURE_STABLE_POLLS) break;
+      lastBytes = status.bytes;
+    }
+    const base64 = await page.evaluate(readSunoCaptureBase64);
+    const buffer = Buffer.from(base64, SOURCE_TEXT_BASE64);
+    if (buffer.length < SUNO_AUTOMATION_CONFIG.CAPTURE_MIN_BYTES) throw new Error(SUNO_AUTOMATION_TEXTS.formatCaptureTooSmallError(buffer.length));
+    await fs.promises.writeFile(rawPath, buffer);
+    await convertCapturedAudioToWav(rawPath, wavPath, expected);
+    const actual = await probeAudioSeconds(wavPath);
+    if (!actual || (expected > 0 && actual < expected - Math.max(SUNO_AUTOMATION_CONFIG.CAPTURE_SHORT_SECONDS, expected * SUNO_AUTOMATION_CONFIG.CAPTURE_SHORT_SHARE))) throw new Error(SUNO_AUTOMATION_TEXTS.formatCaptureShortError(actual, expected));
+  } catch (error) {
+    await fs.promises.rm(wavPath, { force: true }).catch(() => undefined);
+    throw error;
+  } finally {
+    await fs.promises.rm(rawPath, { force: true }).catch(() => undefined);
+    await page.close().catch(() => undefined);
+    await browser.close().catch(() => undefined);
+  }
+};
+let sunoCaptureQueue: Promise<unknown> = Promise.resolve();
+export const captureSunoAudioWav = (songId: string, wavPath: string, signal?: AbortSignal): Promise<void> => {
+  const run = sunoCaptureQueue.then(() => captureSunoAudioOnce(songId, wavPath, signal));
+  sunoCaptureQueue = run.catch(() => undefined);
+  return run;
+};
 export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], folderPath: string, format: SunoDownloadFormat, signal?: AbortSignal, runId?: string, resume?: { existingPaths?: Record<string, string>; sourceWavPaths?: Record<string, string>; onTrackDownloaded?: (songId: string, filePath: string) => Promise<void> }): Promise<string[]> => {
   signal?.throwIfAborted();
   const requestedFolder = _.trim(folderPath);
@@ -214,10 +329,15 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS && !downloaded; attempt += 1) {
       signal?.throwIfAborted();
       try {
-        const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS);
-        const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, track.songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), { headers: { Accept: SUNO_AUTOMATION_TEXTS.formatAudioHeaderAccept(SUNO_AUTOMATION_CONFIG.FORMAT_WAV) }, signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal });
-        if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
-        await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(temporaryWavPath));
+        try {
+          await captureSunoAudioWav(track.songId, temporaryWavPath, signal);
+        } catch (captureError) {
+          await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_CAPTURE_FAILED, { runId, songId: track.songId, ...musicErrorDetails(captureError) });
+          const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS);
+          const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, track.songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), { headers: { Accept: SUNO_AUTOMATION_TEXTS.formatAudioHeaderAccept(SUNO_AUTOMATION_CONFIG.FORMAT_WAV) }, signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal });
+          if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
+          await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(temporaryWavPath));
+        }
         if (format === SUNO_AUTOMATION_CONFIG.FORMAT_MP3) {
           await convertSunoAudioToMp3(temporaryWavPath, filePath);
           await fs.promises.rm(temporaryWavPath, { force: true });
@@ -962,17 +1082,7 @@ export const getSunoPlaylistTracks = async (playlistUrl: string): Promise<{ song
       if (!_.isEmpty(songIds)) return _.map(songIds, (songId) => ({ songId, title: titles[songId] || "" }));
     }
   }
-  let browser: any;
-  try {
-    browser = await chromium.connectOverCDP(SUNO_CDP_URL);
-  } catch {
-    await launchSunoLoginBrowser();
-    for (let attempt = 0; attempt < 30 && !browser; attempt += 1) {
-      await delayAsync(500);
-      browser = await chromium.connectOverCDP(SUNO_CDP_URL).catch(() => null);
-    }
-  }
-  if (!browser) throw new Error(SUNO_AUTOMATION_TEXTS.CONNECT_CDP_ERR);
+  const browser = await connectSunoBrowser();
   const context = browser.contexts()[0];
   if (!context) throw new Error(SUNO_AUTOMATION_TEXTS.CONNECT_CDP_ERR);
   const page = context.pages()[0] || (await context.newPage());

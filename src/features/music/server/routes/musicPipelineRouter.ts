@@ -209,6 +209,7 @@ import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import _ from "lodash";
 import path from "path";
+import os from "os";
 import { MUSIC_CREATOR_CONSTANTS, MUSIC_CREATOR_TEXTS, ROUTER_PATHS } from "../../../../constants";
 import { CINEMATIC_CHAT_PLANNING_CONFIG, normalizeCinematicArtifactIdentity } from "../../../../constants/cinematicConstants.js";
 import { GEMINI_MEDIA_ERRORS } from "../../../../constants/config.js";
@@ -255,7 +256,7 @@ import {
   type MusicDownloadSelection,
 } from "../services/musicDownloadCheckpointService.js";
 import { CHAT_ROOM_RECOVERY, CHROME_BACKUP } from "../../../../constants/chromeBackup.js";
-import { cancelActiveSunoCreation, createSunoPlaylist, downloadSunoTracksToFolder, getSunoPlaylistTracks, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
+import { cancelActiveSunoCreation, captureSunoAudioWav, createSunoPlaylist, downloadSunoTracksToFolder, getSunoPlaylistTracks, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
 import { sunoCreationReporter } from "../services/sunoCreationProgress.js";
 import { musicDownloadReporter } from "../services/musicDownloadProgress.js";
 import type { MusicDownloadProgress, MusicUploadProgress } from "../../../../types/musicDownloadProgress.js";
@@ -1091,6 +1092,21 @@ const createSunoEvaluationPreview = async (wavPath: string): Promise<Buffer> => 
     await fs.promises.rm(previewPath, { force: true }).catch(() => undefined);
   }
 };
+const downloadSunoEvaluationWav = async (songId: string, cacheKey: string, downloadOrigin: string, signal?: AbortSignal): Promise<string> => {
+  const capturedWav = path.join(os.tmpdir(), SUNO_AUTOMATION_CONFIG.formatCaptureTempName(songId));
+  try {
+    await captureSunoAudioWav(songId, capturedWav, signal);
+    return await writeMusicEvaluationWav(cacheKey, songId, await fs.promises.readFile(capturedWav));
+  } catch (error) {
+    await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CAPTURE_FAILED, { songId, ...musicErrorDetails(error) });
+  } finally {
+    await fs.promises.rm(capturedWav, { force: true }).catch(() => undefined);
+  }
+  const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS);
+  const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), { signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal });
+  if (!response.ok) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
+  return writeMusicEvaluationWav(cacheKey, songId, Buffer.from(await response.arrayBuffer()));
+};
 const sunoAudioPreparationSlots = new AsyncTaskLimiter(SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_CONCURRENCY);
 const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, signal?: AbortSignal, preparePreview = true, onPrepared?: (completed: number) => void): Promise<Map<string, Buffer>> => {
   const downloadOrigin = _.trim(process.env.DOWNLOADER_STREAM_ORIGIN || SUNO_AUTOMATION_CONFIG.SUNO_DOWNLOAD_ORIGIN).replace(SUNO_AUTOMATION_PATTERNS.TRAILING_SLASH, C.EMPTY);
@@ -1113,10 +1129,7 @@ const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, 
             try {
               let wavPath = cachedWav;
               if (!wavPath) {
-                const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS);
-                const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), { signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal });
-                if (!response.ok) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
-                wavPath = await writeMusicEvaluationWav(cacheKey, songId, Buffer.from(await response.arrayBuffer()));
+                wavPath = await downloadSunoEvaluationWav(songId, cacheKey, downloadOrigin, signal);
                 await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_WAV_CACHED, { songId });
               }
               if (!preparePreview) return [songId, null] as const;
