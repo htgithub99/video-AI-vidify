@@ -245,8 +245,6 @@ export const REFACTOR_CONSTANTS = {
   INFO_CINEMATIC_SCRIPT_QA_CONTINUED: "Kịch bản đã hoàn tất. QA biên tập đề xuất cải thiện thêm về nhịp kể hoặc thời lượng; kết quả này không ảnh hưởng bước đạo diễn cảnh và không chặn tạo phim.",
   WARN_STORYBOARD_QA_RESULT: "Phân cảnh có điểm cần xem lại về tính liên tục hoặc độ đa dạng; hệ thống giữ nguyên nội dung.",
   IMAGE_DATA_URL_CAPTURE_REGEX: /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i,
-  REMOTE_REFERENCE_IMAGE_REGEX: /^https:\/\/[a-z0-9-]+\.googleusercontent\.com\/[^\s]+$/i,
-  REMOTE_REFERENCE_IMAGE_TIMEOUT_MS: 60000,
   AUDIO_DATA_URL_CAPTURE_REGEX: /^data:(audio\/(?:mpeg|mp3|wav|ogg));base64,(.+)$/i,
   DATA_VIDEO_BASE64_PREFIX: "data:video/mp4;base64,",
   VIDEO_SCENE_IDS_KEY: "videoSceneIds",
