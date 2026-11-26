@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 const KIT = path.dirname(fileURLToPath(import.meta.url));
 const [planFile, jobDir] = process.argv.slice(2);
 const { sp, box, spriteDefs, takeBoxes, markGroup, FACEMAP, pngUsed } = await import(pathToFileURL(path.join(KIT, "sprites.mjs")).href);
-const { camState, textJs, checkActors, plateSize } = await import(pathToFileURL(path.join(KIT, "layout.mjs")).href);
+const { camState, textJs, checkActors, plateSize, textW } = await import(pathToFileURL(path.join(KIT, "layout.mjs")).href);
 const plan = JSON.parse(fs.readFileSync(planFile, "utf8"));
 const { direct } = await import(pathToFileURL(path.join(KIT, "born_direct.mjs")).href);
 const FIXRAW = process.env.BORN_FIX ? JSON.parse(fs.readFileSync(process.env.BORN_FIX, "utf8")) : {};
@@ -13,6 +13,7 @@ const planShots = plan.beats ? direct(plan) : plan.shots;
 const TOTAL = plan.total;
 const safe = (s) => String(s ?? "").replace(/'/g, "’").replace(/[\\`$]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\s+/g, " ").trim();
 const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
+const PAPER_W = 1640;
 const DEFS = `<defs><filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter></defs>`;
 const fitPlate = (text, sub, size) => {
   let z = size;
@@ -116,7 +117,7 @@ for (const s of shots) {
     const lines = s.paper.lines || [];
     const tops = { h: [92, "#2a1a10", 900], n: [210, "#8a1c10", 900], l: [64, "#5a3a22", 800], s: [58, "#5a3a22", 800] };
     let y = 110;
-    inner = `<div class="paper" id="${s.id}p">${lines.map((l, i) => { const [size, col, w] = tops[l.size] || tops.l; const el = `<div class="pl" id="${s.id}p${i}" style="top:${y}px;font:${w} ${size}px 'Alegreya Sans';color:${col}">${safe(l.text)}</div>`; y += Math.round(size * 1.35) + 24; return el; }).join("")}</div>`;
+    inner = `<div class="paper" id="${s.id}p">${lines.map((l, i) => { const [full, col, w] = tops[l.size] || tops.l, size = Math.min(full, Math.floor(PAPER_W / Math.max(0.01, textW(safe(l.text), 1, w)))); const el = `<div class="pl" id="${s.id}p${i}" style="top:${y}px;font:${w} ${size}px 'Alegreya Sans';color:${col}">${safe(l.text)}</div>`; y += Math.round(size * 1.35) + 24; return el; }).join("")}</div>`;
     js += lines.map((l, i) => `tl.fromTo('#${s.id}p${i}',{opacity:0,y:-20},{opacity:1,y:0,duration:.3},${l.t.toFixed(3)});`).join("");
     if (s.paper.stamp) js += `{const r=BORN.rubber(document.getElementById('${s.id}p'),{id:'${s.id}st',text:'${safe(s.paper.stamp.text)}',x:960,y:${Math.min(960, y + 90)},size:104,rot:-6});BORN.rubberIn(tl,r,${s.paper.stamp.t});}`;
   } else if (s.kind === "montage" && s.montage) {

@@ -1,18 +1,19 @@
 import { BORNAS_LIMITS, BORNAS_REVIEW_CONTEXT, BORNAS_SAME_PERSON, BORNAS_STYLE_LINE } from "./bornasConfig.js";
-import type { BornasAnalysis, BornasBackground, BornasLine, BornasScript, BornasSprite, BornasTopic } from "../types/bornas.js";
+import { motionLanguage } from "../../../lib/motionLanguage.js";
+import type { BornasAnalysis, BornasBackground, BornasGenre, BornasLanguage, BornasLine, BornasScript, BornasSprite, BornasTopic } from "../types/bornas.js";
 export const BORNAS_ARTIFACT = { ANALYZE: "bornas-analyze", SCRIPTS: "bornas-scripts", STYLE: "bornas-style", TRIM: "bornas-trim", MATCH: "bornas-match", ASSETS: "bornas-assets", SPRITE_REVIEW: "bornas-sprite-review", SNAP_REVIEW: "bornas-snap-review", BG_MEASURE: "bornas-bg-measure", SHOTS: "bornas-shots", FACTS: "bornas-facts", REPLACE: "bornas-replace" } as const;
-const LANG = { vi: "Vietnamese", en: "English" } as const;
 const SUBJECT: Record<BornasTopic, string> = {
-  world: "each script follows a different famous or controversial person from a different country and era",
-  ww: "each script follows a different famous or controversial figure (commander, soldier, pilot, spy, leader) in a different battle or campaign of WW1 or WW2 (e.g. Verdun, the Somme, Gallipoli, Stalingrad, Midway, Normandy); never two scripts in the same battle or about the same side's same unit",
-  ancient: "each script follows a different person from a different civilisation or war of the ancient world",
-  medieval: "each script follows a different person from a different kingdom, crusade or campaign of the Middle Ages",
-  eastasia: "each script follows a different person from a different East Asian country, dynasty or war",
-  vietnam: "each script follows a different Vietnamese historical figure from a different dynasty, uprising or war",
-  modern: "each script follows a different modern job, army or famous modern person in a different country",
-  game: "each script is set in a different original game world of a different genre (fantasy RPG, sci-fi shooter, survival, racing…) with its own original main character; no real game titles or characters",
-  wildwest: "each script follows a different outlaw, lawman, scout or pioneer of the American frontier, each tied to a different place and event",
+  world: "each script follows a different person from any country and era",
+  ww: "each script follows a different person of WW1 or WW2: commanders and leaders, but also ordinary soldiers, medics, pilots, tank crews, snipers, spies, nurses, children and civilians; several scripts may share one battle or campaign (Verdun, the Somme, Gallipoli, Stalingrad, Midway, Normandy…) when each tells a different person's side of it",
+  ancient: "each script follows a different person of the ancient world (rulers, generals, legionaries, gladiators, slaves, priests, merchants); scripts may share one war or city when the people differ",
+  medieval: "each script follows a different person of the Middle Ages (kings, knights, archers, peasants, monks, Vikings, Mongol riders); scripts may share one campaign when the people differ",
+  eastasia: "each script follows a different person of East Asian history (emperors, generals, samurai, ninja, farmers, scholars, concubines); scripts may share one war when the people differ",
+  vietnam: "each script follows a different person of Vietnamese history (kings, generals, soldiers, farmers, scholars, women warriors); scripts may share one dynasty or war when the people differ",
+  modern: "each script follows a different person or job of the modern world (soldiers, rescuers, pilots, athletes, workers, famous people)",
+  game: "each script follows a different main or memorable character of a different real, well-known video game (a different franchise each time; RPG, shooter, action, horror, survival, fighting, strategy…), told with that game's own story facts",
+  wildwest: "each script follows a different person of the American frontier (outlaws, lawmen, scouts, pioneers, cowboys, Native Americans, gamblers, railroad workers); scripts may share one town or event when the people differ",
 };
+const PICK = 'Pick the most gripping life for this channel, not only famous or controversial people: a lesser-known side character, an ordinary soldier, a child or a medic can make the strongest video. Every script is about a clearly different person; the "hero" field names that person.';
 const TOPIC: Record<BornasTopic, string> = {
   world: "world history (any era or country: ancient, medieval, Asian dynasties, world wars, modern history)",
   ww: "World War I and World War II",
@@ -21,8 +22,23 @@ const TOPIC: Record<BornasTopic, string> = {
   eastasia: "East Asian history (Japan, Chinese dynasties, Korea, Mongolia)",
   vietnam: "Vietnamese history from Văn Lang to the Nguyễn dynasty, the French colonial era and 1945–1975",
   modern: "the modern world today (jobs, armies, cities, technology)",
-  game: "fantasy and science-fiction game worlds (original settings, no real game characters)",
+  game: "the stories of characters from real video games",
   wildwest: "the American Wild West 1850–1900 (outlaws, sheriffs, settlers, frontier towns)",
+};
+const GENRE: Record<BornasGenre, string> = {
+  sample: "",
+  bornas: 'Genre "If you were born as…": the hero\'s whole life from birth to death in second person ("you"), each life stage opened by an age, a place and a year.',
+  survive: "Genre \"Why you wouldn't survive…\": put the listener into one dangerous place and time through the hero's eyes; step by step the dangers that kill most people there, with the real odds or death tolls when sources give them, and how the hero did or did not get through.",
+  worst: 'Genre "The worst time / job in history": through the hero, rank the most miserable conditions of that time, place or job from bad to worst, each step a concrete scene of daily life backed by sources.',
+  day: 'Genre "24 hours as…": one real or typical day of the hero, hour by hour from waking to sleep, each line opened by the clock time, ending on the event that made that day famous or deadly.',
+  whatif: 'Genre "What if…": first tell what really happened at one turning point of the hero\'s life, then clearly mark the switch ("but what if…") and follow the most likely other outcome step by step; keep real facts and the speculation clearly apart.',
+};
+const ORIGINAL_DESIGN = 'The characters come from real games, but every picture is an original design of the same role, era and genre: never copy a game character\'s signature face, hairstyle, costume, colour scheme, emblem, logo or weapon design, and never put game titles or logos in any picture. In every "desc" describe the original look, never name the game or the character.';
+const SCRIPT_SHAPE =
+  "Every script: facts checked and dated (say when sources disagree), second person, present tense, a hook with 3 shocking beats, then the turn, then the story in order with each stage opened by a time or place, 2–3 planted details each called back once, a one-line verdict, a recap, a closing question for the comments. Show actions, never name feelings. Violence only as falls or silhouettes, never gore. Never invent quotes, vows, plans, motives, numbers or comparisons: only events, words and numbers that sources record.";
+const languageRules = (language: BornasLanguage): string => {
+  const l = motionLanguage(language);
+  return [`Write every "text", "screen", "sub", "title" and "series" in ${l.promptName}.`, ...l.styleGuide, l.numbers === "spoken" ? 'Write numbers and years in words in "text" so the voice reads them; put digits only in "screen".' : 'Write numbers and years with digits in "text"; the voice reads them.'].join(" ");
 };
 const JSON_ONLY = "Return only one JSON object, no markdown, no explanation.";
 export const BORNAS_PROMPT = {
@@ -35,18 +51,18 @@ export const BORNAS_PROMPT = {
       'JSON: {"formula": string (the topic formula and promise, e.g. "If you were born as X: your life from birth to death in second person"), "narration": string (narration card: point of view, tense, sentence length, hook pattern with its beats, the turn line, how life stages open, recurring devices ranked by use, planted details and callbacks, recap and closing question), "shots": string (shot grammar: shot length, cut timing on words, camera push/pull habits, transitions, special shots like rewind, documents, photo montage), "texts": string (on-screen text types: age/time tags, place plates, name labels with arrows, speech bubbles, stamps; when each appears), "art": string (art style of the drawings and backgrounds, palette, framing; no character names)}',
       JSON_ONLY,
     ].join("\n\n"),
-  SCRIPTS: (a: { count: number; topic: BornasTopic; language: "vi" | "en"; seconds: number; rate: number; rhythm: string; analysis: BornasAnalysis; avoid: string[]; channel: string }) =>
+  SCRIPTS: (a: { count: number; topic: BornasTopic; genre: BornasGenre; language: BornasLanguage; seconds: number; rate: number; rhythm: string; analysis: BornasAnalysis; avoid: string[]; channel: string }) =>
     [
-      `Write ${a.count} new video scripts for the YouTube channel "${a.channel}" in ${LANG[a.language]}. Topic of the channel: ${TOPIC[a.topic]}.`,
-      `Each script is one video of about ${a.seconds} seconds of narration (the voice reads about ${a.rate.toFixed(1)} words per second, so at most ${Math.round(a.seconds * a.rate * 0.9)} words in all lines together; cut chapters rather than go over).`,
-      `Formula of the sample: ${a.analysis.formula}`,
+      `Write ${a.count} new video scripts for the YouTube channel "${a.channel}" in ${motionLanguage(a.language).promptName}. Topic of the channel: ${TOPIC[a.topic]}.`,
+      `Each script is one video of about ${a.seconds} seconds of narration (the voice reads about ${a.rate.toFixed(1)} ${motionLanguage(a.language).unit.promptName} per second, so at most ${Math.round(a.seconds * a.rate * 0.9)} of them in all lines together; cut chapters rather than go over).`,
+      GENRE[a.genre] ? `${GENRE[a.genre]} Use the sample only for its rhythm, devices and on-screen text habits, not for its formula.` : `Formula of the sample: ${a.analysis.formula}`,
       `Narration card (follow it closely): ${a.analysis.narration}`,
       `On-screen text habits: ${a.analysis.texts}`,
       a.avoid.length ? `Already made on this channel, do not repeat these subjects: ${a.avoid.join("; ")}.` : "",
-      `Subjects: ${SUBJECT[a.topic]}. All ${a.count} scripts must be about clearly different people and different events; the "hero" field names that person.`,
-      "Every script: a different real person or a clearly typical person of the topic, facts checked and dated (say when sources disagree), second person, present tense, a hook with 3 shocking beats, then the turn, then life in order with each stage opened by a time or place, 2–3 planted details each called back once, a one-line verdict, a recap, a closing question for the comments. Show actions, never name feelings. Violence only as falls or silhouettes, never gore. Never invent quotes, vows, plans, motives, numbers or comparisons: only events, words and numbers that sources record.",
-      `${a.rhythm} Write numbers and years in words in "text" so the voice reads them; put digits only in "screen".`,
-      'For each line: "screen" = the on-screen text for that moment (an age like "16 TUỔI", a place and year, a name, a number) or "" when none; "sub" = an optional small second line; "kind" = "tag" (age/time, corner), "plate" (place, title, fact), "label" (a person\'s name with an arrow) or "none"; "idea" = what the picture shows (who, doing what, where), concrete; "pause" = true on the last line of the hook and of each chapter.',
+      `Subjects: ${SUBJECT[a.topic]}. ${PICK}`,
+      SCRIPT_SHAPE,
+      `${a.rhythm} ${languageRules(a.language)}`,
+      'For each line: "screen" = the on-screen text for that moment (an age, a place and year, a name, a number) or "" when none; "sub" = an optional small second line; "kind" = "tag" (age/time, corner), "plate" (place, title, fact), "label" (a person\'s name with an arrow) or "none"; "idea" = what the picture shows (who, doing what, where), concrete; "pause" = true on the last line of the hook and of each chapter. Never spend a line reading a chapter title aloud (no "Chapter one: …" lines) in videos under 5 minutes; open a chapter with its time or place instead.',
       `JSON: {"scripts": [{"title": string (YouTube title in the channel language), "hook": string (one line summary), "hero": string (who the main character is, with ages shown), "series": string (short corner tag in capitals, at most ${BORNAS_LIMITS.SERIES_MAX} characters, e.g. "BILLY THE KID · MIỀN TÂY"), "lines": [{"text": string, "screen": string, "sub": string, "kind": "tag"|"plate"|"label"|"none", "idea": string, "pause": boolean}]}]}`,
       JSON_ONLY,
     ]
@@ -55,7 +71,7 @@ export const BORNAS_PROMPT = {
   REPLACE: (scripts: BornasScript[], replace: number[], topic: BornasTopic, avoid: string[]) =>
     [
       `These video scripts repeat subjects. Write new scripts to replace scripts ${replace.map((i) => `#${i + 1}`).join(", ")}, about people who are not in this list: ${avoid.join("; ")}.`,
-      `Subjects: ${SUBJECT[topic]}. Keep the same language, style, length and line fields as the others.`,
+      `Subjects: ${SUBJECT[topic]}. ${PICK} Keep the same language, genre, style, length and line fields as the others.`,
       `Scripts:\n${JSON.stringify(scripts.map((s, i) => ({ n: i + 1, title: s.title, hero: s.hero })))}`,
       `Example of the full shape:\n${JSON.stringify(scripts[0])}`,
       'JSON: {"scripts": [full scripts in the same shape, one per replaced number, in order]}',
@@ -69,23 +85,27 @@ export const BORNAS_PROMPT = {
       'JSON: {"title": string, "hook": string, "hero": string, "series": string, "lines": [same shape as the input lines]}',
       JSON_ONLY,
     ].join("\n\n"),
-  FACTS: (script: BornasScript) =>
+  FACTS: (script: BornasScript, topic: BornasTopic) =>
     [
-      'Fact-check this history video script line by line against well-documented sources (search the web if you can). Flag every line that states something wrong, unproven or invented: wrong dates, ages or numbers, events that did not happen, invented quotes, vows, holidays, motives or comparisons, people placed where sources do not put them. Rewrite each flagged line with only what sources support (say "sources disagree" or "his gang" when unsure), keep the same language, second person, length and fields, and fix its on-screen text to match.',
+      topic === "game" ? "This script retells a real video game's story: the sources are the game itself, its official lore and well-documented wikis; story events count as facts, but nothing may be added that the game does not show or say." : "",
+      'Fact-check this video script line by line against well-documented sources (search the web if you can). Flag every line that states something wrong, unproven or invented: wrong dates, ages or numbers, events that did not happen, invented quotes, vows, holidays, motives or comparisons, people placed where sources do not put them. Rewrite each flagged line with only what sources support (say "sources disagree" or "his gang" when unsure), keep the same language, second person, length and fields, and fix its on-screen text to match. Also check every line: the number in "screen" must equal the number said in "text", a quote shown on screen must be one that sources record, and spelling must be correct.',
       `Script:\n${JSON.stringify(script)}`,
       'JSON: {"title": string, "hook": string, "hero": string, "series": string, "lines": [same shape as the input lines], "fixed": [line numbers that were changed]}',
       JSON_ONLY,
-    ].join("\n\n"),
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
   TRIM: (script: BornasScript, have: number, max: number) =>
     [
-      `This script has ${have} words but the video length allows at most ${max}. Shorten it to at most ${max} words: drop or merge the least important life stages and side details, keep the hook, the turn, the planted details with their callbacks, the verdict, the recap and the closing question. Keep the same line fields and style.`,
+      `This script has ${have} words but the video length allows at most ${max}. Shorten it to at most ${max} words: drop or merge the least important life stages and side details, merge very short neighbouring lines (each line adds a pause), keep the hook, the turn, the planted details with their callbacks, the verdict, the recap and the closing question. Keep the same line fields and style.`,
       `Script:\n${JSON.stringify(script)}`,
       'JSON: {"title": string, "hook": string, "hero": string, "series": string, "lines": [same shape as the input lines]}',
       JSON_ONLY,
     ].join("\n\n"),
-  ASSETS: (a: { script: BornasScript; items: string; backgrounds: string; analysis: BornasAnalysis }) =>
+  ASSETS: (a: { script: BornasScript; items: string; backgrounds: string; analysis: BornasAnalysis; topic: BornasTopic }) =>
     [
       "Plan the pictures for this video. Pictures come from a shared cartoon library first; only what is missing gets drawn.",
+      a.topic === "game" ? ORIGINAL_DESIGN : "",
       `Art style of the sample: ${a.analysis.art}`,
       `Script:\n${a.script.lines.map((l, i) => `${i + 1}. ${l.text} [picture: ${l.idea}]`).join("\n")}`,
       `Library sprites (name | kind | height m):\n${a.items}`,
@@ -93,7 +113,9 @@ export const BORNAS_PROMPT = {
       `Rules: main characters (the hero at each age, family, the main rival) are always new "cast" entries, never library sprites; give each cast entry 2–${BORNAS_LIMITS.POSES_MAX} poses the script needs (walk, run, sit, kneel, ride, aim, lying wounded…), side view. The hero's main adult age also gets a pose named "bust": head and shoulders only, three-quarter view facing the viewer, calm mouth, hands out of frame. A held item appears once (one gun, one flag), never doubled, with no letters on it. At most ${BORNAS_LIMITS.CAST_MAX} cast entries. Pick every library sprite and background that fits the era and place; list new items only when nothing in the library fits (max ${BORNAS_LIMITS.NEW_ITEMS_MAX}) and new backgrounds only for places the library lacks (max ${BORNAS_LIMITS.NEW_BG_MAX}). A planted object that is called back (a scarf, a ring, a letter) must exist as a drawn sprite. Never list as items things the code makes: text, speech bubbles, signs with words, labels, arrows, maps, muzzle flashes, explosions, smoke, dust, fire glow, light beams or other effects.`,
       'JSON: {"cast": [{"id": string (short snake_case, e.g. "hero_14"), "desc": string (age, face, hair, clothes, era; full body), "heightM": number, "poses": [{"name": string (snake_case), "desc": string}]}], "items": [library sprite names], "backgrounds": [library background names], "newItems": [{"name": string (snake_case), "desc": string, "kind": "person"|"animal"|"vehicle"|"prop"|"structure"|"nature"|"weapon", "heightM": number (real height in metres of the object as drawn in side view: standing adult 1.75, horse with rider 2.4, revolver 0.15, glass 0.1, house 6)}], "newBackgrounds": [{"name": string (snake_case starting with bg_), "desc": string}]}',
       JSON_ONLY,
-    ].join("\n\n"),
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
   MATCH_CROPS: (wanted: { name: string; desc: string }[], count: number) =>
     [
       `Attached is a contact sheet of ${count} numbered crops (number under each) cut from one generated sheet. The sheet was asked to contain these items:`,

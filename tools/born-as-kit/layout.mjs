@@ -1,6 +1,7 @@
 import fs from "fs";
 const GW = JSON.parse(fs.readFileSync(new URL("./glyph_widths.json", import.meta.url), "utf8"));
-export const textW = (s, px, w = 900) => [...s].reduce((a, c) => a + (GW[w][c] ?? 0.56), 0) * px;
+const WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uff60]/;
+export const textW = (s, px, w = 900) => [...s].reduce((a, c) => a + (GW[w][c] ?? (WIDE.test(c) ? 1.02 : 0.56)), 0) * px;
 export const LABEL = { b: 70, i: 38 };
 export const labelSize = (text, sub) => ({ w: Math.max(textW(text, LABEL.b), textW(sub, LABEL.i, 800) + 6) + 16, h: LABEL.b * 1.26 + (sub ? LABEL.i * 1.18 : 0) + 8 });
 export const plateSize = (text, sub, s) => ({ w: Math.max(textW(text, s), textW(sub, s * 0.52, 800)) + s * 1.44 + 8, h: s * 1.24 + (sub ? s * 0.62 : 0) + s * 0.46 + 8 });

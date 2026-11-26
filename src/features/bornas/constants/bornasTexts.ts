@@ -1,4 +1,4 @@
-import type { BornasJobStatus, BornasStepId, BornasStepStatus, BornasTopic, BornasVideoStatus } from "../types/bornas.js";
+import type { BornasGenre, BornasJobStatus, BornasStepId, BornasStepStatus, BornasTopic, BornasVideoStatus } from "../types/bornas.js";
 const VI = {
   TITLE: "Video HyperFrames",
   BADGE: "Born-as",
@@ -42,8 +42,10 @@ const VI = {
   LOG_STATES: { idle: "Chờ", running: "Đang chạy", done: "Xong", waiting: "Chờ duyệt", error: "Lỗi" } as Record<BornasStepStatus, string>,
   JOB_STATES: { running: "Đang chạy", waiting: "Chờ duyệt", done: "Xong", error: "Lỗi", cancelled: "Đã dừng" } as Record<BornasJobStatus, string>,
   VIDEO_STATES: { idle: "Chờ", running: "Đang làm", waiting: "Chờ duyệt", done: "Xong", error: "Lỗi" } as Record<BornasVideoStatus, string>,
-  TOPICS: { world: "Lịch sử thế giới", ww: "Thế chiến 1–2", ancient: "La Mã · cổ đại", medieval: "Trung cổ", eastasia: "Đông Á", vietnam: "Lịch sử Việt Nam", modern: "Hiện đại", game: "Game · giả tưởng", wildwest: "Miền Tây hoang dã" } as Record<BornasTopic, string>,
-  LANGUAGES: { vi: "Tiếng Việt", en: "English" },
+  TOPICS: { world: "Lịch sử thế giới", ww: "Thế chiến 1–2", ancient: "La Mã · cổ đại", medieval: "Trung cổ", eastasia: "Đông Á", vietnam: "Lịch sử Việt Nam", modern: "Hiện đại", game: "Game (nhân vật game thật)", wildwest: "Miền Tây hoang dã" } as Record<BornasTopic, string>,
+  GENRE: "Thể loại",
+  GENRE_HINT: "Mặc định theo video mẫu. Các thể loại khác giữ nhịp kể và kiểu chữ của mẫu nhưng đổi công thức câu chuyện.",
+  GENRES: { sample: "Theo video mẫu", bornas: "Nếu bạn sinh ra là…", survive: "Vì sao bạn không sống nổi…", worst: "Tệ nhất lịch sử (thời điểm, nghề)", day: "24 giờ làm…", whatif: "Nếu như… (lịch sử giả định)" } as Record<BornasGenre, string>,
   SCRIPTS: "Kịch bản",
   SCRIPTS_REVIEW: "Xem từng kịch bản, sửa câu hoặc chữ trên màn hình nếu cần, rồi bấm Duyệt.",
   APPROVE: "Duyệt & làm video",
@@ -96,6 +98,9 @@ const EN: BornasTexts = {
   TOPIC: "Topic",
   TOPIC_HINT: "The topic picks the picture library",
   VOICE: "Voice",
+  GENRE: "Genre",
+  GENRE_HINT: "Defaults to the sample. Other genres keep the sample's rhythm and text style but change the story formula.",
+  GENRES: { sample: "Same as sample", bornas: "If you were born as…", survive: "Why you wouldn't survive…", worst: "Worst in history (era, job)", day: "24 hours as…", whatif: "What if… (alternate history)" },
   LANGUAGE: "Language",
   COUNT: "Scripts",
   COUNT_VALUE: (n: number) => `${n} scripts · ${n} videos`,
@@ -125,7 +130,7 @@ const EN: BornasTexts = {
   LOG_STATES: { idle: "Waiting", running: "Running", done: "Done", waiting: "Review", error: "Error" },
   JOB_STATES: { running: "Running", waiting: "Review", done: "Done", error: "Error", cancelled: "Stopped" },
   VIDEO_STATES: { idle: "Waiting", running: "Working", waiting: "Review", done: "Done", error: "Error" },
-  TOPICS: { world: "World history", ww: "World Wars", ancient: "Rome · ancient", medieval: "Medieval", eastasia: "East Asia", vietnam: "Vietnam history", modern: "Modern", game: "Games · fantasy", wildwest: "Wild West" },
+  TOPICS: { world: "World history", ww: "World Wars", ancient: "Rome · ancient", medieval: "Medieval", eastasia: "East Asia", vietnam: "Vietnam history", modern: "Modern", game: "Games (real game characters)", wildwest: "Wild West" },
   SCRIPTS: "Scripts",
   SCRIPTS_REVIEW: "Check each script, edit lines or on-screen text if needed, then approve.",
   APPROVE: "Approve & make videos",

@@ -6,12 +6,12 @@ import { cn } from "../../../lib/utils.js";
 import { ActionBtn, StepHeader } from "../../motion/components/MotionControls.js";
 import { reupClock } from "../../reup/components/ReupControls.js";
 import { REUP_STYLES as S } from "../../reup/constants/reupStyles.js";
-import { BORNAS_LIMITS } from "../constants/bornasConfig.js";
+import { motionLanguageRate } from "../../../lib/motionLanguage.js";
+import { bornasTokens } from "../constants/bornasConfig.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import type { BornasStudio } from "../hooks/useBornasStudio.js";
 import type { BornasLine, BornasScript } from "../types/bornas.js";
 const KIND_STYLE: Record<BornasLine["kind"], string> = { tag: B.KIND_TAG, plate: B.KIND_PLATE, label: B.KIND_LABEL, none: B.KIND_NONE };
-const words = (s: string): number => s.split(/\s+/).filter(Boolean).length;
 export const BornasScriptsCard: FC<{ studio: BornasStudio }> = ({ studio }) => {
   const { job, text } = studio;
   const [draft, setDraft] = useState<BornasScript[]>([]);
@@ -19,7 +19,7 @@ export const BornasScriptsCard: FC<{ studio: BornasStudio }> = ({ studio }) => {
   useEffect(() => setDraft(job?.scripts || []), [job?.id, job?.scripts]);
   if (!job?.scripts?.length) return null;
   const waiting = job.status === "waiting" && job.steps.script.status === "waiting";
-  const rate = BORNAS_LIMITS.WORDS_PER_SECOND;
+  const rate = motionLanguageRate(job.channel.language);
   const patch = (i: number, value: Partial<BornasScript>) => setDraft((all) => all.map((s, k) => (k === i ? { ...s, ...value } : s)));
   const patchLine = (i: number, n: number, value: Partial<BornasLine>) => setDraft((all) => all.map((s, k) => (k === i ? { ...s, lines: s.lines.map((l, j) => (j === n ? { ...l, ...value } : l)) } : s)));
   return (
@@ -27,7 +27,7 @@ export const BornasScriptsCard: FC<{ studio: BornasStudio }> = ({ studio }) => {
       <StepHeader n="03" icon={ScrollText} title={text.SCRIPTS} badge={String(draft.length)} hint={waiting ? text.SCRIPTS_REVIEW : undefined} />
       <div className={B.SCRIPTS}>
         {draft.map((script, i) => {
-          const count = script.lines.reduce((n, l) => n + words(l.text), 0);
+          const count = script.lines.reduce((n, l) => n + bornasTokens(l.text).length, 0);
           const isOpen = open === i;
           return (
             <div key={i} className={cn(B.SCRIPT, isOpen && B.SCRIPT_OPEN)}>

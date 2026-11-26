@@ -9,10 +9,11 @@ import { StepHeader } from "../../motion/components/MotionControls.js";
 import { MotionSettingsGroup } from "../../motion/components/MotionSettingsGroup.js";
 import { ReupSelect, ReupTextField, ReupToggle } from "../../reup/components/ReupControls.js";
 import { REUP_STYLES as S } from "../../reup/constants/reupStyles.js";
-import { BORNAS_COUNTS, BORNAS_LENGTHS, BORNAS_TOPICS } from "../constants/bornasConfig.js";
+import { MOTION_LANGUAGES, MOTION_LANGUAGE_CODES } from "../../../constants/motionLanguages/index.js";
+import { BORNAS_COUNTS, BORNAS_GENRES, BORNAS_LENGTHS, BORNAS_TOPICS } from "../constants/bornasConfig.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import type { BornasStudio } from "../hooks/useBornasStudio.js";
-import type { BornasLanguage, BornasTopic } from "../types/bornas.js";
+import type { BornasGenre, BornasLanguage, BornasTopic } from "../types/bornas.js";
 export const BornasChannelCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({ studio, ui }) => {
   const { text, channel, channels, patchChannel } = studio;
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[ui];
@@ -50,7 +51,8 @@ export const BornasChannelCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = 
             <ReupTextField label={text.CHANNEL_NAME} value={channel.name} maxLength={80} onChange={(name) => patchChannel({ name })} />
             <ReupSelect<BornasTopic> label={text.TOPIC} title={text.TOPIC_HINT} value={channel.topic} options={BORNAS_TOPICS.map((value) => ({ value, label: text.TOPICS[value] }))} onChange={(topic) => patchChannel({ topic })} />
             <ReupSelect<string> label={text.VOICE} title={voiceText.CHANNELS_HINT} value={channel.voiceChannel} options={[{ value: "", label: voiceText.NO_CHANNEL }, ...studio.voiceChannels.channels.map((c) => ({ value: c.id, label: c.name }))]} onChange={(voiceChannel) => patchChannel({ voiceChannel })} />
-            <ReupSelect<BornasLanguage> label={text.LANGUAGE} value={channel.language} options={(["vi", "en"] as const).map((value) => ({ value, label: text.LANGUAGES[value] }))} onChange={(language) => patchChannel({ language })} />
+            <ReupSelect<BornasLanguage> label={text.LANGUAGE} value={channel.language} options={MOTION_LANGUAGE_CODES.map((value) => ({ value, label: MOTION_LANGUAGES[value].label[ui] }))} onChange={(language) => patchChannel({ language })} />
+            <ReupSelect<BornasGenre> label={text.GENRE} title={text.GENRE_HINT} value={channel.genre || "sample"} options={BORNAS_GENRES.map((value) => ({ value, label: text.GENRES[value] }))} onChange={(genre) => patchChannel({ genre })} />
             <ReupSelect<number> label={text.COUNT} value={channel.count} options={BORNAS_COUNTS.map((value) => ({ value, label: text.COUNT_VALUE(value) }))} onChange={(count) => patchChannel({ count })} />
             <ReupSelect<number> label={text.LENGTH} value={channel.seconds} options={BORNAS_LENGTHS.map((value) => ({ value, label: text.MINUTES(value / 60) }))} onChange={(seconds) => patchChannel({ seconds })} />
             <ReupToggle label={text.REVIEW} icon={PauseCircle} checked={channel.review} on={text.REVIEW_ON} off={text.REVIEW_OFF} onChange={(review) => patchChannel({ review })} />

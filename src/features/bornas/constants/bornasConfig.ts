@@ -1,6 +1,6 @@
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import type { ReupAiChoice } from "../../reup/types/reup.js";
-import type { BornasAiSettings, BornasChannel, BornasStepId, BornasTopic } from "../types/bornas.js";
+import type { BornasAiSettings, BornasChannel, BornasGenre, BornasLanguage, BornasStepId, BornasTopic } from "../types/bornas.js";
 export const BORNAS_STEPS: readonly BornasStepId[] = ["sample", "script", "voice", "assets", "shots", "build", "render"];
 export const BORNAS_VIDEO_STEPS: readonly BornasStepId[] = ["voice", "assets", "shots", "build", "render"];
 export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate", DELETE_VIDEOS: "/delete-videos" } as const;
@@ -65,6 +65,13 @@ export const BORNAS_TOPICS = Object.keys(BORNAS_TOPIC_LIBS) as BornasTopic[];
 export const BORNAS_LENGTHS = [60, 120, 180, 300, 480, 600] as const;
 export const BORNAS_COUNTS = [1, 2, 3, 4, 5, 6, 8, 10] as const;
 export const BORNAS_LIMITS = {
+  FRAGMENT_SECONDS: 1.4,
+  LINE_SECONDS: 0.8,
+  LINE_SPEECH_SECONDS: 2.3,
+  LENGTH_SLACK: 1.08,
+  MIN_WORDS: 60,
+  SAMPLE_RATE: 2.7,
+  STYLE_CHECK_LANGS: ["vi", "en"] as BornasLanguage[],
   HERO_SAME: 0.6,
   HERO_STOP: ["the", "and", "von", "van", "der", "del", "tuoi", "age", "ages", "years", "nam"],
   POLL_MS: 2500,
@@ -74,7 +81,6 @@ export const BORNAS_LIMITS = {
   SHEET_ROWS: 4,
   SHEET_TILE: 384,
   SCENE_CUT: 0.12,
-  WORDS_PER_SECOND: 2.6,
   CAST_MAX: 4,
   POSES_MAX: 6,
   NEW_ITEMS_MAX: 12,
@@ -100,4 +106,8 @@ export const BORNAS_REVIEW_CONTEXT = "These are original drawings for a family-f
 export const BORNAS_STYLE_LINE = "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon";
 const AI_DEFAULT: ReupAiChoice = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiPro, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: true, allowFallback: true, multiRoom: true };
 export const BORNAS_AI_DEFAULT: BornasAiSettings = { mainAi: AI_DEFAULT, visionAi: AI_DEFAULT, lightAi: { ...AI_DEFAULT, model: AiPlanningChatModel.GeminiFlash }, drawHeadless: true };
-export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", count: 3, seconds: 120, review: false });
+export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "sample", count: 3, seconds: 120, review: false });
+export const BORNAS_GENRES: BornasGenre[] = ["sample", "bornas", "survive", "worst", "day", "whatif"];
+export const BORNAS_TOKEN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+/gu;
+export const BORNAS_WORD = /[\p{L}\p{N}]/u;
+export const bornasTokens = (text: string): string[] => (text.match(BORNAS_TOKEN) || []).filter((t) => BORNAS_WORD.test(t));

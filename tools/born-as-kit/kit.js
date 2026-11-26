@@ -166,5 +166,5 @@ const BORN_CSS = `
 .bb-a{position:absolute;inset:0;overflow:visible}.bb-a path{fill:#fff;stroke:#16100c;stroke-width:6;stroke-linejoin:round}.bb-p{position:absolute;font-variant-numeric:lining-nums;max-width:640px;text-align:center;background:#fff;border:6px solid #16100c;border-radius:44px;padding:.32em .8em .36em;font-family:'Alegreya Sans';font-weight:800;color:#16100c;line-height:1.15}
 .bsr{position:absolute;right:56px;top:46px;background:#16100c;border:3px solid #c7a15a;border-radius:10px;padding:8px 22px 9px;font-family:'Alegreya Sans SC';font-weight:800;font-size:25px;letter-spacing:5px;color:#ead9ae;line-height:1.2}
 .brb{position:absolute;white-space:nowrap;font-variant-numeric:lining-nums;font-family:'Alegreya Sans';font-weight:900;color:#b8231a;border:.09em solid #b8231a;border-radius:.14em;padding:.08em .32em 0;letter-spacing:.04em;line-height:1.15;mix-blend-mode:multiply}
-.bf{position:absolute;inset:0;opacity:0;pointer-events:none}.bg{position:absolute;border-radius:50%;mix-blend-mode:screen;opacity:0;pointer-events:none}.bw{position:absolute;inset:0;background:#fff;opacity:0}
+.bf{position:absolute;inset:0;opacity:0;pointer-events:none}.bg{position:absolute;border-radius:50%;mix-blend-mode:soft-light;opacity:0;pointer-events:none}.bw{position:absolute;inset:0;background:#fff;opacity:0}
 `;

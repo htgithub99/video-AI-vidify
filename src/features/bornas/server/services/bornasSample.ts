@@ -58,7 +58,7 @@ export const analyzeBornasSample = async (job: BornasJob, log: Log, signal?: Abo
   log(BORNAS_LOG.TRANSCRIBE);
   const wav = bornasDir(job.id, "sample.wav");
   await reupFfmpeg(["-y", "-i", job.sample.path, "-vn", "-ac", "1", "-ar", "16000", wav], { signal });
-  const asr = await transcribeVieneuAudio(wav, job.channel.language, signal, (line) => line && log(line));
+  const asr = await transcribeVieneuAudio(wav, "", signal, (line) => line && log(line));
   fs.rmSync(wav, { force: true });
   const spoken = asr.words.length ? Math.max(1, _.last(asr.words)!.e - asr.words[0].s) : job.sample.duration;
   const wpm = (asr.words.length / spoken) * 60;

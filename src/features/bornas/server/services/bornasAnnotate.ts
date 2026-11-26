@@ -106,7 +106,9 @@ export const annotateSprites = async (list: AnnSprite[], ai: BornasAiSettings, l
   }
 };
 const cleanBg = (raw: Obj, free: [number, number, number, number][]): BornasBgAnn | undefined => {
+  const sea = num(raw.water);
   const g = (Array.isArray(raw.ground) ? raw.ground : []).map(num);
+  if (!g.some((v) => v !== null && v >= BORNAS_ANN.GROUND_MIN && v <= BORNAS_ANN.GROUND_MAX) && sea !== null && sea >= BORNAS_ANN.GROUND_MIN && sea <= BORNAS_ANN.GROUND_MAX) g.splice(0, g.length, sea, sea, sea);
   const known = g.filter((v): v is number => v !== null && v >= BORNAS_ANN.GROUND_MIN && v <= BORNAS_ANN.GROUND_MAX);
   if (!known.length) return undefined;
   const ground = [0, 1, 2].map((i) => {
@@ -155,8 +157,8 @@ const cleanBg = (raw: Obj, free: [number, number, number, number][]): BornasBgAn
     boats: boats && boats[1] - boats[0] > 200 && boats[2] > 200 && boats[2] < 1075 ? boats : null,
   };
 };
-export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, log: Log, signal?: AbortSignal): Promise<Record<string, BornasBgAnn>> => {
-  if (!list.length) return {};
+export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, log: Log, signal?: AbortSignal): Promise<{ ann: Record<string, BornasBgAnn>; open: string[] }> => {
+  if (!list.length) return { ann: {}, open: [] };
   log(BORNAS_LOG.ANN_BGS(list.length));
   const dir = workDir();
   try {
@@ -166,6 +168,7 @@ export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, l
     await runKitPy("annotate.py", ["free", manifest, freeFile], log, signal);
     const free = readJson<Record<string, [number, number, number, number][]>>(freeFile, {});
     const out: Record<string, BornasBgAnn> = {};
+    const open: string[] = [];
     for (const batch of _.chunk(list, BORNAS_LIMITS.AI_IMAGES)) {
       const bm = path.join(dir, "batch.json");
       writeJson(bm, batch);
@@ -182,10 +185,12 @@ export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, l
         const b = batch[Number(r.n) - 1];
         const ann = b && cleanBg(r, free[b.name] || []);
         if (ann) out[b.name] = ann;
+        else if (b) open.push(b.name);
       }
     }
     log(BORNAS_LOG.ANN_BGS_DONE(Object.keys(out).length, list.length));
-    return out;
+    if (open.length) log(BORNAS_LOG.ANN_BGS_OPEN(open));
+    return { ann: out, open };
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

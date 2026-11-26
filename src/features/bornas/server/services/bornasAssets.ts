@@ -34,6 +34,7 @@ interface LibBg {
   ground?: number;
   desc?: string;
   ann?: BornasBgAnn;
+  openV?: number;
 }
 interface LibCatalog {
   style?: string;
@@ -42,6 +43,7 @@ interface LibCatalog {
 }
 const SWEEP_SAFE = new Set(["vehicle", "structure", "building", "prop", "nature", "weapon", "ship", "aircraft"]);
 const catalogFile = (lib: string): string => bornasLib(lib, "catalog.json");
+const bgMeasured = (b: LibBg): boolean => b.ann?.v === BORNAS_ANN.BG_VERSION || b.openV === BORNAS_ANN.BG_VERSION;
 const readCatalog = (lib: string): LibCatalog => {
   const cat = readJson<LibCatalog>(catalogFile(lib), { items: {}, backgrounds: {} });
   return { ...cat, items: cat.items || {}, backgrounds: cat.backgrounds || {} };
@@ -160,6 +162,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
           .map(([n, b]) => `${n}: ${b.desc || words(n)}`)
           .join("\n"),
         analysis: job.analysis!,
+        topic: job.channel.topic,
       }),
       BORNAS_ARTIFACT.ASSETS,
       reupExec(job.ai.mainAi),
@@ -330,16 +333,17 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     writeJson(castAnnFile, { ...readJson<Record<string, BornasSpriteAnn>>(castAnnFile, {}), ...Object.fromEntries(good.filter((sp) => castOf(sp.name)).map((sp) => [sp.name, ann2[sp.name]])) });
     for (const sp of good) finalSprites.push({ ...sp, ann: ann2[sp.name], facing: ann2[sp.name].facing });
   }
-  const needBgs = usedBgs.filter((n) => cats[bgLib[n]].backgrounds[n].ann?.v !== BORNAS_ANN.BG_VERSION);
-  const bgAnn = await annotateBackgrounds(
+  const needBgs = usedBgs.filter((n) => !bgMeasured(cats[bgLib[n]].backgrounds[n]));
+  const { ann: bgAnn, open: bgOpen } = await annotateBackgrounds(
     needBgs.map((n) => ({ name: n, png: path.join(render, `${n}.png`) })),
     job.ai,
     log,
     signal,
   );
-  for (const lib of _.uniq(Object.keys(bgAnn).map((n) => bgLib[n]))) {
+  for (const lib of _.uniq([...Object.keys(bgAnn), ...bgOpen].map((n) => bgLib[n]))) {
     const cat = readCatalog(lib);
     for (const [n, ann] of Object.entries(bgAnn)) if (bgLib[n] === lib && cat.backgrounds[n]) cat.backgrounds[n] = { ...cat.backgrounds[n], ann, ground: Math.round(ann.ground[1]) };
+    for (const n of bgOpen) if (bgLib[n] === lib && cat.backgrounds[n]) cat.backgrounds[n] = { ...cat.backgrounds[n], openV: BORNAS_ANN.BG_VERSION };
     cats[lib].backgrounds = cat.backgrounds;
     writeJson(catalogFile(lib), cat);
   }
@@ -371,8 +375,8 @@ export const annotateBornasLibrary = async (lib: string, ai: BornasAiSettings, l
     writeJson(catalogFile(lib), now);
     sprites += Object.keys(ann).length;
   }
-  const bgs = Object.keys(cat.backgrounds).filter((n) => cat.backgrounds[n].ann?.v !== BORNAS_ANN.BG_VERSION && fs.existsSync(bornasLib(lib, "bg", `${n}.jpg`)));
-  const ann = await annotateBackgrounds(
+  const bgs = Object.keys(cat.backgrounds).filter((n) => !bgMeasured(cat.backgrounds[n]) && fs.existsSync(bornasLib(lib, "bg", `${n}.jpg`)));
+  const { ann, open } = await annotateBackgrounds(
     bgs.map((n) => ({ name: n, png: bornasLib(lib, "bg", `${n}.jpg`) })),
     ai,
     log,
@@ -380,6 +384,7 @@ export const annotateBornasLibrary = async (lib: string, ai: BornasAiSettings, l
   );
   const now = readCatalog(lib);
   for (const [n, a] of Object.entries(ann)) if (now.backgrounds[n]) now.backgrounds[n] = { ...now.backgrounds[n], ann: a, ground: Math.round(a.ground[1]) };
+  for (const n of open) if (now.backgrounds[n]) now.backgrounds[n] = { ...now.backgrounds[n], openV: BORNAS_ANN.BG_VERSION };
   writeJson(catalogFile(lib), now);
   return { sprites, bgs: Object.keys(ann).length };
 };

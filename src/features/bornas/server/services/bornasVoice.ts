@@ -6,7 +6,7 @@ import { findVoiceChannel } from "../../../motion/server/services/motionVoiceLib
 import { transcribeVieneuAudio, vieneuRoot } from "../../../../server/services/vieneuTtsService.js";
 import { reupFfmpeg } from "../../../reup/server/services/reupFfmpeg.js";
 import { probeMediaDurationSeconds } from "../../../video-export/server/services/videoExportFfmpegService.js";
-import { BORNAS_DIR, BORNAS_LIMITS } from "../../constants/bornasConfig.js";
+import { BORNAS_DIR, BORNAS_LIMITS, bornasTokens } from "../../constants/bornasConfig.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
 import { bornasDir } from "./bornasStore.js";
@@ -58,7 +58,7 @@ export const voiceBornasVideo = async (job: BornasJob, video: BornasVideo, scrip
     const from = starts[i] - 0.1,
       to = starts[i] + seconds[i] + gaps[i] / 2;
     const mine = heard.words.filter((w) => w.s >= from && w.s < to).map((w) => ({ s: Math.max(0, w.s - starts[i]), e: Math.max(0, w.e - starts[i]) }));
-    const tokens = line.text.split(/\s+/).filter(Boolean).length;
+    const tokens = bornasTokens(line.text).length;
     return mapWords(tokens, mine, seconds[i]).map(([s, e]) => [_.round(starts[i] + s, 3), _.round(starts[i] + e, 3)] as [number, number]);
   });
   video.seconds = _.round(at, 2);

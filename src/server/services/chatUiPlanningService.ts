@@ -134,7 +134,7 @@ import { jsonUtils } from "../../lib/json.js";
 import { appLog, appWarn } from "../../lib/logger.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js";
-import { assessChatComposerContent } from "./chatComposerValidation.js";
+import { assessChatComposerContent, normalizeChatComposerText } from "./chatComposerValidation.js";
 import { getClaudeComposerScope, observeClaudeUploads, readClaudeUploadState, waitForClaudeUploads } from "./claudeUploadReadiness.js";
 import { attachGeminiLocalFiles, geminiLocalFiles, reconcileGeminiQueuedFiles } from "./geminiFileAttachmentService.js";
 import { ChatUploadError, uploadFailure } from "./chatUploadRecovery.js";
@@ -932,6 +932,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ALERT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, errorMessage: metaTurnError, busy: isBusy });
       throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_ALERT, busy: false, elapsedMs: Date.now() - startedAt, lastCandidate: metaTurnError } });
     }
+    if (responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR && !isBusy && !parseableJsonResponse && count <= initialCount && Date.now() - startedAt > CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_TURN_CHECK_MS && (await geminiTurnLost(page))) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_TURN_LOST_ERROR);
     if (responseProgressed || isBusy) {
       activityDeadline = _.min([absoluteDeadline, Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_ACTIVITY_GRACE_MS]) || absoluteDeadline;
     }
@@ -1197,6 +1198,19 @@ const waitGeminiUserTurn = async (page: Page, before: number, signal?: AbortSign
   }
   return false;
 };
+const sentTurnStart = new WeakMap<Page, { start: string; previous?: string }>();
+const geminiTurnLost = async (page: Page): Promise<boolean> => {
+  const sent = sentTurnStart.get(page);
+  if (!sent?.previous) return false;
+  const last = await page
+    .locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_USER_TURN_SELECTOR)
+    .filter({ visible: true })
+    .last()
+    .innerText({ timeout: 2000 })
+    .catch(() => null);
+  const text = last === null ? "" : normalizeChatComposerText(last);
+  return !!text && !text.includes(sent.start) && text.includes(sent.previous);
+};
 const geminiChatVanished = async (request: ChatPlanningRoomIdentity): Promise<boolean> => {
   if (request.provider !== AiPlanningFallbackProvider.GeminiChat) return false;
   const page = getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
@@ -1212,7 +1226,7 @@ const geminiChatVanished = async (request: ChatPlanningRoomIdentity): Promise<bo
     .filter({ visible: true })
     .count()
     .catch(() => 1);
-  return turns === 0 && answers === 0;
+  return (turns === 0 && answers === 0) || (await geminiTurnLost(page));
 };
 const composerGates = new Map<string, Promise<void>>();
 const withComposerGate = async <T>(key: string, signal: AbortSignal | undefined, fn: () => Promise<T>): Promise<T> => {
@@ -1646,6 +1660,11 @@ const submitPrompt = async (
                     .catch(() => 0)
                 : 0;
               markPendingSubmission();
+              if (isGemini) {
+                const start = normalizeChatComposerText(submittedPrompt).slice(0, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_TURN_START_CHARS),
+                  before = sentTurnStart.get(page);
+                sentTurnStart.set(page, { start, previous: before?.start === start ? before.previous : before?.start });
+              }
               await clickSendButton(page, sendButton, signal);
               markRoomTiming(page, CHAT_SPEED.MARK.SENT);
             } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);

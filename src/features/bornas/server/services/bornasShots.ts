@@ -3,7 +3,7 @@ import fs from "fs";
 import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_DIR, BORNAS_LIMITS, BORNAS_TOPIC_GRADE } from "../../constants/bornasConfig.js";
+import { BORNAS_DIR, BORNAS_LIMITS, BORNAS_TOPIC_GRADE, bornasTokens } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasBgAnn, BornasSpriteAnn, BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
@@ -130,7 +130,7 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
   for (const [k, idx] of chunks.entries()) {
     log(BORNAS_LOG.SHOTS(idx[0] + 1, _.last(idx)! + 1));
     const prompt = BORNAS_PROMPT.SHOTS({
-      lines: idx.map((i) => ({ index: i, text: script.lines[i].text, idea: script.lines[i].idea, screen: script.lines[i].screen, sub: script.lines[i].sub, kind: script.lines[i].kind, words: script.lines[i].text.split(/\s+/).filter(Boolean), start: words[i][0]?.[0] ?? 0, end: _.last(words[i])?.[1] ?? 0 })),
+      lines: idx.map((i) => ({ index: i, text: script.lines[i].text, idea: script.lines[i].idea, screen: script.lines[i].screen, sub: script.lines[i].sub, kind: script.lines[i].kind, words: bornasTokens(script.lines[i].text), start: words[i][0]?.[0] ?? 0, end: _.last(words[i])?.[1] ?? 0 })),
       sprites: video.sprites!,
       backgrounds: video.backgrounds!,
       analysis: job.analysis!,

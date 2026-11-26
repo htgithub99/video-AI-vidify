@@ -4,9 +4,10 @@ import { logger } from "../../../../lib/logger.js";
 import { runInMotionAiSession, closeMotionStandaloneBrowser } from "../../../motion/server/services/motionStoryService.js";
 import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
 import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
-import { BORNAS_AI_DEFAULT, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
+import { motionLanguageCode } from "../../../../lib/motionLanguage.js";
+import { BORNAS_AI_DEFAULT, BORNAS_GENRES, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
-import type { BornasAiSettings, BornasChannel, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
+import type { BornasAiSettings, BornasChannel, BornasGenre, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
 import { annotateBornasLibrary, prepareBornasAssets } from "./bornasAssets.js";
 import { buildBornasVideo, checkBornasVideo, renderBornasVideo } from "./bornasRender.js";
 import { analyzeBornasSample, dropBornasAnalysis, inspectBornasSample } from "./bornasSample.js";
@@ -18,7 +19,17 @@ import { bornasVideoDir, voiceBornasVideo } from "./bornasVoice.js";
 const errText = (error: unknown): string => String((error as Error)?.message || error);
 const cleanChannel = (raw: Partial<BornasChannel> | undefined): BornasChannel => {
   if (!raw?.id) throw new Error(BORNAS_ERROR.NO_CHANNEL);
-  return { id: String(raw.id), name: String(raw.name || raw.id).slice(0, 80), topic: raw.topic || "world", voiceChannel: String(raw.voiceChannel || ""), language: raw.language === "en" ? "en" : "vi", count: _.clamp(Math.round(Number(raw.count) || 1), 1, 10), seconds: _.clamp(Math.round(Number(raw.seconds) || 120), 30, 1200), review: raw.review === true };
+  return {
+    id: String(raw.id),
+    name: String(raw.name || raw.id).slice(0, 80),
+    topic: raw.topic || "world",
+    voiceChannel: String(raw.voiceChannel || ""),
+    language: motionLanguageCode(raw.language),
+    genre: BORNAS_GENRES.includes(raw.genre as BornasGenre) ? (raw.genre as BornasGenre) : "sample",
+    count: _.clamp(Math.round(Number(raw.count) || 1), 1, 10),
+    seconds: _.clamp(Math.round(Number(raw.seconds) || 120), 30, 1200),
+    review: raw.review === true,
+  };
 };
 const cleanAi = (raw: Partial<BornasAiSettings> | undefined): BornasAiSettings => ({ mainAi: { ...BORNAS_AI_DEFAULT.mainAi, ...raw?.mainAi }, visionAi: { ...BORNAS_AI_DEFAULT.visionAi, ...raw?.visionAi }, lightAi: { ...BORNAS_AI_DEFAULT.lightAi, ...raw?.lightAi }, drawHeadless: raw?.drawHeadless !== false });
 const heavy = <T>(job: BornasJob, kind: string, step: string, signal: AbortSignal, run: () => Promise<T>): Promise<T> =>
