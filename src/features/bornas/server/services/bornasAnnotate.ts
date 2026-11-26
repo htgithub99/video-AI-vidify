@@ -133,7 +133,7 @@ const horizonOf = (raw: Obj, ground: [number, number, number]): number | null =>
   const sorted = _.sortBy(marks);
   return (sorted[Math.floor((sorted.length - 1) / 2)] + sorted[Math.ceil((sorted.length - 1) / 2)]) / 2;
 };
-const cleanBg = (raw: Obj, free: [number, number, number, number][]): BornasBgAnn | undefined => {
+const cleanBg = (raw: Obj, free: [number, number, number, number][], lineHz: number | null): BornasBgAnn | undefined => {
   const sea = num(raw.water);
   const g = (Array.isArray(raw.ground) ? raw.ground : []).map(num);
   if (!g.some((v) => v !== null && v >= BORNAS_ANN.GROUND_MIN && v <= BORNAS_ANN.GROUND_MAX) && sea !== null && sea >= BORNAS_ANN.GROUND_MIN && sea <= BORNAS_ANN.GROUND_MAX) g.splice(0, g.length, sea, sea, sea);
@@ -171,7 +171,7 @@ const cleanBg = (raw: Obj, free: [number, number, number, number][]): BornasBgAn
   const r4 = Array.isArray(raw.rails) ? raw.rails.map(num) : [];
   const rails = r4.length >= 4 && r4.slice(0, 4).every((x) => x !== null) ? (r4.slice(0, 4) as [number, number, number, number]) : null;
   const boats = triple(raw.boats);
-  const hz = horizonOf(raw, ground);
+  const hz = lineHz !== null && lineHz < Math.min(...ground) - BORNAS_SCALE.GROUND_GAP ? lineHz : horizonOf(raw, ground);
   const scaled = (y: number): number => Math.round(_.clamp(((y - hz!) * BORNAS_SCALE.PERSON_M) / BORNAS_SCALE.EYE_M, BORNAS_ANN.PERSON_MIN * 0.6, BORNAS_ANN.PERSON_MAX * 1.6));
   return {
     v: BORNAS_ANN.BG_VERSION,
@@ -198,6 +198,7 @@ export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, l
     const freeFile = path.join(dir, "free.json");
     await runKitPy("annotate.py", ["free", manifest, freeFile], log, signal);
     const free = readJson<Record<string, [number, number, number, number][]>>(freeFile, {});
+    const lines = lastJson<Record<string, { horizon: number | null; lines: number; conf: number }>>(await runKitPy("horizon.py", [manifest], log, signal).catch(() => "{}"), {});
     const out: Record<string, BornasBgAnn> = {};
     const open: string[] = [];
     for (const batch of _.chunk(list, BORNAS_LIMITS.AI_IMAGES)) {
@@ -214,7 +215,8 @@ export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, l
       ).catch(() => undefined)) as { bgs?: Obj[] } | undefined;
       for (const r of res?.bgs || []) {
         const b = batch[Number(r.n) - 1];
-        const ann = b && cleanBg(r, free[b.name] || []);
+        const seen = b && lines[b.name];
+        const ann = b && cleanBg(r, free[b.name] || [], seen && seen.horizon !== null && seen.conf >= BORNAS_SCALE.LINE_CONF && seen.lines >= BORNAS_SCALE.LINE_MIN ? seen.horizon : null);
         if (ann) out[b.name] = ann;
         else if (b) open.push(b.name);
       }
