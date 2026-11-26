@@ -15,6 +15,9 @@ const TOTAL = plan.total;
 const safe = (s) => String(s ?? "").replace(/'/g, "’").replace(/[\\`$]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\s+/g, " ").trim();
 const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
 const PAPER_W = 1640;
+const PAPER_BIG = 1.6;
+const PAPER_OPTICAL = 0.92;
+const PAPER_STAMP_GAP = 150;
 const DEFS = `<defs><filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter></defs>`;
 const TAG_MAX_W = 600;
 const fitPlate = (text, sub, size) => {
@@ -51,7 +54,7 @@ const spread = (actors) => {
   if (over) for (const a of solid) a.x = Math.max(40 + width(a) / 2, a.x - over);
 };
 for (const s of planShots) {
-  const o = { id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, shake: s.shake, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, chapter: s.chapter, endCard: s.endCard, moves: "" };
+  const o = { id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, chapter: s.chapter, endCard: s.endCard, moves: "" };
   const wide = o.tags.filter((g) => plateSize(g[1], g[2], 52).w > TAG_MAX_W);
   if (wide.length) {
     o.tags = o.tags.filter((g) => !wide.includes(g));
@@ -139,8 +142,11 @@ for (const s of shots) {
   } else if (s.kind === "paper" && s.paper) {
     const lines = s.paper.lines || [];
     const tops = { h: [92, "#2a1a10", 900], n: [210, "#8a1c10", 900], l: [64, "#5a3a22", 800], s: [58, "#5a3a22", 800] };
-    let y = 110;
-    inner = `<div class="paper" id="${s.id}p">${lines.map((l, i) => { const [full, col, w] = tops[l.size] || tops.l, size = Math.min(full, Math.floor(PAPER_W / Math.max(0.01, textW(safe(l.text), 1, w)))); const el = `<div class="pl" id="${s.id}p${i}" style="top:${y}px;font:${w} ${size}px 'Alegreya Sans';color:${col}">${safe(l.text)}</div>`; y += Math.round(size * 1.35) + 24; return el; }).join("")}</div>`;
+    const big = lines.length <= 2 ? PAPER_BIG : 1;
+    const sizes = lines.map((l) => { const [full, , w] = tops[l.size] || tops.l; return Math.min(Math.round(full * big), Math.floor(PAPER_W / Math.max(0.01, textW(safe(l.text), 1, w)))); });
+    const block = sizes.reduce((n, z) => n + Math.round(z * 1.35) + 24, -24) + (s.paper.stamp ? PAPER_STAMP_GAP : 0);
+    let y = Math.max(60, Math.round(540 * PAPER_OPTICAL - block / 2));
+    inner = `<div class="paper" id="${s.id}p">${lines.map((l, i) => { const [, col, w] = tops[l.size] || tops.l, size = sizes[i]; const el = `<div class="pl" id="${s.id}p${i}" style="top:${y}px;font:${w} ${size}px 'Alegreya Sans';color:${col}">${safe(l.text)}</div>`; y += Math.round(size * 1.35) + 24; return el; }).join("")}</div>`;
     js += lines.map((l, i) => `tl.fromTo('#${s.id}p${i}',{opacity:0,y:-20},{opacity:1,y:0,duration:.3},${l.t.toFixed(3)});`).join("");
     if (s.paper.stamp) js += `{const r=BORN.rubber(document.getElementById('${s.id}p'),{id:'${s.id}st',text:'${safe(s.paper.stamp.text)}',x:960,y:${Math.min(960, y + 90)},size:104,rot:-6});BORN.rubberIn(tl,r,${s.paper.stamp.t});}`;
   } else if (s.kind === "montage" && s.montage) {
@@ -167,11 +173,9 @@ for (const s of shots) {
   if (s.dark) js += `{const e=document.createElement('div');e.className='bw';e.style.background='#000';${ov}.appendChild(e);tl.set(e,{opacity:${Math.min(1, s.dark)}},${s.t0});}`;
   if (s.cool) js += `{const g=BORN.glow(${ov},'${s.id}cg',960,520,380,'120,150,230',.45);BORN.fadeIn(tl,g,${s.t0 + 0.2},.6);}`;
   if (s.warm) js += `{const g=BORN.glow(${ov},'${s.id}wg',960,600,560,'255,180,100',.5);BORN.fadeIn(tl,g,${s.t0},.6);}`;
-  if (s.shake) js += `BORN.shake(tl,'#${s.id}k',${s.shake.t},${s.shake.dur || 0.4},${s.shake.amp || 14},8);`;
   if (s.roll) {
     const cover = (d) => (Math.cos((Math.abs(d) * Math.PI) / 180) + (16 / 9) * Math.sin((Math.abs(d) * Math.PI) / 180)).toFixed(3);
-    const end = s.roll.deg * 0.25;
-    js += s.roll.hold ? `tl.fromTo('#${s.id}k',{rotation:0,scale:1},{rotation:${s.roll.deg},scale:${cover(s.roll.deg)},duration:.22,ease:'power3.out',transformOrigin:'50% 50%',immediateRender:false},${s.roll.t});tl.to('#${s.id}k',{rotation:${end.toFixed(2)},scale:${cover(end)},duration:.8,ease:'power2.inOut'},${(s.roll.t + 0.3).toFixed(3)});` : `tl.fromTo('#${s.id}k',{rotation:0,scale:1},{rotation:${s.roll.deg},scale:${cover(s.roll.deg)},duration:${s.roll.dur.toFixed(3)},ease:'sine.inOut',transformOrigin:'50% 50%'},${s.roll.t});`;
+    js += `tl.fromTo('#${s.id}k',{rotation:0,scale:1},{rotation:${s.roll.deg},scale:${cover(s.roll.deg)},duration:${s.roll.dur.toFixed(3)},ease:'sine.inOut',transformOrigin:'50% 50%'},${s.roll.t});`;
   }
   if (s.bar) js += bar(s);
   js += textJs(s, { camAt, MV, MOVES, hud });
@@ -187,7 +191,7 @@ for (const s of shots) {
   }
   if (s.series) js += `{const e=BORN.series(${hud},{id:'${s.id}sr',text:'${s.series}'});tl.set(e,{opacity:1},${s.t0});}`;
   if (s.focusAt) js += `{const f=BORN.focus(${ov},'${s.id}fo',${s.focusAt[0]},${s.focusAt[1]},150,560,.75);BORN.fadeIn(tl,f,${s.focusAt[2]},.6);}`;
-  if (s.flashAt !== undefined) js += `{const e=document.createElement('div');e.className='bw';${ov}.appendChild(e);tl.fromTo(e,{opacity:.95},{opacity:0,duration:.25,immediateRender:false},${s.flashAt});}`;
+  if (s.flashAt !== undefined) js += `{const e=document.createElement('div');e.className='bw';${ov}.appendChild(e);tl.fromTo(e,{opacity:.55},{opacity:0,duration:.4,immediateRender:false},${s.flashAt});}`;
   if (s.smoke) js += `{const e=document.createElement('div');e.className='haze';${ov}.appendChild(e);tl.fromTo(e,{x:-200,opacity:0},{x:200,opacity:.45,duration:${(s.t1 - s.t0).toFixed(2)},ease:'none'},${s.t0});}`;
   if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:190,size:64,rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
 }

@@ -13,7 +13,7 @@ const RULE = {
   storyStep: 2.4,
   minShot: 0.5,
   push: 0.015,
-  hookPush: 0.04,
+  hookPush: 0.03,
   drift: 0.04,
   close: 1.85,
   medium: 1.4,
@@ -77,15 +77,28 @@ const RULE = {
   pullRate: 0.025,
   holdRate: 0.004,
   pan: 0.012,
-  thirdMedium: 300,
-  thirdClose: 260,
+  thirdMedium: 0,
+  thirdClose: 0,
   nativeMax: 1.15,
   groupRe: /pallbearers|irregulars|group|column|squad|troop|testudo|family|crowd|riders|_men_/i,
   personMin: 0.3,
   personMax: 0.52,
   vehicleMax: 1.6,
-  vehicleFrame: 0.5,
-  vehicleWidth: 0.62,
+  vehicleFrame: 0.42,
+  vehicleWidth: 0.55,
+  vehicleWithPeople: 1.3,
+  maxUp: 1.25,
+  tour: ["in", "left", "right", "center", "out"],
+  tourIn: 1.3,
+  tourPan: 220,
+  tourSpeed: 70,
+  tourZoom: 0.05,
+  softRoll: 1.5,
+  clearShare: 0.2,
+  clearPad: 30,
+  clearStep: 1.1,
+  edgePad: 120,
+  lineup: { 1: [960], 2: [700, 1220], 3: [560, 960, 1360], 4: [480, 800, 1120, 1440] },
   animalMax: 1.15,
   animalMin: 0.3,
   propMax: 0.6,
@@ -169,7 +182,7 @@ const readableHeight = (kind, n, h, per) => {
   const m = meta(n), aspect = m.w / m.h, lying = aspect > RULE.lieAspect && !RULE.groupRe.test(n);
   let out = h;
   if (kind === "person" && !lying) out = clamp(h, 1080 * RULE.personMin, 1080 * RULE.personMax);
-  else if (kind === "vehicle" || kind === "ship") out = Math.min(h, per * RULE.vehicleMax, 1080 * RULE.vehicleFrame, (1920 * RULE.vehicleWidth) / aspect);
+  else if (kind === "vehicle" || kind === "ship" || kind === "aircraft") out = Math.min(h, per * RULE.vehicleMax, 1080 * RULE.vehicleFrame, (1920 * RULE.vehicleWidth) / aspect);
   else if (kind === "animal") out = clamp(h, per * RULE.animalMin, per * RULE.animalMax);
   else if (kind === "prop") out = clamp(h, per * RULE.propMin, per * RULE.propMax);
   return Math.min(out, m.h * RULE.nativeMax);
@@ -190,6 +203,53 @@ const matchPeople = (plan, main) => {
     a.y += a.pad * (h - a.h);
     a.h = h;
   }
+};
+const compose = (plan, main, crowds, A) => {
+  const people = main.filter((a) => a && standing(a) && a.place !== "near");
+  const tallest = Math.max(0, ...people.map((a) => a.h), ...crowds.filter((c) => c.kind === "person").map((c) => c.h));
+  if (tallest)
+    for (const a of main)
+      if (a && (a.kind === "vehicle" || a.kind === "ship" || a.kind === "aircraft") && a.h > tallest * RULE.vehicleWithPeople) {
+        const h = tallest * RULE.vehicleWithPeople;
+        a.fit = h / a.h;
+        a.y += a.pad * (h - a.h);
+        a.h = h;
+      }
+  const vehicles = main.filter((a) => a && (a.kind === "vehicle" || a.kind === "ship" || a.kind === "aircraft") && a.place !== "sky");
+  const span = (o) => {
+    const w = (meta(o.sprite).w / meta(o.sprite).h) * o.h, ax = o.anchorX ?? 0.5;
+    return [o.x - w * ax, o.x + w * (1 - ax)];
+  };
+  const walkers = [...people, ...crowds.filter((c) => c.kind === "person")];
+  const blocks = vehicles.map(span).sort((u, v) => u[0] - v[0]).reduce((out, [l, r]) => {
+    const last = out[out.length - 1];
+    if (last && l <= last[1]) last[1] = Math.max(last[1], r);
+    else out.push([l, r]);
+    return out;
+  }, []);
+  for (const [l, r] of blocks) {
+    const hit = walkers.filter((o) => {
+      const [a, b] = span(o);
+      return Math.min(b, r) - Math.max(a, l) > (b - a) * RULE.clearShare;
+    });
+    if (!hit.length) continue;
+    const need = hit.reduce((n, o) => n + (span(o)[1] - span(o)[0]) * RULE.clearStep, 0) + RULE.clearPad;
+    const roomL = l - RULE.edgePad, roomR = 1920 - RULE.edgePad - r;
+    const toLeft = roomL >= need || (roomR < need && roomL > roomR);
+    let at = toLeft ? l - RULE.clearPad : r + RULE.clearPad;
+    for (const o of hit.sort((u, w) => (toLeft ? w.x - u.x : u.x - w.x))) {
+      const w = (span(o)[1] - span(o)[0]) * RULE.clearStep;
+      o.x = clamp(at + (toLeft ? -w / 2 : w / 2), RULE.edgePad, 1920 - RULE.edgePad);
+      o.y = A.groundAt(o.x) + (o.pad || 0) * o.h;
+      at += toLeft ? -w : w;
+    }
+  }
+  const slots = RULE.lineup[people.length];
+  if (!slots || main.some((a) => a && !a.back && !people.includes(a) && a.kind !== "prop" && a.place !== "sky" && a.place !== "wall")) return;
+  [...people].sort((u, v) => u.x - v.x).forEach((a, k) => {
+    a.x = slots[k];
+    a.y = A.groundAt(a.x) + a.pad * a.h;
+  });
 };
 const poseWords = (n) => {
   const id = charId(n), rest = id ? n.slice(id.length) : n.split("__").pop();
@@ -384,6 +444,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     main[i] = { sprite: c.sprite, x, y: y + pad * h, h, hm: k.heightM, base, pxm, dir, cast: i, kind: k.kind, back, place, anchorX: foot, pad, swap: c.swap || [], move: c.move && !back ? (c.move === "r" ? 1 : -1) * pxm * 1.6 : 0, onGround: !back && !onRails && !onWater && place !== "wall" && place !== "table" };
   }
   matchPeople(plan, main);
+  compose(plan, main, crowds, A);
   const width = (a) => (meta(a.sprite).w / meta(a.sprite).h) * a.h;
   const subj = main[subject];
   for (const a of main)
@@ -400,7 +461,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     for (let n = 0; n < 4; n++) {
       t.x = p.x + toFar * ((width(p) + width(t)) / 2 - RULE.couple);
       const ry = railY(A, clamp(t.x, railLo, railHi));
-      if (A.depth && ry > A.depth.hz) t.h = (t.hm * A.depth.k * (ry - A.depth.hz)) / 1.75;
+      if (A.depth && ry > A.depth.hz) t.h = ((t.hm * A.depth.k * (ry - A.depth.hz)) / 1.75) * (train[0].fit || 1);
     }
     const box = (o) => ({ l: o.x - width(o) / 2, r: o.x + width(o) / 2, t: o.y - o.h, b: o.y });
     for (let n = 0; n < RULE.coupleSteps; n++) {
@@ -409,7 +470,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
       if (ov <= RULE.coupleOverlap * width(t) * t.h) break;
       t.x += toFar * RULE.coupleStep;
       const ry = railY(A, clamp(t.x, railLo, railHi));
-      if (A.depth && ry > A.depth.hz) t.h = (t.hm * A.depth.k * (ry - A.depth.hz)) / 1.75;
+      if (A.depth && ry > A.depth.hz) t.h = ((t.hm * A.depth.k * (ry - A.depth.hz)) / 1.75) * (train[0].fit || 1);
     }
     if (t.x < railLo - width(t) / 2 || t.x > railHi + width(t) / 2) t.gone = true;
     t.y = railY(A, clamp(t.x, railLo, railHi)) + (t.pad || 0) * t.h;
@@ -527,7 +588,7 @@ export const direct = (plan) => {
   const hookBgs = [];
   const refs = refFaces(plan);
   const sid = () => `s${String(shots.length + 1).padStart(3, "0")}`;
-  let lastLook = { key: "", side: 1, frame: "" };
+  let lastLook = { key: "", side: 1, frame: "", tour: 0, end: null };
   let motionN = 0;
   let lastBust = { sprite: "", slot: 0, t1: -1 };
   const report = [];
@@ -635,10 +696,18 @@ export const direct = (plan) => {
       const lookKey = `${beat.bg}|${actors.filter((o) => !o.crowd).map((o) => o.sprite).sort().join(",")}`;
       const repeat = lookKey === lastLook.key;
       const side = repeat ? -lastLook.side : sp0 && sp0.bx < 960 ? -1 : 1;
-      if (repeat && sp0) frames[ci] = lastLook.frame === "medium" ? "close" : "medium";
-      const capS = subjA ? (meta(subjA.sprite).h * RULE.nativeMax) / Math.max(1, subjA.h) : RULE.close;
+      const capS = Math.min(RULE.close, ...actors.filter((o) => !o.crowd && o.h > 0).map((o) => (meta(o.sprite).h * RULE.maxUp) / o.h));
       shot.cam = cameraFor(frames[ci], d, hook, sp0, sp1, actors, { side, cap: capS, person: !!subjA && (subjA.kind === "person" || subjA.kind === "animal"), motion: beat.cam === "pull" ? "pull" : RULE.motionCycle[motionN++ % RULE.motionCycle.length] });
-      lastLook = { key: lookKey, side, frame: frames[ci] };
+      if (repeat && lastLook.end) {
+        const step = RULE.tour[lastLook.tour % RULE.tour.length];
+        const cx = sp0 ? sp0.bx : 960, cy = sp0 ? sp0.by : 540;
+        const sIn = Math.max(1, Math.min(RULE.tourIn, capS));
+        const goal = step === "out" ? { s: 1, x: 960, y: 540 } : { s: sIn, x: cx + (step === "left" ? -1 : step === "right" ? 1 : 0) * RULE.tourPan, y: cy };
+        const e = lastLook.end, go = (from, to, max) => from + clamp(to - from, -max, max);
+        const sGo = clamp(goal.s, e.s * (1 - RULE.tourZoom * d), e.s * (1 + RULE.tourZoom * d));
+        shot.cam = [{ t: 0, ...e }, { t: r3(d), ...e, s: r3(sGo), x: r3(go(e.x, goal.x, RULE.tourSpeed * d)), y: r3(go(e.y, goal.y, RULE.tourSpeed * d * 0.5)) }];
+      }
+      lastLook = { key: lookKey, side, frame: frames[ci], tour: repeat ? (lastLook.tour || 0) + 1 : 0, end: (({ t, ...k }) => k)(shot.cam[shot.cam.length - 1]) };
       const topAt = (k, wy) => clamp((k.sy ?? 540) - k.s * k.y, 1080 - 1080 * k.s, 0) + k.s * wy;
       const headCut = (o) => {
         if (plan.sprites[o.sprite]?.kind !== "person" || (subjA && o.sprite === subjA.sprite)) return false;
@@ -698,8 +767,7 @@ export const direct = (plan) => {
       if (beat.cool) shot.cool = true;
       if (beat.smoke) shot.smoke = true;
       if (beat.flash !== undefined && inside(beat.flash)) shot.flash = beat.flash;
-      if (beat.shake !== undefined && inside(beat.shake)) shot.shake = { t: beat.shake, dur: 0.45, amp: hook ? 20 : 15 };
-      if (beat.shake !== undefined && inside(beat.shake)) shot.roll = { t: beat.shake, deg: (shots.length % 2 ? -1 : 1) * (hook ? 11 : 8), hold: true };
+      if (beat.shake !== undefined && inside(beat.shake)) shot.roll = { t: beat.shake, deg: (shots.length % 2 ? -1 : 1) * RULE.softRoll, dur: Math.max(0.6, c1 - beat.shake) };
       else if ((beat.dark || 0) >= 0.25 || frames[ci] === "pull") shot.roll = { t: c0, deg: (shots.length % 2 ? -1 : 1) * 1.2, dur: d };
       if (beat.bar && inside(beat.bar.t)) shot.bar = beat.bar;
       if (beat.endCard && ci === cuts.length - 1) shot.endCard = beat.endCard;
