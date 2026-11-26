@@ -11,6 +11,7 @@ import type { BornasJob, BornasVideo } from "../../types/bornas.js";
 import type { BornasPlan } from "./bornasShots.js";
 import { bornasUrl } from "./bornasStore.js";
 import { bornasVideoDir } from "./bornasVoice.js";
+import { mixBornasVoice } from "./bornasMusic.js";
 import { bornasKit, playwrightEnv, readJson, runKitNode, runKitPy, runTool, writeJson } from "./bornasTools.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 const copyRuntime = (dir: string): void => {
@@ -24,7 +25,7 @@ export const buildBornasVideo = async (job: BornasJob, video: BornasVideo, plan:
   log(BORNAS_LOG.BUILD);
   const dir = bornasVideoDir(job, video, BORNAS_DIR.RENDER);
   copyRuntime(dir);
-  fs.copyFileSync(bornasVideoDir(job, video, "voice.wav"), path.join(dir, "voice.wav"));
+  await mixBornasVoice(job, video, bornasVideoDir(job, video, "voice.wav"), path.join(dir, "voice.wav"), log, signal);
   const planFile = bornasVideoDir(job, video, "plan.json");
   writeJson(planFile, plan);
   const out = await runKitNode("born_build.mjs", [planFile, dir], { BORN_ASSETS: bornasVideoDir(job, video, BORNAS_DIR.ASSETS) }, signal);

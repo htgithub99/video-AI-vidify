@@ -76,6 +76,8 @@ export const BORNAS_LOG = {
   SHOT_SKIP: (why: string) => `Bỏ một cảnh lỗi: ${why}`,
   BUILD: "Dựng trang HyperFrames…",
   BUILD_DONE: (shots: number, png: number) => `Dựng xong: ${shots} cảnh · ${png} hình`,
+  MUSIC_NONE: (dir: string) => `Chưa có nhạc nền cho chủ đề này, video không có nhạc. Thêm file nhạc vào ${dir}`,
+  MUSIC_MIXED: (name: string) => `Đã trộn nhạc nền: ${name}`,
   BUILD_WARN: (line: string) => `Chồng hình: ${line}`,
   CHECK: "Kiểm tra chữ, mũi tên và mặt nhân vật…",
   CHECK_OK: "Kiểm tra chữ: OK",

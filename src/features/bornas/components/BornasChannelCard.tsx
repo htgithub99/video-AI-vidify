@@ -10,10 +10,10 @@ import { MotionSettingsGroup } from "../../motion/components/MotionSettingsGroup
 import { ReupSelect, ReupTextField, ReupToggle } from "../../reup/components/ReupControls.js";
 import { REUP_STYLES as S } from "../../reup/constants/reupStyles.js";
 import { MOTION_LANGUAGES, MOTION_LANGUAGE_CODES } from "../../../constants/motionLanguages/index.js";
-import { BORNAS_COUNTS, BORNAS_GENRES, BORNAS_LENGTHS, BORNAS_TOPICS } from "../constants/bornasConfig.js";
+import { BORNAS_COUNTS, BORNAS_GENRES, BORNAS_LENGTHS, BORNAS_MUSIC_CHOICES, BORNAS_TOPICS } from "../constants/bornasConfig.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import type { BornasStudio } from "../hooks/useBornasStudio.js";
-import type { BornasGenre, BornasLanguage, BornasTopic } from "../types/bornas.js";
+import type { BornasGenre, BornasLanguage, BornasMusicChoice, BornasTopic } from "../types/bornas.js";
 export const BornasChannelCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({ studio, ui }) => {
   const { text, channel, channels, patchChannel } = studio;
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[ui];
@@ -53,6 +53,7 @@ export const BornasChannelCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = 
             <ReupSelect<string> label={text.VOICE} title={voiceText.CHANNELS_HINT} value={channel.voiceChannel} options={[{ value: "", label: voiceText.NO_CHANNEL }, ...studio.voiceChannels.channels.map((c) => ({ value: c.id, label: c.name }))]} onChange={(voiceChannel) => patchChannel({ voiceChannel })} />
             <ReupSelect<BornasTopic> label={text.TOPIC} title={text.TOPIC_HINT} value={channel.topic} options={BORNAS_TOPICS.map((value) => ({ value, label: text.TOPICS[value] }))} onChange={(topic) => patchChannel({ topic })} />
             <ReupSelect<BornasGenre> label={text.GENRE} title={text.GENRE_HINT} value={channel.genre} options={BORNAS_GENRES.map((value) => ({ value, label: text.GENRES[value] }))} onChange={(genre) => patchChannel({ genre })} />
+            <ReupSelect<BornasMusicChoice> label={text.MUSIC} title={text.MUSIC_HINT} value={channel.music} options={BORNAS_MUSIC_CHOICES.map((value) => ({ value, label: text.MUSIC_CHOICES[value] }))} onChange={(music) => patchChannel({ music })} />
             <ReupSelect<number> label={text.LENGTH} value={channel.seconds} options={BORNAS_LENGTHS.map((value) => ({ value, label: text.MINUTES(value / 60) }))} onChange={(seconds) => patchChannel({ seconds })} />
             <ReupSelect<number> label={text.COUNT} value={channel.count} options={BORNAS_COUNTS.map((value) => ({ value, label: text.COUNT_VALUE(value) }))} onChange={(count) => patchChannel({ count })} />
             <ReupToggle label={text.REVIEW} icon={PauseCircle} checked={channel.review} on={text.REVIEW_ON} off={text.REVIEW_OFF} onChange={(review) => patchChannel({ review })} />

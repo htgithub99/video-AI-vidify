@@ -7,7 +7,7 @@ import { jsonUtils } from "../../../lib/json.js";
 import type { Lang } from "../../../lib/lang.js";
 import type { MotionVoiceChannels } from "../../../types/motionVideo.js";
 import { motionRequest } from "../../motion/components/motionApi.js";
-import { BORNAS_AI_DEFAULT, BORNAS_LIMITS, bornasAiSettings, BORNAS_STEPS, BORNAS_STORAGE, BORNAS_URL, bornasGenre, bornasNewChannel } from "../constants/bornasConfig.js";
+import { BORNAS_AI_DEFAULT, BORNAS_LIMITS, bornasAiSettings, BORNAS_STEPS, BORNAS_STORAGE, BORNAS_URL, bornasGenre, bornasMusicChoice, bornasNewChannel } from "../constants/bornasConfig.js";
 import { bornasTexts } from "../constants/bornasTexts.js";
 import type { BornasAiSettings, BornasChannel, BornasJob, BornasJobSummary, BornasSample, BornasScript, BornasStepId } from "../types/bornas.js";
 interface Stored {
@@ -74,7 +74,7 @@ export const useBornasStudio = (lang: Lang) => {
     void (async () => {
       const saved = await jsonUtils.getAsyncItem<Stored>(BORNAS_STORAGE.STATE, {});
       const base = saved.channels?.length ? saved.channels : [bornasNewChannel(newId(), text.CHANNEL_NEW)];
-      const list = base.map((c) => ({ ...c, genre: bornasGenre(c.genre), ...(c.sample || !saved.sourcePath ? {} : { sample: saved.sourcePath }) }));
+      const list = base.map((c) => ({ ...c, genre: bornasGenre(c.genre), music: bornasMusicChoice(c.music ?? "library"), ...(c.sample || !saved.sourcePath ? {} : { sample: saved.sourcePath }) }));
       const first = saved.channelId && list.some((c) => c.id === saved.channelId) ? saved.channelId : list[0].id;
       setChannels(list);
       channelIdRef.current = first;

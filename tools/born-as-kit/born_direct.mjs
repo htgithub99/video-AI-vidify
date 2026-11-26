@@ -3,17 +3,21 @@ import { camState } from "./layout.mjs";
 
 const RULE = {
   shoreGap: 60,
-  hookMax: 0.9,
-  storyMax: 3.2,
-  hookStep: 0.7,
-  storyStep: 1.9,
+  skyW: 580,
+  skyX: { l: 300, cl: 560, c: 960, cr: 1360, r: 1620 },
+  skyY: { l: 150, cl: 260, c: 200, cr: 300, r: 170 },
+  skyMove: 240,
+  hookMax: 2.0,
+  storyMax: 4.0,
+  hookStep: 1.2,
+  storyStep: 2.4,
   minShot: 0.5,
-  push: 0.02,
-  hookPush: 0.06,
+  push: 0.015,
+  hookPush: 0.04,
   drift: 0.04,
-  close: 2.35,
-  medium: 1.55,
-  glide: 1.0,
+  close: 1.85,
+  medium: 1.4,
+  glide: 1.8,
   closeSx: 768,
   closeSy: 560,
   darkMax: 0.45,
@@ -70,6 +74,26 @@ const RULE = {
   crowdStep: 0.9,
   cloneMax: 2,
   insertW: 900,
+  pullRate: 0.025,
+  holdRate: 0.004,
+  pan: 0.012,
+  thirdMedium: 300,
+  thirdClose: 260,
+  nativeMax: 1.15,
+  groupRe: /pallbearers|irregulars|group|column|squad|troop|testudo|family|crowd|riders|_men_/i,
+  personMin: 0.3,
+  personMax: 0.52,
+  vehicleMax: 1.6,
+  vehicleFrame: 0.5,
+  vehicleWidth: 0.62,
+  animalMax: 1.15,
+  propMax: 0.6,
+  bustXs: [960, 700, 1220],
+  bustNativeMax: 1.6,
+  motionCycle: ["push", "push", "pull", "push", "hold"],
+  babyRe: /_baby$/,
+  babyH: 780,
+  bustPlateY: 140,
 };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const r3 = (v) => Math.round(v * 1000) / 1000;
@@ -130,10 +154,20 @@ const personHeight = (plan, refs, n, base, pxm) => {
   const s = plan.sprites[n], id = charId(n), f = s?.ann?.face, ref = id && refs[id];
   const m = meta(n), aspect = m.w / m.h, ride = POSE.ride.test(`${n} ${s?.ann?.is || ""}`);
   const len = id || ride || aspect <= RULE.lieAspect ? base : RULE.bodyM * pxm;
+  if (RULE.groupRe.test(n)) return base;
   if (aspect > RULE.lieAspect && !ride) return (len * RULE.lieFit) / aspect;
   const h = ref && f && f.b - f.t > 0.02 && !ride ? clamp((base * ref) / (f.b - f.t), base * 0.3, base * 1.8) : ride ? base * RULE.rideM / 1.75 : poseHeight(n, base);
   const cap = ride && id ? RULE.rideM * pxm : len * RULE.capFit;
   return Math.min(h, cap / Math.max(1, aspect));
+};
+const readableHeight = (kind, n, h, per) => {
+  const m = meta(n), aspect = m.w / m.h, lying = aspect > RULE.lieAspect && !RULE.groupRe.test(n);
+  let out = h;
+  if (kind === "person" && !lying) out = clamp(h, 1080 * RULE.personMin, 1080 * RULE.personMax);
+  else if (kind === "vehicle" || kind === "ship") out = Math.min(h, per * RULE.vehicleMax, 1080 * RULE.vehicleFrame, (1920 * RULE.vehicleWidth) / aspect);
+  else if (kind === "animal") out = Math.min(h, per * RULE.animalMax);
+  else if (kind === "prop") out = Math.min(h, per * RULE.propMax);
+  return Math.min(out, m.h * RULE.nativeMax);
 };
 const poseWords = (n) => {
   const id = charId(n), rest = id ? n.slice(id.length) : n.split("__").pop();
@@ -269,6 +303,11 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     const want = flatOnly && (ann.place === "wall" || ann.place === "table") ? ann.place : flatOnly || c.place === "near" || c.place === "ground" ? c.place : "ground";
     const place = want === "wall" && !A.walls.length ? "ground" : want === "table" && !A.table ? "ground" : want;
     let x = RULE.slots[c.slot] ?? RULE.slots.c;
+    if (c.place === "sky") {
+      const m = meta(c.sprite), hs = RULE.skyW / (m.w / m.h);
+      main[i] = { sprite: c.sprite, x: RULE.skyX[c.slot] ?? x, y: (RULE.skyY[c.slot] ?? RULE.skyY.c) + hs, h: hs, hm: k.heightM, base: hs, pxm: hs / Math.max(1, k.heightM || 3), dir: c.move || c.dir, cast: i, kind: k.kind, back: false, place: "sky", anchorX: ann.foot ?? 0.5, pad: 0, swap: c.swap || [], move: c.move ? (c.move === "r" ? 1 : -1) * RULE.skyMove : 0, onGround: false, seated: true };
+      continue;
+    }
     let y = A.groundAt(x);
     let per = A.personAt(x);
     const onRails = RULE.railRe.test(c.sprite) && A.rails, onWater = RULE.boatRe.test(c.sprite) && A.boats;
@@ -305,7 +344,8 @@ const layout = (beat, plan, refs, report = [], id = "") => {
       const yb = A.depth.hz + (RULE.backMax * 1.75) / (k.heightM * A.depth.k);
       if (yb < y) [y, per] = [yb, A.depth.k * (yb - A.depth.hz)];
     }
-    const h = back ? k.heightM * (per / 1.75) : clamp(k.kind === "person" ? personHeight(plan, refs, c.sprite, base, pxm) : base, 18, 980);
+    const h0 = back ? k.heightM * (per / 1.75) : clamp(k.kind === "person" ? personHeight(plan, refs, c.sprite, base, pxm) : base, 18, 980);
+    const h = back ? h0 : readableHeight(k.kind, c.sprite, h0, per);
     const dir = c.move ? c.move : TURNS.has(k.kind) ? c.dir : undefined;
     const pad = ann.pad || 0, foot = ann.foot ?? 0.5;
     if (c.crowd > 1 && !back) {
@@ -313,7 +353,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
       const n = Math.min(RULE.crowdMax, c.crowd, pool.length > 1 ? pool.length : RULE.cloneMax);
       for (let j = 0; j < n; j++) {
         const sp = pool[j % pool.length], kj = info(sp), aj = kj.ann || {};
-        const hj = clamp(kj.kind === "person" ? personHeight(plan, refs, sp, kj.heightM * pxm, pxm) : kj.heightM * pxm, 18, 980) * (0.95 + ((j * 13) % 7) / 70);
+        const hj = readableHeight(kj.kind, sp, clamp(kj.kind === "person" ? personHeight(plan, refs, sp, kj.heightM * pxm, pxm) : kj.heightM * pxm, 18, 980), per) * (0.95 + ((j * 13) % 7) / 70);
         const wj = (meta(sp).w / meta(sp).h) * hj, jit = ((j * 37) % 11) / 11 - 0.5, cx = x + (j % 2 ? -1 : 1) * Math.ceil(j / 2) * wj * RULE.crowdStep + jit * 20;
         crowds.push({ sprite: sp, x: cx, y: A.groundAt(cx) - 18 + jit * 14 + (aj.pad || 0) * hj, h: hj, dir: j >= pool.length && dir ? (dir === "l" ? "r" : "l") : dir, crowd: true, cast: i, kind: kj.kind, anchorX: aj.foot ?? 0.5, pad: aj.pad || 0 });
       }
@@ -418,10 +458,9 @@ const cutTimes = (beat, t1, onsets, hook) => {
 };
 
 const framings = (beat, n) => {
-  if (beat.cam === "pull") return Array.from({ length: n }, (_, i) => (i === n - 1 ? "pull" : i % 2 ? "medium" : "close"));
+  if (beat.cam === "pull") return Array.from({ length: n }, (_, i) => (i === n - 1 ? "pull" : "medium"));
   const start = beat.frame || "wide";
-  const cycle = start === "close" ? ["close", "medium", "close", "wide"] : start === "medium" ? ["medium", "close", "wide", "close"] : ["wide", "close", "medium", "close"];
-  const list = Array.from({ length: n }, (_, i) => cycle[i % cycle.length]);
+  const list = Array.from({ length: n }, (_, i) => (i === 0 ? start : "medium"));
   if (beat.cam === "glide" && list[0] === "wide") list[0] = "glide";
   return list;
 };
@@ -429,27 +468,33 @@ const framings = (beat, n) => {
 const subjectPoint = (a, dx = 0) => {
   const { fb, body } = faceBox(a.sprite, a.x + dx, a.y, a.h, a.dir, a.anchorX ?? 0.5);
   const bx = (body.l + body.r) / 2, by = (body.t + body.b) / 2;
-  if (!TURNS.has(a.kind)) return { fx: bx, fy: by, head: by - 40, bx, by, fb: body };
-  return { fx: (fb.l + fb.r) / 2, fy: (fb.t + fb.b) / 2, head: fb.t, bx, by, fb };
+  if (!TURNS.has(a.kind)) return { fx: bx, fy: by, head: by - 40, bx, by, fb: body, body };
+  return { fx: (fb.l + fb.r) / 2, fy: (fb.t + fb.b) / 2, head: fb.t, bx, by, fb, body };
 };
 
-const cameraFor = (frame, d, hook, subj, subjEnd, actors) => {
-  const rate = hook ? RULE.hookPush : RULE.push;
-  const grow = (s) => r3(s * (1 + rate * d));
-  const sceneX = actors.length ? actors.reduce((a, b) => a + b.x, 0) / actors.length : 960;
-  if (!subj || frame === "wide") {
-    const tx = subj ? 960 + (subj.bx - 960) * 0.2 : 960;
-    return [{ t: 0, s: 1.0, x: 960, y: 540 }, { t: r3(d), s: grow(1.0), x: r3(tx + (sceneX > 960 ? 1 : -1) * 1920 * RULE.drift * 0.5), y: 530 }];
+const cameraFor = (frame, d, hook, subj, subjEnd, actors, look) => {
+  const side = look.side || 1, cap = Math.max(1, look.cap || RULE.close);
+  const rate = look.motion === "pull" ? -RULE.pullRate : look.motion === "hold" ? RULE.holdRate : hook ? RULE.hookPush : RULE.push;
+  const pan = (s) => (side * 1920 * RULE.pan * d) / s;
+  const move = (k) => {
+    const grown = k.s * (1 + Math.abs(rate) * d);
+    const [a, b] = rate < 0 ? [Math.min(grown, cap * 1.05), k.s] : [k.s, Math.min(grown, cap * 1.05)];
+    return [{ t: 0, ...k, s: r3(a) }, { t: r3(d), ...k, x: r3(k.x + pan(b)), s: r3(b) }];
+  };
+  if (!subj || frame === "wide" || frame === "glide") {
+    const tx = subj ? 960 + (subj.bx - 960) * 0.25 : 960;
+    return move({ s: 1.0, x: r3(tx), y: 540, sx: 960, sy: 540 });
   }
-  const close = { s: clamp(Math.min(RULE.close, (1080 * 0.7) / Math.max(1, subj.fb.b - subj.fb.t)), 1.4, RULE.close), x: subj.fx, y: subj.head + 40, sx: RULE.closeSx, sy: RULE.closeSy };
-  const closeEnd = { ...close, x: subjEnd.fx, y: subjEnd.head + 40 };
-  const medium = { s: RULE.medium, x: subj.bx, y: subj.by, sx: 900, sy: 560 };
-  const mediumEnd = { ...medium, x: subjEnd.bx };
-  if (frame === "close") return [{ t: 0, ...close }, { t: r3(d), ...closeEnd, s: grow(RULE.close) }];
-  if (frame === "medium") return [{ t: 0, ...medium }, { t: r3(d), ...mediumEnd, s: grow(RULE.medium) }];
-  if (frame === "pull") return [{ t: 0, ...close }, { t: r3(d), s: 1.0, x: 960, y: 540, ease: "power2.inOut" }];
-  const g = Math.min(RULE.glide, d * 0.6), hold = Math.min(0.45, d * 0.25);
-  return [{ t: 0, s: 1.0, x: 960, y: 540 }, { t: r3(hold), s: 1.02, x: 960, y: 535 }, { t: r3(hold + g), ...close, ease: "power3.inOut" }, { t: r3(d), ...closeEnd, s: grow(RULE.close) }];
+  const wide = subj.body.r - subj.body.l > subj.body.b - subj.body.t;
+  const fit = Math.min((1920 * 0.6) / Math.max(1, subj.body.r - subj.body.l), ((1080 * 0.8) / Math.max(1, subj.body.b - subj.body.t)) * (wide ? 1 : 9));
+  if (frame === "close" && !look.person) frame = "medium";
+  if (frame === "close") {
+    const s = clamp(Math.min(RULE.close, (1080 * 0.7) / Math.max(1, subj.fb.b - subj.fb.t), fit, cap), 1.15, Math.max(1.15, RULE.close));
+    const at = wide ? { x: subj.bx, y: subj.by } : { x: subj.fx, y: subj.head + 40 };
+    return move({ s: Math.min(s, cap), ...at, sx: 960 + side * RULE.thirdClose, sy: wide ? 540 : 520 });
+  }
+  const s = Math.min(RULE.medium, Math.max(1.05, (1920 * 0.85) / Math.max(1, subj.body.r - subj.body.l)), cap);
+  return move({ s, x: subj.bx, y: subj.by, sx: 960 + side * RULE.thirdMedium, sy: 560 });
 };
 
 export const direct = (plan) => {
@@ -459,6 +504,9 @@ export const direct = (plan) => {
   const hookBgs = [];
   const refs = refFaces(plan);
   const sid = () => `s${String(shots.length + 1).padStart(3, "0")}`;
+  let lastLook = { key: "", side: 1, frame: "" };
+  let motionN = 0;
+  let lastBust = { sprite: "", slot: 0, t1: -1 };
   const report = [];
   const heroId = Object.entries(plan.sprites).map(([n, s]) => (s.kind === "bust" ? charId(n) : null)).find(Boolean) || null;
   const heroBust = Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust" && charId(n) === heroId) || null;
@@ -466,7 +514,7 @@ export const direct = (plan) => {
   const hookShots = [];
   const living = (b) => (b.cast || []).find((c) => ["person", "animal"].includes(plan.sprites[c.sprite]?.kind) && !(c.crowd > 1));
   beats.forEach((beat, bi) => {
-    if (beat.kind !== "scene" || !beat.bg || beat.cam === "pull" || living(beat)) return;
+    if (beat.keep || beat.kind !== "scene" || !beat.bg || beat.cam === "pull" || living(beat)) return;
     const near = [...beats.slice(0, bi).reverse(), ...beats.slice(bi + 1)].find((b) => b.kind === "scene" && living(b) && (beat.t0 < plan.turnT || b.bg === beat.bg));
     if (!near) return;
     const who = living(near);
@@ -492,9 +540,17 @@ export const direct = (plan) => {
       shots.push({ ...base, id: sid(), t0: beat.t0, paper: beat.paper, montage: beat.montage, plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, 470], null, 90]] : [] });
       return;
     }
+    if (beat.kind === "scene" && beat.cast?.length === 1 && RULE.babyRe.test(beat.cast[0].sprite || "")) beat.kind = "bust";
     if (beat.kind === "bust") {
+      const bSprite = beat.cast[0]?.sprite || "";
+      const bRepeat = lastBust.sprite === bSprite && lastBust.t1 >= beat.t0 - 0.05;
+      const bSlot = bRepeat ? (lastBust.slot + 1) % RULE.bustXs.length : 0;
+      const bx = RULE.bustXs[bSlot], bSide = bx < 960 ? 1 : bx > 960 ? -1 : 1;
+      const px = bx < 960 ? 1420 : bx > 960 ? 500 : 960;
+      const bh = Math.min(RULE.babyRe.test(bSprite) ? RULE.babyH : 1010, meta(bSprite).h * RULE.bustNativeMax);
+      lastBust = { sprite: bSprite, slot: bSlot, t1 };
       const d = t1 - beat.t0;
-      shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [{ sprite: beat.cast[0]?.sprite, x: 960, y: 1090, h: 1010, shadow: false, allow: true }], cam: [{ t: 0, s: 1.02, x: 960, y: 540 }, { t: r3(d), s: r3(1.02 * (1 + (hook ? 0.05 : 0.03) * d)), x: 962, y: 480, sx: 960, sy: 480 }], glowAt: { x: 960, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 }, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, 220], null]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), series: false });
+      shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [{ sprite: beat.cast[0]?.sprite, x: bx, y: 1090, h: bh, shadow: false, allow: true }], cam: [{ t: 0, s: 1.02, x: 960, y: 540 }, { t: r3(d), s: r3(1.02 * (1 + (hook ? RULE.hookPush : RULE.push) * d)), x: r3(960 + bSide * 1920 * RULE.pan * d), y: 520, sx: 960, sy: 520 }], glowAt: { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 }, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: beat.label ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, beat.cast[0]?.sprite, "up"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [px, RULE.bustPlateY], null]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), series: false });
       return;
     }
     const { actors, subject, A } = layout(beat, plan, refs, report, `b${bi}`);
@@ -505,7 +561,7 @@ export const direct = (plan) => {
       inserts[n] = { count: (u?.count || 0) + 1, t: beat.t0 };
       return true;
     };
-    if (lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal")) && !insertOk(lead.sprite) && heroBust) {
+    if (!beat.keep && lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal")) && !insertOk(lead.sprite) && heroBust) {
       report.push([`b${bi}`, "insert_repeat_to_bust", lead.sprite]);
       const d = t1 - beat.t0;
       shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [{ sprite: heroBust, x: 960, y: 1090, h: 1010, shadow: false, allow: true }], cam: [{ t: 0, s: 1.02, x: 960, y: 540 }, { t: r3(d), s: r3(1.02 * (1 + 0.03 * d)), x: 962, y: 480, sx: 960, sy: 480 }], tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, 220], null]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
@@ -519,7 +575,8 @@ export const direct = (plan) => {
       shots.push({ ...base, kind: "scene", id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [one], swaps: [], bubbles: [], cam: [{ t: 0, s: 1.0, x: 960, y: 560 }, { t: r3(d), s: r3(1 + (hook ? 0.06 : 0.03) * d), x: 960, y: 600 }], glowAt: { x: 960, y: 640, r: 520, color: "255,190,110", t: beat.t0 }, tags: inBeat(beat.tag) ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: inBeat(beat.label) ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lead.sprite, "up"]] : [], plates: inBeat(beat.plate) ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, 200], beat.plate.at === lead.cast ? top : null]] : [], dark: beat.dark ? Math.min(RULE.darkMax, beat.dark) : 0, flash: beat.flash, endCard: beat.endCard, series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
       return;
     }
-    const cuts = cutTimes(beat, t1, onsets, hook);
+    const people = actors.filter((a) => !a.crowd && TURNS.has(a.kind));
+    const cuts = people.length >= 2 ? cutTimes(beat, t1, onsets, hook) : [beat.t0];
     const ends = cuts.map((c, i) => (i + 1 < cuts.length ? cuts[i + 1] : t1));
     for (const o of [beat.tag, beat.label, beat.plate, beat.bubble]) {
       if (!o) continue;
@@ -531,9 +588,10 @@ export const direct = (plan) => {
     const D = t1 - beat.t0;
     const subj0 = actors.find((a) => a.cast === subject && !a.crowd);
     const personFor = subj0 && subj0.kind === "prop" ? actors.filter((a) => !a.crowd && a.kind === "person").sort((u, v) => v.h - u.h)[0] : null;
-    const subjA = personFor || subj0;
+    const subjA0 = personFor || subj0;
     const heroA = heroId ? actors.find((a) => !a.crowd && a.kind === "person" && charId(a.sprite) === heroId) : null;
     cuts.forEach((c0, ci) => {
+      const subjA = ci === 0 ? subjA0 : people[(people.indexOf(subjA0) + ci) % people.length];
       const c1 = ci + 1 < cuts.length ? cuts[ci + 1] : t1, d = c1 - c0;
       const shot = { kind: "scene", id: sid(), t0: r3(c0), bg: beat.bg, actors: [], tags: [], labels: [], plates: [], bubbles: [], swaps: [] };
       for (const a of actors) {
@@ -551,7 +609,13 @@ export const direct = (plan) => {
       const offHero = (t) => (heroA?.move ? (heroA.move * (t - beat.t0)) / D : 0);
       const sp0 = subjA && subjectPoint(subjA, offAt(c0)), sp1 = subjA && subjectPoint(subjA, offAt(c1));
       if (frames[ci] === "glide" && beat.label && beat.label.t >= c0 - 0.001 && beat.label.t < c1) frames[ci] = "wide";
-      shot.cam = cameraFor(frames[ci], d, hook, sp0, sp1, actors);
+      const lookKey = `${beat.bg}|${actors.filter((o) => !o.crowd).map((o) => o.sprite).sort().join(",")}`;
+      const repeat = lookKey === lastLook.key;
+      const side = repeat ? -lastLook.side : sp0 && sp0.bx < 960 ? -1 : 1;
+      if (repeat && sp0) frames[ci] = lastLook.frame === "medium" ? "close" : "medium";
+      const capS = subjA ? (meta(subjA.sprite).h * RULE.nativeMax) / Math.max(1, subjA.h) : RULE.close;
+      shot.cam = cameraFor(frames[ci], d, hook, sp0, sp1, actors, { side, cap: capS, person: !!subjA && (subjA.kind === "person" || subjA.kind === "animal"), motion: beat.cam === "pull" ? "pull" : RULE.motionCycle[motionN++ % RULE.motionCycle.length] });
+      lastLook = { key: lookKey, side, frame: frames[ci] };
       const topAt = (k, wy) => clamp((k.sy ?? 540) - k.s * k.y, 1080 - 1080 * k.s, 0) + k.s * wy;
       const headCut = (o) => {
         if (plan.sprites[o.sprite]?.kind !== "person" || (subjA && o.sprite === subjA.sprite)) return false;

@@ -3,6 +3,7 @@ import type { ReupAiChoice } from "../../reup/types/reup.js";
 export type BornasTopic = "world" | "ww" | "ancient" | "medieval" | "eastasia" | "vietnam" | "modern" | "game" | "wildwest";
 export type BornasLanguage = MotionLanguageCode;
 export type BornasGenre = "bornas" | "survive" | "worst" | "day" | "whatif";
+export type BornasMusicChoice = "off" | "library";
 export type BornasStepId = "sample" | "script" | "voice" | "assets" | "shots" | "build" | "package" | "render";
 export type BornasStepStatus = "idle" | "running" | "done" | "waiting" | "error";
 export type BornasJobStatus = "running" | "waiting" | "done" | "error" | "cancelled";
@@ -14,6 +15,7 @@ export interface BornasChannel {
   voiceChannel: string;
   language: BornasLanguage;
   genre: BornasGenre;
+  music: BornasMusicChoice;
   count: number;
   seconds: number;
   review: boolean;

@@ -6,7 +6,7 @@ import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils
 import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
 import { motionLanguageCode } from "../../../../lib/motionLanguage.js";
 import { packageBornasVideo } from "./bornasPackage.js";
-import { BORNAS_AI_DEFAULT, bornasAiSettings, bornasGenre, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
+import { BORNAS_AI_DEFAULT, bornasAiSettings, bornasGenre, bornasMusicChoice, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasChannel, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
 import { annotateBornasLibrary, prepareBornasAssets } from "./bornasAssets.js";
@@ -27,6 +27,7 @@ const cleanChannel = (raw: Partial<BornasChannel> | undefined): BornasChannel =>
     voiceChannel: String(raw.voiceChannel || ""),
     language: motionLanguageCode(raw.language),
     genre: bornasGenre(raw.genre),
+    music: bornasMusicChoice(raw.music),
     count: _.clamp(Math.round(Number(raw.count) || 1), 1, 10),
     seconds: _.clamp(Math.round(Number(raw.seconds) || 120), 30, 1200),
     review: raw.review === true,

@@ -224,7 +224,20 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
       copyCrop(files[c.poses.indexOf(p)]!, path.join(png, `${name}.png`));
       return name;
     });
+    for (const [i, pose] of poses.entries()) {
+      if (!/bust/.test(pose.name)) continue;
+      const single = path.join(raws, `bust_${c.id}.png`);
+      const drawn = fs.existsSync(single) || (await drawSheet(BORNAS_PROMPT.BUST_SINGLE(c.desc, pose.desc), single, `${c.id} ${pose.name}`, job.ai.drawAi, log, misses, signal));
+      const [file] = drawn ? await keyedSplit(job, single, path.join(raws, `bust_${c.id}`), [pose], log, signal) : [];
+      if (file) copyCrop(file, path.join(png, `${names[i]}.png`));
+    }
     await runKitPy("model_sweep.py", ["240", "0.5", ...names.map((n) => path.join(png, `${n}.png`))], log, signal).catch((error) => log(BORNAS_ERROR.TOOL("model_sweep", String((error as Error)?.message || error)), "warn"));
+    await runKitPy(
+      "edge_clean.py",
+      names.map((n) => path.join(png, `${n}.png`)),
+      log,
+      signal,
+    ).catch((error) => log(BORNAS_ERROR.TOOL("edge_clean", String((error as Error)?.message || error)), "warn"));
     names.forEach((name, i) => add(name, path.join(png, `${name}.png`), /bust/.test(poses[i].name) ? "bust" : "person", c.heightM, "r", `${c.desc}; ${poses[i].desc}`));
   }
   const stamp = new Date().toISOString().slice(2, 10).replace(/-/g, "");
@@ -244,6 +257,12 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     const safe = pairs.filter((p) => SWEEP_SAFE.has(p.it.kind)).map((p) => bornasLib(home, "sprites", `${p.name}.png`));
     if (safe.length) await runKitPy("hole_sweep.py", safe, log, signal).catch(_.noop);
     await runKitPy("model_sweep.py", ["240", "0.5", ...pairs.map((p) => bornasLib(home, "sprites", `${p.name}.png`))], log, signal).catch(_.noop);
+    await runKitPy(
+      "edge_clean.py",
+      pairs.map((p) => bornasLib(home, "sprites", `${p.name}.png`)),
+      log,
+      signal,
+    ).catch(_.noop);
     const cat = readCatalog(home);
     for (const { name, it } of pairs) {
       const [w, h] = pngSize(bornasLib(home, "sprites", `${name}.png`));

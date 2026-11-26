@@ -72,12 +72,12 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
   const aim = (to, fb, dx, dy) => (!fb ? to : dx > 20 ? [fb.r + GAP, fb.t + (fb.b - fb.t) * 0.35] : dx < -20 ? [fb.l - GAP, fb.t + (fb.b - fb.t) * 0.35] : dy < 0 ? [(fb.l + fb.r) / 2, Math.min(fb.t, fb.top ?? fb.t) - GAP] : [(fb.l + fb.r) / 2, fb.b + GAP]);
   const startAt = (bx, ex, ey) => [ex > bx.r ? bx.r + 8 : ex < bx.l ? bx.l - 8 : Math.min(bx.r - 20, Math.max(bx.l + 20, ex)), ey > bx.b ? bx.b + 14 : ey < bx.t ? bx.t - 14 : (bx.t + bx.b) / 2];
   for (const [k, text, sub, t, to0, side, follow] of s.labels || []) {
-    const ref = typeof to0 === "string" ? (s.boxes || []).find((b) => b.n === to0)?.fb : null;
+    const hit = typeof to0 === "string" ? (s.boxes || []).find((b) => b.n === to0) : null, ref = hit ? hit.fb || { l: hit.l, r: hit.r, t: hit.t, b: hit.b } : null;
     const own = typeof to0 === "string" ? (s.boxes || []).find((x) => x.n === to0) : (s.boxes || []).find((x) => x.fb === faceNear(to0));
     const fb0 = ref || faceNear(to0), fb = fb0 && own ? { ...fb0, top: own.t } : fb0, to = ref ? [(ref.l + ref.r) / 2, (ref.t + ref.b) / 2] : to0;
     const end = Math.min(s.t1, s.labelOut || s.t1), sz = labelSize(text, sub), c0 = camAt(s, t);
     const cands = [];
-    const zoom = fb ? Math.min(3, Math.max(1, ((fb.r - fb.l) * c0.s) / 110)) : 1;
+    const zoom = fb && fb.b - fb.t < 220 ? Math.min(3, Math.max(1, ((fb.r - fb.l) * c0.s) / 110)) : 1;
     for (const dx of [0, 90, -90, 130, -130, 180, -180, 230, -230]) for (const dy of [-30, -60, -90, -120, -160, 40, 80, 120]) cands.push({ dx: Math.round(dx * zoom), dy: Math.round(dy * zoom) });
     const mk = (dx, dy) => (ax, ay, z) => { const X = ax + dx * z, Y = ay + dy * z, w = sz.w * z, h = sz.h * z, l = dx > 20 ? X : dx < -20 ? X - w : X - w / 2, tp = dy > 0 ? Y : Y - h; return { l, r: l + w, t: tp, b: tp + h }; };
     const pref = (q) => (side === "left" && q.dx > 0) || (side === "right" && q.dx < 0) ? 2500 : 0;

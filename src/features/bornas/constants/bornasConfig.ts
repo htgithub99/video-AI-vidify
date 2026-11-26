@@ -1,7 +1,7 @@
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import { encodeClaudeChatModel } from "../../../constants/claudeChatModels.js";
 import type { ReupAiChoice } from "../../reup/types/reup.js";
-import type { BornasAiField, BornasAiSettings, BornasDrawProvider, BornasChannel, BornasLine, BornasGenre, BornasLanguage, BornasStepId, BornasTopic } from "../types/bornas.js";
+import type { BornasAiField, BornasAiSettings, BornasDrawProvider, BornasChannel, BornasLine, BornasGenre, BornasLanguage, BornasMusicChoice, BornasStepId, BornasTopic } from "../types/bornas.js";
 export const BORNAS_STEPS: readonly BornasStepId[] = ["sample", "script", "voice", "assets", "shots", "build", "package", "render"];
 export const BORNAS_VIDEO_STEPS: readonly BornasStepId[] = ["voice", "assets", "shots", "build", "package", "render"];
 export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate", DELETE_VIDEOS: "/delete-videos" } as const;
@@ -144,8 +144,11 @@ export const bornasAiSettings = (raw: LegacyAi | undefined): BornasAiSettings =>
     drawAi: { ...BORNAS_AI_DEFAULT.drawAi, ...(raw?.drawHeadless === undefined ? {} : { chromeHeadless: raw.drawHeadless }), ...raw?.drawAi, provider: BORNAS_DRAW_PROVIDERS.includes(raw?.drawAi?.provider as BornasDrawProvider) ? (raw!.drawAi!.provider as BornasDrawProvider) : "gemini-chat" },
   };
 };
-export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "bornas", count: 3, seconds: 120, review: false });
+export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "bornas", music: "library", count: 3, seconds: 120, review: false });
 export const BORNAS_GENRES: BornasGenre[] = ["bornas", "survive", "worst", "day", "whatif"];
+export const BORNAS_MUSIC_CHOICES: BornasMusicChoice[] = ["off", "library"];
+export const bornasMusicChoice = (raw: unknown): BornasMusicChoice => (BORNAS_MUSIC_CHOICES.includes(raw as BornasMusicChoice) ? (raw as BornasMusicChoice) : "off");
+export const BORNAS_MUSIC = { DIR: "bornas-music", FALLBACK_TOPIC: "world", BED_FILE: "music_bed.wav", MIX_FILE: "voice_mix.wav", MUSIC_DB: -17, DUCK: "threshold=0.03:ratio=6:attack=80:release=600", LOUDNORM: "loudnorm=I=-16:TP=-1.5", RATE: 48000 } as const;
 export const bornasGenre = (raw: unknown): BornasGenre => (BORNAS_GENRES.includes(raw as BornasGenre) ? (raw as BornasGenre) : "bornas");
 export const BORNAS_TOKEN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+/gu;
 export const BORNAS_WORD = /[\p{L}\p{N}]/u;
