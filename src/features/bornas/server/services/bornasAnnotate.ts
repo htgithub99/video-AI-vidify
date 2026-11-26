@@ -19,7 +19,7 @@ export interface AnnSprite {
   edge?: boolean;
 }
 const WHOLE_EXEMPT = /bust|sit|kneel|crouch|lying|lie|fallen|dead|ride|riding|mounted|swim/i;
-export const bornasBadAnn = (a: BornasSpriteAnn): boolean => a.place === "icon" || a.double || a.cut || a.mismatch === true || a.partial === true;
+export const bornasBadAnn = (a: BornasSpriteAnn): boolean => a.place === "icon" || a.double || a.cut || a.mismatch === true || a.partial === true || a.furniture === true;
 export interface AnnBg {
   name: string;
   png: string;
@@ -103,6 +103,7 @@ export const annotateSprites = async (list: AnnSprite[], ai: BornasAiSettings, l
         cut: (s.edge === undefined ? a.cut === true : s.edge) || (s.kind === "person" && !!face && m.aspect <= BORNAS_ANN.LIE_ASPECT && face.b - face.t > BORNAS_ANN.BUST_FACE),
         mismatch: a.match === false,
         partial: s.kind === "person" && a.whole === false && !WHOLE_EXEMPT.test(s.name),
+        furniture: s.kind === "person" && !s.name.includes("__") && a.furniture === true,
         aims: a.aims === true,
         ...(typeof a.is === "string" ? { is: String(a.is).slice(0, 80) } : {}),
       };

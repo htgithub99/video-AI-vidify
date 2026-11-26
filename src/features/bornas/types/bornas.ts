@@ -121,6 +121,7 @@ export interface BornasSpriteAnn {
   cut: boolean;
   mismatch?: boolean;
   partial?: boolean;
+  furniture?: boolean;
   aims?: boolean;
   is?: string;
 }

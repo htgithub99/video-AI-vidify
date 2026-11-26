@@ -28,6 +28,7 @@ const RULE = {
   bedInSprite: /\b(?:bed|cot|mattress)\b/i,
   ownBedDrop: 0.45,
   lieDrop: 0.2,
+  sitText: /\b(?:sit|sits|sitting|seated)\b/i,
   lieFit: 0.95,
   capFit: 1.05,
   bodyM: 1.75,
@@ -374,7 +375,8 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     }
     const w = poseWords(a.sprite).find((v) => RULE.furniture.test(v));
     const f = w && main.find((b) => b && b !== a && b.kind !== "person" && poseWords(b.sprite).some((v) => v.endsWith(w)));
-    const bs = w && !f && A.seats.find((x) => x.k === seatKind(w));
+    const sits = !w && !a.sprite.includes("__") && RULE.sitText.test(`${a.sprite.replace(/_/g, " ")} ${is}`) && !POSE.ride.test(`${a.sprite} ${is}`);
+    const bs = (w && !f && A.seats.find((x) => x.k === seatKind(w))) || (sits ? A.seats.filter((x) => !RULE.lieOn.test(x.k) || x.k === "bench" || x.k === "sofa").sort((u, v) => Math.abs((u.x0 + u.x1) / 2 - a.x) - Math.abs((v.x0 + v.x1) / 2 - a.x))[0] : null);
     if (bs) {
       a.x = (bs.x0 + bs.x1) / 2;
       a.y = bs.y + (a.pad || 0) * a.h;
