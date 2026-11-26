@@ -1,4 +1,11 @@
 export const BORNAS_STYLES = {
+  SEO_LIST: "space-y-4",
+  SEO_TITLE: "mb-2 truncate text-xs font-black uppercase tracking-wider text-slate-300",
+  SEO_NOTES: "space-y-1.5 pt-3 border-t border-slate-800/80",
+  SEO_HINT: "text-[11px] leading-relaxed text-slate-500",
+  THUMB_ROW: "grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2",
+  THUMB_ITEM: "min-w-0",
+  THUMB_REFRESH: "absolute top-2 right-10 z-10 w-7 h-7 rounded-lg text-white/90 hover:text-purple-300 flex items-center justify-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] hover:scale-110 transition-all",
   RIGHT: "xl:col-span-5 2xl:col-span-4 flex flex-col gap-6 min-w-0 xl:self-stretch [&>*:last-child]:flex-1",
   CHANNEL_BAR: "flex flex-wrap items-center gap-2",
   CHANNEL_CHIP: "inline-flex max-w-[220px] items-center gap-1.5 truncate rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors",

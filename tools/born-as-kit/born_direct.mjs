@@ -100,6 +100,13 @@ const depthOf = (pts) => {
   return { k, hz: my - mh / k };
 };
 const charId = (n) => (n.includes("__") ? null : n.split("_").slice(0, 2).join("_"));
+const AGE_WORD = /^(?:\d+|baby|child|kid|boy|girl|teen|young|youth|adult|old|elder|aged)$/;
+const personOf = (n) => {
+  const id = charId(n);
+  if (!id) return n;
+  const [first, second] = id.split("_");
+  return second !== undefined && AGE_WORD.test(second) ? first : id;
+};
 const refFaces = (plan) => {
   const by = {};
   for (const [n, s] of Object.entries(plan.sprites)) {
@@ -245,8 +252,8 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     const k = info(c.sprite);
     const ann = k.ann || {};
     const back = isBack(k);
-    if (!(c.crowd > 1) && seen.has(c.sprite)) continue;
-    seen.add(c.sprite);
+    if (!(c.crowd > 1) && seen.has(personOf(c.sprite))) continue;
+    seen.add(personOf(c.sprite));
     const flatOnly = k.kind === "prop" || k.kind === "weapon";
     const want = flatOnly && (ann.place === "wall" || ann.place === "table") ? ann.place : flatOnly || c.place === "near" || c.place === "ground" ? c.place : "ground";
     const place = want === "wall" && !A.walls.length ? "ground" : want === "table" && !A.table ? "ground" : want;

@@ -20,6 +20,7 @@ import { useBornasStudio, type BornasStudio } from "../hooks/useBornasStudio.js"
 import { BornasChannelCard } from "./BornasChannelCard.js";
 import { BornasLogCard } from "./BornasLogCard.js";
 import { BornasResultsPanel } from "./BornasResultsPanel.js";
+import { BornasSeoCard } from "./BornasSeoCard.js";
 import { BornasScriptsCard } from "./BornasScriptsCard.js";
 import { BornasSourceCard } from "./BornasSourceCard.js";
 import { BornasVideosCard } from "./BornasVideosCard.js";
@@ -148,6 +149,7 @@ const BornasVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" as 
                 <BornasChannelCard studio={studio} ui={ui} />
                 <BornasSourceCard studio={studio} />
                 <BornasScriptsCard studio={studio} />
+                <BornasSeoCard studio={studio} lang={currentLang} />
               </div>
               <div className={B.RIGHT}>
                 <BornasVideosCard studio={studio} />

@@ -48,7 +48,8 @@ const snapShots = async (dir: string, snaps: string, log: Log, signal?: AbortSig
   for (const part of _.chunk(frames, BORNAS_REVIEW.SNAP_BATCH)) await runKitNode("snap.mjs", [dir, snaps, ...part.map((f) => f.t.toFixed(2))], playwrightEnv(), signal).catch((error) => log(String((error as Error)?.message || error), "warn"));
   return frames.filter((f) => fs.existsSync(f.file));
 };
-const reviewSnaps = async (job: BornasJob, frames: Frame[], snaps: string, dir: string, log: Log, signal?: AbortSignal): Promise<Record<string, string[]>> => {
+const reviewSnaps = async (job: BornasJob, video: BornasVideo, frames: Frame[], snaps: string, dir: string, log: Log, signal?: AbortSignal): Promise<Record<string, string[]>> => {
+  const heroes = (video.plan?.cast || []).map((c) => `${c.id}_`);
   const castOf = readJson<Record<string, string[]>>(path.join(dir, "cast.json"), {});
   if (!frames.length) return {};
   const manifest = path.join(snaps, "frames.json");
@@ -84,7 +85,7 @@ const reviewSnaps = async (job: BornasJob, frames: Frame[], snaps: string, dir: 
       const f = frames[Number(it.n) - 1];
       const act = String(it.fix || "").trim();
       const [verb, name] = act.split(":");
-      const ok = name ? BORNAS_REVIEW.TARGET_FIXES.includes(verb as (typeof BORNAS_REVIEW.TARGET_FIXES)[number]) && (castOf[f?.id] || []).includes(name) : BORNAS_REVIEW.FIXES.includes(act as (typeof BORNAS_REVIEW.FIXES)[number]);
+      const ok = name ? BORNAS_REVIEW.TARGET_FIXES.includes(verb as (typeof BORNAS_REVIEW.TARGET_FIXES)[number]) && (castOf[f?.id] || []).includes(name) && !(verb === "drop" && heroes.some((h) => name.startsWith(h))) : BORNAS_REVIEW.FIXES.includes(act as (typeof BORNAS_REVIEW.FIXES)[number]);
       if (!f || !ok) continue;
       found[f.id] = _.uniq([...(found[f.id] || []), act]);
       notes.push(`${f.id}: ${String(it.problem || "").slice(0, 90)}`);
@@ -119,10 +120,17 @@ export const checkBornasVideo = async (job: BornasJob, video: BornasVideo, log: 
   }
   const snaps = bornasVideoDir(job, video, "snaps");
   const frames = await snapShots(dir, snaps, log, signal);
-  const found = await reviewSnaps(job, frames, snaps, dir, log, signal);
+  const found = await reviewSnaps(job, video, frames, snaps, dir, log, signal);
   if (Object.keys(found).length) {
+    const before = _.cloneDeep(fix);
     for (const [id, acts] of Object.entries(found)) fix[id] = _.uniq([...(fix[id] || []), ...acts]);
-    await rebuild();
+    await rebuild().catch(async (error) => {
+      if (signal?.aborted) throw error;
+      log(BORNAS_LOG.REVIEW_FIX_FAILED(String((error as Error)?.message || error).slice(-200)), "warn");
+      for (const id of Object.keys(fix)) delete fix[id];
+      Object.assign(fix, before);
+      await rebuild();
+    });
     await snapShots(dir, snaps, log, signal);
   }
   const win = process.platform === "win32";

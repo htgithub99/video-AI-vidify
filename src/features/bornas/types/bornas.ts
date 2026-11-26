@@ -2,8 +2,8 @@ import type { MotionLanguageCode } from "../../../constants/motionLanguages/inde
 import type { ReupAiChoice } from "../../reup/types/reup.js";
 export type BornasTopic = "world" | "ww" | "ancient" | "medieval" | "eastasia" | "vietnam" | "modern" | "game" | "wildwest";
 export type BornasLanguage = MotionLanguageCode;
-export type BornasGenre = "sample" | "bornas" | "survive" | "worst" | "day" | "whatif";
-export type BornasStepId = "sample" | "script" | "voice" | "assets" | "shots" | "build" | "render";
+export type BornasGenre = "bornas" | "survive" | "worst" | "day" | "whatif";
+export type BornasStepId = "sample" | "script" | "voice" | "assets" | "shots" | "build" | "package" | "render";
 export type BornasStepStatus = "idle" | "running" | "done" | "waiting" | "error";
 export type BornasJobStatus = "running" | "waiting" | "done" | "error" | "cancelled";
 export type BornasVideoStatus = "idle" | "running" | "waiting" | "done" | "error";
@@ -31,9 +31,10 @@ export interface BornasAiSettings {
   directAi: ReupAiChoice;
   visionAi: ReupAiChoice;
   lightAi: ReupAiChoice;
+  seoAi: ReupAiChoice;
   drawAi: BornasDrawChoice;
 }
-export type BornasAiField = "writeAi" | "factAi" | "directAi" | "visionAi" | "lightAi";
+export type BornasAiField = "writeAi" | "factAi" | "directAi" | "visionAi" | "seoAi" | "lightAi";
 export interface BornasStepState {
   status: BornasStepStatus;
   progress: number;
@@ -177,6 +178,25 @@ export interface BornasVideo {
   previewUrl?: string;
   outputFile?: string;
   jobDir?: string;
+  seo?: BornasSeo;
+}
+export interface BornasSeoOption {
+  title: string;
+  description: string;
+  hashtags: string[];
+  tags: string[];
+  seoScore: number;
+}
+export interface BornasThumb {
+  kind: "split" | "born";
+  url: string;
+  text: string;
+}
+export interface BornasSeo {
+  options: BornasSeoOption[];
+  pinned: string;
+  chapters: { id: string; t: number; title: string }[];
+  thumbs: BornasThumb[];
 }
 export interface BornasJob {
   id: string;

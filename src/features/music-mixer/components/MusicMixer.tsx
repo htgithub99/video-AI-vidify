@@ -410,7 +410,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState("");
   const [seoProvider, setSeoProvider] = useState<AiPlanningFallbackProvider>(AiPlanningFallbackProvider.GeminiChat);
-  const [seoModel, setSeoModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlashLite);
+  const [seoModel, setSeoModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlash);
   const [seoExecutionMode, setSeoExecutionMode] = useState<AiPlanningExecutionMode>(AiPlanningExecutionMode.RoomOnly);
   const [seoChromeHeadless, setSeoChromeHeadless] = useState(false);
   const { policy: chatPolicy, blockProps: chatPolicyProps } = useChatExecutionPolicy(CHAT_EXECUTION_POLICY.SCREENS.MUSIC_MIXER);
@@ -769,7 +769,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                 </Tooltip>
               </div>
             </>
-          }></StudioHeader>
+          }
+        ></StudioHeader>
         {isAiConfigOpen && (
           <StudioFieldset disabled={isBusy} className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_BG)}>
             <ChatPlanningSettingsBlock {...chatPolicyProps} provider={seoProvider} model={seoModel} executionMode={seoExecutionMode} chromeHeadless={seoChromeHeadless} onProviderChange={setSeoProvider} onModelChange={setSeoModel} onExecutionModeChange={setSeoExecutionMode} onChromeHeadlessChange={setSeoChromeHeadless} currentLang={currentLang} />
@@ -854,7 +855,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                                   handleRemoveFolder(name);
                                 }}
                                 disabled={isBusy}
-                                className={cn(SOURCE_TEXT_W_5_H_5_BG_TRANSPARENT_HOVER)}>
+                                className={cn(SOURCE_TEXT_W_5_H_5_BG_TRANSPARENT_HOVER)}
+                              >
                                 <X className={cn(SOURCE_TEXT_W_3_5_H_3_5)} />
                               </Button>
                             </Tooltip>
@@ -913,7 +915,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                           setResults([]);
                         }}
                         disabled={isBusy}
-                        className={cn(SOURCE_TEXT_H_8_ROUNDED_XL_BORDER_FONT_MONO, { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-purple-500/40 hover:bg-slate-900": !isSelected })}>
+                        className={cn(SOURCE_TEXT_H_8_ROUNDED_XL_BORDER_FONT_MONO, { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-purple-500/40 hover:bg-slate-900": !isSelected })}
+                      >
                         <span>{count}</span>
                       </Button>
                     );
@@ -952,7 +955,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                           setResults([]);
                         }}
                         disabled={isBusy}
-                        className={cn(SOURCE_TEXT_H_8_ROUNDED_XL_BORDER_FONT_MONO, { "bg-gradient-to-r from-amber-600 to-rose-600 border-amber-400 text-white shadow-amber-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-amber-500/40 hover:bg-slate-900": !isSelected })}>
+                        className={cn(SOURCE_TEXT_H_8_ROUNDED_XL_BORDER_FONT_MONO, { "bg-gradient-to-r from-amber-600 to-rose-600 border-amber-400 text-white shadow-amber-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-amber-500/40 hover:bg-slate-900": !isSelected })}
+                      >
                         <span>{count}</span>
                       </Button>
                     );
@@ -995,7 +999,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                             setResults([]);
                           }}
                           disabled={isBusy}
-                          className={cn(SOURCE_TEXT_H_8_ROUNDED_XL_BORDER_FONT_MONO_2, { "bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-indigo-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-indigo-500/40 hover:bg-slate-900": !isSelected })}>
+                          className={cn(SOURCE_TEXT_H_8_ROUNDED_XL_BORDER_FONT_MONO_2, { "bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-indigo-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-indigo-500/40 hover:bg-slate-900": !isSelected })}
+                        >
                           <span className={SOURCE_TEXT_TRUNCATE}>{item.label}</span>
                         </Button>
                       );
@@ -1064,7 +1069,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                       "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse": busy,
                       "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer": !busy && isFormValid,
                       "bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none": !busy && !isFormValid,
-                    })}>
+                    })}
+                  >
                     {busy ? (
                       <>
                         <Sparkles className={cn(SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_2)} />
@@ -1189,7 +1195,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
             {pendingFolders.length > 0 && <span className={cn(SOURCE_TEXT_TEXT_10PX_FONT_MONO_FONT_BOLD_PX)}>{pendingFolders.length}</span>}
           </div>
         }
-        maxWidth={SOURCE_TEXT_MAX_W_LG}>
+        maxWidth={SOURCE_TEXT_MAX_W_LG}
+      >
         <div className={cn(SOURCE_TEXT_SPACE_Y_3)}>
           <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3)}>
             <span className={cn(SOURCE_TEXT_TEXT_SLATE_400_TEXT_XS)}>{text.PENDING_FOLDERS_DESC}</span>
@@ -1207,7 +1214,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_PX, {
                 "bg-purple-500/15 text-purple-300 border-purple-500/30 hover:bg-purple-500/25": pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length,
                 "bg-slate-800 text-slate-300 border-slate-700/60 hover:bg-slate-750 hover:text-white": !(pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length),
-              })}>
+              })}
+            >
               {pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length ? <CheckSquare className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_8)} /> : <Square className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_9)} />}
               <span>{pendingFolders.length > 0 && selectedPendingFolders.length === pendingFolders.length ? text.PENDING_FOLDERS_DESELECT_ALL : text.PENDING_FOLDERS_SELECT_ALL}</span>
             </Button>
@@ -1221,7 +1229,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                 <div
                   key={source.folderPath}
                   onClick={() => setSelectedPendingFolders((current) => (isSelected ? _.filter(current, (path) => path !== source.folderPath) : [...current, source.folderPath]))}
-                  className={cn(SOURCE_TEXT_GROUP_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP, { "bg-gradient-to-r from-purple-950/40 via-slate-900/95 to-slate-900/95 border-purple-500/50 shadow-xs ring-1 ring-purple-500/20": isSelected, "bg-slate-955/60 border-slate-800/70 hover:border-slate-700 hover:bg-slate-850/60": !isSelected })}>
+                  className={cn(SOURCE_TEXT_GROUP_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP, { "bg-gradient-to-r from-purple-950/40 via-slate-900/95 to-slate-900/95 border-purple-500/50 shadow-xs ring-1 ring-purple-500/20": isSelected, "bg-slate-955/60 border-slate-800/70 hover:border-slate-700 hover:bg-slate-850/60": !isSelected })}
+                >
                   <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_2_5_MIN_2)}>
                     <div className={cn(SOURCE_TEXT_W_4_H_4_FLEX_ITEMS_CENTER)}>{isSelected ? <CheckSquare className={cn(SOURCE_TEXT_W_4_H_4_TEXT_PURPLE_400)} /> : <Square className={cn(SOURCE_TEXT_W_4_H_4_TEXT_SLATE_500)} />}</div>
                     <div className={cn(SOURCE_TEXT_W_6_H_6_ROUNDED_MD_FLEX, { "bg-purple-500/20 text-purple-300 border-purple-500/40": isSelected, "bg-slate-800 text-slate-400 border-slate-700/60": !isSelected })}>
@@ -1281,7 +1290,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                   setPendingFolders([]);
                   setSelectedPendingFolders([]);
                 }}
-                className={cn(SOURCE_TEXT_PX_3_PY_1_5_ROUNDED_LG)}>
+                className={cn(SOURCE_TEXT_PX_3_PY_1_5_ROUNDED_LG)}
+              >
                 {text.PENDING_FOLDERS_CANCEL}
               </Button>
               <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={confirmPendingFolders} disabled={!selectedPendingFolders.length} className={cn(SOURCE_TEXT_PX_3_5_PY_1_5_ROUNDED, { "opacity-40 cursor-not-allowed shadow-none": !selectedPendingFolders.length })}>

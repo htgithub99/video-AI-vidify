@@ -10,7 +10,7 @@ export interface ReupPresetDef {
   settings: Partial<ReupSettings>;
   editing: Partial<ReupPresetRules>;
 }
-const AI_DEFAULT: ReupAiChoice = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiPro, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: true, allowFallback: true, multiRoom: true };
+const AI_DEFAULT: ReupAiChoice = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: true, allowFallback: true, multiRoom: true };
 export const REUP_BASE_SETTINGS: ReupSettings = {
   language: "en",
   languageAlt: "vi",

@@ -5,7 +5,7 @@ import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { motionLanguage, motionLanguageRate } from "../../../../lib/motionLanguage.js";
-import { BORNAS_CHAPTER, BORNAS_LIMITS, bornasTokens } from "../../constants/bornasConfig.js";
+import { BORNAS_CHAPTER, BORNAS_LIMITS, bornasGenre, bornasTokens } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasLanguage, BornasLine, BornasScript } from "../../types/bornas.js";
@@ -110,7 +110,7 @@ export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: Abor
   const model = voiceModel(job);
   const rate = 1 / (model.perWord * (1 + model.perLine / BORNAS_LIMITS.LINE_SPEECH_SECONDS));
   const rhythm = rhythmOf(readJson<Profile>(bornasKit(SAMPLE_PROFILE), { sentence_seconds: { median: 2.24, p90: 4.86 }, fragment_share: 0.19, question_share: 0.04, second_person_per_100: 9.5 }), rate, job.channel.language);
-  const raw = await runMotionAi(BORNAS_PROMPT.SCRIPTS({ count: job.channel.count, topic: job.channel.topic, genre: job.channel.genre || "sample", language: job.channel.language, seconds: job.channel.seconds, rate, rhythm, analysis: job.analysis!, avoid, channel: job.channel.name }), BORNAS_ARTIFACT.SCRIPTS, exec, signal, (line) => line && log(line));
+  const raw = await runMotionAi(BORNAS_PROMPT.SCRIPTS({ count: job.channel.count, topic: job.channel.topic, genre: bornasGenre(job.channel.genre), language: job.channel.language, seconds: job.channel.seconds, rate, rhythm, analysis: job.analysis!, avoid, channel: job.channel.name }), BORNAS_ARTIFACT.SCRIPTS, exec, signal, (line) => line && log(line));
   let scripts: BornasScript[] = _.compact((Array.isArray(raw?.scripts) ? (raw.scripts as unknown[]) : []).map(cleanBornasScript)).slice(0, job.channel.count);
   if (!scripts.length) throw new Error(BORNAS_ERROR.NO_SCRIPTS);
   const repeats = repeatedSubjects(scripts, pastHeroes);

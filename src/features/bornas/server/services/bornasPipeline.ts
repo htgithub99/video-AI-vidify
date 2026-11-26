@@ -5,9 +5,10 @@ import { runInMotionAiSession, closeMotionStandaloneBrowser } from "../../../mot
 import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
 import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
 import { motionLanguageCode } from "../../../../lib/motionLanguage.js";
-import { BORNAS_AI_DEFAULT, BORNAS_GENRES, bornasAiSettings, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
+import { packageBornasVideo } from "./bornasPackage.js";
+import { BORNAS_AI_DEFAULT, bornasAiSettings, bornasGenre, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
-import type { BornasAiSettings, BornasChannel, BornasGenre, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
+import type { BornasAiSettings, BornasChannel, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
 import { annotateBornasLibrary, prepareBornasAssets } from "./bornasAssets.js";
 import { buildBornasVideo, checkBornasVideo, renderBornasVideo } from "./bornasRender.js";
 import { analyzeBornasSample, dropBornasAnalysis, inspectBornasSample } from "./bornasSample.js";
@@ -25,7 +26,7 @@ const cleanChannel = (raw: Partial<BornasChannel> | undefined): BornasChannel =>
     topic: raw.topic || "world",
     voiceChannel: String(raw.voiceChannel || ""),
     language: motionLanguageCode(raw.language),
-    genre: BORNAS_GENRES.includes(raw.genre as BornasGenre) ? (raw.genre as BornasGenre) : "sample",
+    genre: bornasGenre(raw.genre),
     count: _.clamp(Math.round(Number(raw.count) || 1), 1, 10),
     seconds: _.clamp(Math.round(Number(raw.seconds) || 120), 30, 1200),
     review: raw.review === true,
@@ -58,6 +59,14 @@ const runVideo = async (job: BornasJob, video: BornasVideo, script: BornasScript
     if (step === "build") {
       await buildBornasVideo(job, video, plan!, log, signal);
       await checkBornasVideo(job, video, log, signal);
+    }
+    if (step === "package") {
+      await packageBornasVideo(job, video, script, log, signal);
+      if (from === "package" && video.outputUrl) {
+        stepProgress(job, step);
+        bornasStep(job, step, { status: "done", message: "" });
+        break;
+      }
     }
     if (step === "render" && job.channel.review && from !== "render") {
       video.status = "waiting";
@@ -192,7 +201,8 @@ export const rerunBornas = (jobId: string, step: BornasStepId, video?: number, a
   if (!BORNAS_STEPS.includes(step)) throw new Error(BORNAS_ERROR.NO_JOB);
   if (ai) job.ai = cleanAi(ai);
   const at = BORNAS_STEPS.indexOf(step);
-  for (const id of BORNAS_STEPS.slice(at)) job.steps[id] = { status: "idle", progress: 0, message: "" };
+  const seoOnly = step === "package" && video !== undefined && !!job.videos[video]?.outputUrl;
+  for (const id of seoOnly ? [step] : BORNAS_STEPS.slice(at)) job.steps[id] = { status: "idle", progress: 0, message: "" };
   if (step === "sample" || step === "script") {
     if (step === "sample") dropBornasAnalysis(job.sample.key);
     job.videos = [];

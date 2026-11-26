@@ -70,7 +70,13 @@ for (const s of planShots) {
       o.focusOn = null;
     }
     const drop = acts.filter((a) => a.startsWith("drop:")).map((a) => a.slice(5));
-    if (drop.length) s.actors = (s.actors || []).filter((a) => !drop.includes(a.sprite));
+    if (drop.length) {
+      s.actors = (s.actors || []).filter((a) => !drop.includes(a.sprite));
+      const lost = o.labels.filter((l) => drop.includes(l[4]));
+      o.tags.push(...lost.map((l) => [l[0], l[1], l[2], l[3], o.tags.some((g) => g[4] === "tl") ? "tr" : "tl"]));
+      o.labels = o.labels.filter((l) => !drop.includes(l[4]));
+      if (o.focusOn && drop.includes(o.focusOn.sprite)) o.focusOn = null;
+    }
     const flip = acts.filter((a) => a.startsWith("flip:")).map((a) => a.slice(5));
     s.actors = (s.actors || []).map((a) => (flip.includes(a.sprite) ? { ...a, dir: a.dir === "l" ? "r" : "l", move: undefined } : a));
     if (acts.includes("apart")) s.apart = true;

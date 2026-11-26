@@ -1,5 +1,6 @@
 const clock = (s: number): string => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 export const BORNAS_ERROR = {
+  NO_SEO: "AI không trả về phương án SEO nào",
   BAD_REQUEST: "Yêu cầu không hợp lệ",
   NO_SOURCE: "Không tìm thấy video mẫu.",
   NO_JOB: "Không tìm thấy lần chạy này.",
@@ -19,7 +20,11 @@ export const BORNAS_ERROR = {
   RENDER: (detail: string) => `Render lỗi: ${detail}`,
   KIT: (dir: string) => `Không thấy bộ công cụ ${dir}.`,
 } as const;
+export const BORNAS_SEO_TEXT: Record<string, { INTRO: string }> = { vi: { INTRO: "Mở đầu" }, en: { INTRO: "Intro" }, ja: { INTRO: "オープニング" }, ko: { INTRO: "오프닝" } };
 export const BORNAS_LOG = {
+  SEO: "Viết SEO và vẽ 2 ảnh bìa…",
+  REVIEW_FIX_FAILED: (error: string) => `Sửa theo AI xem ảnh bị lỗi khi dựng lại, giữ bản dựng trước: ${error}`,
+  SEO_DONE: (options: number, thumbs: number) => `SEO xong: ${options} phương án, ${thumbs} ảnh bìa`,
   INTERRUPTED: "Lần chạy bị ngắt khi app tắt.",
   SAMPLE: (name: string, seconds: number, w: number, h: number) => `Video mẫu: ${name} · ${clock(seconds)} · ${w}×${h}`,
   SAMPLE_CACHED: "Đã có phân tích của video mẫu này, dùng lại.",

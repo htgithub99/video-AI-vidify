@@ -1,8 +1,9 @@
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
+import { encodeClaudeChatModel } from "../../../constants/claudeChatModels.js";
 import type { ReupAiChoice } from "../../reup/types/reup.js";
 import type { BornasAiField, BornasAiSettings, BornasDrawProvider, BornasChannel, BornasLine, BornasGenre, BornasLanguage, BornasStepId, BornasTopic } from "../types/bornas.js";
-export const BORNAS_STEPS: readonly BornasStepId[] = ["sample", "script", "voice", "assets", "shots", "build", "render"];
-export const BORNAS_VIDEO_STEPS: readonly BornasStepId[] = ["voice", "assets", "shots", "build", "render"];
+export const BORNAS_STEPS: readonly BornasStepId[] = ["sample", "script", "voice", "assets", "shots", "build", "package", "render"];
+export const BORNAS_VIDEO_STEPS: readonly BornasStepId[] = ["voice", "assets", "shots", "build", "package", "render"];
 export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate", DELETE_VIDEOS: "/delete-videos" } as const;
 export const BORNAS_URL = {
   SOURCE: "/api/bornas/source",
@@ -30,6 +31,7 @@ export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = {
   wildwest: ["wildwest"],
 };
 export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }[] = [
+  { re: /\b(?:mounted|galloping|riding|rider|horseman|cavalryman)\b/, min: 1.8, max: 2.8, std: 2.4 },
   { re: /(?:nightstand|bedside|side_table)s?\b/, min: 0.5, max: 0.85, std: 0.7 },
   { re: /(?:bed|cot|couch|sofa)s?\b/, min: 0.6, max: 1.4, std: 1 },
   { re: /(?:chair|stool|bench)s?\b/, min: 0.45, max: 1.3, std: 1 },
@@ -59,6 +61,8 @@ export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }
 ];
 export const BORNAS_KIND_SIZES: Record<string, { min: number; max: number; std: number }> = { person: { min: 1, max: 2.1, std: 1.75 }, animal: { min: 0.2, max: 3, std: 1 }, vehicle: { min: 1, max: 6, std: 2.4 }, weapon: { min: 0.08, max: 1.5, std: 0.3 }, prop: { min: 0.03, max: 3, std: 0.5 }, structure: { min: 0.8, max: 30, std: 3 }, nature: { min: 0.3, max: 30, std: 2 } };
 export const BORNAS_CTA: Record<string, { TITLE: string; SUB: string }> = { vi: { TITLE: "BÌNH LUẬN NGAY", SUB: "NHÂN VẬT TIẾP THEO LÀ AI?" }, en: { TITLE: "COMMENT BELOW", SUB: "WHO SHOULD BE NEXT?" }, ja: { TITLE: "コメントで教えて", SUB: "次は誰がいい？" }, ko: { TITLE: "댓글을 남겨주세요", SUB: "다음 인물은 누구?" } };
+export const BORNAS_SEO = { OPTIONS: 2, TITLE_MAX: 70, WORD_MAX: 14, NAME_MAX: 12, DIR: "seo", FILE: "seo.txt", BABY: "thumb_baby" } as const;
+export const BORNAS_THUMB_TEXT: Record<string, { AGE: string; BORN: string }> = { vi: { AGE: "0 TUỔI", BORN: "BẠN SINH RA LÀ" }, en: { AGE: "AGE 0", BORN: "YOU WERE BORN AS" }, ja: { AGE: "0歳", BORN: "あなたの正体は" }, ko: { AGE: "0세", BORN: "당신은 태어났다" } };
 export const BORNAS_CHAPTER = { MIN_SECONDS: 180, CARD_SECONDS: 1.8, LEAD: 0.15, TITLE_MAX: 40, MAX: 8 } as const;
 export const bornasChapterLines = (lines: BornasLine[], seconds: number): number[] => (seconds >= BORNAS_CHAPTER.MIN_SECONDS ? lines.flatMap((l, i) => (i && l.chapter ? [i] : [])).slice(0, BORNAS_CHAPTER.MAX) : []);
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
@@ -77,6 +81,7 @@ export const BORNAS_LIMITS = {
   POOL_MAX: 16,
   FRAGMENT_SECONDS: 1.4,
   LINE_SECONDS: 0.8,
+  LINE_TARGET_SECONDS: 2.6,
   LINE_SPEECH_SECONDS: 2.3,
   LENGTH_SLACK: 1.08,
   MIN_WORDS: 60,
@@ -114,9 +119,12 @@ export const BORNAS_PY = { PACKAGES: ["pillow", "numpy", "scipy", "rembg", "onnx
 export const BORNAS_SAME_PERSON = " This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.";
 export const BORNAS_REVIEW_CONTEXT = "These are original drawings for a family-friendly educational cartoon about history: no real people, no photos, any fight shown only as cartoon falls. Your job is only a layout check of positions, sizes, text and picture edges; describe problems in neutral words.";
 export const BORNAS_STYLE_LINE = "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon";
-const AI_DEFAULT: ReupAiChoice = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiPro, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: true, allowFallback: true, multiRoom: true };
-export const BORNAS_AI_DEFAULT: BornasAiSettings = { writeAi: AI_DEFAULT, factAi: AI_DEFAULT, directAi: AI_DEFAULT, visionAi: AI_DEFAULT, lightAi: { ...AI_DEFAULT, model: AiPlanningChatModel.GeminiFlash }, drawAi: { provider: "gemini-chat", chromeHeadless: true, allowFallback: false } };
-export const BORNAS_AI_FIELDS: BornasAiField[] = ["writeAi", "factAi", "directAi", "visionAi", "lightAi"];
+const AI_DEFAULT: ReupAiChoice = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: true, allowFallback: true, multiRoom: true };
+const CLAUDE: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.ClaudeChat, model: encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, "medium") };
+const CHATGPT: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.ChatGptUi, model: AiPlanningChatModel.ChatGptAuto };
+const META: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.MetaAi, model: AiPlanningChatModel.MetaAiAuto };
+export const BORNAS_AI_DEFAULT: BornasAiSettings = { writeAi: CLAUDE, factAi: CHATGPT, directAi: CLAUDE, visionAi: AI_DEFAULT, lightAi: META, seoAi: CLAUDE, drawAi: { provider: "gemini-chat", chromeHeadless: true, allowFallback: false } };
+export const BORNAS_AI_FIELDS: BornasAiField[] = ["writeAi", "factAi", "directAi", "visionAi", "seoAi", "lightAi"];
 export const BORNAS_VISION_PROVIDERS: AiPlanningFallbackProvider[] = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat];
 export const BORNAS_DRAW_PROVIDERS: BornasDrawProvider[] = ["gemini-chat", "labs-flow"];
 export const BORNAS_LIBRARY_DRAW: BornasDrawProvider = "gemini-chat";
@@ -129,13 +137,15 @@ export const bornasAiSettings = (raw: LegacyAi | undefined): BornasAiSettings =>
     writeAi: pick("writeAi", main),
     factAi: pick("factAi", main),
     directAi: pick("directAi", main),
+    seoAi: pick("seoAi"),
     visionAi: BORNAS_VISION_PROVIDERS.includes(vision.provider as AiPlanningFallbackProvider) ? vision : { ...vision, provider: AiPlanningFallbackProvider.GeminiChat },
     lightAi: pick("lightAi"),
     drawAi: { ...BORNAS_AI_DEFAULT.drawAi, ...(raw?.drawHeadless === undefined ? {} : { chromeHeadless: raw.drawHeadless }), ...raw?.drawAi, provider: BORNAS_DRAW_PROVIDERS.includes(raw?.drawAi?.provider as BornasDrawProvider) ? (raw!.drawAi!.provider as BornasDrawProvider) : "gemini-chat" },
   };
 };
-export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "sample", count: 3, seconds: 120, review: false });
-export const BORNAS_GENRES: BornasGenre[] = ["sample", "bornas", "survive", "worst", "day", "whatif"];
+export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "bornas", count: 3, seconds: 120, review: false });
+export const BORNAS_GENRES: BornasGenre[] = ["bornas", "survive", "worst", "day", "whatif"];
+export const bornasGenre = (raw: unknown): BornasGenre => (BORNAS_GENRES.includes(raw as BornasGenre) ? (raw as BornasGenre) : "bornas");
 export const BORNAS_TOKEN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+/gu;
 export const BORNAS_WORD = /[\p{L}\p{N}]/u;
 export const bornasTokens = (text: string): string[] => (text.match(BORNAS_TOKEN) || []).filter((t) => BORNAS_WORD.test(t));

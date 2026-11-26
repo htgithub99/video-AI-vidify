@@ -75,6 +75,8 @@ export enum AiPlanningChatModel {
   GeminiFlash = "gemini-flash",
   GeminiPro = "gemini-pro",
   GeminiArgon = "gemini-argon",
+  GeminiNeon = "gemini-neon",
+  GeminiAuto = "gemini-auto",
   GeminiThinking = "gemini-thinking",
   GeminiDeepThink = "gemini-deep-think",
   GrokFast = "grok-fast",
@@ -1064,9 +1066,10 @@ export enum GeminiChatSpeed {
 }
 export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = { [GeminiChatSpeed.Slow]: 2, [GeminiChatSpeed.Normal]: 3, [GeminiChatSpeed.Fast]: 5, [GeminiChatSpeed.SuperFast]: 7, [GeminiChatSpeed.HyperFast]: 10 };
 export enum GeminiChatModelName {
-  Pro = "3.1 Pro",
-  Flash = "3.7 Flash",
-  FlashLite = "3.5 Flash-Lite",
+  Pro = "4 Carbon",
+  Flash = "4 Hydrogen",
+  Neon = "4 Neon",
+  Auto = "Tự động",
 }
 export enum GeminiChatSelector {
   Response = "model-response",

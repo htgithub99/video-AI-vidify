@@ -111,6 +111,12 @@ const drawSheet = async (prompt: string, file: string, what: string, draw: Borna
   }
   return false;
 };
+export const drawBornasSingle = async (job: BornasJob, prompt: string, raw: string, name: string, desc: string, log: Log, signal?: AbortSignal, refs: string[] = []): Promise<string | undefined> => {
+  const ok = fs.existsSync(raw) || (await drawSheet(prompt, raw, name, job.ai.drawAi, log, { count: 0 }, signal, refs));
+  if (!ok) return undefined;
+  const [file] = await keyedSplit(job, raw, raw.replace(/\.png$/, ""), [{ name, desc }], log, signal);
+  return file;
+};
 const cleanPlan = (raw: unknown, items: Record<string, LibItem>, bgs: Record<string, LibBg>): BornasAssetPlan => {
   const r = (raw || {}) as Record<string, unknown>;
   const arr = (v: unknown): Record<string, unknown>[] => (Array.isArray(v) ? v.filter((x) => x && typeof x === "object") : []);
@@ -199,7 +205,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     if (path.resolve(file) !== path.resolve(dst)) copyCrop(file, dst);
     const [w, h] = pngSize(dst);
     const [lo, hi] = BORNAS_SIZE_RANGE[kind] || BORNAS_SIZE_RANGE.prop;
-    const size = _.clamp(heightM || lo, lo, hi);
+    const size = heightM >= lo && heightM <= hi ? heightM : _.clamp(sizeOf(name, kind, NaN), lo, hi);
     if (size !== heightM) log(BORNAS_LOG.SIZE_CLAMPED(name, heightM, size), "warn");
     sprites.push({ name, kind, heightM: size, facing, aspect: w / Math.max(1, h), desc, ...(pool ? { pool } : {}) });
   };

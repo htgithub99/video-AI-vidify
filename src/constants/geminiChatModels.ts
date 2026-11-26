@@ -41,7 +41,7 @@ export const GEMINI_MODEL_UI = {
   CHECK_ICON_SELECTOR: 'input:checked, [data-mat-icon-name="check"], [fonticon="check"], mat-icon',
   CHECK_MARKER_SELECTOR: 'input:checked, [data-mat-icon-name="check"], [fonticon="check"]',
   CHECK_TEXT_PATTERN: /^(?:check|done)$/i,
-  PICKER_HINT: /flash|pro|hydrogen|argon|carbon|fast|thinking|tư duy|nhanh|mode|model/i,
+  PICKER_HINT: /flash|pro|hydrogen|neon|argon|carbon|tự động|auto|fast|thinking|tư duy|nhanh|mode|model/i,
   MODEL_BUTTON_SELECTOR: 'button:not([role="menuitem"]):not([role="menuitemradio"]):not([role="option"])',
 } as const;
 export const GEMINI_THINKING_LEVEL_OPTIONS = [
@@ -61,18 +61,18 @@ export const GEMINI_MODEL_ENCODING = {
   READINESS: "readiness",
 } as const;
 export const GEMINI_CHAT_BASE_MODEL_OPTIONS = [
-  { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },
-  { value: AiPlanningChatModel.GeminiFlash, label: "4 Hydrogen" },
-  { value: AiPlanningChatModel.GeminiPro, label: "4 Carbon" },
-  { value: AiPlanningChatModel.GeminiArgon, label: "4 Argon" },
-  { value: AiPlanningChatModel.GeminiThinking, label: "Pro · Tư duy mở rộng" },
-  { value: AiPlanningChatModel.GeminiDeepThink, label: "Pro · Deep Think" },
+  { value: AiPlanningChatModel.GeminiAuto, label: "Tự động" },
+  { value: AiPlanningChatModel.GeminiFlash, label: "4 Hydrogen · Trợ giúp hằng ngày" },
+  { value: AiPlanningChatModel.GeminiNeon, label: "4 Neon · Phân tích sâu hơn" },
+  { value: AiPlanningChatModel.GeminiPro, label: "4 Carbon · Việc phức tạp" },
 ] as const;
+const GEMINI_RETIRED: Partial<Record<string, AiPlanningChatModel>> = { [AiPlanningChatModel.GeminiFlashLite]: AiPlanningChatModel.GeminiFlash, [AiPlanningChatModel.GeminiArgon]: AiPlanningChatModel.GeminiNeon, [AiPlanningChatModel.GeminiThinking]: AiPlanningChatModel.GeminiPro, [AiPlanningChatModel.GeminiDeepThink]: AiPlanningChatModel.GeminiPro };
 export const parseGeminiChatModel = (value: unknown) => {
   if (typeof value !== "string") return undefined;
-  const [id, level, ...extra] = value.split(GEMINI_MODEL_ENCODING.SEPARATOR);
+  const [raw, level, ...extra] = value.split(GEMINI_MODEL_ENCODING.SEPARATOR);
+  const id = GEMINI_RETIRED[raw] || raw;
   const spec = GEMINI_CHAT_BASE_MODEL_OPTIONS.find((option) => option.value === id);
-  const legacy = id === AiPlanningChatModel.GeminiThinking || id === AiPlanningChatModel.GeminiDeepThink;
+  const legacy = id === AiPlanningChatModel.GeminiAuto;
   if (!spec || extra.length || (level !== undefined && (legacy || !GEMINI_THINKING_LEVEL_OPTIONS.some((option) => option.value === level)))) return undefined;
   return { model: spec.value, level: level as GeminiThinkingLevel | undefined, legacy };
 };
@@ -81,4 +81,4 @@ export const encodeGeminiChatModel = (model: AiPlanningChatModel, level?: Gemini
   if (!selection) return model;
   return level && !selection.legacy && GEMINI_THINKING_LEVEL_OPTIONS.some((option) => option.value === level) ? (`${selection.model}${GEMINI_MODEL_ENCODING.SEPARATOR}${level}` as AiPlanningChatModel) : selection.model;
 };
-export const GEMINI_CHAT_MODEL_OPTIONS = GEMINI_CHAT_BASE_MODEL_OPTIONS.flatMap((option) => [option, ...([AiPlanningChatModel.GeminiThinking, AiPlanningChatModel.GeminiDeepThink].includes(option.value) ? [] : GEMINI_THINKING_LEVEL_OPTIONS.map((level) => ({ value: encodeGeminiChatModel(option.value, level.value), label: `${option.label} · ${level.label}` })))]);
+export const GEMINI_CHAT_MODEL_OPTIONS = GEMINI_CHAT_BASE_MODEL_OPTIONS.flatMap((option) => [option, ...(option.value === AiPlanningChatModel.GeminiAuto ? [] : GEMINI_THINKING_LEVEL_OPTIONS.map((level) => ({ value: encodeGeminiChatModel(option.value, level.value), label: `${option.label} · ${level.label}` })))]);

@@ -1,7 +1,7 @@
-import { BORNAS_CHAPTER, BORNAS_LIMITS, BORNAS_REVIEW_CONTEXT, BORNAS_SAME_PERSON, BORNAS_STYLE_LINE } from "./bornasConfig.js";
+import { BORNAS_CHAPTER, BORNAS_LIMITS, BORNAS_SEO, BORNAS_REVIEW_CONTEXT, BORNAS_SAME_PERSON, BORNAS_STYLE_LINE } from "./bornasConfig.js";
 import { motionLanguage } from "../../../lib/motionLanguage.js";
 import type { BornasAnalysis, BornasBackground, BornasGenre, BornasLanguage, BornasLine, BornasScript, BornasSprite, BornasTopic } from "../types/bornas.js";
-export const BORNAS_ARTIFACT = { ANALYZE: "bornas-analyze", SCRIPTS: "bornas-scripts", STYLE: "bornas-style", TRIM: "bornas-trim", MATCH: "bornas-match", ASSETS: "bornas-assets", SPRITE_REVIEW: "bornas-sprite-review", SNAP_REVIEW: "bornas-snap-review", BG_MEASURE: "bornas-bg-measure", SHOTS: "bornas-shots", FACTS: "bornas-facts", REPLACE: "bornas-replace" } as const;
+export const BORNAS_ARTIFACT = { ANALYZE: "bornas-analyze", SCRIPTS: "bornas-scripts", STYLE: "bornas-style", TRIM: "bornas-trim", MATCH: "bornas-match", ASSETS: "bornas-assets", SPRITE_REVIEW: "bornas-sprite-review", SNAP_REVIEW: "bornas-snap-review", SEO: "bornas-seo", BG_MEASURE: "bornas-bg-measure", SHOTS: "bornas-shots", FACTS: "bornas-facts", REPLACE: "bornas-replace" } as const;
 const SUBJECT: Record<BornasTopic, string> = {
   world: "each script follows a different person from any country and era",
   ww: "each script follows a different person of WW1 or WW2: commanders and leaders, but also ordinary soldiers, medics, pilots, tank crews, snipers, spies, nurses, children and civilians; several scripts may share one battle or campaign (Verdun, the Somme, Gallipoli, Stalingrad, Midway, Normandy…) when each tells a different person's side of it",
@@ -26,7 +26,6 @@ const TOPIC: Record<BornasTopic, string> = {
   wildwest: "the American Wild West 1850–1900 (outlaws, sheriffs, settlers, frontier towns)",
 };
 const GENRE: Record<BornasGenre, string> = {
-  sample: "",
   bornas: 'Genre "If you were born as…": the hero\'s whole life from birth to death in second person ("you"), each life stage opened by an age, a place and a year.',
   survive: "Genre \"Why you wouldn't survive…\": put the listener into one dangerous place and time through the hero's eyes; step by step the dangers that kill most people there, with the real odds or death tolls when sources give them, and how the hero did or did not get through.",
   worst: 'Genre "The worst time / job in history": through the hero, rank the most miserable conditions of that time, place or job from bad to worst, each step a concrete scene of daily life backed by sources.',
@@ -54,11 +53,12 @@ export const BORNAS_PROMPT = {
   SCRIPTS: (a: { count: number; topic: BornasTopic; genre: BornasGenre; language: BornasLanguage; seconds: number; rate: number; rhythm: string; analysis: BornasAnalysis; avoid: string[]; channel: string }) =>
     [
       `Write ${a.count} new video scripts for the YouTube channel "${a.channel}" in ${motionLanguage(a.language).promptName}. Topic of the channel: ${TOPIC[a.topic]}.`,
-      `Each script is one video of about ${a.seconds} seconds of narration (the voice reads about ${a.rate.toFixed(1)} ${motionLanguage(a.language).unit.promptName} per second, so at most ${Math.round(a.seconds * a.rate * 0.9)} of them in all lines together; cut chapters rather than go over).`,
-      GENRE[a.genre] ? `${GENRE[a.genre]} Use the sample only for its rhythm, devices and on-screen text habits, not for its formula.` : `Formula of the sample: ${a.analysis.formula}`,
+      `Each script is one video of about ${a.seconds} seconds of narration (the voice reads about ${a.rate.toFixed(1)} ${motionLanguage(a.language).unit.promptName} per second, so at most ${Math.round(a.seconds * a.rate * 0.9)} of them in all lines together, in about ${Math.round(a.seconds / BORNAS_LIMITS.LINE_TARGET_SECONDS)} short lines; cut chapters rather than go over).`,
+      a.seconds < BORNAS_CHAPTER.MIN_SECONDS ? "A short video keeps only: the hook with 3 shocking beats, the turn, 3–4 life stages told in quick short lines, one verdict and the closing question; no recap and no planted callbacks." : "",
+      `${GENRE[a.genre]} Use the sample only for its rhythm, devices and on-screen text habits, not for its formula.`,
       `Narration card (follow it closely): ${a.analysis.narration}`,
       `On-screen text habits: ${a.analysis.texts}`,
-      a.avoid.length ? `Already made on this channel, do not repeat these subjects: ${a.avoid.join("; ")}.` : "",
+      a.avoid.length ? `Already made on this channel, do not repeat these subjects: ${a.avoid.join("; ")}. Never mention them anywhere in the new script, its title or hook.` : "",
       `Subjects: ${SUBJECT[a.topic]}. ${PICK}`,
       SCRIPT_SHAPE,
       `${a.rhythm} ${languageRules(a.language)}`,
@@ -89,7 +89,7 @@ export const BORNAS_PROMPT = {
   FACTS: (script: BornasScript, topic: BornasTopic) =>
     [
       topic === "game" ? "This script retells a real video game's story: the sources are the game itself, its official lore and well-documented wikis; story events count as facts, but nothing may be added that the game does not show or say." : "",
-      'Fact-check this video script line by line against well-documented sources (search the web if you can). Flag every line that states something wrong, unproven or invented: wrong dates, ages or numbers, events that did not happen, invented quotes, vows, holidays, motives or comparisons, people placed where sources do not put them. Rewrite each flagged line with only what sources support (say "sources disagree" or "his gang" when unsure), keep the same language, second person, length and fields, and fix its on-screen text to match. Also check every line: the number in "screen" must equal the number said in "text", a quote shown on screen must be one that sources record, and spelling must be correct. A line of kind "quote" must be words the person is recorded saying (if sources disagree or attribute them to someone else, change kind to "plate" or "none" and say it as reported speech).',
+      'Fact-check this video script line by line against well-documented sources (search the web if you can). Flag every line that states something wrong, unproven or invented: wrong dates, ages or numbers, events that did not happen, invented quotes, vows, holidays, motives or comparisons, people placed where sources do not put them. Rewrite each flagged line with only what sources support, keep the same language, second person and fields, and never make a line longer than it was: when a detail is unproven, drop it or move it to the next line instead of hedging inside a long sentence; say that sources disagree at most twice in the whole script, in a short line of its own ("Sources disagree." / "Nobody knows for sure."), and fix its on-screen text to match. Also check every line: the number in "screen" must equal the number said in "text", a quote shown on screen must be one that sources record, and spelling must be correct. A line of kind "quote" must be words the person is recorded saying (if sources disagree or attribute them to someone else, change kind to "plate" or "none" and say it as reported speech).',
       `Script:\n${JSON.stringify(script)}`,
       'JSON: {"title": string, "hook": string, "hero": string, "series": string, "lines": [same shape as the input lines], "fixed": [line numbers that were changed]}',
       JSON_ONLY,
@@ -98,7 +98,7 @@ export const BORNAS_PROMPT = {
       .join("\n\n"),
   TRIM: (script: BornasScript, have: number, max: number) =>
     [
-      `This script has ${have} words but the video length allows at most ${max}. Shorten it to at most ${max} words: drop or merge the least important life stages and side details, merge very short neighbouring lines (each line adds a pause), keep the hook, the turn, the planted details with their callbacks, the verdict, the recap and the closing question. Keep the same line fields and style.`,
+      `This script has ${have} words but the video length allows at most ${max}. Shorten it to at most ${max} words: drop the least important life stages, side details and whole lines; never merge lines into longer sentences, every line keeps the rhythm limit of the original, keep the hook, the turn, the planted details with their callbacks, the verdict, the recap and the closing question. Keep the same line fields and style.`,
       `Script:\n${JSON.stringify(script)}`,
       'JSON: {"title": string, "hook": string, "hero": string, "series": string, "lines": [same shape as the input lines]}',
       JSON_ONLY,
@@ -164,7 +164,7 @@ export const BORNAS_PROMPT = {
       "Trains go only on backgrounds that show rails and boats only on backgrounds with water; code puts them on the rails or the water. Furniture and structures already drawn in a background are used as they are: never add a sprite of the same furniture, building, pier, dock, fence or rails to that background; a person lying or sitting on it is placed there by code.",
       [
         "A beat starts on a word {line, word}: the first word of a line or the key noun/verb inside it. Usually one beat per line; a new beat whenever the place, the people or the action changes; hook lines get 2–3 beats each, every beat a different picture (another place, subject or action, never the same subject in the same place twice in a row). Beats in time order, covering every line. Code cuts long beats into several camera angles, so do not split a beat only to move the camera.",
-        'cast: who/what is in the picture, max 4 main figures plus at most one crowd group (a 1920 px frame holds about 4 standing people side by side; riders and vehicles take twice the room): {sprite, slot "l"|"cl"|"c"|"cr"|"r", place "ground"|"wall"|"table"|"near" (near = dropped beside the subject), dir "l"|"r" (who looks where; people talking face each other), move "l"|"r" only for walking/riding/running across, crowd n (2–5 extras of that kind; code draws them from different library pictures), swap [{sprite, line, word}] to change the same person\'s pose exactly on that word}. Never the same sprite twice. Every beat needs a person or the one object the line is about; never an empty background unless the line names only the place.',
+        'cast: who/what is in the picture; each person appears once per shot (never two sprites of the same person, never a different age of the same person) and always at the age of that moment in the story (a teenage sprite is never used in a later life stage, an adult sprite never in childhood); max 4 main figures plus at most one crowd group (a 1920 px frame holds about 4 standing people side by side; riders and vehicles take twice the room): {sprite, slot "l"|"cl"|"c"|"cr"|"r", place "ground"|"wall"|"table"|"near" (near = dropped beside the subject), dir "l"|"r" (who looks where; people talking face each other), move "l"|"r" only for walking/riding/running across, crowd n (2–5 extras of that kind; code draws them from different library pictures), swap [{sprite, line, word}] to change the same person\'s pose exactly on that word}. Never the same sprite twice. Every beat needs a person or the one object the line is about; never an empty background unless the line names only the place.',
         'subject: index in cast of who the line is about. frame: "wide" when a place or a group is introduced, "medium" for two people interacting, "close" on the person or object named. cam: "push" (default), "glide" (start wide and glide in to the subject when it is named), "pull" (pull back on loss, death, emptiness).',
         'kind "bust": head-and-shoulders talking portrait of the hero over a blurred background — use a sprite whose name ends in "_bust" as cast[0]; use it for the hero\'s thoughts, the turn line and emotional peaks (about one beat in six, more in the hook).',
         'Text, only from the line\'s on-screen text, at most one per beat: tag {text, sub, corner "tl"|"tr", line, word} for ages and dates; plate {text, sub, at (cast index it points at, or null for a scene-wide name), line, word} for places and facts; label {text, sub, cast, line, word} for a person\'s name. Only a line marked as a recorded quote (kind "quote") may become a bubble {text (max 6 words), cast, line, word}; never invent or shorten words into a quote. Weapons never point at a friend or a child: an archer or gunman faces the enemy or away.',
@@ -185,5 +185,21 @@ export const BORNAS_PROMPT = {
     `${BORNAS_STYLE_LINE}. A sprite sheet on a plain pure white background with exactly ${items.length} separate items in a ${cols}×${rows} grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds. Items in order: ${items.map((it, i) => `${i + 1}) ${it.desc}`).join("; ")}. No text, no captions, no labels, no ground shadows.`,
   FIX_SHEET: (items: { desc: string }[], cols: number, rows: number, same: boolean) =>
     `${BORNAS_STYLE_LINE}. A sprite sheet on a plain pure white background with exactly ${items.length} separate figures in a ${cols}×${rows} grid, read left to right, top to bottom. Each one drawn once, whole, never cut off by the edge, never doubled, with nothing held twice, empty white space between them, side view facing right. Items in order: ${items.map((it, i) => `${i + 1}) ${it.desc}`).join("; ")}. No text, no captions, no labels, no icons, no ground shadows.${same ? BORNAS_SAME_PERSON : ""}`,
+  SEO: (a: { title: string; hero: string; lines: string[]; language: BornasLanguage; genre: BornasGenre; seconds: number; chapters: string[]; avoid: string[] }) =>
+    [
+      `Prepare YouTube SEO for an animated history explainer in second person ("what if you were born as…"). Write titles, descriptions, tags, hashtags, the pinned question and the thumbnail texts in ${motionLanguage(a.language).promptName}.`,
+      `Working title: ${a.title}. Main character: ${a.hero}. Length: ${Math.round(a.seconds / 60)} min ${Math.round(a.seconds % 60)} s.`,
+      `Narration:\n${a.lines.join("\n")}`,
+      a.chapters.length ? `Chapters, in order: ${a.chapters.join("; ")}.` : "",
+      `Write ${BORNAS_SEO.OPTIONS} clearly different options, best first. ${a.genre === "bornas" ? `Option 1 follows the pattern "What If You Were Born as <name>? | <short context>" in the target language; option 2 follows "Live <name>'s Entire Life in <N> Minutes" in the target language.` : "Option 1 is a curiosity question about the character's fate; option 2 promises the whole story in a few minutes."} Titles max ${BORNAS_SEO.TITLE_MAX} characters, the name early. Descriptions: 2 hook lines with the main keywords, then 2–4 short lines about what the viewer lives through; no chapter list, no links.`,
+      a.avoid.length ? `This channel's earlier titles, do not reuse their wording: ${a.avoid.map((t) => `"${t}"`).join("; ")}.` : "",
+      `Thumbnail texts: "word" = 1–3 words, max ${BORNAS_SEO.WORD_MAX} characters, the strongest dramatic turn of this life that the script really tells (like "BETRAYED", "RAISED BY OUTLAWS", "GOD KILLER"); "name" = the shortest name viewers know the character by, max ${BORNAS_SEO.NAME_MAX} characters.`,
+      "Everything must be true to the narration: no promise the video does not keep, no invented events. Never mention AI, voices or any tool used to make the video.",
+      'JSON: {"options": [{"title": string, "description": string, "hashtags": [3-5 strings starting with #], "tags": [10-15 strings], "seoScore": number 0-100}], "pinned": string (one question that invites comments), "word": string, "name": string}',
+      JSON_ONLY,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
+  BABY: (desc: string) => `${BORNAS_STYLE_LINE}. On a plain pure white background: this character as a baby at age 0, sitting in a simple wooden crib, front view facing the viewer, a cross angry frown, arms crossed, whole crib visible and not cut off. ${desc}. Same face features and hair colour as the reference picture. No text, no captions, no ground shadow, no room behind.`,
   BACKGROUND: (desc: string) => `${BORNAS_STYLE_LINE}. A 16:9 background scene at eye level: ${desc}. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.`,
 } as const;

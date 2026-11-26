@@ -23,7 +23,6 @@ export const IMAGE_GEN_VEO_FALLBACK_REGEX = /(veo|omni flash|banana 2)/i;
 export const GEMINI_MODEL_PRO_REGEX = /\b(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s+)?(?:Pro|Carbon)\b/i;
 export const GEMINI_MODEL_FLASH_REGEX = /\b(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s+)?(?:Flash(?![\s-]*Lite)|Hydrogen)\b/i;
 export const GEMINI_MODEL_FLASH_FAMILY_REGEX = /\b(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s+)?(?:Flash(?![\s-]*Lite)|Hydrogen)\b/i;
-export const GEMINI_MODEL_FLASH_LITE_REGEX = /\b(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s+)?Flash[\s-]*Lite\b/i;
 export const SINGLE_QUOTE_REGEX = /'/g;
 export const LAST_WORD_IN_SENTENCE_REGEX = /(\b[a-zA-ZÀ-ỹ]+)$/;
 export const SENTENCE_PUNCTUATION_END_REGEX = /[伤害,.;:—\-\s]+$/;

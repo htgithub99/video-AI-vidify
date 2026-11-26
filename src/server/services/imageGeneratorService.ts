@@ -256,7 +256,6 @@ import {
   GEMINI_MODEL_PRO_REGEX,
   GEMINI_MODEL_FLASH_REGEX,
   GEMINI_MODEL_FLASH_FAMILY_REGEX,
-  GEMINI_MODEL_FLASH_LITE_REGEX,
   CONTENT_TYPES,
   COMMON_STRINGS,
   URL_CONSTANTS,
@@ -4103,19 +4102,19 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
   const isImageGeneration = !_.isEqual(visualConfig?.generateType, GenerateType.Video);
   if (planningModel) {
     const basePlanningModel = geminiSelection?.model || planningModel;
-    if (basePlanningModel === AiPlanningChatModel.GeminiFlashLite) {
-      targetModelText = GeminiChatModelName.FlashLite;
-      targetModelRegex = GEMINI_MODEL_FLASH_LITE_REGEX;
-      fallbackModelRegex = null;
-    } else if (basePlanningModel === AiPlanningChatModel.GeminiFlash) {
+    if (basePlanningModel === AiPlanningChatModel.GeminiFlash) {
       targetModelText = GeminiChatModelName.Flash;
       targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
       fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
-    } else if (basePlanningModel === AiPlanningChatModel.GeminiArgon) {
-      targetModelText = GeminiChatModelName.Pro;
-      targetModelRegex = CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiArgon];
+    } else if (basePlanningModel === AiPlanningChatModel.GeminiNeon) {
+      targetModelText = GeminiChatModelName.Neon;
+      targetModelRegex = CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiNeon];
       fallbackModelRegex = GEMINI_MODEL_PRO_REGEX;
-    } else if (basePlanningModel === AiPlanningChatModel.GeminiPro || basePlanningModel === AiPlanningChatModel.GeminiThinking || basePlanningModel === AiPlanningChatModel.GeminiDeepThink) {
+    } else if (basePlanningModel === AiPlanningChatModel.GeminiAuto) {
+      targetModelText = GeminiChatModelName.Auto;
+      targetModelRegex = CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiAuto];
+      fallbackModelRegex = null;
+    } else if (basePlanningModel === AiPlanningChatModel.GeminiPro) {
       targetModelText = GeminiChatModelName.Pro;
       targetModelRegex = GEMINI_MODEL_PRO_REGEX;
       fallbackModelRegex = null;
@@ -4124,10 +4123,7 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     targetModelText = GeminiChatModelName.Flash;
     targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
     fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
-  } else if (_.includes([ImageGeneratorEngine.LabsSandbox, ImageGeneratorEngine.Veo3Lite], engine)) {
-    targetModelText = GeminiChatModelName.FlashLite;
-    targetModelRegex = GEMINI_MODEL_FLASH_LITE_REGEX;
-  } else if (_.includes([ImageGeneratorEngine.Veo3, ImageGeneratorEngine.Veo3Fast], engine)) {
+  } else if (_.includes([ImageGeneratorEngine.LabsSandbox, ImageGeneratorEngine.Veo3Lite, ImageGeneratorEngine.Veo3, ImageGeneratorEngine.Veo3Fast], engine)) {
     targetModelText = GeminiChatModelName.Flash;
     targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
     fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;

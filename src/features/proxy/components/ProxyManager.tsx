@@ -316,7 +316,6 @@ import {
   SOURCE_TEXT_SUBMIT,
   SOURCE_TEXT_TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_2,
   SOURCE_TEXT_TEXT_11PX_FONT_BOLD_TEXT_PURPLE_400,
-  SOURCE_TEXT_PROXY_UPPER_BTN,
   SOURCE_TEXT_PROXY_NAME_TOOLS,
   SOURCE_TEXT_FONT_MONO_TEXT_XS_CUSTOM_SCROLLBAR,
   SOURCE_TEXT_127_0_0_1_8080_USERNAME_PASSWORD,
@@ -348,7 +347,7 @@ import { getErrorMessage } from "../../../utils/errorUtils";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Activity, AlertTriangle, ArrowUpRight, CaseUpper, Check, CheckCircle2, Clapperboard, ClipboardPaste, Copy, Download, Eye, EyeOff, FileText, Globe, KeyRound, Layers, Monitor, Pencil, Play, Plus, RefreshCw, Search, Shield, ShieldCheck, Sparkles, Trash2, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { PROXY_REFRESH_MS, PROXY_TEXTS } from "../../../constants/proxy";
+import { PROXY_BULK_STYLES, PROXY_REFRESH_MS, PROXY_TEXTS } from "../../../constants/proxy";
 import { parseProxyImport, proxyServer, validateProxyInput } from "../../../lib/proxyValidation";
 import type { ProxyCheck, ProxyInput, ProxyOpenResult, ProxyProfile } from "../../../types/proxy";
 import type { Lang } from "../../../lib/lang";
@@ -539,6 +538,23 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
   }, [profiles, query, filterTab]);
   const sessionText = (profile: ProxyProfile) => ({ closed: t.closed, opening: t.opening, open: t.openSession, closing: t.closing })[profile.session];
   const locked = selected ? Boolean(pending[selected.id]) || selected.session === SOURCE_TEXT_OPENING || selected.session === SOURCE_TEXT_CLOSING : false;
+  const [bulk, setBulk] = useState("");
+  const launchAll = async (destination: string) => {
+    const targets = visible.filter((profile) => !locks.current.has(profile.id) && profile.session !== SOURCE_TEXT_OPENING && profile.session !== SOURCE_TEXT_CLOSING);
+    if (!targets.length || bulk) return;
+    setBulk(destination);
+    let done = 0;
+    for (const profile of targets) {
+      await run(profile.id, SOURCE_TEMPLATE_OPEN_2(`${destination}`), async () => {
+        await api<ProxyOpenResult>(SOURCE_TEMPLATE_OPEN(`${profile.id}`), SOURCE_TEXT_POST, { destination });
+        done += 1;
+      });
+    }
+    if (mounted.current) {
+      setBulk("");
+      toast.success(t.openedAll(done, targets.length));
+    }
+  };
   const launch = (destination: string) =>
     selected &&
     run(selected.id, SOURCE_TEMPLATE_OPEN_2(`${destination}`), async () => {
@@ -669,6 +685,18 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                       {tab.count}
                       {SOURCE_TEXT_SYMBOL_12}
                     </span>
+                  </Button>
+                ))}
+              </div>
+              <div className={PROXY_BULK_STYLES.ROW} title={t.openAllHint}>
+                {[
+                  { destination: SOURCE_TEXT_BROWSER, label: t.openAll, icon: <Monitor className={SOURCE_TEXT_W_4_H_4} />, primary: true },
+                  { destination: SOURCE_TEXT_YOUTUBE, label: t.youtubeAll, icon: <Play className={SOURCE_TEXT_W_4_H_4_TEXT_ROSE_400} />, primary: false },
+                  { destination: SOURCE_TEXT_STUDIO, label: t.studioAll, icon: <Clapperboard className={SOURCE_TEXT_W_4_H_4_TEXT_AMBER_400} />, primary: false },
+                ].map((b) => (
+                  <Button key={b.destination} variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, b.primary && primaryBtnClass, PROXY_BULK_STYLES.BUTTON)} disabled={Boolean(bulk) || !visible.length} onClick={() => void launchAll(b.destination)}>
+                    {bulk === b.destination ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_2} /> : b.icon}
+                    <span>{bulk === b.destination ? t.working : b.label}</span>
                   </Button>
                 ))}
               </div>
@@ -1018,19 +1046,19 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               </span>
               <span className={SOURCE_TEXT_PROXY_NAME_TOOLS}>
                 <span className={SOURCE_TEXT_TEXT_10PX_TEXT_SLATE_500_FONT_MONO_2}>{SOURCE_TEXT_TEN_GOI_NHO}</span>
-                <button
+                <Button
+                  variant={SOURCE_TEXT_UNSTYLED}
                   type={SOURCE_TEXT_BUTTON}
                   title={t.upperNameTitle}
-                  disabled={!form.name || form.name === form.name.toLocaleUpperCase()}
                   onClick={(event) => {
                     event.preventDefault();
-                    setForm({ ...form, name: form.name.toLocaleUpperCase() });
+                    if (form.name) setForm({ ...form, name: form.name.toLocaleUpperCase() });
                   }}
-                  className={SOURCE_TEXT_PROXY_UPPER_BTN}
+                  className={SOURCE_TEXT_TEXT_11PX_FONT_BOLD_TEXT_PURPLE_400}
                 >
                   <CaseUpper className={SOURCE_TEXT_W_3_5_H_3_5} />
                   {t.upperName}
-                </button>
+                </Button>
               </span>
             </div>
             <StudioInput autoFocus required maxLength={100} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className={controlClass} placeholder={SOURCE_TEXT_YOUTUBE_STUDIO_01} />

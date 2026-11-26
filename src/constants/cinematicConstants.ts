@@ -361,6 +361,8 @@ export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = 
   [AiPlanningChatModel.GeminiFlash]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?(?:Flash(?![-\s]?Lite)|Hydrogen)/i,
   [AiPlanningChatModel.GeminiPro]: /(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?(?:Pro\b|Carbon)/i,
   [AiPlanningChatModel.GeminiArgon]: /\b(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Argon\b/i,
+  [AiPlanningChatModel.GeminiNeon]: /\b(?:Gemini\s*)?(?:\d+(?:\.\d+)?\s*)?Neon\b/i,
+  [AiPlanningChatModel.GeminiAuto]: /^\s*(?:Tự động|Auto)\b/i,
   [AiPlanningChatModel.GeminiThinking]: /Tư duy mở rộng|Extended thinking|Extended/i,
   [AiPlanningChatModel.GeminiDeepThink]: /Deep Think/i,
   [AiPlanningChatModel.GrokFast]: /Nhanh|Fast/i,
@@ -393,12 +395,10 @@ export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = 
   [AiPlanningChatModel.ClaudeHaiku45]: /^Haiku\s+4\.5(?:\s|$)/i,
 };
 export const GEMINI_CHAT_BASE_MODEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = {
-  [AiPlanningChatModel.GeminiFlashLite]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlashLite],
+  [AiPlanningChatModel.GeminiAuto]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiAuto],
   [AiPlanningChatModel.GeminiFlash]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiFlash],
+  [AiPlanningChatModel.GeminiNeon]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiNeon],
   [AiPlanningChatModel.GeminiPro]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
-  [AiPlanningChatModel.GeminiArgon]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiArgon],
-  [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
-  [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
 };
 export const GEMINI_CHAT_THINKING_LEVEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = { [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiThinking], [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiDeepThink] };
 export const CINEMATIC_PLANNING_MESSAGES = {
