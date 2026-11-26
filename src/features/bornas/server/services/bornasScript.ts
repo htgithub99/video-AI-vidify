@@ -5,14 +5,14 @@ import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { motionLanguage, motionLanguageRate } from "../../../../lib/motionLanguage.js";
-import { BORNAS_LIMITS, bornasTokens } from "../../constants/bornasConfig.js";
+import { BORNAS_CHAPTER, BORNAS_LIMITS, bornasTokens } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasLanguage, BornasLine, BornasScript } from "../../types/bornas.js";
 import { listBornasJobs } from "./bornasStore.js";
 import { bornasKit, readJson, runKitPy, slug } from "./bornasTools.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
-const KINDS = ["tag", "plate", "label", "none"] as const;
+const KINDS = ["tag", "plate", "label", "quote", "none"] as const;
 const words = (text: string): number => bornasTokens(text).length;
 export const cleanBornasLine = (raw: unknown): BornasLine | undefined => {
   const l = (raw || {}) as Record<string, unknown>;
@@ -22,7 +22,18 @@ export const cleanBornasLine = (raw: unknown): BornasLine | undefined => {
   if (!text) return undefined;
   const kind = KINDS.includes(l.kind as (typeof KINDS)[number]) ? (l.kind as BornasLine["kind"]) : "none";
   const screen = String(l.screen || "").trim();
-  return { text, screen, sub: String(l.sub || "").trim(), kind: screen ? kind : "none", idea: String(l.idea || "").trim(), pause: l.pause === true };
+  return {
+    text,
+    screen,
+    sub: String(l.sub || "").trim(),
+    kind: screen ? kind : "none",
+    idea: String(l.idea || "").trim(),
+    pause: l.pause === true,
+    chapter: String(l.chapter || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, BORNAS_CHAPTER.TITLE_MAX),
+  };
 };
 const seriesTag = (text: string): string => {
   const cut = text
@@ -33,7 +44,7 @@ const seriesTag = (text: string): string => {
 };
 export const cleanBornasScript = (raw: unknown): BornasScript | undefined => {
   const s = (raw || {}) as Record<string, unknown>;
-  const lines = _.compact((Array.isArray(s.lines) ? s.lines : []).map(cleanBornasLine));
+  const lines = _.compact((Array.isArray(s.lines) ? s.lines : []).map(cleanBornasLine)).map((l, i) => (i ? l : { ...l, chapter: "" }));
   const title = String(s.title || "").trim();
   return title && lines.length >= 4 ? { title, hook: String(s.hook || "").trim(), hero: String(s.hero || "").trim(), series: seriesTag(String(s.series || "").trim() || title), lines } : undefined;
 };
@@ -93,7 +104,9 @@ export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: Abor
   const avoid = _.uniq(past.map((s) => `${s.hero}: ${s.title}`)).slice(0, 40);
   const pastHeroes = _.uniq(past.map((s) => s.hero));
   log(BORNAS_LOG.SCRIPTS(job.channel.count));
-  const exec = reupExec(job.ai.mainAi);
+  const exec = reupExec(job.ai.writeAi);
+  const factExec = reupExec(job.ai.factAi);
+  const lightExec = reupExec(job.ai.lightAi);
   const model = voiceModel(job);
   const rate = 1 / (model.perWord * (1 + model.perLine / BORNAS_LIMITS.LINE_SPEECH_SECONDS));
   const rhythm = rhythmOf(readJson<Profile>(bornasKit(SAMPLE_PROFILE), { sentence_seconds: { median: 2.24, p90: 4.86 }, fragment_share: 0.19, question_share: 0.04, second_person_per_100: 9.5 }), rate, job.channel.language);
@@ -115,7 +128,7 @@ export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: Abor
     const have = _.sumBy(script.lines, (l) => words(l.text));
     const target = Math.max(BORNAS_LIMITS.MIN_WORDS, Math.round(((job.channel.seconds - model.perLine * script.lines.length) / model.perWord) * 0.95));
     log(BORNAS_LOG.SCRIPT_TRIM(Math.round(secs), job.channel.seconds, have, target), "warn");
-    return cleanBornasScript(await runMotionAi(BORNAS_PROMPT.TRIM(script, have, target), BORNAS_ARTIFACT.TRIM, exec, signal, (line) => line && log(line)).catch(() => undefined)) || script;
+    return cleanBornasScript(await runMotionAi(BORNAS_PROMPT.TRIM(script, have, target), BORNAS_ARTIFACT.TRIM, lightExec, signal, (line) => line && log(line)).catch(() => undefined)) || script;
   };
   const out: BornasScript[] = [];
   for (let script of scripts) {
@@ -127,7 +140,7 @@ export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: Abor
       const left = await narrationIssues(script, job, rate, log, signal);
       log(left.length ? BORNAS_LOG.SCRIPT_STYLE_LEFT(left) : BORNAS_LOG.SCRIPT_STYLE_OK, left.length ? "warn" : "info");
     } else log(BORNAS_LOG.SCRIPT_STYLE_OK);
-    const checked = await runMotionAi(BORNAS_PROMPT.FACTS(script, job.channel.topic), BORNAS_ARTIFACT.FACTS, exec, signal, (line) => line && log(line)).catch(() => undefined);
+    const checked = await runMotionAi(BORNAS_PROMPT.FACTS(script, job.channel.topic), BORNAS_ARTIFACT.FACTS, factExec, signal, (line) => line && log(line)).catch(() => undefined);
     const fixedScript = cleanBornasScript(checked);
     const fixed = Array.isArray(checked?.fixed) ? (checked.fixed as unknown[]).length : 0;
     if (fixedScript && fixedScript.lines.length >= script.lines.length - 1) script = fixedScript;

@@ -7,7 +7,7 @@ import { jsonUtils } from "../../../lib/json.js";
 import type { Lang } from "../../../lib/lang.js";
 import type { MotionVoiceChannels } from "../../../types/motionVideo.js";
 import { motionRequest } from "../../motion/components/motionApi.js";
-import { BORNAS_AI_DEFAULT, BORNAS_LIMITS, BORNAS_STEPS, BORNAS_STORAGE, BORNAS_URL, bornasNewChannel } from "../constants/bornasConfig.js";
+import { BORNAS_AI_DEFAULT, BORNAS_LIMITS, bornasAiSettings, BORNAS_STEPS, BORNAS_STORAGE, BORNAS_URL, bornasNewChannel } from "../constants/bornasConfig.js";
 import { bornasTexts } from "../constants/bornasTexts.js";
 import type { BornasAiSettings, BornasChannel, BornasJob, BornasJobSummary, BornasSample, BornasScript, BornasStepId } from "../types/bornas.js";
 interface Stored {
@@ -79,7 +79,7 @@ export const useBornasStudio = (lang: Lang) => {
       setChannels(list);
       channelIdRef.current = first;
       setChannelId(first);
-      if (saved.ai) setAi({ ...BORNAS_AI_DEFAULT, ...saved.ai });
+      if (saved.ai) setAi(bornasAiSettings(saved.ai));
       if (saved.jobId) await openJob(saved.jobId);
       setLoaded(true);
     })();

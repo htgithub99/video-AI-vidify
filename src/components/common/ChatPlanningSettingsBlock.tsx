@@ -58,6 +58,7 @@ interface ChatPlanningSettingsBlockProps {
   onProviderChange: (provider: AiPlanningFallbackProvider) => void;
   onModelChange: (model: AiPlanningChatModel) => void;
   onExecutionModeChange: (mode: AiPlanningExecutionMode) => void;
+  onSourceChange?: (provider: AiPlanningFallbackProvider, mode: AiPlanningExecutionMode) => void;
   onChromeHeadlessChange: (headless: boolean) => void;
   currentLang?: Lang;
   title?: string;
@@ -69,6 +70,8 @@ interface ChatPlanningSettingsBlockProps {
   onMultiRoomChange?: (multiRoom: boolean) => void;
   allowFallback?: boolean;
   onAllowFallbackChange?: (allowFallback: boolean) => void;
+  sources?: readonly { value: string; label: string }[];
+  hideModel?: boolean;
 }
 const resolveProviderName = (provider: AiPlanningFallbackProvider, texts: PlanningTexts): string => {
   if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat)) return texts.GEMINI_CHAT_OPTION;
@@ -84,7 +87,29 @@ const resolveBadgeSummary = (isApiOnly: boolean, provider: AiPlanningFallbackPro
   const modeText = chromeHeadless ? texts.PLANNING_CHROME_HIDDEN : texts.PLANNING_CHROME_VISIBLE;
   return SOURCE_TEMPLATE_SYMBOL_32(name, modeText);
 };
-export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, roomOnly = false, extraControl, multiRoom, onMultiRoomChange, allowFallback, onAllowFallbackChange }: ChatPlanningSettingsBlockProps) {
+export default function ChatPlanningSettingsBlock({
+  provider,
+  model,
+  executionMode,
+  chromeHeadless,
+  onProviderChange,
+  onModelChange,
+  onExecutionModeChange,
+  onSourceChange,
+  onChromeHeadlessChange,
+  currentLang = SOURCE_TEXT_VI,
+  title,
+  note,
+  allowHybrid = true,
+  roomOnly = false,
+  extraControl,
+  multiRoom,
+  onMultiRoomChange,
+  allowFallback,
+  onAllowFallbackChange,
+  sources,
+  hideModel = false,
+}: ChatPlanningSettingsBlockProps) {
   const texts = CINEMATIC_SETUP_TEXTS[currentLang] || CINEMATIC_SETUP_TEXTS.vi;
   const isApiOnly = _.isEqual(executionMode, AiPlanningExecutionMode.ApiOnly);
   const resolvedProvider = _.isEqual(provider, AiPlanningFallbackProvider.Disabled) ? AiPlanningFallbackProvider.GeminiChat : provider;
@@ -101,22 +126,17 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
   }, [isApiOnly, availableModels, model, onModelChange]);
   const sourceValue = _.isEqual(executionMode, AiPlanningExecutionMode.RoomOnly) ? resolvedProvider : executionMode;
   const handleSourceChange = (value: string) => {
-    if (_.isEqual(value, AiPlanningExecutionMode.Hybrid)) {
-      onProviderChange(AiPlanningFallbackProvider.GeminiChat);
-      onExecutionModeChange(AiPlanningExecutionMode.Hybrid);
-      return;
-    }
-    if (_.isEqual(value, AiPlanningExecutionMode.ApiOnly)) {
-      onExecutionModeChange(AiPlanningExecutionMode.ApiOnly);
-      return;
-    }
-    onProviderChange(value as AiPlanningFallbackProvider);
-    onExecutionModeChange(AiPlanningExecutionMode.RoomOnly);
+    const nextMode = _.isEqual(value, AiPlanningExecutionMode.Hybrid) ? AiPlanningExecutionMode.Hybrid : _.isEqual(value, AiPlanningExecutionMode.ApiOnly) ? AiPlanningExecutionMode.ApiOnly : AiPlanningExecutionMode.RoomOnly;
+    const nextProvider = nextMode === AiPlanningExecutionMode.Hybrid ? AiPlanningFallbackProvider.GeminiChat : nextMode === AiPlanningExecutionMode.RoomOnly ? (value as AiPlanningFallbackProvider) : provider;
+    if (onSourceChange) return onSourceChange(nextProvider, nextMode);
+    if (!_.isEqual(nextMode, executionMode)) onExecutionModeChange(nextMode);
+    if (!_.isEqual(nextProvider, provider)) onProviderChange(nextProvider);
   };
   const handleChromeModeChange = (modeValue: string) => {
     onChromeHeadlessChange(_.isEqual(modeValue, CHROME_WINDOW_MODE.HIDDEN));
   };
-  const badgeSummary = resolveBadgeSummary(isApiOnly, resolvedProvider, chromeHeadless, texts);
+  const sourceLabel = sources?.find((s) => s.value === provider)?.label;
+  const badgeSummary = sourceLabel ? SOURCE_TEMPLATE_SYMBOL_32(sourceLabel, chromeHeadless ? texts.PLANNING_CHROME_HIDDEN : texts.PLANNING_CHROME_VISIBLE) : resolveBadgeSummary(isApiOnly, resolvedProvider, chromeHeadless, texts);
   return (
     <StudioCard className={CHAT_PLANNING_STYLES.WRAPPER}>
       <div className={CHAT_PLANNING_STYLES.HEADER}>
@@ -140,54 +160,67 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
       </div>
       <div className={CHAT_PLANNING_STYLES.ROW}>
         <PlanningSelectField title={texts.PLANNING_AI_LABEL} icon={Bot} iconClassName={CHAT_PLANNING_STYLES.PROVIDER_ICON} value={sourceValue} onChange={(e) => handleSourceChange(e.target.value)}>
-          <option value={AiPlanningFallbackProvider.GeminiChat} className={CHAT_PLANNING_STYLES.OPTION}>
-            {texts.GEMINI_CHAT_OPTION}
-          </option>
-          <option value={AiPlanningFallbackProvider.GrokChat} className={CHAT_PLANNING_STYLES.OPTION}>
-            {texts.GROK_CHAT_OPTION}
-          </option>
-          <option value={AiPlanningFallbackProvider.ChatGptUi} className={CHAT_PLANNING_STYLES.OPTION}>
-            {texts.CHATGPT_UI_OPTION}
-          </option>
-          <option value={AiPlanningFallbackProvider.ClaudeChat} className={CHAT_PLANNING_STYLES.OPTION}>
-            {texts.CLAUDE_CHAT_OPTION}
-          </option>
-          <option value={AiPlanningFallbackProvider.DeepSeekChat} className={CHAT_PLANNING_STYLES.OPTION}>
-            {texts.DEEPSEEK_CHAT_OPTION}
-          </option>
-          <option value={AiPlanningFallbackProvider.MetaAi} className={CHAT_PLANNING_STYLES.OPTION}>
-            {texts.META_AI_OPTION}
-          </option>
-          {allowHybrid && !roomOnly && (
-            <option value={AiPlanningExecutionMode.Hybrid} className={CHAT_PLANNING_STYLES.OPTION}>
-              {texts.PLANNING_HYBRID}
-            </option>
-          )}
-          {!roomOnly && (
-            <option value={AiPlanningExecutionMode.ApiOnly} className={CHAT_PLANNING_STYLES.OPTION}>
-              {texts.PLANNING_API_ONLY}
-            </option>
+          {sources ? (
+            sources.map((s) => (
+              <option key={s.value} value={s.value} className={CHAT_PLANNING_STYLES.OPTION}>
+                {s.label}
+              </option>
+            ))
+          ) : (
+            <>
+              <option value={AiPlanningFallbackProvider.GeminiChat} className={CHAT_PLANNING_STYLES.OPTION}>
+                {texts.GEMINI_CHAT_OPTION}
+              </option>
+              <option value={AiPlanningFallbackProvider.GrokChat} className={CHAT_PLANNING_STYLES.OPTION}>
+                {texts.GROK_CHAT_OPTION}
+              </option>
+              <option value={AiPlanningFallbackProvider.ChatGptUi} className={CHAT_PLANNING_STYLES.OPTION}>
+                {texts.CHATGPT_UI_OPTION}
+              </option>
+              <option value={AiPlanningFallbackProvider.ClaudeChat} className={CHAT_PLANNING_STYLES.OPTION}>
+                {texts.CLAUDE_CHAT_OPTION}
+              </option>
+              <option value={AiPlanningFallbackProvider.DeepSeekChat} className={CHAT_PLANNING_STYLES.OPTION}>
+                {texts.DEEPSEEK_CHAT_OPTION}
+              </option>
+              <option value={AiPlanningFallbackProvider.MetaAi} className={CHAT_PLANNING_STYLES.OPTION}>
+                {texts.META_AI_OPTION}
+              </option>
+              {allowHybrid && !roomOnly && (
+                <option value={AiPlanningExecutionMode.Hybrid} className={CHAT_PLANNING_STYLES.OPTION}>
+                  {texts.PLANNING_HYBRID}
+                </option>
+              )}
+              {!roomOnly && (
+                <option value={AiPlanningExecutionMode.ApiOnly} className={CHAT_PLANNING_STYLES.OPTION}>
+                  {texts.PLANNING_API_ONLY}
+                </option>
+              )}
+            </>
           )}
         </PlanningSelectField>
-        <PlanningSelectField
-          title={texts.PLANNING_MODEL_LABEL}
-          icon={Cpu}
-          iconClassName={CHAT_PLANNING_STYLES.MODEL_ICON}
-          value={claudeSelection?.model || geminiSelection?.model || model}
-          onChange={(e) => onModelChange(isClaude ? encodeClaudeChatModel(e.target.value as AiPlanningChatModel, claudeSelection?.effort) : isGemini ? encodeGeminiChatModel(e.target.value as AiPlanningChatModel, geminiSelection?.level) : (e.target.value as AiPlanningChatModel))}
-          disabled={isApiOnly || _.isEmpty(availableModels)}
-          fieldDisabled={isApiOnly}>
-          {_.map(modelOptions, (item) => (
-            <option key={item.value} value={item.value} className={CHAT_PLANNING_STYLES.OPTION}>
-              {item.label}
-              {isClaude && CLAUDE_CHAT_MODELS.find((entry) => entry.value === item.value && CLAUDE_MODEL_ENCODING.PAID_MODEL_PATTERN.test(entry.label)) ? texts.CLAUDE_PAID_MODEL_SUFFIX : C.EMPTY}
-            </option>
-          ))}
-        </PlanningSelectField>
-        {hasGeminiThinking && (
+        {!hideModel && (
+          <PlanningSelectField
+            title={texts.PLANNING_MODEL_LABEL}
+            icon={Cpu}
+            iconClassName={CHAT_PLANNING_STYLES.MODEL_ICON}
+            value={claudeSelection?.model || geminiSelection?.model || model}
+            onChange={(e) => onModelChange(isClaude ? encodeClaudeChatModel(e.target.value as AiPlanningChatModel, claudeSelection?.effort) : isGemini ? encodeGeminiChatModel(e.target.value as AiPlanningChatModel, geminiSelection?.level) : (e.target.value as AiPlanningChatModel))}
+            disabled={isApiOnly || _.isEmpty(availableModels)}
+            fieldDisabled={isApiOnly}
+          >
+            {_.map(modelOptions, (item) => (
+              <option key={item.value} value={item.value} className={CHAT_PLANNING_STYLES.OPTION}>
+                {item.label}
+                {isClaude && CLAUDE_CHAT_MODELS.find((entry) => entry.value === item.value && CLAUDE_MODEL_ENCODING.PAID_MODEL_PATTERN.test(entry.label)) ? texts.CLAUDE_PAID_MODEL_SUFFIX : C.EMPTY}
+              </option>
+            ))}
+          </PlanningSelectField>
+        )}
+        {!hideModel && hasGeminiThinking && (
           <PlanningLevelField title={texts.GEMINI_THINKING_LEVEL_LABEL} defaultLabel={texts.GEMINI_THINKING_LEVEL_DEFAULT} value={geminiSelection.level || C.EMPTY} onChange={(value) => onModelChange(encodeGeminiChatModel(geminiSelection.model, value ? (value as GeminiThinkingLevel) : undefined))} disabled={isApiOnly} options={GEMINI_THINKING_LEVEL_OPTIONS} currentLang={currentLang} />
         )}
-        {hasClaudeEffort && (
+        {!hideModel && hasClaudeEffort && (
           <PlanningLevelField
             title={texts.CLAUDE_EFFORT_LABEL}
             defaultLabel={texts.CLAUDE_EFFORT_DEFAULT}

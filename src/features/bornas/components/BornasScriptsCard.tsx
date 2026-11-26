@@ -11,7 +11,7 @@ import { bornasTokens } from "../constants/bornasConfig.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import type { BornasStudio } from "../hooks/useBornasStudio.js";
 import type { BornasLine, BornasScript } from "../types/bornas.js";
-const KIND_STYLE: Record<BornasLine["kind"], string> = { tag: B.KIND_TAG, plate: B.KIND_PLATE, label: B.KIND_LABEL, none: B.KIND_NONE };
+const KIND_STYLE: Record<BornasLine["kind"], string> = { tag: B.KIND_TAG, plate: B.KIND_PLATE, label: B.KIND_LABEL, quote: B.KIND_QUOTE, none: B.KIND_NONE };
 export const BornasScriptsCard: FC<{ studio: BornasStudio }> = ({ studio }) => {
   const { job, text } = studio;
   const [draft, setDraft] = useState<BornasScript[]>([]);
@@ -67,6 +67,12 @@ export const BornasScriptsCard: FC<{ studio: BornasStudio }> = ({ studio }) => {
                       <div key={n} className={cn(B.LINE, line.pause && B.LINE_PAUSE)}>
                         <span className={B.LINE_NUM}>{n + 1}</span>
                         <div className={B.LINE_MAIN}>
+                          {(line.chapter || (waiting && n > 0 && script.lines[n - 1]?.pause)) && (
+                            <div className={B.CHAPTER_ROW}>
+                              <span className={B.CHAPTER_BADGE}>{text.CHAPTER}</span>
+                              {waiting ? <StudioInput className={B.SCREEN_EDIT} value={line.chapter || ""} placeholder={text.CHAPTER_HINT} onChange={(e) => patchLine(i, n, { chapter: e.target.value })} /> : <span className={B.CHAPTER_TEXT}>{line.chapter}</span>}
+                            </div>
+                          )}
                           {waiting ? <StudioTextarea rows={2} className={B.LINE_EDIT} value={line.text} onChange={(e) => patchLine(i, n, { text: e.target.value })} /> : <p className={B.LINE_TEXT}>{line.text}</p>}
                           {(line.screen || waiting) && line.kind !== "none" && (
                             <div className={B.LINE_SCREEN_ROW}>

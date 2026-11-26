@@ -15,7 +15,11 @@ export interface AnnSprite {
   name: string;
   png: string;
   kind: string;
+  want?: string;
+  edge?: boolean;
 }
+const WHOLE_EXEMPT = /bust|sit|kneel|crouch|lying|lie|fallen|dead|ride|riding|mounted|swim/i;
+export const bornasBadAnn = (a: BornasSpriteAnn): boolean => a.place === "icon" || a.double || a.cut || a.mismatch === true || a.partial === true;
 export interface AnnBg {
   name: string;
   png: string;
@@ -65,7 +69,10 @@ export const annotateSprites = async (list: AnnSprite[], ai: BornasAiSettings, l
     const answers = new Map<string, Obj>();
     for (const batch of _.chunk(sheets, BORNAS_LIMITS.AI_IMAGES)) {
       const res = (await runMotionAi(
-        BORNAS_PROMPT.SPRITE_REVIEW(batch.map((b) => ({ start: b.start, count: b.names.length }))),
+        BORNAS_PROMPT.SPRITE_REVIEW(
+          batch.map((b) => ({ start: b.start, count: b.names.length })),
+          batch.flatMap((b) => b.names.map((n, k) => ({ n: b.start + k, want: usable.find((u) => u.name === n)?.want || n.replace(/^[a-z0-9_]+__/, "").replace(/_/g, " ") }))),
+        ),
         BORNAS_ARTIFACT.SPRITE_REVIEW,
         reupExec(ai.visionAi),
         signal,
@@ -93,11 +100,15 @@ export const annotateSprites = async (list: AnnSprite[], ai: BornasAiSettings, l
         facing: a.facing === "l" ? "l" : "r",
         text: a.text === true,
         double: a.double === true,
-        cut: a.cut === true || (s.kind === "person" && !!face && m.aspect <= BORNAS_ANN.LIE_ASPECT && face.b - face.t > BORNAS_ANN.BUST_FACE),
+        cut: (s.edge === undefined ? a.cut === true : s.edge) || (s.kind === "person" && !!face && m.aspect <= BORNAS_ANN.LIE_ASPECT && face.b - face.t > BORNAS_ANN.BUST_FACE),
+        mismatch: a.match === false,
+        partial: s.kind === "person" && a.whole === false && !WHOLE_EXEMPT.test(s.name),
+        aims: a.aims === true,
+        ...(typeof a.is === "string" ? { is: String(a.is).slice(0, 80) } : {}),
       };
     }
     const bad = Object.entries(out)
-      .filter(([, v]) => v.place === "icon" || v.double || v.cut)
+      .filter(([, v]) => bornasBadAnn(v))
       .map(([k]) => k);
     log(BORNAS_LOG.ANN_SPRITES_DONE(Object.keys(out).length, bad.length));
     return out;

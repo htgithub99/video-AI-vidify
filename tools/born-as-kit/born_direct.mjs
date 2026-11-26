@@ -49,6 +49,16 @@ const RULE = {
   seatKinds: { bed: "bed", cot: "bed", chair: "chair", stool: "chair", bench: "bench", sofa: "sofa", couch: "sofa" },
   plainWords: new Set(["wild", "west", "western", "old", "young", "adult", "man", "woman", "with", "and", "the", "wooden", "black", "white", "brown", "small", "large", "big", "standing", "stand", "idle", "walk", "walking", "run", "running", "side", "view", "full", "body", "plated", "rolled", "untouched"]),
   insertH: 440,
+  frontPull: 1.2,
+  rewFrames: 4,
+  insertMaxUses: 2,
+  insertCallbackGap: 20,
+  heroVisible: 0.7,
+  overlapMax: 0.2,
+  aimGapM: 3,
+  crowdMax: 5,
+  crowdStep: 0.9,
+  cloneMax: 2,
   insertW: 900,
 };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -113,7 +123,92 @@ const poseWords = (n) => {
   return rest.toLowerCase().split(/[_\s]+/).filter((w) => w.length >= 3 && !RULE.plainWords.has(w));
 };
 const sameWord = (a, b) => a.some((w) => b.some((v) => v === w || (w.length >= 4 && v.endsWith(w)) || (v.length >= 4 && w.endsWith(v))));
-const layout = (beat, plan, refs) => {
+const WEAPON = /aim|shoot|firing|fire_|bow|rifle|musket|revolver|pistol|gun|spear_thrust|archer|sniper/i;
+const CHILD = /child|boy|girl|kid|baby|toddler|teen/i;
+const boxOf = (a) => {
+  const m = meta(a.sprite), w = (m.w / m.h) * a.h, l = a.x - w * (a.anchorX ?? 0.5);
+  return { l, r: l + w, t: a.y - a.h, b: a.y, w, h: a.h };
+};
+const overlapShare = (p, q) => {
+  const ix = Math.max(0, Math.min(p.r, q.r) - Math.max(p.l, q.l)), iy = Math.max(0, Math.min(p.b, q.b) - Math.max(p.t, q.t));
+  return (ix * iy) / Math.max(1, Math.min(p.w * p.h, q.w * q.h));
+};
+const rankOf = (a, subject) => (a.cast === subject && !a.crowd ? 0 : a.crowd ? 5 : a.kind === "person" ? 1 : a.kind === "animal" ? 2 : a.kind === "vehicle" ? 3 : 4);
+const gateLayout = (list, A, subject, plan, report, id) => {
+  const solid = (a) => !a.back && a.place !== "wall" && !a.seated && !["structure", "building", "nature"].includes(a.kind);
+  const pxmAt = (a) => a.pxm ?? A.personAt(a.x) / 1.75;
+  const fits = (a, keep) => keep.every((o) => o === a || !solid(o) || overlapShare(boxOf(a), boxOf(o)) <= RULE.overlapMax);
+  const place = (a, x) => {
+    a.x = clamp(x, 40 + boxOf(a).w / 2, 1880 - boxOf(a).w / 2);
+    if (a.onGround !== false && !a.seated) a.y = A.groundAt(a.x) + (a.pad || 0) * a.h;
+  };
+  let keep = [...list];
+  for (const a of keep) if (a.crowd) place(a, a.x);
+  for (const a of keep.filter((o) => o.kind === "person" && (plan.sprites[o.sprite]?.ann?.aims === true || WEAPON.test(o.sprite)) && o.dir && !o.crowd)) {
+    const sgn = a.dir === "l" ? -1 : 1;
+    const target = keep.filter((o) => o !== a && solid(o) && (o.kind === "person" || o.kind === "animal") && Math.sign(o.x - a.x) === sgn).sort((u, v) => Math.abs(u.x - a.x) - Math.abs(v.x - a.x))[0];
+    if (!target) continue;
+    if (CHILD.test(target.sprite) || (plan.sprites[target.sprite]?.heightM ?? 1.75) < 1.45) {
+      a.dir = a.dir === "l" ? "r" : "l";
+      report.push([id, "weapon_turned", a.sprite]);
+      continue;
+    }
+    const need = RULE.aimGapM * pxmAt(a), gap = sgn > 0 ? boxOf(target).l - boxOf(a).r : boxOf(a).l - boxOf(target).r;
+    if (gap >= need) continue;
+    const mover = rankOf(target, subject) >= rankOf(a, subject) ? target : a, dx = (need - gap) * (mover === target ? sgn : -sgn);
+    place(mover, mover.x + dx);
+    report.push([id, "aim_gap", mover.sprite]);
+  }
+  for (let pass = 0; pass < 3; pass++) {
+    const order = [...keep].sort((u, v) => rankOf(u, subject) - rankOf(v, subject));
+    const placed = [];
+    for (const a of order) {
+      if (!solid(a) || fits(a, placed)) {
+        placed.push(a);
+        continue;
+      }
+      const x0 = a.x;
+      let done = false;
+      for (let k = 1; k <= 15 && !done; k++)
+        for (const s of [1, -1]) {
+          place(a, x0 + s * k * 40);
+          if (fits(a, placed)) {
+            done = true;
+            break;
+          }
+        }
+      if (done) {
+        placed.push(a);
+        report.push([id, "moved", a.sprite]);
+      } else if (rankOf(a, subject) === 5) {
+        place(a, x0);
+        report.push([id, "crowd_dropped", a.sprite]);
+      } else if (rankOf(a, subject) === 0) {
+        place(a, x0);
+        placed.push(a);
+      } else report.push([id, "dropped", a.sprite]);
+    }
+    keep = keep.filter((a) => placed.includes(a));
+  }
+  for (const a of keep.filter((o) => o.move && solid(o))) {
+    const others = keep.filter((o) => o !== a && solid(o));
+    const steps = 12;
+    let ok = a.move;
+    for (let k = 1; k <= steps; k++) {
+      const probe = { ...a, x: a.x + (a.move * k) / steps };
+      if (others.some((o) => overlapShare(boxOf(probe), boxOf(o)) > RULE.overlapMax && overlapShare(boxOf(a), boxOf(o)) <= RULE.overlapMax)) {
+        ok = (a.move * (k - 1)) / steps;
+        break;
+      }
+    }
+    if (ok !== a.move) {
+      report.push([id, "move_shortened", a.sprite]);
+      a.move = ok;
+    }
+  }
+  return keep;
+};
+const layout = (beat, plan, refs, report = [], id = "") => {
   const A = anchorsOf(plan, beat.bg);
   const info = (n) => plan.sprites[n] || { kind: "prop", heightM: 1 };
   const people = beat.cast.filter((c) => info(c.sprite).kind === "person").map((c) => poseWords(c.sprite));
@@ -134,20 +229,26 @@ const layout = (beat, plan, refs) => {
   const pick = beat.cast[beat.subject] && !isBack(info(beat.cast[beat.subject].sprite)) ? beat.subject : -1;
   const subject = pick >= 0 ? pick : person >= 0 ? person : beat.cast.findIndex((c) => !isBack(info(c.sprite)));
   const freeSpots = [...A.spots];
+  const tableProp = beat.cast.some((c) => (info(c.sprite).ann?.place === "table" || c.place === "table") && info(c.sprite).kind === "prop");
   const takeSpot = (x) => {
     let best = -1;
+    const score = (s) => Math.abs(s.x - x) - (tableProp ? s.h * RULE.frontPull : 0);
     freeSpots.forEach((s, k) => {
-      if (Math.abs(s.x - x) < 300 && (best < 0 || Math.abs(s.x - x) < Math.abs(freeSpots[best].x - x))) best = k;
+      if (Math.abs(s.x - x) < (tableProp ? 450 : 300) && (best < 0 || score(s) < score(freeSpots[best]))) best = k;
     });
     return best >= 0 ? freeSpots.splice(best, 1)[0] : null;
   };
+  const seen = new Set();
   const order = beat.cast.map((c, i) => i).filter((i) => !held.has(i)).sort((a, b) => (a === subject ? -1 : b === subject ? 1 : a - b));
   for (const i of order) {
     const c = beat.cast[i];
     const k = info(c.sprite);
     const ann = k.ann || {};
     const back = isBack(k);
-    const want = ann.place === "wall" || ann.place === "table" ? ann.place : c.place;
+    if (!(c.crowd > 1) && seen.has(c.sprite)) continue;
+    seen.add(c.sprite);
+    const flatOnly = k.kind === "prop" || k.kind === "weapon";
+    const want = flatOnly && (ann.place === "wall" || ann.place === "table") ? ann.place : flatOnly || c.place === "near" || c.place === "ground" ? c.place : "ground";
     const place = want === "wall" && !A.walls.length ? "ground" : want === "table" && !A.table ? "ground" : want;
     let x = RULE.slots[c.slot] ?? RULE.slots.c;
     let y = A.groundAt(x);
@@ -190,9 +291,13 @@ const layout = (beat, plan, refs) => {
     const dir = c.move ? c.move : TURNS.has(k.kind) ? c.dir : undefined;
     const pad = ann.pad || 0, foot = ann.foot ?? 0.5;
     if (c.crowd > 1 && !back) {
-      for (let j = 0; j < Math.min(6, c.crowd); j++) {
-        const u = j / Math.max(1, c.crowd - 1) - 0.5, jit = ((j * 37) % 11) / 11 - 0.5, cx = x + u * 420 + jit * 30;
-        crowds.push({ sprite: c.sprite, x: cx, y: A.groundAt(cx) - 18 + jit * 14 + pad * h, h: h * (0.9 + ((j * 13) % 7) / 70), dir, crowd: true, cast: i, kind: k.kind, anchorX: foot });
+      const pool = [c.sprite, ...Object.keys(plan.sprites).filter((n) => plan.sprites[n].pool === c.sprite && n !== c.sprite)];
+      const n = Math.min(RULE.crowdMax, c.crowd, pool.length > 1 ? pool.length : RULE.cloneMax);
+      for (let j = 0; j < n; j++) {
+        const sp = pool[j % pool.length], kj = info(sp), aj = kj.ann || {};
+        const hj = clamp(kj.kind === "person" ? personHeight(plan, refs, sp, kj.heightM * pxm, pxm) : kj.heightM * pxm, 18, 980) * (0.95 + ((j * 13) % 7) / 70);
+        const wj = (meta(sp).w / meta(sp).h) * hj, jit = ((j * 37) % 11) / 11 - 0.5, cx = x + (j % 2 ? -1 : 1) * Math.ceil(j / 2) * wj * RULE.crowdStep + jit * 20;
+        crowds.push({ sprite: sp, x: cx, y: A.groundAt(cx) - 18 + jit * 14 + (aj.pad || 0) * hj, h: hj, dir: j >= pool.length && dir ? (dir === "l" ? "r" : "l") : dir, crowd: true, cast: i, kind: kj.kind, anchorX: aj.foot ?? 0.5, pad: aj.pad || 0 });
       }
       continue;
     }
@@ -263,7 +368,9 @@ const layout = (beat, plan, refs) => {
     a.onGround = false;
     a.seated = true;
   }
-  const list = [...main.filter((a) => a && !a.seated), ...main.filter((a) => a && a.seated)];
+  const gated = gateLayout([...main.filter(Boolean), ...crowds], A, subject, plan, report, id);
+  const list = [...main.filter((a) => a && !a.seated && gated.includes(a)), ...main.filter((a) => a && a.seated && gated.includes(a))];
+  crowds.splice(0, crowds.length, ...crowds.filter((a) => gated.includes(a)));
   const wall = (a) => !a.back && a.place === "wall";
   return { actors: [...list.filter((a) => a.back), ...list.filter(wall), ...crowds, ...list.filter((a) => !a.back && !wall(a))], subject, A };
 };
@@ -322,6 +429,11 @@ export const direct = (plan) => {
   const hookBgs = [];
   const refs = refFaces(plan);
   const sid = () => `s${String(shots.length + 1).padStart(3, "0")}`;
+  const report = [];
+  const heroId = Object.entries(plan.sprites).map(([n, s]) => (s.kind === "bust" ? charId(n) : null)).find(Boolean) || null;
+  const heroBust = Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust" && charId(n) === heroId) || null;
+  const inserts = {};
+  const hookShots = [];
   beats.forEach((beat, bi) => {
     const t1 = bi + 1 < beats.length ? beats[bi + 1].t0 : plan.total;
     const hook = beat.t0 < plan.turnT;
@@ -329,7 +441,12 @@ export const direct = (plan) => {
     if (beat.endCard) beat.endCard = { ...beat.endCard, t: Math.min(beat.endCard.t, beat.t0 + RULE.endLead) };
     const base = { kind: beat.kind, endCard: beat.endCard };
     if (beat.kind === "rew") {
-      shots.push({ ...base, id: sid(), t0: beat.t0, rew: (beat.rew?.length ? beat.rew : hookBgs).slice(0, 4) });
+      const frames = hookShots.slice(-RULE.rewFrames).reverse().map((h) => ({ bg: h.bg, actors: h.actors.map((a) => ({ ...a, x: a.x + (a.move?.dx || 0), move: undefined })) }));
+      shots.push({ ...base, id: sid(), t0: beat.t0, rew: frames.length ? frames : (beat.rew?.length ? beat.rew : hookBgs).slice(0, RULE.rewFrames) });
+      return;
+    }
+    if (beat.kind === "chapter") {
+      shots.push({ ...base, id: sid(), t0: beat.t0, chapter: beat.chapter });
       return;
     }
     if (beat.kind === "paper" || beat.kind === "montage" || beat.kind === "black") {
@@ -341,8 +458,20 @@ export const direct = (plan) => {
       shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [{ sprite: beat.cast[0]?.sprite, x: 960, y: 1090, h: 1010, shadow: false, allow: true }], cam: [{ t: 0, s: 1.02, x: 960, y: 540 }, { t: r3(d), s: r3(1.02 * (1 + (hook ? 0.05 : 0.03) * d)), x: 962, y: 480, sx: 960, sy: 480 }], glowAt: { x: 960, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 }, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, 220], null]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), series: false });
       return;
     }
-    const { actors, subject, A } = layout(beat, plan, refs);
+    const { actors, subject, A } = layout(beat, plan, refs, report, `b${bi}`);
     const lead = actors.find((a) => a.cast === subject && !a.crowd);
+    const insertOk = (n) => {
+      const u = inserts[n];
+      if (u && (u.count >= RULE.insertMaxUses || beat.t0 - u.t < RULE.insertCallbackGap)) return false;
+      inserts[n] = { count: (u?.count || 0) + 1, t: beat.t0 };
+      return true;
+    };
+    if (lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal")) && !insertOk(lead.sprite) && heroBust) {
+      report.push([`b${bi}`, "insert_repeat_to_bust", lead.sprite]);
+      const d = t1 - beat.t0;
+      shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [{ sprite: heroBust, x: 960, y: 1090, h: 1010, shadow: false, allow: true }], cam: [{ t: 0, s: 1.02, x: 960, y: 540 }, { t: r3(d), s: r3(1.02 * (1 + 0.03 * d)), x: 962, y: 480, sx: 960, sy: 480 }], tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, 220], null]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
+      return;
+    }
     if (lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal"))) {
       const m = meta(lead.sprite), asp = m.w / m.h, h = Math.min(RULE.insertH, RULE.insertW / asp), d = t1 - beat.t0;
       const one = { sprite: lead.sprite, x: 960, y: 820, h: r3(h) };
@@ -361,7 +490,10 @@ export const direct = (plan) => {
     }
     const frames = framings(beat, cuts.length);
     const D = t1 - beat.t0;
-    const subjA = actors.find((a) => a.cast === subject && !a.crowd);
+    const subj0 = actors.find((a) => a.cast === subject && !a.crowd);
+    const personFor = subj0 && subj0.kind === "prop" ? actors.filter((a) => !a.crowd && a.kind === "person").sort((u, v) => v.h - u.h)[0] : null;
+    const subjA = personFor || subj0;
+    const heroA = heroId ? actors.find((a) => !a.crowd && a.kind === "person" && charId(a.sprite) === heroId) : null;
     cuts.forEach((c0, ci) => {
       const c1 = ci + 1 < cuts.length ? cuts[ci + 1] : t1, d = c1 - c0;
       const shot = { kind: "scene", id: sid(), t0: r3(c0), bg: beat.bg, actors: [], tags: [], labels: [], plates: [], bubbles: [], swaps: [] };
@@ -377,6 +509,7 @@ export const direct = (plan) => {
         shot.actors.push(one);
       }
       const offAt = (t) => (subjA?.move ? (subjA.move * (t - beat.t0)) / D : 0);
+      const offHero = (t) => (heroA?.move ? (heroA.move * (t - beat.t0)) / D : 0);
       const sp0 = subjA && subjectPoint(subjA, offAt(c0)), sp1 = subjA && subjectPoint(subjA, offAt(c1));
       if (frames[ci] === "glide" && beat.label && beat.label.t >= c0 - 0.001 && beat.label.t < c1) frames[ci] = "wide";
       shot.cam = cameraFor(frames[ci], d, hook, sp0, sp1, actors);
@@ -386,6 +519,21 @@ export const direct = (plan) => {
         const { fb } = faceBox(o.sprite, o.x, o.y, o.h, o.dir, o.anchorX ?? 0.5);
         return shot.cam.some((k) => topAt(k, fb.t) < -RULE.cutGap && topAt(k, fb.b) > 0);
       };
+      if (heroA && heroA !== subjA) {
+        const hb = boxOf({ ...heroA, x: heroA.x + offHero(c0) });
+        const seen = (k) => {
+          const x0 = clamp((k.sx ?? 960) - k.s * k.x, 1920 - 1920 * k.s, 0), y0 = clamp((k.sy ?? 540) - k.s * k.y, 1080 - 1080 * k.s, 0);
+          const l = x0 + k.s * hb.l, r = x0 + k.s * hb.r, t = y0 + k.s * hb.t, b = y0 + k.s * hb.b;
+          return (Math.max(0, Math.min(1920, r) - Math.max(0, l)) * Math.max(0, Math.min(1080, b) - Math.max(0, t))) / Math.max(1, (r - l) * (b - t));
+        };
+        if (shot.cam.some((k) => seen(k) < RULE.heroVisible)) {
+          const boxes = [hb, ...(subjA ? [boxOf(subjA)] : [])];
+          const L = Math.min(...boxes.map((b) => b.l)), R = Math.max(...boxes.map((b) => b.r)), T = Math.min(...boxes.map((b) => b.t)), B = Math.max(...boxes.map((b) => b.b));
+          const sc = clamp(Math.min(1700 / Math.max(1, R - L), 950 / Math.max(1, B - T)), 1, RULE.medium);
+          shot.cam = [{ t: 0, s: r3(sc), x: r3((L + R) / 2), y: r3((T + B) / 2), sx: 960, sy: 540 }, { t: r3(d), s: r3(sc * (1 + RULE.push * d)), x: r3((L + R) / 2), y: r3((T + B) / 2), sx: 960, sy: 540 }];
+          report.push([shot.id, "hero_reframed", heroA.sprite]);
+        }
+      }
       const cut = new Set(shot.actors.filter(headCut).map((o) => o.sprite));
       if (cut.size) {
         shot.actors = shot.actors.filter((o) => !cut.has(o.sprite));
@@ -429,10 +577,19 @@ export const direct = (plan) => {
       else if ((beat.dark || 0) >= 0.25 || frames[ci] === "pull") shot.roll = { t: c0, deg: (shots.length % 2 ? -1 : 1) * 1.2, dur: d };
       if (beat.bar && inside(beat.bar.t)) shot.bar = beat.bar;
       if (beat.endCard && ci === cuts.length - 1) shot.endCard = beat.endCard;
+      if (!shot.actors.some((a) => !a.crowd)) {
+        const back = subjA || heroA;
+        if (back) {
+          shot.actors.push({ sprite: back.sprite, x: back.x, y: back.y, h: back.h, anchorX: back.anchorX, ...(back.dir ? { dir: back.dir } : {}) });
+          report.push([shot.id, "empty_restored", back.sprite]);
+        }
+      }
       shot.series = c0 >= plan.turnT && c0 < plan.recapT;
       shot.subject = sp0 ? subjA.sprite : null;
       shots.push(shot);
+      if (hook && shot.actors.length) hookShots.push(shot);
     });
   });
+  shots.report = report;
   return shots;
 };

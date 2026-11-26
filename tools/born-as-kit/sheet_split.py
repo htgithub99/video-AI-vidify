@@ -85,6 +85,7 @@ for k in order:
         rows.append([cy, [k]])
 seq = [k for _, ks in rows for k in sorted(ks, key=lambda k: boxes[k][0])]
 out = []
+edges = []
 for idx, k in enumerate(seq):
     m = np.isin(lab, [i + 1 for i in groups[k]]) & a
     ys, xs = np.where(m)
@@ -96,4 +97,5 @@ for idx, k in enumerate(seq):
     p = f"{prefix}_{idx}.png"
     Image.fromarray(crop, "RGBA").save(p)
     out.append(p)
-print(json.dumps({"count": len(out), "expected": expect, "ok": not expect or expect == len(out), "files": out}))
+    edges.append(bool(ys.min() <= 2 or xs.min() <= 2 or ys.max() >= a.shape[0] - 3 or xs.max() >= a.shape[1] - 3))
+print(json.dumps({"count": len(out), "expected": expect, "ok": not expect or expect == len(out), "files": out, "edges": edges}))

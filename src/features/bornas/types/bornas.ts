@@ -19,12 +19,21 @@ export interface BornasChannel {
   review: boolean;
   sample?: string;
 }
+export type BornasDrawProvider = "gemini-chat" | "labs-flow";
+export interface BornasDrawChoice {
+  provider: BornasDrawProvider;
+  chromeHeadless: boolean;
+  allowFallback: boolean;
+}
 export interface BornasAiSettings {
-  mainAi: ReupAiChoice;
+  writeAi: ReupAiChoice;
+  factAi: ReupAiChoice;
+  directAi: ReupAiChoice;
   visionAi: ReupAiChoice;
   lightAi: ReupAiChoice;
-  drawHeadless: boolean;
+  drawAi: BornasDrawChoice;
 }
+export type BornasAiField = "writeAi" | "factAi" | "directAi" | "visionAi" | "lightAi";
 export interface BornasStepState {
   status: BornasStepStatus;
   progress: number;
@@ -62,9 +71,10 @@ export interface BornasLine {
   text: string;
   screen: string;
   sub: string;
-  kind: "tag" | "plate" | "label" | "none";
+  kind: "tag" | "plate" | "label" | "quote" | "none";
   idea: string;
   pause: boolean;
+  chapter?: string;
 }
 export interface BornasScript {
   title: string;
@@ -108,6 +118,10 @@ export interface BornasSpriteAnn {
   text: boolean;
   double: boolean;
   cut: boolean;
+  mismatch?: boolean;
+  partial?: boolean;
+  aims?: boolean;
+  is?: string;
 }
 export interface BornasSeat {
   k: string;
@@ -136,6 +150,7 @@ export interface BornasSprite {
   aspect: number;
   desc: string;
   ann?: BornasSpriteAnn;
+  pool?: string;
 }
 export interface BornasBackground {
   name: string;

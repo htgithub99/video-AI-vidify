@@ -38,7 +38,7 @@ type Frame = { id: string; t: number; file: string };
 const snapShots = async (dir: string, snaps: string, log: Log, signal?: AbortSignal): Promise<Frame[]> => {
   fs.mkdirSync(snaps, { recursive: true });
   for (const f of fs.readdirSync(snaps)) fs.rmSync(path.join(snaps, f), { force: true });
-  const shots = readJson<{ id: string; t0: number; t1: number }[]>(path.join(dir, "shots.json"), []);
+  const shots = readJson<{ id: string; t0: number; t1: number; kind?: string }[]>(path.join(dir, "shots.json"), []).filter((s) => s.kind !== "chapter");
   const texts = readJson<{ id: string; t: number; end: number }[]>(path.join(dir, "texts.json"), []);
   const frames = shots.map((s) => {
     const ev = texts.find((e) => e.id === s.id);
@@ -48,7 +48,8 @@ const snapShots = async (dir: string, snaps: string, log: Log, signal?: AbortSig
   for (const part of _.chunk(frames, BORNAS_REVIEW.SNAP_BATCH)) await runKitNode("snap.mjs", [dir, snaps, ...part.map((f) => f.t.toFixed(2))], playwrightEnv(), signal).catch((error) => log(String((error as Error)?.message || error), "warn"));
   return frames.filter((f) => fs.existsSync(f.file));
 };
-const reviewSnaps = async (job: BornasJob, frames: Frame[], snaps: string, log: Log, signal?: AbortSignal): Promise<Record<string, string[]>> => {
+const reviewSnaps = async (job: BornasJob, frames: Frame[], snaps: string, dir: string, log: Log, signal?: AbortSignal): Promise<Record<string, string[]>> => {
+  const castOf = readJson<Record<string, string[]>>(path.join(dir, "cast.json"), {});
   if (!frames.length) return {};
   const manifest = path.join(snaps, "frames.json");
   writeJson(
@@ -67,8 +68,12 @@ const reviewSnaps = async (job: BornasJob, frames: Frame[], snaps: string, log: 
   const found: Record<string, string[]> = {};
   const notes: string[] = [];
   for (const batch of _.chunk(sheets, BORNAS_LIMITS.AI_IMAGES)) {
+    const cast = _.flatMap(batch, (b) => _.range(b.start, b.start + b.count)).flatMap((n) => (castOf[frames[n - 1]?.id]?.length ? [{ n, names: castOf[frames[n - 1].id] }] : []));
     const res = (await runMotionAi(
-      BORNAS_PROMPT.SNAP_REVIEW(batch.map((b) => ({ start: b.start, count: b.count }))),
+      BORNAS_PROMPT.SNAP_REVIEW(
+        batch.map((b) => ({ start: b.start, count: b.count })),
+        cast,
+      ),
       BORNAS_ARTIFACT.SNAP_REVIEW,
       reupExec(job.ai.visionAi),
       signal,
@@ -77,8 +82,10 @@ const reviewSnaps = async (job: BornasJob, frames: Frame[], snaps: string, log: 
     ).catch(() => undefined)) as { issues?: Record<string, unknown>[] } | undefined;
     for (const it of res?.issues || []) {
       const f = frames[Number(it.n) - 1];
-      const act = String(it.fix || "");
-      if (!f || !BORNAS_REVIEW.FIXES.includes(act as (typeof BORNAS_REVIEW.FIXES)[number])) continue;
+      const act = String(it.fix || "").trim();
+      const [verb, name] = act.split(":");
+      const ok = name ? BORNAS_REVIEW.TARGET_FIXES.includes(verb as (typeof BORNAS_REVIEW.TARGET_FIXES)[number]) && (castOf[f?.id] || []).includes(name) : BORNAS_REVIEW.FIXES.includes(act as (typeof BORNAS_REVIEW.FIXES)[number]);
+      if (!f || !ok) continue;
       found[f.id] = _.uniq([...(found[f.id] || []), act]);
       notes.push(`${f.id}: ${String(it.problem || "").slice(0, 90)}`);
     }
@@ -112,7 +119,7 @@ export const checkBornasVideo = async (job: BornasJob, video: BornasVideo, log: 
   }
   const snaps = bornasVideoDir(job, video, "snaps");
   const frames = await snapShots(dir, snaps, log, signal);
-  const found = await reviewSnaps(job, frames, snaps, log, signal);
+  const found = await reviewSnaps(job, frames, snaps, dir, log, signal);
   if (Object.keys(found).length) {
     for (const [id, acts] of Object.entries(found)) fix[id] = _.uniq([...(fix[id] || []), ...acts]);
     await rebuild();

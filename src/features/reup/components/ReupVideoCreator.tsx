@@ -43,6 +43,7 @@ const AiBlock: FC<{ studio: ReupStudio; field: "visionAi" | "scriptAi"; title: s
       onProviderChange={(provider) => set({ provider })}
       onModelChange={(model) => set({ model })}
       onExecutionModeChange={(mode) => set({ mode })}
+      onSourceChange={(provider, mode) => set({ provider, mode })}
       onChromeHeadlessChange={(chromeHeadless) => set({ chromeHeadless })}
       currentLang={lang}
       allowHybrid

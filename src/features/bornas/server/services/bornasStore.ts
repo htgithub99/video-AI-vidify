@@ -5,7 +5,7 @@ import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { deleteOutputEntries, type OutputDeleteResult } from "../../../../server/utils/outputFiles.js";
 import { logger } from "../../../../lib/logger.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
-import { BORNAS_DIR, BORNAS_LIMITS, BORNAS_STEPS } from "../../constants/bornasConfig.js";
+import { BORNAS_DIR, BORNAS_LIMITS, BORNAS_STEPS, bornasAiSettings } from "../../constants/bornasConfig.js";
 import { BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasLog, BornasStepId, BornasStepState } from "../../types/bornas.js";
 interface Entry {
@@ -51,6 +51,7 @@ export const getBornasJob = (id: string): BornasJob | undefined => {
   if (!fs.existsSync(file)) return undefined;
   const job = parseJson(fs.readFileSync(file, "utf8")) as BornasJob | null;
   if (!job?.id) return undefined;
+  job.ai = bornasAiSettings(job.ai);
   if (job.status === "running") {
     for (const step of BORNAS_STEPS) if (job.steps[step]?.status === "running") job.steps[step] = { ...job.steps[step], status: "error", message: BORNAS_LOG.INTERRUPTED };
     for (const video of job.videos) if (video.status === "running") video.status = "error";

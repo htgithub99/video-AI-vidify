@@ -6,7 +6,7 @@ import { findVoiceChannel } from "../../../motion/server/services/motionVoiceLib
 import { transcribeVieneuAudio, vieneuRoot } from "../../../../server/services/vieneuTtsService.js";
 import { reupFfmpeg } from "../../../reup/server/services/reupFfmpeg.js";
 import { probeMediaDurationSeconds } from "../../../video-export/server/services/videoExportFfmpegService.js";
-import { BORNAS_DIR, BORNAS_LIMITS, bornasTokens } from "../../constants/bornasConfig.js";
+import { BORNAS_CHAPTER, BORNAS_DIR, BORNAS_LIMITS, bornasChapterLines, bornasTokens } from "../../constants/bornasConfig.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
 import { bornasDir } from "./bornasStore.js";
@@ -39,7 +39,8 @@ export const voiceBornasVideo = async (job: BornasJob, video: BornasVideo, scrip
     seconds.push(await probeMediaDurationSeconds(file));
     files.push(file);
   }
-  const gaps = script.lines.map((l, i) => (i + 1 === script.lines.length ? 0 : l.pause ? BORNAS_LIMITS.BREAK_PAUSE : BORNAS_LIMITS.PAUSE));
+  const chapters = new Set(bornasChapterLines(script.lines, job.channel.seconds));
+  const gaps = script.lines.map((l, i) => (i + 1 === script.lines.length ? 0 : (l.pause ? BORNAS_LIMITS.BREAK_PAUSE : BORNAS_LIMITS.PAUSE) + (chapters.has(i + 1) ? BORNAS_CHAPTER.CARD_SECONDS + BORNAS_CHAPTER.LEAD * 2 : 0)));
   const starts: number[] = [];
   let at = 0;
   for (const [i, s] of seconds.entries()) {

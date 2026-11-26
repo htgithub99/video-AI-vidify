@@ -3,7 +3,7 @@ import fs from "fs";
 import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_DIR, BORNAS_LIMITS, BORNAS_TOPIC_GRADE, bornasTokens } from "../../constants/bornasConfig.js";
+import { BORNAS_CHAPTER, BORNAS_CHAPTER_LABEL, BORNAS_DIR, BORNAS_LIMITS, BORNAS_TOPIC_GRADE, bornasChapterLines, bornasTokens, BORNAS_CTA } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasBgAnn, BornasSpriteAnn, BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
@@ -23,7 +23,8 @@ export interface BornasCast {
 type At = { t: number };
 export interface BornasBeat {
   t0: number;
-  kind: "scene" | "bust" | "rew" | "paper" | "montage" | "black";
+  kind: "scene" | "bust" | "rew" | "paper" | "montage" | "black" | "chapter";
+  chapter?: { label: string; title: string };
   bg?: string;
   cast: BornasCast[];
   subject: number;
@@ -77,7 +78,7 @@ const TEXT_RULE = {
   LABEL_MAX: 22,
 };
 const LIVING = new Set(["person", "animal"]);
-const typeTexts = (beat: BornasBeat, kindOf: (cast: number) => string): void => {
+const typeTexts = (beat: BornasBeat, kindOf: (cast: number) => string, quote: boolean): void => {
   const moveToPlate = (text: string, sub: string, t: number, at: number | null = null) => {
     if (!beat.plate) beat.plate = { text, sub, t, at };
   };
@@ -94,7 +95,7 @@ const typeTexts = (beat: BornasBeat, kindOf: (cast: number) => string): void => 
   }
   if (beat.plate) {
     const p = beat.plate;
-    if (TEXT_RULE.QUOTE.test(p.text) || /[!?]$/.test(p.text.trim())) {
+    if (quote && (TEXT_RULE.QUOTE.test(p.text) || /[!?]$/.test(p.text.trim()))) {
       const speaker = beat.cast.findIndex((_c, i) => kindOf(i) === "person");
       if (speaker >= 0 && !beat.bubble) {
         beat.bubble = { text: p.text.replace(/["“”«»]/g, "").slice(0, 40), cast: speaker, t: p.t };
@@ -106,11 +107,15 @@ const typeTexts = (beat: BornasBeat, kindOf: (cast: number) => string): void => 
     } else if (p.at !== null && (LIVING.has(kindOf(p.at)) || TEXT_RULE.TITLE.test(p.text))) p.at = null;
   }
   if (beat.tag) beat.tag.corner = "tl";
+  if (beat.bubble && !quote) {
+    if (!beat.plate) beat.plate = { text: beat.bubble.text, sub: "", at: null, t: beat.bubble.t };
+    delete beat.bubble;
+  }
   if (beat.bubble) beat.bubble.text = beat.bubble.text.replace(/["“”«»]/g, "");
 };
 export const planBornasShots = async (job: BornasJob, video: BornasVideo, script: BornasScript, log: Log, signal?: AbortSignal): Promise<BornasPlan> => {
   const words = video.words!;
-  const total = video.seconds!;
+  const total = video.seconds! + BORNAS_LIMITS.END_HOLD;
   const sprites = new Map(video.sprites!.map((s) => [s.name, s]));
   const bgs = new Map(video.backgrounds!.map((b) => [b.name, b]));
   const busts = video.sprites!.filter((s) => s.kind === "bust").map((s) => s.name);
@@ -131,14 +136,14 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
     log(BORNAS_LOG.SHOTS(idx[0] + 1, _.last(idx)! + 1));
     const prompt = BORNAS_PROMPT.SHOTS({
       lines: idx.map((i) => ({ index: i, text: script.lines[i].text, idea: script.lines[i].idea, screen: script.lines[i].screen, sub: script.lines[i].sub, kind: script.lines[i].kind, words: bornasTokens(script.lines[i].text), start: words[i][0]?.[0] ?? 0, end: _.last(words[i])?.[1] ?? 0 })),
-      sprites: video.sprites!,
+      sprites: video.sprites!.filter((s) => !s.pool),
       backgrounds: video.backgrounds!,
       analysis: job.analysis!,
       first: k === 0,
       last: k === chunks.length - 1,
     });
     const cache = bornasVideoDir(job, video, BORNAS_DIR.SHOTS, `${createHash("sha1").update(prompt).digest("hex").slice(0, 12)}.json`);
-    const res = readJson<{ beats?: unknown } | null>(cache, null) ?? (await runMotionAi(prompt, BORNAS_ARTIFACT.SHOTS, reupExec(job.ai.mainAi), signal, (line) => line && log(line)));
+    const res = readJson<{ beats?: unknown } | null>(cache, null) ?? (await runMotionAi(prompt, BORNAS_ARTIFACT.SHOTS, reupExec(job.ai.directAi), signal, (line) => line && log(line)));
     if (Array.isArray(res?.beats) && !fs.existsSync(cache)) writeJson(cache, res);
     raw.push(...((Array.isArray(res?.beats) ? res.beats : []) as Obj[]));
   }
@@ -206,12 +211,34 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
       beat.montage = { bgs: list, caps: list.map((_x, i) => caps[i] || ""), capT: list.map((_x, i) => t0 + 0.3 + i * 0.6) };
       if (!list.length) beat.kind = "black";
     }
-    typeTexts(beat, (i) => sprites.get(cast[i]?.sprite || "")?.kind || "");
+    typeTexts(beat, (i) => sprites.get(cast[i]?.sprite || "")?.kind || "", script.lines[Number(b.line)]?.kind === "quote");
     const end = b.endCard as Obj | undefined;
-    if (end?.text) beat.endCard = { text: str(end.text, 90), sub: str(end.sub), t: tAt(end) };
+    if (end?.text) {
+      const norm = (v: string) => v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+      const said = new Set(script.lines.flatMap((l) => [norm(l.screen), norm(l.text)]).filter(Boolean));
+      const cta = BORNAS_CTA[job.channel.language] || BORNAS_CTA.en;
+      const dup = said.has(norm(str(end.text, 90))) || [...said].some((v) => v.length > 8 && (v.includes(norm(str(end.text, 90))) || norm(str(end.text, 90)).includes(v)));
+      beat.endCard = dup ? { text: cta.TITLE, sub: cta.SUB, t: tAt(end) } : { text: str(end.text, 90), sub: str(end.sub), t: tAt(end) };
+    }
     beats.push(beat);
   }
   if (!beats.length) throw new Error(BORNAS_ERROR.NO_SHOTS);
+  const label = BORNAS_CHAPTER_LABEL[job.channel.language] || BORNAS_CHAPTER_LABEL.en;
+  for (const [n, i] of bornasChapterLines(script.lines, job.channel.seconds).entries()) {
+    const start = video.lineStarts?.[i];
+    if (start === undefined) continue;
+    const t0 = _.round(start - BORNAS_CHAPTER.CARD_SECONDS - BORNAS_CHAPTER.LEAD, 3);
+    for (const b of beats) if (b.t0 >= t0 && b.t0 < start) b.t0 = start;
+    beats.push({ t0, kind: "chapter", cast: [], subject: 0, frame: "wide", cam: "push", chapter: { label: label(n + 1), title: script.lines[i].chapter! } });
+  }
+  beats.splice(
+    0,
+    beats.length,
+    ..._.uniqBy(
+      _.sortBy(beats, (b) => b.t0),
+      (b) => b.t0,
+    ),
+  );
   const pause = script.lines.findIndex((l) => l.pause);
   const turnT = pause >= 0 && words[pause + 1]?.[0] ? words[pause + 1][0][0] : Math.min(12, total * 0.1);
   const recap = beats.find((b) => b.kind === "montage" && b.t0 > turnT);
@@ -225,7 +252,7 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
     pxPerM: BORNAS_LIMITS.PX_PER_M,
     ground: Object.fromEntries(video.backgrounds!.map((b) => [b.name, b.ground])),
     bgDesc: Object.fromEntries(video.backgrounds!.map((b) => [b.name, b.desc || ""])),
-    sprites: Object.fromEntries(video.sprites!.map((s) => [s.name, { kind: s.kind, heightM: s.heightM, ...(s.ann ? { ann: s.ann } : {}) }])),
+    sprites: Object.fromEntries(video.sprites!.map((s) => [s.name, { kind: s.kind, heightM: s.heightM, ...(s.ann ? { ann: s.ann } : {}), ...(s.pool ? { pool: s.pool } : {}) }])),
     bgAnn: Object.fromEntries(video.backgrounds!.filter((b) => b.ann).map((b) => [b.name, b.ann!])),
     onsets: _.sortBy(words.flatMap((w) => w.map((x) => x[0]))),
     beats,

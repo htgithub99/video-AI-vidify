@@ -5,7 +5,7 @@ import { runInMotionAiSession, closeMotionStandaloneBrowser } from "../../../mot
 import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
 import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
 import { motionLanguageCode } from "../../../../lib/motionLanguage.js";
-import { BORNAS_AI_DEFAULT, BORNAS_GENRES, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
+import { BORNAS_AI_DEFAULT, BORNAS_GENRES, bornasAiSettings, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasChannel, BornasGenre, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
 import { annotateBornasLibrary, prepareBornasAssets } from "./bornasAssets.js";
@@ -31,7 +31,7 @@ const cleanChannel = (raw: Partial<BornasChannel> | undefined): BornasChannel =>
     review: raw.review === true,
   };
 };
-const cleanAi = (raw: Partial<BornasAiSettings> | undefined): BornasAiSettings => ({ mainAi: { ...BORNAS_AI_DEFAULT.mainAi, ...raw?.mainAi }, visionAi: { ...BORNAS_AI_DEFAULT.visionAi, ...raw?.visionAi }, lightAi: { ...BORNAS_AI_DEFAULT.lightAi, ...raw?.lightAi }, drawHeadless: raw?.drawHeadless !== false });
+const cleanAi = (raw: Partial<BornasAiSettings> | undefined): BornasAiSettings => bornasAiSettings(raw);
 const heavy = <T>(job: BornasJob, kind: string, step: string, signal: AbortSignal, run: () => Promise<T>): Promise<T> =>
   runHeavyJob(kind, HEAVY_JOB_TEXT.LABEL(HEAVY_JOB_TEXT.SCREEN.BORNAS, `${job.channel.name} · ${step}`), run, { signal, onWait: (holder) => bornasLog(job, HEAVY_JOB_TEXT.WAIT(kind, holder)), onStart: (waited) => waited >= 1 && bornasLog(job, HEAVY_JOB_TEXT.START(step, waited)) }).catch((error) => {
     throw signal.aborted ? new Error(BORNAS_ABORTED) : error;

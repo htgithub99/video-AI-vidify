@@ -10,6 +10,7 @@ const { direct } = await import(pathToFileURL(path.join(KIT, "born_direct.mjs"))
 const FIXRAW = process.env.BORN_FIX ? JSON.parse(fs.readFileSync(process.env.BORN_FIX, "utf8")) : {};
 const FIX = new Map(Array.isArray(FIXRAW) ? FIXRAW.map((id) => [id, ["tag", "wide"]]) : Object.entries(FIXRAW));
 const planShots = plan.beats ? direct(plan) : plan.shots;
+const CAST = {};
 const TOTAL = plan.total;
 const safe = (s) => String(s ?? "").replace(/'/g, "’").replace(/[\\`$]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\s+/g, " ").trim();
 const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
@@ -49,7 +50,7 @@ const spread = (actors) => {
   if (over) for (const a of solid) a.x = Math.max(40 + width(a) / 2, a.x - over);
 };
 for (const s of planShots) {
-  const o = { id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, shake: s.shake, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, endCard: s.endCard, moves: "" };
+  const o = { id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, shake: s.shake, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, chapter: s.chapter, endCard: s.endCard, moves: "" };
   if (FIX.has(o.id)) {
     const acts = FIX.get(o.id);
     if (acts.includes("tag")) {
@@ -70,11 +71,15 @@ for (const s of planShots) {
     }
     const drop = acts.filter((a) => a.startsWith("drop:")).map((a) => a.slice(5));
     if (drop.length) s.actors = (s.actors || []).filter((a) => !drop.includes(a.sprite));
+    const flip = acts.filter((a) => a.startsWith("flip:")).map((a) => a.slice(5));
+    s.actors = (s.actors || []).map((a) => (flip.includes(a.sprite) ? { ...a, dir: a.dir === "l" ? "r" : "l", move: undefined } : a));
+    if (acts.includes("apart")) s.apart = true;
   }
 
   if (o.kind === "scene") {
     const actors = (s.actors || []).map((a) => ({ ...a }));
-    if (!plan.beats) spread(actors);
+    if (!plan.beats || s.apart) spread(actors);
+    CAST[s.id] = [...actors].sort((a, b) => a.x - b.x).map((a) => a.sprite);
     let svg = "";
     actors.forEach((a, i) => {
       const dir = a.move?.dx ? (a.move.dx > 0 ? "r" : "l") : a.dir;
@@ -109,7 +114,13 @@ for (const s of shots) {
   const d = (s.t1 - s.t0).toFixed(3);
   let inner = "";
   if (s.kind === "rew" && s.rew?.length) {
-    inner = `<div class="rew">${s.rew.map((b, i) => `<img class="rwi" id="${s.id}rw${i}" src="${BG(b)}">`).join("")}<div class="scan"></div><div class="rwt">◀◀ REW</div></div>`;
+    const frame = (f, i) => {
+      if (typeof f === "string") return `<img class="rwi" id="${s.id}rw${i}" src="${BG(f)}">`;
+      const svg = (f.actors || []).map((a) => sp(a.sprite, a.x, a.y, a.h, { ...(a.dir ? { dir: a.dir } : {}), crowd: !!a.crowd, allow: true, noBox: true, anchorX: a.anchorX ?? 0.5 })).join("");
+      takeBoxes();
+      return `<div class="rwi" id="${s.id}rw${i}"><img src="${BG(f.bg)}" width="1920" height="1080"><svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0">${DEFS}<g>${svg}</g></svg></div>`;
+    };
+    inner = `<div class="rew">${s.rew.map(frame).join("")}<div class="scan"></div><div class="rwt">◀◀ REW</div></div>`;
     const step = (s.t1 - s.t0) / s.rew.length;
     js += s.rew.map((_, i) => `tl.set('#${s.id}rw${i}',{opacity:1},${(s.t0 + i * step).toFixed(3)});tl.fromTo('#${s.id}rw${i}',{scale:1.25},{scale:1.05,duration:${step.toFixed(3)},ease:'none'},${(s.t0 + i * step).toFixed(3)});${i < s.rew.length - 1 ? `tl.set('#${s.id}rw${i}',{opacity:0},${(s.t0 + (i + 1) * step).toFixed(3)});` : ""}`).join("");
     js += `tl.fromTo('#${s.id} .rwt',{opacity:0},{opacity:1,duration:.05,yoyo:true,repeat:7},${s.t0});`;
@@ -124,6 +135,9 @@ for (const s of shots) {
     const m = s.montage, n = m.bgs.length, gap = 1920 / n;
     inner = `<div class="mont">${m.bgs.map((b, i) => `<div class="pol" id="${s.id}mo${i}" style="left:${Math.round(gap * i + gap / 2 - 248)}px;transform:rotate(${[-6, 3, -2, 4][i % 4]}deg)"><img src="${BG(b)}"><div class="polc">${safe(m.caps[i])}</div></div>`).join("")}</div>`;
     js += m.bgs.map((_, i) => `tl.fromTo('#${s.id}mo${i}',{y:900},{y:0,duration:.35,ease:'back.out(1.4)'},${(m.capT[i] ?? s.t0).toFixed(3)});`).join("");
+  } else if (s.kind === "chapter" && s.chapter) {
+    inner = `<div class="chap" id="${s.id}ch"><div class="chl" id="${s.id}cl">${safe(s.chapter.label)}</div><div class="cht" id="${s.id}ct">${safe(s.chapter.title)}</div></div>`;
+    js += `tl.fromTo('#${s.id}cl',{opacity:0,y:12},{opacity:1,y:0,duration:.5,ease:'power2.out'},${s.t0.toFixed(3)});tl.fromTo('#${s.id}ct',{opacity:0,scale:1.06},{opacity:1,scale:1,duration:.6,ease:'power2.out'},${(s.t0 + 0.2).toFixed(3)});tl.to('#${s.id}ch',{opacity:0,duration:.3,ease:'power1.in'},${(s.t0 + Math.max(0.6, d - 0.3)).toFixed(3)});`;
   } else if (s.kind === "black") {
     inner = `<div class="blk"></div><div class="hud" id="${s.id}h"></div>`;
   } else {
@@ -172,6 +186,8 @@ fs.mkdirSync(path.join(jobDir, "png"), { recursive: true });
 fs.writeFileSync(path.join(jobDir, "index.html"), out);
 for (const n of pngUsed()) fs.copyFileSync(path.join(process.env.BORN_ASSETS, "png", `${n}.png`), path.join(jobDir, "png", `${n}.png`));
 fs.writeFileSync(path.join(jobDir, "texts.json"), JSON.stringify(TEXTEV));
-fs.writeFileSync(path.join(jobDir, "shots.json"), JSON.stringify(shots.map((s) => ({ id: s.id, t0: s.t0, t1: s.t1 }))));
+fs.writeFileSync(path.join(jobDir, "shots.json"), JSON.stringify(shots.map((s) => ({ id: s.id, t0: s.t0, t1: s.t1, kind: s.kind }))));
 fs.writeFileSync(path.join(jobDir, "faces_all.json"), JSON.stringify(FACEMAP()));
+fs.writeFileSync(path.join(jobDir, "layout_report.json"), JSON.stringify(planShots.report || []));
+fs.writeFileSync(path.join(jobDir, "cast.json"), JSON.stringify(CAST));
 console.log(JSON.stringify({ shots: shots.length, bytes: out.length, png: pngUsed().length, warns }));

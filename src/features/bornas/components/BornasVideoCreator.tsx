@@ -1,5 +1,5 @@
 import { useState, type FC } from "react";
-import { Copy, Eye, EyeOff, FolderKanban, Mic2, Wand2 } from "lucide-react";
+import { Copy, FolderKanban, Mic2, Wand2 } from "lucide-react";
 import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSettingsBlock.js";
 import { Button } from "../../../components/ui/Button.js";
 import { StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioHeader, StudioPage } from "../../../components/ui/Studio.js";
@@ -8,12 +8,13 @@ import { MOTION_VIDEO_TEXTS } from "../../../constants/motionVideoTexts.js";
 import { MOTION_VOICE_CHANNEL_TEXT } from "../../../constants/motionVoice.js";
 import type { Lang } from "../../../lib/lang.js";
 import { cn } from "../../../lib/utils.js";
-import type { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import { MotionVoicePanel } from "../../motion/components/MotionVoicePanel.js";
-import { ReupToggle } from "../../reup/components/ReupControls.js";
 import { REUP_STYLES as S } from "../../reup/constants/reupStyles.js";
 import type { ReupAiChoice } from "../../reup/types/reup.js";
-import { BORNAS_STEPS } from "../constants/bornasConfig.js";
+import { BORNAS_AI_FIELDS, BORNAS_DRAW_PROVIDERS, BORNAS_LIBRARY_DRAW, BORNAS_STEPS, BORNAS_VISION_PROVIDERS } from "../constants/bornasConfig.js";
+import type { BornasAiField, BornasDrawChoice, BornasDrawProvider } from "../types/bornas.js";
+import { CINEMATIC_SETUP_TEXTS } from "../../../constants/texts.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import { useBornasStudio, type BornasStudio } from "../hooks/useBornasStudio.js";
 import { BornasChannelCard } from "./BornasChannelCard.js";
@@ -23,10 +24,11 @@ import { BornasScriptsCard } from "./BornasScriptsCard.js";
 import { BornasSourceCard } from "./BornasSourceCard.js";
 import { BornasVideosCard } from "./BornasVideosCard.js";
 type Tab = "create" | "voices" | "results";
-type AiField = "mainAi" | "visionAi" | "lightAi";
-const AiBlock: FC<{ studio: BornasStudio; field: AiField; title: string; note: string; lang: Lang }> = ({ studio, field, title, note, lang }) => {
+const AiBlock: FC<{ studio: BornasStudio; field: BornasAiField; lang: Lang }> = ({ studio, field, lang }) => {
   const ai = studio.ai[field];
-  const set = (value: Partial<ReupAiChoice>) => studio.setAi({ ...studio.ai, [field]: { ...ai, ...value } });
+  const [title, note] = studio.text.AI[field];
+  const set = (value: Partial<ReupAiChoice>) => studio.setAi((prev) => ({ ...prev, [field]: { ...prev[field], ...value } }));
+  const sources = field === "visionAi" ? BORNAS_VISION_PROVIDERS.map((value) => ({ value, label: CINEMATIC_SETUP_TEXTS[lang === "en" ? "en" : "vi"][PROVIDER_LABEL[value]] })) : undefined;
   return (
     <ChatPlanningSettingsBlock
       title={title}
@@ -38,12 +40,39 @@ const AiBlock: FC<{ studio: BornasStudio; field: AiField; title: string; note: s
       onProviderChange={(provider) => set({ provider })}
       onModelChange={(model) => set({ model })}
       onExecutionModeChange={(mode) => set({ mode })}
+      onSourceChange={(provider, mode) => set({ provider, mode })}
       onChromeHeadlessChange={(chromeHeadless) => set({ chromeHeadless })}
       currentLang={lang}
-      allowHybrid
+      allowHybrid={!sources}
+      roomOnly={!!sources}
+      sources={sources}
       multiRoom={ai.multiRoom}
       onMultiRoomChange={(multiRoom) => set({ multiRoom })}
       allowFallback={ai.allowFallback}
+      onAllowFallbackChange={(allowFallback) => set({ allowFallback })}
+    />
+  );
+};
+const DrawBlock: FC<{ studio: BornasStudio; lang: Lang }> = ({ studio, lang }) => {
+  const draw = studio.ai.drawAi;
+  const set = (value: Partial<BornasDrawChoice>) => studio.setAi((prev) => ({ ...prev, drawAi: { ...prev.drawAi, ...value } }));
+  return (
+    <ChatPlanningSettingsBlock
+      title={studio.text.AI_DRAW}
+      note={draw.provider === BORNAS_LIBRARY_DRAW ? studio.text.AI_DRAW_NOTE : `${studio.text.AI_DRAW_NOTE} ${studio.text.AI_DRAW_STYLE_WARN}`}
+      provider={draw.provider as unknown as AiPlanningFallbackProvider}
+      model={"" as AiPlanningChatModel}
+      executionMode={AiPlanningExecutionMode.RoomOnly}
+      chromeHeadless={draw.chromeHeadless}
+      onProviderChange={(provider) => set({ provider: provider as unknown as BornasDrawProvider })}
+      onModelChange={() => undefined}
+      onExecutionModeChange={() => undefined}
+      onChromeHeadlessChange={(chromeHeadless) => set({ chromeHeadless })}
+      currentLang={lang}
+      roomOnly
+      hideModel
+      sources={BORNAS_DRAW_PROVIDERS.map((value) => ({ value, label: studio.text.AI_DRAW_SOURCES[value] }))}
+      allowFallback={draw.allowFallback}
       onAllowFallbackChange={(allowFallback) => set({ allowFallback })}
     />
   );
@@ -66,6 +95,7 @@ const Stepper: FC<{ studio: BornasStudio }> = ({ studio }) => {
     </div>
   );
 };
+const PROVIDER_LABEL = { [AiPlanningFallbackProvider.GeminiChat]: "GEMINI_CHAT_OPTION", [AiPlanningFallbackProvider.ChatGptUi]: "CHATGPT_UI_OPTION", [AiPlanningFallbackProvider.ClaudeChat]: "CLAUDE_CHAT_OPTION" } as Record<AiPlanningFallbackProvider, "GEMINI_CHAT_OPTION" | "CHATGPT_UI_OPTION" | "CLAUDE_CHAT_OPTION">;
 const BornasVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" as Lang }) => {
   const ui = currentLang === "en" ? "en" : "vi";
   const studio = useBornasStudio(currentLang);
@@ -104,14 +134,10 @@ const BornasVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = "vi" as 
         />
         {aiOpen && (
           <StudioFieldset disabled={studio.running} className={S.AI_PANEL}>
-            <AiBlock studio={studio} field="mainAi" title={text.AI_MAIN} note={text.AI_MAIN_NOTE} lang={currentLang} />
-            <AiBlock studio={studio} field="visionAi" title={text.AI_VISION} note={text.AI_VISION_NOTE} lang={currentLang} />
-            <AiBlock studio={studio} field="lightAi" title={text.AI_LIGHT} note={text.AI_LIGHT_NOTE} lang={currentLang} />
-            <div className={B.AI_DRAW}>
-              <p className={B.AI_DRAW_TITLE}>{text.AI_DRAW}</p>
-              <p className={S.HINT}>{text.AI_DRAW_NOTE}</p>
-              <ReupToggle label={text.AI_DRAW} icon={studio.ai.drawHeadless ? EyeOff : Eye} checked={studio.ai.drawHeadless} on={text.AI_DRAW_HIDE} off={text.AI_DRAW_SHOW} onChange={(drawHeadless) => studio.setAi({ ...studio.ai, drawHeadless })} />
-            </div>
+            {BORNAS_AI_FIELDS.map((field) => (
+              <AiBlock key={field} studio={studio} field={field} lang={currentLang} />
+            ))}
+            <DrawBlock studio={studio} lang={currentLang} />
           </StudioFieldset>
         )}
         {tab === "create" && (
