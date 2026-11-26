@@ -21,6 +21,13 @@ const RULE = {
   slots: { l: 520, cl: 760, c: 960, cr: 1160, r: 1400 },
   backMax: 980,
   lieAspect: 1.25,
+  nearMin: 0.6,
+  nearPull: 0.5,
+  lieBedFill: 0.95,
+  lyingText: /\b(?:lying|lies|asleep|sleeping|bedridden|dying in)\b/i,
+  bedInSprite: /\b(?:bed|cot|mattress)\b/i,
+  ownBedDrop: 0.45,
+  lieDrop: 0.2,
   lieFit: 0.95,
   capFit: 1.05,
   bodyM: 1.75,
@@ -118,10 +125,10 @@ const refFaces = (plan) => {
 };
 const personHeight = (plan, refs, n, base, pxm) => {
   const s = plan.sprites[n], id = charId(n), f = s?.ann?.face, ref = id && refs[id];
-  const m = meta(n), aspect = m.w / m.h, ride = POSE.ride.test(n);
+  const m = meta(n), aspect = m.w / m.h, ride = POSE.ride.test(`${n} ${s?.ann?.is || ""}`);
   const len = id || ride || aspect <= RULE.lieAspect ? base : RULE.bodyM * pxm;
   if (aspect > RULE.lieAspect && !ride) return (len * RULE.lieFit) / aspect;
-  const h = ref && f && f.b - f.t > 0.02 ? clamp((base * ref) / (f.b - f.t), base * 0.3, base * 1.8) : poseHeight(n, base);
+  const h = ref && f && f.b - f.t > 0.02 && !ride ? clamp((base * ref) / (f.b - f.t), base * 0.3, base * 1.8) : ride ? base * RULE.rideM / 1.75 : poseHeight(n, base);
   const cap = ride && id ? RULE.rideM * pxm : len * RULE.capFit;
   return Math.min(h, cap / Math.max(1, aspect));
 };
@@ -237,11 +244,12 @@ const layout = (beat, plan, refs, report = [], id = "") => {
   const subject = pick >= 0 ? pick : person >= 0 ? person : beat.cast.findIndex((c) => !isBack(info(c.sprite)));
   const freeSpots = [...A.spots];
   const tableProp = beat.cast.some((c) => (info(c.sprite).ann?.place === "table" || c.place === "table") && info(c.sprite).kind === "prop");
+  const nearH = Math.max(0, ...freeSpots.map((s) => s.h)) * RULE.nearMin;
   const takeSpot = (x) => {
     let best = -1;
-    const score = (s) => Math.abs(s.x - x) - (tableProp ? s.h * RULE.frontPull : 0);
+    const score = (s) => Math.abs(s.x - x) - s.h * (tableProp ? RULE.frontPull : RULE.nearPull);
     freeSpots.forEach((s, k) => {
-      if (Math.abs(s.x - x) < (tableProp ? 450 : 300) && (best < 0 || score(s) < score(freeSpots[best]))) best = k;
+      if (s.h >= nearH && Math.abs(s.x - x) < (tableProp ? 450 : 300) && (best < 0 || score(s) < score(freeSpots[best]))) best = k;
     });
     return best >= 0 ? freeSpots.splice(best, 1)[0] : null;
   };
@@ -353,6 +361,17 @@ const layout = (beat, plan, refs, report = [], id = "") => {
   for (const a of solid) if (!A.spots.some((s) => Math.abs(s.x - a.x) < 1)) a.y = A.groundAt(a.x) + a.pad * a.h;
   for (const a of main) {
     if (!a || a.kind !== "person") continue;
+    const m = meta(a.sprite), aspect = m.w / m.h, is = String(plan.sprites[a.sprite]?.ann?.is || "");
+    const bed = (aspect > RULE.lieAspect || RULE.lyingText.test(is)) && !POSE.ride.test(`${a.sprite} ${is}`) ? A.seats.filter((x) => RULE.lieOn.test(x.k)).sort((u, v) => v.x1 - v.x0 - (u.x1 - u.x0))[0] : null;
+    if (bed) {
+      a.h = ((bed.x1 - bed.x0) * RULE.lieBedFill) / aspect;
+      a.x = (bed.x0 + bed.x1) / 2;
+      a.y = bed.y + a.h * (RULE.bedInSprite.test(is) || /bed|cot/.test(a.sprite) ? RULE.ownBedDrop : RULE.lieDrop);
+      a.onGround = false;
+      a.seated = true;
+      a.move = undefined;
+      continue;
+    }
     const w = poseWords(a.sprite).find((v) => RULE.furniture.test(v));
     const f = w && main.find((b) => b && b !== a && b.kind !== "person" && poseWords(b.sprite).some((v) => v.endsWith(w)));
     const bs = w && !f && A.seats.find((x) => x.k === seatKind(w));
@@ -441,6 +460,15 @@ export const direct = (plan) => {
   const heroBust = Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust" && charId(n) === heroId) || null;
   const inserts = {};
   const hookShots = [];
+  const living = (b) => (b.cast || []).find((c) => ["person", "animal"].includes(plan.sprites[c.sprite]?.kind) && !(c.crowd > 1));
+  beats.forEach((beat, bi) => {
+    if (beat.kind !== "scene" || !beat.bg || beat.cam === "pull" || living(beat)) return;
+    const near = [...beats.slice(0, bi).reverse(), ...beats.slice(bi + 1)].find((b) => b.kind === "scene" && living(b) && (beat.t0 < plan.turnT || b.bg === beat.bg));
+    if (!near) return;
+    const who = living(near);
+    beat.cast = [...(beat.cast || []), { sprite: who.sprite, slot: "cr", dir: who.dir || "l" }];
+    report.push([`b${bi}`, "empty_filled", who.sprite]);
+  });
   beats.forEach((beat, bi) => {
     const t1 = bi + 1 < beats.length ? beats[bi + 1].t0 : plan.total;
     const hook = beat.t0 < plan.turnT;

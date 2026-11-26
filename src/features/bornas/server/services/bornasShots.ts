@@ -199,7 +199,13 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
     if (bar?.label) beat.bar = { label: str(bar.label, 30), from: Math.round(num(bar.from, 100, 0, 100)), to: Math.round(num(bar.to, 50, 0, 100)), t: tAt(bar) };
     if (kind === "paper") {
       const p = (b.paper || {}) as Obj;
-      beat.paper = { lines: ((Array.isArray(p.lines) ? p.lines : []) as Obj[]).slice(0, 4).map((l) => ({ text: str(l.text, 60), size: ["h", "n", "l", "s"].includes(String(l.size)) ? String(l.size) : "l", t: tAt(l) })), ...((p.stamp as Obj)?.text ? { stamp: { text: str((p.stamp as Obj).text, 30), t: tAt(p.stamp) } } : {}) };
+      const key = (v: string) => v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+      const lines = _.uniqBy(
+        ((Array.isArray(p.lines) ? p.lines : []) as Obj[]).slice(0, 4).map((l) => ({ text: str(l.text, 60), size: ["h", "n", "l", "s"].includes(String(l.size)) ? String(l.size) : "l", t: tAt(l) })),
+        (l) => key(l.text),
+      ).filter((l) => l.text);
+      const stamp = str((p.stamp as Obj)?.text, 30);
+      beat.paper = { lines, ...(stamp && !lines.some((l) => key(l.text) === key(stamp)) ? { stamp: { text: stamp, t: tAt(p.stamp) } } : {}) };
     }
     if (kind === "montage") {
       const m = (b.montage || {}) as Obj;
@@ -212,13 +218,16 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
       if (!list.length) beat.kind = "black";
     }
     typeTexts(beat, (i) => sprites.get(cast[i]?.sprite || "")?.kind || "", script.lines[Number(b.line)]?.kind === "quote");
+    if (beat.paper) {
+      const key = (v: string) => v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+      const shown = new Set([...beat.paper.lines.map((l) => key(l.text)), key(beat.paper.stamp?.text || "")]);
+      if (beat.plate && (shown.has(key(beat.plate.text)) || shown.has(key(beat.plate.sub)))) delete beat.plate;
+      if (beat.tag && (shown.has(key(beat.tag.text)) || shown.has(key(beat.tag.sub)))) delete beat.tag;
+    }
     const end = b.endCard as Obj | undefined;
-    if (end?.text) {
-      const norm = (v: string) => v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
-      const said = new Set(script.lines.flatMap((l) => [norm(l.screen), norm(l.text)]).filter(Boolean));
+    if (end) {
       const cta = BORNAS_CTA[job.channel.language] || BORNAS_CTA.en;
-      const dup = said.has(norm(str(end.text, 90))) || [...said].some((v) => v.length > 8 && (v.includes(norm(str(end.text, 90))) || norm(str(end.text, 90)).includes(v)));
-      beat.endCard = dup ? { text: cta.TITLE, sub: cta.SUB, t: tAt(end) } : { text: str(end.text, 90), sub: str(end.sub), t: tAt(end) };
+      beat.endCard = { text: cta.TITLE, sub: cta.SUB, t: tAt(end) };
     }
     beats.push(beat);
   }
