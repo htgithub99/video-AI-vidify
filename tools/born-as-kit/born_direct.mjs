@@ -87,7 +87,12 @@ const RULE = {
   vehicleFrame: 0.5,
   vehicleWidth: 0.62,
   animalMax: 1.15,
+  animalMin: 0.3,
   propMax: 0.6,
+  propMin: 0.2,
+  adultM: 1.6,
+  childMin: 0.45,
+  headTopMax: 0.4,
   bustXs: [960, 700, 1220],
   bustNativeMax: 1.6,
   motionCycle: ["push", "push", "pull", "push", "hold"],
@@ -165,9 +170,26 @@ const readableHeight = (kind, n, h, per) => {
   let out = h;
   if (kind === "person" && !lying) out = clamp(h, 1080 * RULE.personMin, 1080 * RULE.personMax);
   else if (kind === "vehicle" || kind === "ship") out = Math.min(h, per * RULE.vehicleMax, 1080 * RULE.vehicleFrame, (1920 * RULE.vehicleWidth) / aspect);
-  else if (kind === "animal") out = Math.min(h, per * RULE.animalMax);
-  else if (kind === "prop") out = Math.min(h, per * RULE.propMax);
+  else if (kind === "animal") out = clamp(h, per * RULE.animalMin, per * RULE.animalMax);
+  else if (kind === "prop") out = clamp(h, per * RULE.propMin, per * RULE.propMax);
   return Math.min(out, m.h * RULE.nativeMax);
+};
+const standing = (a) => {
+  const m = meta(a.sprite);
+  return a.kind === "person" && !a.back && a.onGround && m.w / m.h <= RULE.lieAspect && !POSE.ride.test(a.sprite) && !POSE.low.test(a.sprite) && !RULE.groupRe.test(a.sprite) && !RULE.babyRe.test(a.sprite);
+};
+const matchPeople = (plan, main) => {
+  const people = main.filter((a) => a && standing(a));
+  if (people.length < 2) return;
+  const top = (a) => clamp(plan.sprites[a.sprite]?.ann?.face?.t ?? 0, 0, RULE.headTopMax);
+  const age = (a) => (a.hm < RULE.adultM ? clamp(a.hm / 1.75, RULE.childMin, 1) : 1);
+  const ratio = people.map((a) => (a.h * (1 - top(a))) / (age(a) * a.pxm)).sort((u, v) => u - v);
+  const want = ratio[Math.floor(ratio.length / 2)];
+  for (const a of people) {
+    const h = Math.min((want * age(a) * a.pxm) / (1 - top(a)), meta(a.sprite).h * RULE.nativeMax);
+    a.y += a.pad * (h - a.h);
+    a.h = h;
+  }
 };
 const poseWords = (n) => {
   const id = charId(n), rest = id ? n.slice(id.length) : n.split("__").pop();
@@ -361,6 +383,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     }
     main[i] = { sprite: c.sprite, x, y: y + pad * h, h, hm: k.heightM, base, pxm, dir, cast: i, kind: k.kind, back, place, anchorX: foot, pad, swap: c.swap || [], move: c.move && !back ? (c.move === "r" ? 1 : -1) * pxm * 1.6 : 0, onGround: !back && !onRails && !onWater && place !== "wall" && place !== "table" };
   }
+  matchPeople(plan, main);
   const width = (a) => (meta(a.sprite).w / meta(a.sprite).h) * a.h;
   const subj = main[subject];
   for (const a of main)

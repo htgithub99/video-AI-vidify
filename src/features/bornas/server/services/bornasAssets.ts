@@ -5,7 +5,7 @@ import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { reupFfmpeg } from "../../../reup/server/services/reupFfmpeg.js";
-import { BORNAS_ANN, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_RENDER, BORNAS_SIZES, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
+import { BORNAS_ANN, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasDrawChoice, BornasAssetPlan, BornasBackground, BornasBgAnn, BornasJob, BornasScript, BornasSprite, BornasSpriteAnn, BornasVideo } from "../../types/bornas.js";
@@ -41,7 +41,6 @@ interface LibCatalog {
   items: Record<string, LibItem>;
   backgrounds: Record<string, LibBg>;
 }
-const SWEEP_SAFE = new Set(["vehicle", "structure", "building", "prop", "nature", "weapon", "ship", "aircraft"]);
 const catalogFile = (lib: string): string => bornasLib(lib, "catalog.json");
 const bgMeasured = (b: LibBg): boolean => b.ann?.v === BORNAS_ANN.BG_VERSION || b.openV === BORNAS_ANN.BG_VERSION;
 const readCatalog = (lib: string): LibCatalog => {
@@ -53,7 +52,7 @@ const pngSize = (file: string): [number, number] => {
   return [b.readUInt32BE(16), b.readUInt32BE(20)];
 };
 const words = (name: string): string => name.replace(/^[a-z0-9]+__/, "").replace(/_/g, " ");
-type Wanted = { name: string; desc: string };
+type Wanted = { name: string; desc: string; kind?: string };
 const cropEdge = new Map<string, boolean>();
 const copyCrop = (src: string, dst: string): void => {
   fs.copyFileSync(src, dst);
@@ -81,7 +80,10 @@ const keyedSplit = async (job: BornasJob, raw: string, prefix: string, wanted: W
   const files = out.files || [];
   files.forEach((f, i) => cropEdge.set(path.resolve(f), out.edges?.[i] === true));
   log(BORNAS_LOG.SPLIT(files.length, wanted.length), files.length === wanted.length ? "info" : "warn");
-  if (wanted.length === 1 && files.length === 1) return files;
+  if (wanted.length === 1 && files.length === 1) {
+    if (BORNAS_OBJECT_KINDS.has(wanted[0].kind || "")) await runKitPy("alpha_key.py", ["--objects", files[0], files[0]], log, signal);
+    return files;
+  }
   const matched = await matchCrops(job, files, wanted, prefix, log, signal);
   if (files.length === wanted.length && matched.every((f) => !f)) {
     log(BORNAS_LOG.MATCH_FAILED(wanted.length), "warn");
@@ -92,6 +94,8 @@ const keyedSplit = async (job: BornasJob, raw: string, prefix: string, wanted: W
   const missing = wanted.filter((_w, k) => !matched[k]).map((w) => w.name);
   if (missing.length) log(BORNAS_LOG.SPLIT_MISSING(missing), "warn");
   if (missing.length === wanted.length) fs.rmSync(raw, { force: true });
+  const objects = matched.flatMap((f, k) => (f && BORNAS_OBJECT_KINDS.has(wanted[k].kind || "") ? [f, f] : []));
+  if (objects.length) await runKitPy("alpha_key.py", ["--objects", ...objects], log, signal);
   return matched;
 };
 const drawSheet = async (prompt: string, file: string, what: string, draw: BornasDrawChoice, log: Log, misses: { count: number }, signal?: AbortSignal, refs: string[] = []): Promise<boolean> => {
@@ -231,13 +235,6 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
       const [file] = drawn ? await keyedSplit(job, single, path.join(raws, `bust_${c.id}`), [pose], log, signal) : [];
       if (file) copyCrop(file, path.join(png, `${names[i]}.png`));
     }
-    await runKitPy("model_sweep.py", ["240", "0.5", ...names.map((n) => path.join(png, `${n}.png`))], log, signal).catch((error) => log(BORNAS_ERROR.TOOL("model_sweep", String((error as Error)?.message || error)), "warn"));
-    await runKitPy(
-      "edge_clean.py",
-      names.map((n) => path.join(png, `${n}.png`)),
-      log,
-      signal,
-    ).catch((error) => log(BORNAS_ERROR.TOOL("edge_clean", String((error as Error)?.message || error)), "warn"));
     names.forEach((name, i) => add(name, path.join(png, `${name}.png`), /bust/.test(poses[i].name) ? "bust" : "person", c.heightM, "r", `${c.desc}; ${poses[i].desc}`));
   }
   const stamp = new Date().toISOString().slice(2, 10).replace(/-/g, "");
@@ -254,15 +251,6 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     const files = await keyedSplit(job, tmp, path.join(raws, sheet), group, log, signal);
     const pairs = group.flatMap((it, i) => (files[i] ? [{ f: files[i]!, it, name: `${sheet}__${it.name}` }] : []));
     for (const { f, name } of pairs) copyCrop(f, bornasLib(home, "sprites", `${name}.png`));
-    const safe = pairs.filter((p) => SWEEP_SAFE.has(p.it.kind)).map((p) => bornasLib(home, "sprites", `${p.name}.png`));
-    if (safe.length) await runKitPy("hole_sweep.py", safe, log, signal).catch(_.noop);
-    await runKitPy("model_sweep.py", ["240", "0.5", ...pairs.map((p) => bornasLib(home, "sprites", `${p.name}.png`))], log, signal).catch(_.noop);
-    await runKitPy(
-      "edge_clean.py",
-      pairs.map((p) => bornasLib(home, "sprites", `${p.name}.png`)),
-      log,
-      signal,
-    ).catch(_.noop);
     const cat = readCatalog(home);
     for (const { name, it } of pairs) {
       const [w, h] = pngSize(bornasLib(home, "sprites", `${name}.png`));

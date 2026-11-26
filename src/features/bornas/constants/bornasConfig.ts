@@ -153,3 +153,4 @@ export const bornasGenre = (raw: unknown): BornasGenre => (BORNAS_GENRES.include
 export const BORNAS_TOKEN = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[^\s\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+/gu;
 export const BORNAS_WORD = /[\p{L}\p{N}]/u;
 export const bornasTokens = (text: string): string[] => (text.match(BORNAS_TOKEN) || []).filter((t) => BORNAS_WORD.test(t));
+export const BORNAS_OBJECT_KINDS = new Set(["vehicle", "structure", "building", "prop", "nature", "weapon", "ship", "aircraft"]);
