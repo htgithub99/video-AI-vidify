@@ -4206,7 +4206,17 @@ router.post(ROUTER_PATHS.REFERENCE_ASSETS, async (req: Request, res: Response) =
   fs.mkdirSync(directory, { recursive: true });
   const assets: string[] = [];
   try {
-    _.forEach(_.take(_.castArray(req.body?.images), 10), (image, index) => {
+    const images = await Promise.all(
+      _.map(_.take(_.castArray(req.body?.images), 10), async (image) => {
+        const url = _.toString(image);
+        if (!REFACTOR_CONSTANTS.REMOTE_REFERENCE_IMAGE_REGEX.test(url)) return url;
+        const remote = await fetch(url, { signal: AbortSignal.timeout(REFACTOR_CONSTANTS.REMOTE_REFERENCE_IMAGE_TIMEOUT_MS) });
+        if (!remote.ok) throw new Error(`${remote.status} ${remote.statusText}`);
+        const type = _.toString(remote.headers.get("content-type")).split(";")[0] || "image/jpeg";
+        return `data:${type};base64,${Buffer.from(await remote.arrayBuffer()).toString(SOURCE_TEXT_BASE64)}`;
+      }),
+    );
+    _.forEach(images, (image, index) => {
       const match = _.toString(image).match(REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX);
       if (!match) {
         if (_.startsWith(_.toString(image), SOURCE_TEMPLATE_SYMBOL_52(SOURCE_TEMPLATE_SYMBOL_86(`${ASSETS_DIR_NAME}`)))) assets.push(_.toString(image));
