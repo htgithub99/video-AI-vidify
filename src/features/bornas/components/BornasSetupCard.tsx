@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { Clock, Film, Monitor, PauseCircle, Play, Plus, Radio, Rocket, RotateCcw, Trash2 } from "lucide-react";
+import { Clock, Film, Monitor, PauseCircle, Play, Plus, Radio, Rocket, RotateCcw, Smartphone, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.js";
 import { StudioDeleteConfirm, useStudioDeleteConfirm } from "../../../components/common/StudioDeleteConfirm.js";
 import { StudioCard, StudioFieldset, StudioInput } from "../../../components/ui/Studio.js";
@@ -77,6 +77,7 @@ export const BornasSetupCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({
             <ReupSelect<number> label={text.LENGTH} value={channel.seconds} options={BORNAS_LENGTHS.map((value) => ({ value, label: text.MINUTES(value / 60) }))} onChange={(seconds) => patchChannel({ seconds })} />
             <ReupSelect<number> label={text.COUNT} value={channel.count} options={BORNAS_COUNTS.map((value) => ({ value, label: text.COUNT_VALUE(value) }))} onChange={(count) => patchChannel({ count })} />
             <ReupToggle label={text.REVIEW} icon={PauseCircle} checked={channel.review} on={text.REVIEW_ON} off={text.REVIEW_OFF} onChange={(review) => patchChannel({ review })} />
+            <ReupToggle label={text.SHORT_MAKE} icon={Smartphone} checked={channel.short !== false} on={text.SHORT_ON} off={text.SHORT_OFF} onChange={(short) => patchChannel({ short })} />
           </MotionSettingsGroup>
           <MotionSettingsGroup title={text.GROUP_CONTENT}>
             <ReupSelect<BornasTopic> label={text.TOPIC} title={text.TOPIC_HINT} value={channel.topic} options={BORNAS_TOPICS.map((value) => ({ value, label: text.TOPICS[value] }))} onChange={(topic) => patchChannel({ topic })} />

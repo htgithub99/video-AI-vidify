@@ -31,6 +31,7 @@ const cleanChannel = (raw: Partial<BornasChannel> | undefined): BornasChannel =>
     count: _.clamp(Math.round(Number(raw.count) || 1), 1, 10),
     seconds: _.clamp(Math.round(Number(raw.seconds) || 120), 30, 1200),
     review: raw.review === true,
+    short: raw.short !== false,
   };
 };
 const cleanAi = (raw: Partial<BornasAiSettings> | undefined): BornasAiSettings => bornasAiSettings(raw);
@@ -60,7 +61,8 @@ const runVideo = async (job: BornasJob, video: BornasVideo, script: BornasScript
     if (step === "build") {
       await buildBornasVideo(job, video, plan!, log, signal);
       await checkBornasVideo(job, video, log, signal);
-      await buildBornasShort(job, video, plan!, script, log, signal);
+      if (job.channel.short !== false) await buildBornasShort(job, video, plan!, script, log, signal);
+      else video.shortDir = undefined;
     }
     if (step === "package") {
       await packageBornasVideo(job, video, script, log, signal);

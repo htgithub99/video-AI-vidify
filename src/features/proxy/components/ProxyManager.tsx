@@ -715,10 +715,12 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                     <span>{bulk === b.destination ? t.working : b.label}</span>
                   </Button>
                 ))}
-                <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, SOURCE_TEXT_BORDER_ROSE_500_40_BG_ROSE_500, PROXY_BULK_STYLES.BUTTON)} disabled={Boolean(bulk) || !counts.open} onClick={() => void closeAll()}>
-                  {bulk === PROXY_BULK_CLOSE ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_5} /> : <X className={SOURCE_TEXT_W_4_H_4} />}
-                  <span>{bulk === PROXY_BULK_CLOSE ? t.working : t.closeAll}</span>
-                </Button>
+                {(counts.open > 0 || bulk === PROXY_BULK_CLOSE) && (
+                  <Button variant={SOURCE_TEXT_UNSTYLED} className={cn(actionBtnClass, SOURCE_TEXT_BORDER_ROSE_500_40_BG_ROSE_500, PROXY_BULK_STYLES.BUTTON)} disabled={Boolean(bulk)} onClick={() => void closeAll()}>
+                    {bulk === PROXY_BULK_CLOSE ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT_5} /> : <X className={SOURCE_TEXT_W_4_H_4} />}
+                    <span>{bulk === PROXY_BULK_CLOSE ? t.working : t.closeAll}</span>
+                  </Button>
+                )}
               </div>
               <div className={SOURCE_TEXT_RELATIVE}>
                 <Search className={SOURCE_TEXT_ABSOLUTE_LEFT_3_TOP_3_W_4} />

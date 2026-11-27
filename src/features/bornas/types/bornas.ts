@@ -19,6 +19,7 @@ export interface BornasChannel {
   count: number;
   seconds: number;
   review: boolean;
+  short: boolean;
   sample?: string;
 }
 export type BornasDrawProvider = "gemini-chat" | "labs-flow";

@@ -19,18 +19,7 @@ export const BORNAS_URL = {
 } as const;
 export const BORNAS_STORAGE = { STATE: "bornas_state_v1" } as const;
 export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", SHORT: "short", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4" } as const;
-export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = {
-  world: ["ancient", "medieval", "eastasia", "ww", "modern"],
-  ww: ["ww"],
-  ancient: ["ancient"],
-  medieval: ["medieval"],
-  eastasia: ["eastasia"],
-  vietnam: ["vietnam"],
-  modern: ["modern"],
-  game: ["game"],
-  wildwest: ["wildwest"],
-  anime: [],
-};
+export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = { world: ["ancient", "medieval", "eastasia", "ww", "modern"], ww: ["ww"], ancient: ["ancient"], medieval: ["medieval"], eastasia: ["eastasia"], vietnam: ["vietnam"], modern: ["modern"], game: ["game"], wildwest: ["wildwest"], anime: [] };
 export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }[] = [
   { re: /\b(?:mounted|galloping|riding|rider|horseman|cavalryman)\b/, min: 1.8, max: 2.8, std: 2.4 },
   { re: /(?:nightstand|bedside|side_table)s?\b/, min: 0.5, max: 0.85, std: 0.7 },
@@ -142,10 +131,7 @@ export const BORNAS_RENDER = {
 export const BORNAS_PY = { PACKAGES: ["pillow", "numpy", "scipy", "rembg", "onnxruntime", "opencv-python-headless"], READY: "ready.json", VERSION: 2 } as const;
 export const BORNAS_SAME_PERSON = " This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.";
 export const BORNAS_REVIEW_CONTEXT = "These are original drawings for a family-friendly educational cartoon about history: no real people, no photos, any fight shown only as cartoon falls. Your job is only a layout check of positions, sizes, text and picture edges; describe problems in neutral words.";
-const BORNAS_STYLE_LINES = {
-  cartoon: "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon",
-  anime: "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions",
-};
+const BORNAS_STYLE_LINES = { cartoon: "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon", anime: "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions" };
 const AI_DEFAULT: ReupAiChoice = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: true, allowFallback: true, multiRoom: true };
 const CLAUDE: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.ClaudeChat, model: encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, "medium") };
 const CHATGPT: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.ChatGptUi, model: AiPlanningChatModel.ChatGptAuto };
@@ -170,7 +156,7 @@ export const bornasAiSettings = (raw: LegacyAi | undefined): BornasAiSettings =>
     drawAi: { ...BORNAS_AI_DEFAULT.drawAi, ...(raw?.drawHeadless === undefined ? {} : { chromeHeadless: raw.drawHeadless }), ...raw?.drawAi, provider: BORNAS_DRAW_PROVIDERS.includes(raw?.drawAi?.provider as BornasDrawProvider) ? (raw!.drawAi!.provider as BornasDrawProvider) : "gemini-chat" },
   };
 };
-export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "bornas", music: "library", count: 3, seconds: 120, review: false });
+export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "bornas", music: "library", count: 3, seconds: 120, review: false, short: true });
 export const BORNAS_GENRES: BornasGenre[] = ["bornas", "survive", "worst", "day", "whatif"];
 export const BORNAS_MUSIC_CHOICES: BornasMusicChoice[] = ["off", "library"];
 export const bornasStyleLine = (topic: BornasTopic): string => (topic === "anime" ? BORNAS_STYLE_LINES.anime : BORNAS_STYLE_LINES.cartoon);
