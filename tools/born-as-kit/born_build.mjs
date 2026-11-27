@@ -8,6 +8,8 @@ const { sp, box, spriteDefs, takeBoxes, markGroup, FACEMAP, pngUsed } = await im
 const { camState, textJs, checkActors, plateSize, textW } = await import(pathToFileURL(path.join(KIT, "layout.mjs")).href);
 const plan = JSON.parse(fs.readFileSync(planFile, "utf8"));
 const { direct } = await import(pathToFileURL(path.join(KIT, "born_direct.mjs")).href);
+const { VERT, VIEW, TAG_AT } = await import(pathToFileURL(path.join(KIT, "vert.mjs")).href);
+const VERT_CSS = `#root{width:1080px!important;height:1920px!important}#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;transform:translateX(${-((VIEW.l + VIEW.r) / 2) * VIEW.k + 540}px) scale(${VIEW.k})}#ovl,#ovt{position:absolute;left:0;top:0;width:1080px;height:1920px;z-index:60;pointer-events:none}.bl-t b{font-size:54px!important;-webkit-text-stroke:10px #16100c!important}.bl-t i{font-size:30px!important}`;
 const FIXRAW = process.env.BORN_FIX ? JSON.parse(fs.readFileSync(process.env.BORN_FIX, "utf8")) : {};
 const FIX = new Map(Array.isArray(FIXRAW) ? FIXRAW.map((id) => [id, ["tag", "wide"]]) : Object.entries(FIXRAW));
 const planShots = plan.beats ? direct(plan) : plan.shots;
@@ -15,7 +17,8 @@ const CAST = {};
 const TOTAL = plan.total;
 const safe = (s) => String(s ?? "").replace(/'/g, "’").replace(/[\\`$]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\s+/g, " ").trim();
 const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
-const PAPER_W = 1640;
+const PAPER_W = VERT ? 540 : 1640;
+const OVT_OUT = 2.6;
 const PAPER_BIG = 1.6;
 const PAPER_OPTICAL = 0.92;
 const PAPER_STAMP_GAP = 150;
@@ -24,7 +27,7 @@ const DEFS = `<defs><radialGradient id="shd"><stop offset="0" stop-color="#120a0
 const TAG_MAX_W = 600;
 const fitPlate = (text, sub, size) => {
   let z = size;
-  while (z > 34 && plateSize(text, sub, z).w > 860) z -= 2;
+  while (z > 34 && plateSize(text, sub, z).w > (VERT ? 520 : 860)) z -= 2;
   return z;
 };
 const shots = [];
@@ -175,7 +178,7 @@ for (const s of shots) {
     inner = `<div class="mont">${m.bgs.map((b, i) => `<div class="pol" id="${s.id}mo${i}" style="left:${Math.round(gap * i + gap / 2 - 248)}px;transform:rotate(${[-6, 3, -2, 4][i % 4]}deg)"><img src="${BG(b)}"><div class="polc">${safe(m.caps[i])}</div></div>`).join("")}</div>`;
     js += m.bgs.map((_, i) => `tl.fromTo('#${s.id}mo${i}',{y:900},{y:0,duration:.35,ease:'back.out(1.4)'},${(m.capT[i] ?? s.t0).toFixed(3)});`).join("");
   } else if (s.kind === "chapter" && s.chapter) {
-    inner = `<div class="chap" id="${s.id}ch"><div class="chl" id="${s.id}cl">${safe(s.chapter.label)}</div><div class="cht" id="${s.id}ct">${safe(s.chapter.title)}</div></div>`;
+    inner = `<div class="chap" id="${s.id}ch"><div class="chl" id="${s.id}cl">${safe(s.chapter.label)}</div><div class="cht" id="${s.id}ct"${VERT ? ` style="font-size:${Math.min(148, Math.floor(540 / Math.max(0.01, textW(safe(s.chapter.title), 1, 900))))}px;max-width:560px"` : ""}>${safe(s.chapter.title)}</div></div>`;
     js += `tl.fromTo('#${s.id}cl',{opacity:0,y:12},{opacity:1,y:0,duration:.5,ease:'power2.out'},${s.t0.toFixed(3)});tl.fromTo('#${s.id}ct',{opacity:0,scale:1.06},{opacity:1,scale:1,duration:.6,ease:'power2.out'},${(s.t0 + 0.2).toFixed(3)});tl.to('#${s.id}ch',{opacity:0,duration:.3,ease:'power1.in'},${(s.t0 + Math.max(0.6, d - 0.3)).toFixed(3)});`;
   } else if (s.kind === "black") {
     inner = `<div class="blk"></div><div class="hud" id="${s.id}h"></div>`;
@@ -214,11 +217,11 @@ for (const s of shots) {
   if (s.focusAt) js += `{const f=BORN.focus(${ov},'${s.id}fo',${s.focusAt[0]},${s.focusAt[1]},150,560,.75);BORN.fadeIn(tl,f,${s.focusAt[2]},.6);}`;
   if (s.flashAt !== undefined) js += `{const e=document.createElement('div');e.className='bw';${ov}.appendChild(e);tl.fromTo(e,{opacity:.55},{opacity:0,duration:.4,immediateRender:false},${s.flashAt});}`;
   if (s.smoke) js += `{const e=document.createElement('div');e.className='haze';${ov}.appendChild(e);tl.fromTo(e,{x:-200,opacity:0},{x:200,opacity:.45,duration:${(s.t1 - s.t0).toFixed(2)},ease:'none'},${s.t0});}`;
-  if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:190,size:64,rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
+  if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:${VERT ? 760 : 190},size:${VERT ? 44 : 64},rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
 }
 const css = fs.readFileSync(path.join(KIT, "born_style.css"), "utf8");
 const scripts = ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js", "MotionPathPlugin.min.js", "SplitText.min.js", "CustomEase.min.js", "CustomWiggle.min.js", "noise.min.js", "kit.js"].map((f) => `<script src="${f}"></script>`).join("");
-const out = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts/fonts.css"><style>${css}</style></head><body>${spriteDefs()}<div id="root"${plan.grade ? ` class="grade-${plan.grade}"` : ""} data-composition-id="root" data-width="1920" data-height="1080" data-start="0" data-duration="${TOTAL}">\n${html}<div class="grain"></div><div class="vig"></div><audio id="vo" src="voice.wav" data-start="0" data-duration="${TOTAL}" data-volume="1"></audio></div>${scripts}<script>document.head.insertAdjacentHTML('beforeend','<style>'+BORN_CSS+'</style>');const tl=gsap.timeline({paused:true});\n${js}\ntl.to({},{duration:${TOTAL}},0);window.__timelines={root:tl};</script></body></html>`;
+const out = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts/fonts.css"><style>${css}${VERT ? VERT_CSS : ""}</style></head><body>${spriteDefs()}<div id="root"${plan.grade ? ` class="grade-${plan.grade}"` : ""} data-composition-id="root" data-width="${VERT ? 1080 : 1920}" data-height="${VERT ? 1920 : 1080}" data-start="0" data-duration="${TOTAL}">\n${VERT ? `<div id="stage">${html}</div>` : html}<div class="grain"></div><div class="vig"></div>${VERT && fs.existsSync(path.join(jobDir, "ov.png")) ? '<img id="ovl" src="ov.png">' : ""}${VERT && fs.existsSync(path.join(jobDir, "ovt.png")) ? '<img id="ovt" src="ovt.png">' : ""}<audio id="vo" src="voice.wav" data-start="0" data-duration="${TOTAL}" data-volume="1"></audio></div>${scripts}<script>document.head.insertAdjacentHTML('beforeend','<style>'+BORN_CSS+'</style>');${VERT ? `BORN.TAG_AT=${JSON.stringify(TAG_AT)};` : ''}const tl=gsap.timeline({paused:true});${VERT ? `if(document.getElementById('ovt'))tl.to('#ovt',{opacity:0,duration:.4},${OVT_OUT});` : ''}\n${js}\ntl.to({},{duration:${TOTAL}},0);window.__timelines={root:tl};</script></body></html>`;
 fs.mkdirSync(path.join(jobDir, "png"), { recursive: true });
 fs.writeFileSync(path.join(jobDir, "index.html"), out);
 for (const n of pngUsed()) {

@@ -25,6 +25,7 @@ import {
   VIDEO_EXPORT_TEXT_TEXT,
   VIDEO_EXPORT_TEXT_TRANSITION,
   VIDEO_EXPORT_TEXT_TRANSITIONSECONDS,
+  VIDEO_EXPORT_TEXT_PLAYLISTLOOPS,
   VIDEO_EXPORT_TEXT_UNSTYLED,
   VIDEO_EXPORT_TEXT_VIDEO_EXPORT_START,
   VIDEO_EXPORT_TEXT_VIDEO_EXPORT_STOP,
@@ -95,9 +96,10 @@ import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExpo
 import { VideoExportOptionGrid, VideoExportOptionItem, VideoExportOptionSection, VideoExportOptionTone } from "./VideoExportOptionGrid.js";
 import { VideoExportVisualSelector } from "./VideoExportVisualSelector.js";
 import { VideoExportAiClipPanel } from "./VideoExportAiClipPanel.js";
-type VideoExportConfigCardProps = { exporter: Pick<VideoExporterState, "text" | "config" | "title" | "slidePlan" | "totalAudioSeconds" | "job" | "isExporting" | "canRender" | "isRanking" | "isScanning" | "aiClips" | "updateConfig" | "setTitle" | "startExport" | "stopExport"> };
+type VideoExportConfigCardProps = { exporter: Pick<VideoExporterState, "text" | "config" | "title" | "slidePlan" | "totalAudioSeconds" | "selectedAudios" | "job" | "isExporting" | "canRender" | "isRanking" | "isScanning" | "aiClips" | "updateConfig" | "setTitle" | "startExport" | "stopExport"> };
 export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter }) => {
-  const { text, config, title, slidePlan, totalAudioSeconds, job, isExporting, canRender, isRanking, isScanning } = exporter;
+  const { text, config, title, slidePlan, totalAudioSeconds, selectedAudios, job, isExporting, canRender, isRanking, isScanning } = exporter;
+  const selectedAudioCount = selectedAudios.length;
   const isDisabled = isExporting;
   const canStart = canRender && !isExporting && !isRanking && !isScanning;
   const aspectOptions = useMemo<VideoExportOptionItem<VideoExportAspectRatio>[]>(
@@ -268,6 +270,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
     ],
     [text],
   );
+  const toLoopOptions = (values: readonly number[]): VideoExportOptionItem<number>[] => _.map(values, (value) => ({ value, label: `${value}${text.PLAYLIST_LOOPS_UNIT}` }));
   const toSecondOptions = (values: readonly number[]): VideoExportOptionItem<number>[] => _.map(values, (value) => ({ value, label: `${value}${text.SECONDS_UNIT}` }));
   const progressPercent = _.clamp(_.toNumber(job?.percent) || 0, 0, 100);
   const showProgress = Boolean(job) && job?.status !== VideoExportJobStatus.IDLE;
@@ -298,7 +301,8 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
                   type={VIDEO_EXPORT_TEXT_BUTTON}
                   disabled={isDisabled}
                   onClick={() => exporter.updateConfig(VIDEO_EXPORT_TEXT_ASPECTRATIO, item.value)}
-                  className={cn(RT_VIDEO_EXPORT.FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_PY_2_5, { "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected, "bg-slate-950/60 border-slate-800 text-slate-200 hover:border-slate-700 hover:text-white hover:bg-slate-900/60": !isSelected })}>
+                  className={cn(RT_VIDEO_EXPORT.FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_PY_2_5, { "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected, "bg-slate-950/60 border-slate-800 text-slate-200 hover:border-slate-700 hover:text-white hover:bg-slate-900/60": !isSelected })}
+                >
                   <Icon className={cn(RT_VIDEO_EXPORT.W_4_H_4_MB_1_TRANSITION_TRANSFORM_GROUP_HOVER, isSelected ? RT_VIDEO_EXPORT.TEXT_WHITE : RT_VIDEO_EXPORT.TEXT_PURPLE_400_2B8739)} />
                   <span className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO, isSelected ? RT_VIDEO_EXPORT.TEXT_WHITE : RT_VIDEO_EXPORT.TEXT_SLATE_200)}>{item.label}</span>
                 </Button>
@@ -328,7 +332,8 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
                       type={VIDEO_EXPORT_TEXT_BUTTON}
                       disabled={isDisabled}
                       onClick={() => exporter.updateConfig(VIDEO_EXPORT_TEXT_REFRAMEMODE, item.mode)}
-                      className={cn(RT_VIDEO_EXPORT.H_8_ROUNDED_XL_BORDER_FONT_MONO_FONT_BOLD_TEXT, { "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-900/60": !isSelected })}>
+                      className={cn(RT_VIDEO_EXPORT.H_8_ROUNDED_XL_BORDER_FONT_MONO_FONT_BOLD_TEXT, { "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/25": isSelected, "bg-slate-955/90 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-900/60": !isSelected })}
+                    >
                       <Icon className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />
                       <span className={RT_SHARED.TRUNCATE}>{item.label}</span>
                     </Button>
@@ -341,6 +346,8 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
         <VideoExportVisualSelector text={text} label={text.EFFECT_LABEL} badge={VIDEO_EXPORT_CONSTANTS.FFMPEG_BADGE_MOTION} sections={effectSections} value={config.effect} accentColor={VIDEO_EXPORT_CONSTANTS.COLOR_PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_EFFECT, value)} />
         <VideoExportVisualSelector text={text} label={text.TRANSITION_LABEL} badge={VIDEO_EXPORT_CONSTANTS.FFMPEG_BADGE_TRANSITION} sections={transitionSections} value={config.transition} accentColor={VIDEO_EXPORT_CONSTANTS.COLOR_PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITION, value)} />
         {config.transition !== VideoExportTransition.NONE && <VideoExportOptionGrid label={text.TRANSITION_DURATION_LABEL} options={toSecondOptions(VIDEO_EXPORT_CONSTANTS.TRANSITION_SECONDS_OPTIONS)} value={config.transitionSeconds} columns={4} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITIONSECONDS, value)} />}
+        <VideoExportOptionGrid label={text.PLAYLIST_LOOPS_LABEL} options={toLoopOptions(VIDEO_EXPORT_CONSTANTS.PLAYLIST_LOOP_OPTIONS)} value={config.playlistLoops} columns={3} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_PLAYLISTLOOPS, value)} />
+        {config.playlistLoops > 1 && <p className={cn(RT_VIDEO_EXPORT.TEXT_9PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE_TRUNCATE)}>{text.PLAYLIST_LOOPS_HINT(selectedAudioCount, config.playlistLoops)}</p>}
         <VideoExportAiClipPanel text={text} aiClips={exporter.aiClips} disabled={isDisabled} />
         <div className={cn(RT_VIDEO_EXPORT.P_3_5_ROUNDED_2XL_BG_SLATE_950_50_BORDER_BORDER_SLATE_80)}>
           <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO_UPPERCASE_TRACKING_WIDER_TEXT)}>
@@ -365,7 +372,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
           <Clock className={cn(RT_VIDEO_EXPORT.W_4_H_4_TEXT_BLUE_400_SHRINK_0_F4E506)} />
           <div className={cn(RT_SHARED.MIN_W_0)}>
             <div className={cn(RT_VIDEO_EXPORT.TEXT_9PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE_TRUNCATE)}>{text.SUMMARY_DURATION}</div>
-            <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_TEXT_SLATE_200_C27B4A)}>{formatCleanTime(totalAudioSeconds)}</div>
+            <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_TEXT_SLATE_200_C27B4A)}>{formatCleanTime(totalAudioSeconds * config.playlistLoops)}</div>
           </div>
         </div>
         <div className={cn(RT_VIDEO_EXPORT.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_ROUNDED_XL_P_2_5)}>
@@ -411,7 +418,8 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
             "bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-purple-400/50 text-white cursor-wait animate-pulse": isExporting,
             "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer": !isExporting && canStart,
             "bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none": !isExporting && !canStart,
-          })}>
+          })}
+        >
           {isExporting ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_4_H_4_ANIMATE_SPIN_SHRINK_0)} /> : job?.status === VideoExportJobStatus.ERROR ? <RotateCcw className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} /> : <Clapperboard className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} />}
           <span className={cn(RT_SHARED.TRUNCATE)}>{isExporting ? text.EXPORTING_BTN : job?.status === VideoExportJobStatus.ERROR ? text.EXPORT_RETRY_BTN : text.EXPORT_BTN}</span>
         </Button>

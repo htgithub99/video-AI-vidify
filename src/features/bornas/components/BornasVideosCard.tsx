@@ -61,6 +61,11 @@ export const BornasVideosCard: FC<{ studio: BornasStudio }> = ({ studio }) => {
                   {text.SHEET}
                 </a>
               )}
+              {v.shortUrl && (
+                <a href={v.shortUrl} target="_blank" rel="noreferrer" className={S.LINK_BUTTON} onClick={(e) => e.stopPropagation()}>
+                  {text.SHORT}
+                </a>
+              )}
             </div>
             {v.error && <p className={S.HINT_ERROR}>{v.error}</p>}
             {(v.outputUrl || v.status === "error") && !studio.running && (

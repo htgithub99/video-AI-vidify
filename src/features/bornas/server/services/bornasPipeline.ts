@@ -10,7 +10,7 @@ import { BORNAS_AI_DEFAULT, bornasAiSettings, bornasGenre, bornasMusicChoice, BO
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasChannel, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
 import { annotateBornasLibrary, prepareBornasAssets } from "./bornasAssets.js";
-import { buildBornasVideo, checkBornasVideo, renderBornasVideo } from "./bornasRender.js";
+import { buildBornasShort, buildBornasVideo, checkBornasVideo, renderBornasVideo } from "./bornasRender.js";
 import { analyzeBornasSample, dropBornasAnalysis, inspectBornasSample } from "./bornasSample.js";
 import { cleanBornasScript, writeBornasScripts } from "./bornasScript.js";
 import { planBornasShots, type BornasPlan } from "./bornasShots.js";
@@ -60,6 +60,7 @@ const runVideo = async (job: BornasJob, video: BornasVideo, script: BornasScript
     if (step === "build") {
       await buildBornasVideo(job, video, plan!, log, signal);
       await checkBornasVideo(job, video, log, signal);
+      await buildBornasShort(job, video, plan!, script, log, signal);
     }
     if (step === "package") {
       await packageBornasVideo(job, video, script, log, signal);

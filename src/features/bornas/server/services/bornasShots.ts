@@ -8,6 +8,7 @@ import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasBgAnn, BornasSpriteAnn, BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
 import { readJson, writeJson } from "./bornasTools.js";
+import { rotateBornasBeats } from "./bornasRotate.js";
 import { bornasVideoDir } from "./bornasVoice.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 type Obj = Record<string, unknown>;
@@ -45,6 +46,7 @@ export interface BornasBeat {
   paper?: { lines: (At & { text: string; size: string })[]; stamp?: At & { text: string } };
   montage?: { bgs: string[]; caps: string[]; capT: number[] };
   endCard?: At & { text: string; sub: string };
+  slot?: number;
 }
 export interface BornasPlan {
   total: number;
@@ -248,6 +250,7 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
       (b) => b.t0,
     ),
   );
+  log(BORNAS_LOG.ROTATION(JSON.stringify(rotateBornasBeats(beats, new Map(video.sprites!.map((s) => [s.name, s.kind]))))));
   const pause = script.lines.findIndex((l) => l.pause);
   const turnT = pause >= 0 && words[pause + 1]?.[0] ? words[pause + 1][0][0] : Math.min(12, total * 0.1);
   const recap = beats.find((b) => b.kind === "montage" && b.t0 > turnT);

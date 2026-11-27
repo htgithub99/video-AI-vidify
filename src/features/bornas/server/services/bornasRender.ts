@@ -4,10 +4,10 @@ import _ from "lodash";
 import { reupFfmpeg, reupProbe } from "../../../reup/server/services/reupFfmpeg.js";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_DIR, BORNAS_LIMITS, BORNAS_RENDER, BORNAS_REVIEW } from "../../constants/bornasConfig.js";
+import { BORNAS_BUSTS, BORNAS_DIR, BORNAS_LIMITS, BORNAS_RENDER, BORNAS_REVIEW, BORNAS_SHORT, BORNAS_SHORT_TEXT } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
-import type { BornasJob, BornasVideo } from "../../types/bornas.js";
+import type { BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
 import type { BornasPlan } from "./bornasShots.js";
 import { bornasUrl } from "./bornasStore.js";
 import { bornasVideoDir } from "./bornasVoice.js";
@@ -34,6 +34,36 @@ export const buildBornasVideo = async (job: BornasJob, video: BornasVideo, plan:
   log(BORNAS_LOG.BUILD_DONE(res.shots || 0, res.png || 0));
   video.shotCount = res.shots || 0;
   video.jobDir = dir;
+};
+export const buildBornasShort = async (job: BornasJob, video: BornasVideo, plan: BornasPlan, script: BornasScript, log: Log, signal?: AbortSignal): Promise<void> => {
+  const ends = (video.words || []).map((w) => _.last(w)?.[1] ?? 0).filter((t) => t > 0);
+  if (!ends.length || !video.jobDir) return;
+  const cut = _.round(_.minBy(ends, (t) => Math.abs(t - BORNAS_SHORT.CUT))! + BORNAS_SHORT.CUT_PAD, 3);
+  const counts = _.countBy(
+    plan.beats
+      .flatMap((b) => b.cast.map((c) => c.sprite))
+      .filter((n) => n.includes(BORNAS_BUSTS.SUFFIX))
+      .map((n) => n.split(BORNAS_BUSTS.SUFFIX)[0]),
+  );
+  const hero = _.maxBy(Object.keys(counts), (id) => counts[id]);
+  const bust = hero && plan.sprites[`${hero}${BORNAS_BUSTS.SUFFIX}${BORNAS_SHORT.TALK}`] ? `${hero}${BORNAS_BUSTS.SUFFIX}${BORNAS_SHORT.TALK}` : Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust");
+  const kept = plan.beats.filter((b) => b.t0 < cut - BORNAS_SHORT.BEAT_GAP);
+  if (!bust || !kept.length) return;
+  const t = BORNAS_SHORT_TEXT[job.channel.language] || BORNAS_SHORT_TEXT.en;
+  const last = _.findLast(kept, (b) => !!b.bg);
+  const total = _.round(cut + BORNAS_SHORT.END_HOLD, 3);
+  const short: BornasPlan = { ...plan, total, recapT: total, onsets: plan.onsets.filter((o) => o < cut), beats: [...kept, { t0: cut, kind: "bust", bg: last?.bg, cast: [{ sprite: bust, slot: "c", place: "ground", swap: [] }], subject: 0, frame: "wide", cam: "push", endCard: { text: t.END, sub: t.END_SUB, t: _.round(cut + BORNAS_SHORT.END_LEAD, 3) } }] };
+  const dir = bornasVideoDir(job, video, BORNAS_DIR.SHORT);
+  fs.mkdirSync(dir, { recursive: true });
+  copyRuntime(dir);
+  await reupFfmpeg(["-y", "-i", path.join(video.jobDir, "voice.wav"), "-af", `atrim=0:${cut},afade=t=out:st=${Math.max(0, cut - BORNAS_SHORT.FADE)}:d=${BORNAS_SHORT.FADE},apad=whole_dur=${total}`, path.join(dir, "voice.wav")], { signal });
+  const name = (script.hero || script.series.split(BORNAS_SHORT.SERIES_SPLIT)[0] || script.title).trim().toUpperCase();
+  await runKitNode("short_overlay.mjs", [name, dir, t.LINE, t.CTA], playwrightEnv(), signal);
+  const planFile = bornasVideoDir(job, video, "plan_short.json");
+  writeJson(planFile, short);
+  await runKitNode("born_build.mjs", [planFile, dir], { BORN_ASSETS: bornasVideoDir(job, video, BORNAS_DIR.ASSETS), BORN_VERT: "1" }, signal);
+  video.shortDir = dir;
+  log(BORNAS_LOG.SHORT_BUILT(cut));
 };
 type Frame = { id: string; t: number; file: string };
 const snapShots = async (dir: string, snaps: string, log: Log, signal?: AbortSignal): Promise<Frame[]> => {
@@ -154,9 +184,7 @@ export const checkBornasVideo = async (job: BornasJob, video: BornasVideo, log: 
   await reupFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", listFile, "-vf", `scale=640:-2,tile=3x${Math.ceil(list.length / 3)}`, "-frames:v", "1", "-q:v", "3", sheet], { signal });
   video.sheetUrl = `${bornasUrl(sheet)}?v=${Date.now()}`;
 };
-export const renderBornasVideo = async (video: BornasVideo, log: Log, signal?: AbortSignal): Promise<void> => {
-  const dir = video.jobDir!;
-  log(BORNAS_LOG.RENDER);
+const renderDir = async (dir: string, log: Log, signal?: AbortSignal): Promise<string> => {
   const out = path.join(dir, "out.mp4");
   fs.rmSync(out, { force: true });
   const win = process.platform === "win32";
@@ -176,6 +204,12 @@ export const renderBornasVideo = async (video: BornasVideo, log: Log, signal?: A
     fs.rmSync(tmp, { recursive: true, force: true });
   }
   if (!fs.existsSync(out)) throw new Error(BORNAS_ERROR.RENDER("out.mp4"));
+  return out;
+};
+export const renderBornasVideo = async (video: BornasVideo, log: Log, signal?: AbortSignal): Promise<void> => {
+  const dir = video.jobDir!;
+  log(BORNAS_LOG.RENDER);
+  const out = await renderDir(dir, log, signal);
   log(BORNAS_LOG.RENDER_DONE(video.seconds || 0));
   const probe = await reupProbe(out);
   const loud = await reupFfmpeg(["-i", out, "-af", "volumedetect", "-vn", "-f", "null", "-"], { signal, keepLog: true }).catch(() => "");
@@ -187,4 +221,9 @@ export const renderBornasVideo = async (video: BornasVideo, log: Log, signal?: A
   video.outputFile = out;
   video.outputUrl = `${bornasUrl(out)}?v=${Date.now()}`;
   video.previewUrl = `${bornasUrl(preview)}?v=${Date.now()}`;
+  if (video.shortDir && fs.existsSync(path.join(video.shortDir, "index.html"))) {
+    log(BORNAS_LOG.SHORT_RENDER);
+    video.shortFile = await renderDir(video.shortDir, log, signal);
+    video.shortUrl = `${bornasUrl(video.shortFile)}?v=${Date.now()}`;
+  }
 };

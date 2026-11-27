@@ -18,7 +18,7 @@ export const BORNAS_URL = {
   DELETE_VIDEOS: "/api/bornas/delete-videos",
 } as const;
 export const BORNAS_STORAGE = { STATE: "bornas_state_v1" } as const;
-export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4" } as const;
+export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", SHORT: "short", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4" } as const;
 export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = {
   world: ["ancient", "medieval", "eastasia", "ww", "modern"],
   ww: ["ww"],
@@ -61,6 +61,13 @@ export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }
 ];
 export const BORNAS_KIND_SIZES: Record<string, { min: number; max: number; std: number }> = { person: { min: 1, max: 2.1, std: 1.75 }, animal: { min: 0.2, max: 3, std: 1 }, vehicle: { min: 1, max: 6, std: 2.4 }, weapon: { min: 0.08, max: 1.5, std: 0.3 }, prop: { min: 0.03, max: 3, std: 0.5 }, structure: { min: 0.8, max: 30, std: 3 }, nature: { min: 0.3, max: 30, std: 2 } };
 export const BORNAS_CTA: Record<string, { TITLE: string; SUB: string }> = { vi: { TITLE: "BÌNH LUẬN NGAY", SUB: "NHÂN VẬT TIẾP THEO LÀ AI?" }, en: { TITLE: "COMMENT BELOW", SUB: "WHO SHOULD BE NEXT?" }, ja: { TITLE: "コメントで教えて", SUB: "次は誰がいい？" }, ko: { TITLE: "댓글을 남겨주세요", SUB: "다음 인물은 누구?" } };
+export const BORNAS_SHORT = { CUT: 46.5, CUT_PAD: 0.25, BEAT_GAP: 0.3, END_HOLD: 3.6, END_LEAD: 0.2, FADE: 0.25, TALK: "talk", SERIES_SPLIT: /[·|:]/ } as const;
+export const BORNAS_SHORT_TEXT: Record<string, { LINE: string; CTA: string; END: string; END_SUB: string }> = {
+  vi: { LINE: "NẾU BẠN SINH RA LÀ", CTA: "XEM ĐẦY ĐỦ TRÊN KÊNH", END: "XEM TRỌN CÂU CHUYỆN", END_SUB: "Video đầy đủ trên kênh" },
+  en: { LINE: "WHAT IF YOU WERE BORN AS", CTA: "FULL STORY ON THE CHANNEL", END: "WATCH THE FULL STORY", END_SUB: "Full video on the channel" },
+  ja: { LINE: "もしあなたが生まれたら", CTA: "フルストーリーはチャンネルで", END: "続きは本編で", END_SUB: "チャンネルで公開中" },
+  ko: { LINE: "만약 당신이 태어난다면", CTA: "전체 이야기는 채널에서", END: "전체 이야기 보기", END_SUB: "채널에서 전체 영상" },
+};
 export const BORNAS_SCALE = { EYE_M: 1.6, PERSON_M: 1.75, REFS: { door: 2.05, table: 0.78, counter: 1.05, chair: 0.9, barrel: 0.9, fence: 1.2, wagon_wheel: 1.3 } as Record<string, number>, MIN_PX: 25, HORIZON_MIN: -2000, GROUND_GAP: 60, LINE_CONF: 0.45, LINE_MIN: 12 } as const;
 export const BORNAS_SEO = { OPTIONS: 2, TITLE_MAX: 70, WORD_MAX: 14, NAME_MAX: 16, DIR: "seo", FILE: "seo.txt", BABY: "thumb_baby" } as const;
 export const BORNAS_THUMB_TEXT: Record<string, { AGE: string; BORN: string }> = { vi: { AGE: "0 TUỔI", BORN: "BẠN SINH RA LÀ" }, en: { AGE: "AGE 0", BORN: "YOU WERE BORN AS" }, ja: { AGE: "0歳", BORN: "あなたの正体は" }, ko: { AGE: "0세", BORN: "당신은 태어났다" } };
@@ -68,6 +75,8 @@ export const BORNAS_CHAPTER = { MIN_SECONDS: 180, CARD_SECONDS: 1.8, LEAD: 0.15,
 export const bornasChapterLines = (lines: BornasLine[], seconds: number): number[] => (seconds >= BORNAS_CHAPTER.MIN_SECONDS ? lines.flatMap((l, i) => (i && l.chapter ? [i] : [])).slice(0, BORNAS_CHAPTER.MAX) : []);
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 export const BORNAS_CHAPTER_LABEL: Record<string, (n: number) => string> = { vi: (n) => `CHƯƠNG ${ROMAN[n - 1] || n}`, en: (n) => `CHAPTER ${ROMAN[n - 1] || n}`, ja: (n) => `第${n}章`, ko: (n) => `제${n}장` };
+export const BORNAS_ROTATION = { ORDER: ["wide", "L", "two", "prop", "R", "wide", "talk"], RECENT: 8, VIEW: { L: "r", R: "l", talk: "talk" }, SLOT: { L: 0, R: 1, talk: 2 }, PROP_KINDS: ["prop", "weapon"] } as const;
+export const BORNAS_BUSTS = { VIEWS: ["r", "talk", "l"], FACING: { r: "r", talk: "r", l: "l" }, SUFFIX: "_b_", SKIP: /baby|bust/ } as const;
 export const BORNAS_SIZE_RANGE: Record<string, [number, number]> = { person: [0.5, 2.3], bust: [0.5, 2.3], animal: [0.08, 4.5], vehicle: [0.8, 7], prop: [0.02, 3], weapon: [0.1, 2.6], structure: [0.8, 60], building: [2, 80], nature: [0.1, 45] };
 export const BORNAS_ANN = { VERSION: 2, BG_VERSION: 6, BUST_FACE: 0.33, LIE_ASPECT: 1.25, SEATS: ["bed", "bench", "sofa", "chair"], TMP_PREFIX: "bornas_ann_", CAST_FILE: "ann.json", GROUND_MIN: 420, GROUND_MAX: 1075, PERSON_MIN: 80, PERSON_MAX: 820, PERSON_DEFAULT: 420, LIB_BATCH: 240 } as const;
 export const BORNAS_REVIEW = { TEXT_DELAY: 0.7, SNAP_BATCH: 40, FIXES: ["wide", "tag", "drop_text", "apart"], TARGET_FIXES: ["drop", "flip"] } as const;

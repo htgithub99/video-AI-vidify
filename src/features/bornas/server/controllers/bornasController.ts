@@ -53,7 +53,7 @@ export const bornasJobsController = (_req: Request, res: Response): void => {
     channelName: job.channel.name,
     status: job.status,
     updatedAt: job.updatedAt,
-    videos: job.videos.map(({ index, title, status, seconds, outputUrl, previewUrl, sheetUrl, outputFile }) => ({ index, title, status, seconds, outputUrl, previewUrl, sheetUrl, sizeBytes: outputFile && fs.existsSync(outputFile) ? fs.statSync(outputFile).size : undefined })),
+    videos: job.videos.map(({ index, title, status, seconds, outputUrl, previewUrl, sheetUrl, outputFile, shortUrl }) => ({ index, title, status, seconds, outputUrl, previewUrl, sheetUrl, shortUrl, sizeBytes: outputFile && fs.existsSync(outputFile) ? fs.statSync(outputFile).size : undefined })),
   }));
   res.json({ success: true, jobs });
 };

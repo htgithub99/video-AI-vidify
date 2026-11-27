@@ -182,6 +182,9 @@ export interface BornasVideo {
   previewUrl?: string;
   outputFile?: string;
   jobDir?: string;
+  shortDir?: string;
+  shortFile?: string;
+  shortUrl?: string;
   seo?: BornasSeo;
 }
 export interface BornasSeoOption {
@@ -224,5 +227,5 @@ export interface BornasJobSummary {
   channelName: string;
   status: BornasJobStatus;
   updatedAt: number;
-  videos: (Pick<BornasVideo, "index" | "title" | "status" | "seconds" | "outputUrl" | "previewUrl" | "sheetUrl"> & { sizeBytes?: number })[];
+  videos: (Pick<BornasVideo, "index" | "title" | "status" | "seconds" | "outputUrl" | "previewUrl" | "sheetUrl" | "shortUrl"> & { sizeBytes?: number })[];
 }

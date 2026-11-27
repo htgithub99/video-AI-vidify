@@ -257,7 +257,7 @@ const buildSingleTrackNormalizeArgs = (inputPath: string, outputPath: string): s
 ];
 const buildAudioConcatCopyArgs = (listPath: string, outputPath: string): string[] => [VIDEO_EXPORT_AI_CLIP_CONSTANTS.FFLAGS, VIDEO_EXPORT_AI_CLIP_CONSTANTS.GENPTS, VIDEO_EXPORT_TEXT_F, VIDEO_EXPORT_TEXT_CONCAT, VIDEO_EXPORT_TEXT_SAFE, VIDEO_EXPORT_TEXT_0, VIDEO_EXPORT_TEXT_I, listPath, VIDEO_EXPORT_TEXT_VN, VIDEO_EXPORT_TEXT_C_A, VIDEO_EXPORT_TEXT_COPY, VIDEO_EXPORT_TEXT_Y, outputPath];
 const getAudioCacheDirectory = (): string => path.join(getDataDirectory(), VIDEO_EXPORT_CONSTANTS.OUTPUT_FOLDER, VIDEO_EXPORT_CONSTANTS.EXPORT_FOLDER, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUDIO_CACHE_FOLDER);
-const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string, workDir: string, signal?: AbortSignal, onProgressRatio?: (ratio: number) => void): Promise<number> => {
+const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string, workDir: string, signal?: AbortSignal, onProgressRatio?: (ratio: number) => void, loops: number = 1): Promise<number> => {
   const cacheDir = getAudioCacheDirectory();
   await fs.promises.mkdir(cacheDir, { recursive: true });
   const stats = await Promise.all(_.map(audioPaths, (audioPath) => fs.promises.stat(audioPath)));
@@ -288,17 +288,18 @@ const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string
     onProgressRatio?.(completedTracks / totalTracks);
   });
   throwIfAborted(signal);
-  if (cachedPaths.length === 1) {
-    await fs.promises.copyFile(cachedPaths[0], outputPath);
+  const playlist = _.flatten(_.times(Math.max(1, loops), () => cachedPaths));
+  if (playlist.length === 1) {
+    await fs.promises.copyFile(playlist[0], outputPath);
   } else {
     const listPath = path.join(workDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUDIO_CONCAT_LIST_FILE_NAME);
-    await writeConcatList(listPath, cachedPaths);
+    await writeConcatList(listPath, playlist);
     await runFfmpeg(buildAudioConcatCopyArgs(listPath, outputPath), { signal });
   }
   const totalSeconds = await probeMediaDurationSeconds(outputPath);
   if (totalSeconds > 0) return totalSeconds;
   const individualDurations = await Promise.all(_.map(cachedPaths, probeMediaDurationSeconds));
-  return _.sum(individualDurations);
+  return _.sum(individualDurations) * Math.max(1, loops);
 };
 const escapeConcatPath = (filePath: string): string => _.replace(filePath, VIDEO_EXPORT_REGEX.CONCAT_QUOTE, VIDEO_EXPORT_TEXT_SYMBOL_16);
 const buildConcatMergeArgs = (listPath: string, audioPath: string, outputPath: string, tag: string[] = []): string[] => [
@@ -570,7 +571,7 @@ const renderVideoExportNow = async (params: RenderVideoExportParams): Promise<{ 
     notify(VideoExportJobStage.PREPARING, 0, VIDEO_EXPORT_SERVER_TEXTS.MSG_PREPARING);
     const audioOutputPath = path.join(tempDir, VIDEO_EXPORT_CONSTANTS.AUDIO_FILE_NAME);
     notify(VideoExportJobStage.AUDIO, 0, VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO);
-    const totalSeconds = await prepareConcatenatedAudio(audioPaths, audioOutputPath, tempDir, signal, (ratio) => notify(VideoExportJobStage.AUDIO, toPercent(0, audioWeight, ratio), VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO));
+    const totalSeconds = await prepareConcatenatedAudio(audioPaths, audioOutputPath, tempDir, signal, (ratio) => notify(VideoExportJobStage.AUDIO, toPercent(0, audioWeight, ratio), VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO), config.playlistLoops);
     throwIfAborted(signal);
     if (!(totalSeconds > 0)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_AUDIO_DURATION);
     const render = async (profile: EncodeProfile): Promise<number> => {

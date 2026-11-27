@@ -74,7 +74,8 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_SOURCE, (_req: Request, res: Respons
           _.filter(entries, (e) => e.isDirectory()),
           (e) => path.join(folderPath, e.name),
         );
-        if (subDirs.length === 0) {
+        const nested = await Promise.all(_.map(subDirs, async (dir) => _.some(await fs.promises.readdir(dir, { withFileTypes: true }).catch(() => []), (e) => e.isDirectory())));
+        if (subDirs.length === 0 || !_.some(nested)) {
           folderPaths.push(folderPath);
         } else {
           if (hasDirectAudio) {

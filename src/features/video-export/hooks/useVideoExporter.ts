@@ -99,7 +99,7 @@ export function useVideoExporter(lang: Lang) {
   const isMountedRef = useRef<boolean>(true);
   const totalAudioSeconds = useMemo(() => _.sumBy(selectedAudios, (item) => item.durationSeconds || 0), [selectedAudios]);
   const totalAudioBytes = useMemo(() => _.sumBy(selectedAudios, (item) => item.sizeBytes || 0), [selectedAudios]);
-  const slidePlan = useMemo(() => computeVideoExportSlidePlan(totalAudioSeconds, selectedImages.length, config), [totalAudioSeconds, selectedImages.length, config]);
+  const slidePlan = useMemo(() => computeVideoExportSlidePlan(totalAudioSeconds * config.playlistLoops, selectedImages.length, config), [totalAudioSeconds, selectedImages.length, config]);
   const isExporting = job?.status === VideoExportJobStatus.RENDERING;
   const isBusy = isScanning || isRanking || isExporting;
   const hasVisuals = !_.isEmpty(aiClips.activeClipIds) || !_.isEmpty(selectedImages);

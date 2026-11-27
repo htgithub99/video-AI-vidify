@@ -28,7 +28,7 @@ INK = 40
 
 PAD = 4
 
-def key(src, dst, session, objects):
+def key(src, dst, session, objects, edge_only):
     source = Image.open(src)
     keep = None
     if "A" in source.getbands():
@@ -71,7 +71,7 @@ def key(src, dst, session, objects):
         flat = level[k] >= bgv - THIN_LEVEL and tone[k] <= THIN_CHROMA
         thin = flat and sizes[k] >= THIN_MIN and (model[k] < MODEL_HOLE or open_hole)
         sliver = objects and open_hole and sizes[k] >= SLIVER_MIN and level[k] >= bgv - SLIVER_LEVEL and tone[k] <= SLIVER_CHROMA
-        kill[i] = i in edge or hole or thin or sliver or (model[k] < MODEL_BG and level[k] >= bgv - 10)
+        kill[i] = i in edge if edge_only else i in edge or hole or thin or sliver or (model[k] < MODEL_BG and level[k] >= bgv - 10)
     bg = ndimage.binary_dilation(kill[lab], iterations=1) & (mn >= 200)
     alpha = np.where(bg, 0.0, 1.0)
     near = ~bg & (ndimage.distance_transform_edt(~bg) <= EDGE_PX)
@@ -92,7 +92,8 @@ def key(src, dst, session, objects):
 
 
 objects = "--objects" in sys.argv
-paths = [a for a in sys.argv[1:] if a != "--objects"]
+edge_only = "--edge" in sys.argv
+paths = [a for a in sys.argv[1:] if a not in ("--objects", "--edge")]
 session = new_session("isnet-general-use")
 for src, dst in zip(paths[::2], paths[1::2]):
-    key(src, dst, session, objects)
+    key(src, dst, session, objects, edge_only)

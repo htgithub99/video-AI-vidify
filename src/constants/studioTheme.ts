@@ -51,7 +51,7 @@ export const STUDIO_UI = {
   DANGER: "danger",
   ACCENT: "accent",
   SECONDARY: "secondary",
-  APP_HEADER_ROW: "studio-app-header-row w-full px-3 sm:px-5 lg:px-6 py-2 flex items-center justify-between gap-3 sm:gap-5 relative",
+  APP_HEADER_ROW: "studio-app-header-row w-full h-full px-3 sm:px-5 lg:px-6 py-2 flex items-center justify-between gap-3 sm:gap-5 relative",
   APP_HEADER_BRAND: "studio-app-header-brand flex items-center gap-2 sm:gap-3 min-w-0",
   APP_HEADER_TITLE: "studio-app-header-title min-w-0",
   APP_HEADER_ACTIONS: "studio-app-header-actions flex items-center justify-end gap-1.5 sm:gap-2 shrink-0",

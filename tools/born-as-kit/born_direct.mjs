@@ -1,6 +1,7 @@
 import { faceBox, meta } from "./sprites.mjs";
 import { camState } from "./layout.mjs";
 
+import { VERT, VERT_S } from "./vert.mjs";
 const RULE = {
   shoreGap: 60,
   skyW: 580,
@@ -88,11 +89,6 @@ const RULE = {
   vehicleWidth: 0.55,
   vehicleWithPeople: 1.3,
   maxUp: 1.25,
-  tour: ["in", "left", "right", "center", "out"],
-  tourIn: 1.3,
-  tourPan: 220,
-  tourSpeed: 70,
-  tourZoom: 0.05,
   insertUp: 1.6,
   wideFill: 0.55,
   wideMax: 1.35,
@@ -111,12 +107,22 @@ const RULE = {
   adultM: 1.6,
   childMin: 0.45,
   headTopMax: 0.4,
-  bustXs: [960, 700, 1220],
+  bustXs: [620, 1300, 960],
+  twoXs: [600, 1320, 960],
+  bustMax: 3,
+  bustH: 880,
+  twoScale: 0.92,
+  bustS: 1.05,
+  bustSink: 0.06,
+  panY: 0.0015,
   bustNativeMax: 1.6,
   motionCycle: ["push", "push", "pull", "push", "hold"],
   babyRe: /_baby$/,
   babyH: 780,
   bustPlateY: 140,
+  vertPlateY: 330,
+  vertInsertW: 540,
+  vertBust: 0.8,
 };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const r3 = (v) => Math.round(v * 1000) / 1000;
@@ -595,7 +601,7 @@ export const direct = (plan) => {
   const hookBgs = [];
   const refs = refFaces(plan);
   const sid = () => `s${String(shots.length + 1).padStart(3, "0")}`;
-  let lastLook = { key: "", side: 1, frame: "", tour: 0, end: null };
+  let lastLook = { key: "", side: 1, frame: "", end: null };
   let motionN = 0;
   let lastBust = { sprite: "", slot: 0, t1: -1 };
   const report = [];
@@ -633,15 +639,33 @@ export const direct = (plan) => {
     }
     if (beat.kind === "scene" && beat.cast?.length === 1 && RULE.babyRe.test(beat.cast[0].sprite || "")) beat.kind = "bust";
     if (beat.kind === "bust") {
-      const bSprite = beat.cast[0]?.sprite || "";
-      const bRepeat = lastBust.sprite === bSprite && lastBust.t1 >= beat.t0 - 0.05;
-      const bSlot = bRepeat ? (lastBust.slot + 1) % RULE.bustXs.length : 0;
-      const bx = RULE.bustXs[bSlot], bSide = bx < 960 ? 1 : bx > 960 ? -1 : 1;
-      const px = bx < 960 ? 1420 : bx > 960 ? 500 : 960;
-      const bh = Math.min(RULE.babyRe.test(bSprite) ? RULE.babyH : 1010, meta(bSprite).h * RULE.bustNativeMax);
-      lastBust = { sprite: bSprite, slot: bSlot, t1 };
-      const d = t1 - beat.t0;
-      shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [{ sprite: beat.cast[0]?.sprite, x: bx, y: 1090, h: bh, shadow: false, allow: true }], cam: [{ t: 0, s: 1.02, x: 960, y: 540 }, { t: r3(d), s: r3(1.02 * (1 + (hook ? RULE.hookPush : RULE.push) * d)), x: r3(960 + bSide * 1920 * RULE.pan * d), y: 520, sx: 960, sy: 520 }], glowAt: { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 }, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: beat.label ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, beat.cast[0]?.sprite, "up"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [px, RULE.bustPlateY], null]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), series: false });
+      const pickV = beat.label?.cast ?? beat.bubble?.cast ?? 0;
+      const list = VERT ? [(beat.cast || [])[Math.min(pickV, (beat.cast || []).length - 1)]].filter(Boolean) : (beat.cast || []).slice(0, RULE.bustMax);
+      if (VERT) {
+        if (beat.label) beat.label = { ...beat.label, cast: 0 };
+        if (beat.bubble) beat.bubble = { ...beat.bubble, cast: 0 };
+      }
+      const two = list.length > 1;
+      const key = list.map((c) => c.sprite).join("+");
+      const bRepeat = lastBust.sprite === key && lastBust.t1 >= beat.t0 - 0.05;
+      const bSlot = bRepeat ? (lastBust.slot + 1) % RULE.bustXs.length : beat.slot ?? 0;
+      lastBust = { sprite: key, slot: bSlot, t1 };
+      const xs = VERT ? [960] : two ? RULE.twoXs.slice(0, list.length) : [RULE.bustXs[bSlot]];
+      const hOf = (n) => Math.min(RULE.babyRe.test(n) ? RULE.babyH * (VERT ? RULE.vertBust : 1) : RULE.bustH * (VERT ? RULE.vertBust : two ? RULE.twoScale : 1), meta(n).h * RULE.bustNativeMax);
+      const hs = list.map((c) => hOf(c.sprite)), hm = Math.min(...hs);
+      const acts = list.map((c, i) => ({ sprite: c.sprite, x: xs[i], y: r3(1080 + (two ? hm : hs[i]) * RULE.bustSink), h: two ? hm : hs[i], shadow: false, allow: true, ...(c.dir ? { dir: c.dir } : { dir: xs[i] < 960 ? "r" : xs[i] > 960 ? "l" : undefined }) }));
+      const bx = two ? 960 : xs[0], bSide = bx < 960 ? 1 : bx > 960 ? -1 : (bi % 2 ? 1 : -1);
+      const px = two ? 960 : bx < 960 ? 1420 : bx > 960 ? 500 : 960;
+      const d = t1 - beat.t0, rate = beat.cam === "pull" ? -RULE.pullRate : hook ? RULE.hookPush : RULE.push;
+      const s0 = rate < 0 ? RULE.bustS * (1 + Math.abs(rate) * d) : RULE.bustS, s1 = rate < 0 ? RULE.bustS : RULE.bustS * (1 + rate * d);
+      const lab = beat.label ? acts[Math.min(acts.length - 1, beat.label.cast || 0)] : null;
+      const bub = beat.bubble ? acts[Math.min(acts.length - 1, beat.bubble.cast || 0)] : null;
+      const mouth = (a) => {
+        const { fb } = faceBox(a.sprite, a.x, a.y, a.h, a.dir, 0.5);
+        return [r3((fb.l + fb.r) / 2), r3(fb.t + (fb.b - fb.t) * 0.78)];
+      };
+      shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: !!beat.blur, actors: acts, cam: [{ t: 0, s: r3(s0), x: 960, y: 540, sx: 960, sy: 540 }, { t: r3(d), s: r3(s1), x: r3(960 + bSide * 1920 * RULE.pan * d), y: r3(540 - 1080 * RULE.panY * d), sx: 960, sy: 540 }], glowAt: beat.blur ? { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 } : undefined, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: lab ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lab.sprite, "up"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, VERT ? [960, RULE.vertPlateY] : [px, RULE.bustPlateY], null]] : [], bubbles: bub ? [["b", beat.bubble.text, beat.bubble.t, null, mouth(bub)]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), flash: beat.flash, series: !VERT && beat.t0 >= plan.turnT && beat.t0 < plan.recapT, subject: acts[0]?.sprite || null });
+      if (hook) hookShots.push(shots[shots.length - 1]);
       return;
     }
     const { actors, subject, A } = layout(beat, plan, refs, report, `b${bi}`);
@@ -660,10 +684,10 @@ export const direct = (plan) => {
     }
     if (lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal"))) {
       const m = meta(lead.sprite), asp = m.w / m.h, h = Math.min(RULE.insertH, RULE.insertW / asp, m.h * RULE.insertUp), d = t1 - beat.t0;
-      const one = { sprite: lead.sprite, x: 960, y: 820, h: r3(h) };
+      const one = { sprite: lead.sprite, x: 960, y: 820, h: r3(VERT ? Math.min(h, RULE.vertInsertW / asp) : h) };
       const top = [960, 820 - h * 0.7];
       const inBeat = (o) => o && o.t >= beat.t0 - 0.001 && o.t < t1;
-      shots.push({ ...base, kind: "scene", id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [one], swaps: [], bubbles: [], cam: [{ t: 0, s: 1.0, x: 960, y: 560 }, { t: r3(d), s: r3(1 + (hook ? 0.06 : 0.03) * d), x: 960, y: 600 }], glowAt: { x: 960, y: 640, r: 520, color: "255,190,110", t: beat.t0 }, tags: inBeat(beat.tag) ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: inBeat(beat.label) ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lead.sprite, "up"]] : [], plates: inBeat(beat.plate) ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, 200], beat.plate.at === lead.cast ? top : null]] : [], dark: beat.dark ? Math.min(RULE.darkMax, beat.dark) : 0, flash: beat.flash, endCard: beat.endCard, series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
+      shots.push({ ...base, kind: "scene", id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [one], swaps: [], bubbles: [], cam: [{ t: 0, s: 1.0, x: 960, y: 560 }, { t: r3(d), s: r3(1 + (hook ? 0.06 : 0.03) * d), x: 960, y: 600 }], glowAt: { x: 960, y: 640, r: 520, color: "255,190,110", t: beat.t0 }, tags: inBeat(beat.tag) ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: inBeat(beat.label) ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lead.sprite, "up"]] : [], plates: inBeat(beat.plate) ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, VERT ? RULE.vertPlateY : 200], beat.plate.at === lead.cast ? top : null]] : [], dark: beat.dark ? Math.min(RULE.darkMax, beat.dark) : 0, flash: beat.flash, endCard: beat.endCard, series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
       return;
     }
     const people = actors.filter((a) => !a.crowd && TURNS.has(a.kind));
@@ -705,17 +729,9 @@ export const direct = (plan) => {
       const side = repeat ? -lastLook.side : sp0 && sp0.bx < 960 ? -1 : 1;
       const capS = Math.min(RULE.close, ...actors.filter((o) => !o.crowd && o.h > 0).map((o) => (meta(o.sprite).h * RULE.maxUp) / o.h));
       shot.cam = cameraFor(frames[ci], d, hook, sp0, sp1, actors, { side, cap: capS, person: !!subjA && (subjA.kind === "person" || subjA.kind === "animal"), motion: beat.cam === "pull" ? "pull" : RULE.motionCycle[motionN++ % RULE.motionCycle.length] });
-      if (repeat && lastLook.end) {
-        const step = RULE.tour[lastLook.tour % RULE.tour.length];
-        const cx = sp0 ? sp0.bx : 960, cy = sp0 ? sp0.by : 540;
-        const sIn = Math.max(1, Math.min(RULE.tourIn, capS));
-        const goal = step === "out" ? { s: 1, x: 960, y: 540 } : { s: sIn, x: cx + (step === "left" ? -1 : step === "right" ? 1 : 0) * RULE.tourPan, y: cy };
-        const e = lastLook.end, go = (from, to, max) => from + clamp(to - from, -max, max);
-        const sGo = beat.label ? Math.min(e.s, goal.s) : clamp(goal.s, e.s * (1 - RULE.tourZoom * d), e.s * (1 + RULE.tourZoom * d));
-        shot.cam = [{ t: 0, ...e }, { t: r3(d), ...e, s: r3(sGo), x: r3(go(e.x, goal.x, RULE.tourSpeed * d)), y: r3(go(e.y, goal.y, RULE.tourSpeed * d * 0.5)) }];
-      }
       if (beat.label && beat.label.t < c1) shot.cam = shot.cam.map((k) => ({ ...k, s: r3(Math.min(k.s, RULE.labelZoom)) }));
-      lastLook = { key: lookKey, side, frame: frames[ci], tour: repeat ? (lastLook.tour || 0) + 1 : 0, end: (({ t, ...k }) => k)(shot.cam[shot.cam.length - 1]) };
+      if (VERT) shot.cam = shot.cam.map((k, i) => ({ ...k, s: r3(Math.max(k.s, VERT_S * (1 + i * RULE.push * d))), x: r3((sp0 ? sp0.bx : 960) + (i ? 1920 * RULE.pan * d * 0.3 : 0)), y: r3(sp0 ? clamp(sp0.by, 400, 700) : 540), sx: 960, sy: 540 }));
+      lastLook = { key: lookKey, side, frame: frames[ci], end: (({ t, ...k }) => k)(shot.cam[shot.cam.length - 1]) };
       const topAt = (k, wy) => clamp((k.sy ?? 540) - k.s * k.y, 1080 - 1080 * k.s, 0) + k.s * wy;
       const headCut = (o) => {
         if (plan.sprites[o.sprite]?.kind !== "person" || (subjA && o.sprite === subjA.sprite)) return false;
@@ -758,7 +774,7 @@ export const direct = (plan) => {
           const [sx, sy] = toScreen(w);
           return sx > 300 && sx < 1620 && sy > 110 && sy < 620;
         }).sort((u, v) => Math.abs(toScreen(v)[0] - subjX) - Math.abs(toScreen(u)[0] - subjX))[0];
-        const want = zone ? toScreen(zone) : target ? [clamp(c.x + c.s * target[0] < 960 ? 1300 : 620, 300, 1620), 230] : [960, 210];
+        const want = VERT ? [960, RULE.vertPlateY] : zone ? toScreen(zone) : target ? [clamp(c.x + c.s * target[0] < 960 ? 1300 : 620, 300, 1620), 230] : [960, 210];
         shot.plates.push(["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [r3((want[0] - c.x) / c.s), r3((want[1] - c.y) / c.s)], target]);
       }
       if (beat.bubble && inside(beat.bubble.t)) {
@@ -786,7 +802,7 @@ export const direct = (plan) => {
           report.push([shot.id, "empty_restored", back.sprite]);
         }
       }
-      shot.series = c0 >= plan.turnT && c0 < plan.recapT;
+      shot.series = !VERT && c0 >= plan.turnT && c0 < plan.recapT;
       shot.subject = sp0 ? subjA.sprite : null;
       shots.push(shot);
       if (hook && shot.actors.length) hookShots.push(shot);

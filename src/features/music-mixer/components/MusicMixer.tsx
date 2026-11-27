@@ -492,10 +492,20 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       request.onsuccess = () => request.result.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_RESULTS).delete(MUSIC_MIXER_SERVER.RESULTS_STORE_KEY);
     }
   }, [tracks, results]);
-  const groups = useMemo(() => {
-    const grouped = _.groupBy(tracks, (track) => track.folderPath || track.folder);
-    return _.map(_.uniq(_.map(tracks, (track) => track.folderPath || track.folder)), (key) => [key, grouped[key]] as const);
+  const groupKeyOf = useMemo(() => {
+    const own = (track: Track) => track.folderPath || track.folder;
+    const parentOf = (key: string) => key.replace(/[\\/][^\\/]+[\\/]?$/, "");
+    const parents = _.countBy(_.uniq(_.map(tracks, own)), parentOf);
+    return (track: Track) => {
+      const key = own(track);
+      const parent = parentOf(key);
+      return parent && parent !== key && parents[parent] > 1 && /[\\/]/.test(parent) ? parent : key;
+    };
   }, [tracks]);
+  const groups = useMemo(() => {
+    const grouped = _.groupBy(tracks, groupKeyOf);
+    return _.map(_.uniq(_.map(tracks, groupKeyOf)), (key) => [key, grouped[key]] as const);
+  }, [tracks, groupKeyOf]);
   const addTracks = (incoming: Track[]) => {
     if (_.isEmpty(incoming)) {
       toast.info(text.EMPTY_SOURCE_HINT);
@@ -557,7 +567,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   };
   const handleRemoveFolder = (folderName: string) => {
     setTracks((current) => {
-      const next = _.filter(current, (track) => (track.folderPath || track.folder) !== folderName);
+      const next = _.filter(current, (track) => groupKeyOf(track) !== folderName);
       const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
       request.onsuccess = () => {
         const store = request.result.transaction(SOURCE_TEXT_TRACKS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_TRACKS);
@@ -832,9 +842,9 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                 ) : (
                   <div className={cn(SOURCE_TEXT_GRID_GRID_COLS_1_SM_GRID_COLS_2)}>
                     {_.map(groups, ([name, items]) => {
-                      const folderName = items[0]?.folder || name;
-                      const folderPath = items[0]?.folderPath || name;
-                      const displayTitle = getDisplayFolderName(folderName, folderPath);
+                      const merged = name !== (items[0]?.folderPath || items[0]?.folder);
+                      const folderPath = merged ? name : items[0]?.folderPath || name;
+                      const displayTitle = merged ? _.last(_.compact(name.split(/[\\/]/))) || name : getDisplayFolderName(items[0]?.folder || name, folderPath);
                       return (
                         <div key={name} className={cn(SOURCE_TEXT_GROUP_RELATIVE_FLEX_FLEX_COL_JUSTIFY_BETWEEN)}>
                           <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_3)}>
