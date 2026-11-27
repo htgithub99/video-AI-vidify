@@ -64,6 +64,12 @@ const RULE = {
   seatKinds: { bed: "bed", cot: "bed", chair: "chair", stool: "chair", bench: "bench", sofa: "sofa", couch: "sofa" },
   plainWords: new Set(["wild", "west", "western", "old", "young", "adult", "man", "woman", "with", "and", "the", "wooden", "black", "white", "brown", "small", "large", "big", "standing", "stand", "idle", "walk", "walking", "run", "running", "side", "view", "full", "body", "plated", "rolled", "untouched"]),
   insertH: 440,
+  insertMany: 2,
+  itemKinds: new Set(["prop", "weapon"]),
+  insertTwo: 0.8,
+  insertTwoW: 1300,
+  insertGap: 80,
+  tailGap: 30,
   frontPull: 1.2,
   rewFrames: 4,
   insertMaxUses: 2,
@@ -610,16 +616,24 @@ const shapeEvents = (plan, shots) => {
   for (let i = 0; i < shots.length; i++) {
     const sh = shots[i], next = shots[i + 1];
     const kindOf = (n) => plan.sprites[n]?.kind;
-    if (!VERT && sh.bust && sh.actors?.length === 1 && next && next.kind === "scene" && !next.bust && next.actors?.length === 1 && kindOf(next.actors[0].sprite) === "prop" && i + 2 < shots.length) {
+    if (!VERT && sh.bust && sh.actors?.length === 1 && next && next.kind === "scene" && !next.bust && next.actors?.length >= 1 && next.actors.length <= RULE.insertMany && next.actors.every((a) => RULE.itemKinds.has(kindOf(a.sprite))) && i + 2 < shots.length) {
       const prop = next.actors[0], b0 = sh.actors[0], face = faceBox(b0.sprite, b0.x, b0.y, b0.h, b0.dir, b0.anchorX ?? 0.5).fb, text = next.plates?.[0]?.[1] || next.tags?.[0]?.[1] || "";
       if (/^NO\b/i.test(text.trim())) {
         sh.icons = [...(sh.icons || []), [prop.sprite, r3(next.plates?.[0]?.[3] ?? next.tags?.[0]?.[3] ?? next.t0), (face.l + face.r) / 2 < 960 ? "r" : "l", text, true]];
         const shown = [...(sh.plates || []), ...(sh.tags || []), ...(sh.labels || [])];
         if (shown.length) sh.outs = [...(sh.outs || []), ...shown.map((x) => [x[0], r3(Math.max(x[3] + EVENTS.textMin, sh.icons.at(-1)[1] - EVENTS.textOut))])];
       } else {
-        const pm = meta(prop.sprite), at = r3(Math.max(sh.t0, next.t0 - EVENTS.shiftLead));
-        const left = face.r + EVENTS.shiftDx + EVENTS.insetGap, right = 1920 - EVENTS.insetEdge, h = Math.min(EVENTS.insetH, prop.h * 3, ((Math.min(right - left, EVENTS.insetW)) * pm.h) / pm.w), w = (h * pm.w) / pm.h;
-        sh.actors = [{ ...b0, shift: { t: at, dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, { sprite: prop.sprite, x: r3(Math.min(Math.max(EVENTS.insetX, left + w / 2), right - w / 2)), y: EVENTS.insetY + h / 2, h: r3(h), shadow: false, allow: true, enter: { t: r3(at + EVENTS.shiftDur * EVENTS.insetAfter), kind: "slide", from: 1 } }];
+        const at = r3(Math.max(sh.t0, next.t0 - EVENTS.shiftLead)), props = next.actors, n = props.length;
+        const bm = meta(b0.sprite), left = Math.max(face.r, b0.x + (b0.h * bm.w * (1 - (b0.anchorX ?? 0.5))) / bm.h) + EVENTS.shiftDx + EVENTS.insetGap, right = 1920 - EVENTS.insetEdge, room = Math.min(right - left, EVENTS.insetW * (n > 1 ? EVENTS.insetTwoW : 1)) - EVENTS.insetGap * (n - 1);
+        const asps = props.map((a) => meta(a.sprite).w / meta(a.sprite).h), h0 = props.map((a, j) => Math.min((EVENTS.insetH * (n > 1 ? EVENTS.insetTwo : 1)) / Math.max(1, n > 1 ? asps[j] : 0), a.h * 3));
+        const k = Math.min(1, room / h0.reduce((u, h, j) => u + h * asps[j], 0)), hs = h0.map((h) => h * k), ws = hs.map((h, j) => h * asps[j]), all = ws.reduce((u, w) => u + w, 0) + EVENTS.insetGap * (n - 1);
+        let x = Math.min(Math.max(EVENTS.insetX - all / 2, left), right - all);
+        const slid = props.map((a, j) => {
+          const o = { sprite: a.sprite, x: r3(x + ws[j] / 2), y: r3(EVENTS.insetY + hs[j] / 2), h: r3(hs[j]), shadow: false, allow: true, enter: { t: r3(at + EVENTS.shiftDur * EVENTS.insetAfter + j * EVENTS.insetStep), kind: "slide", from: 1 } };
+          x += ws[j] + EVENTS.insetGap;
+          return o;
+        });
+        sh.actors = [{ ...b0, shift: { t: at, dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, ...slid];
         for (const k of ["tags", "plates"]) {
           const add = (next[k] || []).map((x, j) => (k === "plates" ? [`${x[0]}i${j}`, ...x.slice(1, 5), null, ...x.slice(6)] : [`${x[0]}i${j}`, ...x.slice(1)]));
           if (add.length && sh[k]?.length) sh.outs = [...(sh.outs || []), ...sh[k].map((x) => [x[0], add[0][3]])];
@@ -641,7 +655,7 @@ const shapeEvents = (plan, shots) => {
   }
   return out;
 };
-const EVENTS = { insetX: 1380, insetY: 470, insetH: 380, insetW: 620, insetGap: 60, insetEdge: 60, shiftDx: -250, shiftDur: 0.6, shiftLead: 0.3, insetAfter: 0.75, textOut: 0.5, textMin: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: VERT ? 13 : 15 };
+const EVENTS = { insetX: 1380, insetY: 470, insetH: 380, insetW: 620, insetTwo: 0.75, insetTwoW: 1.2, insetStep: 0.25, insetGap: 60, insetEdge: 60, shiftDx: -250, shiftDur: 0.6, shiftLead: 0.3, insetAfter: 0.75, textOut: 0.5, textMin: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: VERT ? 13 : 15 };
 const shortName = (t) => { const w = String(t).trim().split(/\s+/), two = w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : w.join(" "); return t.length <= EVENTS.labelChars ? t : two.length <= EVENTS.labelChars ? two : w[w.length - 1]; };
 const iconOf = (plan, text) => { const hit = RULE.icons.find(([w]) => w.test(text)); const sprite = hit && Object.keys(plan.sprites || {}).find((n) => hit[1].test(n)); return sprite ? { sprite, cross: /^NO\b/i.test(String(text).trim()) } : null; };
 export const direct = (plan) => {
@@ -737,12 +751,22 @@ export const direct = (plan) => {
       return;
     }
     if (lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal"))) {
-      const m = meta(lead.sprite), asp = m.w / m.h, h = Math.min(RULE.insertH, RULE.insertW / asp, m.h * RULE.insertUp), d = t1 - beat.t0;
-      const ih = r3(VERT ? Math.min(h, RULE.vertInsertW / asp) : h), iy = r3(RULE.insertCY + ih / 2);
-      const one = { sprite: lead.sprite, x: 960, y: iy, h: ih, shadow: false };
-      const top = [960, iy - h * 0.7];
+      const items = [lead, ...actors.filter((a) => a !== lead && RULE.itemKinds.has(a.kind) && !a.crowd && !a.back)].slice(0, RULE.insertMany), d = t1 - beat.t0;
+      const asps = items.map((a) => meta(a.sprite).w / meta(a.sprite).h);
+      const hs0 = items.map((a, i) => Math.min(RULE.insertH * (items.length > 1 ? RULE.insertTwo : 1), RULE.insertW / asps[i], meta(a.sprite).h * RULE.insertUp));
+      const wide = (VERT ? RULE.vertInsertW : items.length > 1 ? RULE.insertTwoW : RULE.insertW) - RULE.insertGap * (items.length - 1);
+      const fitK = Math.min(1, wide / hs0.reduce((u, h, i) => u + h * asps[i], 0));
+      const hs = hs0.map((h) => r3(h * fitK)), ws = hs.map((h, i) => h * asps[i]), iy = r3(RULE.insertCY + Math.max(...hs) / 2);
+      let cx = 960 - (ws.reduce((u, w) => u + w, 0) + RULE.insertGap * (items.length - 1)) / 2;
+      const shown = items.map((a, i) => {
+        const o = { sprite: a.sprite, x: r3(cx + ws[i] / 2), y: iy, h: hs[i], shadow: false };
+        cx += ws[i] + RULE.insertGap;
+        return o;
+      });
+      const one = shown[0];
+      const top = [one.x, iy - one.h - RULE.tailGap];
       const inBeat = (o) => o && o.t >= beat.t0 - 0.001 && o.t < t1;
-      shots.push({ ...base, kind: "scene", id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [one], swaps: [], bubbles: [], cam: [{ t: 0, s: 1.0, x: 960, y: 560 }, { t: r3(d), s: r3(1 + (hook ? 0.06 : 0.03) * d), x: 960, y: 600 }], glowAt: { x: 960, y: 640, r: 520, color: "255,190,110", t: beat.t0 }, tags: inBeat(beat.tag) ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: inBeat(beat.label) ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lead.sprite, "up"]] : [], plates: inBeat(beat.plate) ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, VERT ? RULE.vertPlateY : 200], beat.plate.at === lead.cast ? top : null]] : [], dark: beat.dark ? Math.min(RULE.darkMax, beat.dark) : 0, flash: beat.flash, endCard: beat.endCard, series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
+      shots.push({ ...base, kind: "scene", id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: shown, swaps: [], bubbles: [], cam: [{ t: 0, s: 1.0, x: 960, y: 560 }, { t: r3(d), s: r3(1 + (hook ? 0.06 : 0.03) * d), x: 960, y: 600 }], glowAt: { x: 960, y: 640, r: 520, color: "255,190,110", t: beat.t0 }, tags: inBeat(beat.tag) ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: inBeat(beat.label) ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lead.sprite, "up"]] : [], plates: inBeat(beat.plate) ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, VERT ? RULE.vertPlateY : 200], beat.plate.at === lead.cast ? top : null]] : [], dark: beat.dark ? Math.min(RULE.darkMax, beat.dark) : 0, flash: beat.flash, endCard: beat.endCard, series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
       return;
     }
     const people = actors.filter((a) => !a.crowd && TURNS.has(a.kind));
