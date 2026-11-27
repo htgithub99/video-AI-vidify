@@ -171,7 +171,8 @@ const cleanBg = (raw: Obj, free: [number, number, number, number][], lineHz: num
   const r4 = Array.isArray(raw.rails) ? raw.rails.map(num) : [];
   const rails = r4.length >= 4 && r4.slice(0, 4).every((x) => x !== null) ? (r4.slice(0, 4) as [number, number, number, number]) : null;
   const boats = triple(raw.boats);
-  const hz = lineHz !== null && lineHz < Math.min(...ground) - BORNAS_SCALE.GROUND_GAP ? lineHz : horizonOf(raw, ground);
+  const refHz = horizonOf(raw, ground);
+  const hz = lineHz !== null && lineHz < Math.min(...ground) - BORNAS_SCALE.GROUND_GAP && (refHz === null || Math.abs(lineHz - refHz) <= BORNAS_SCALE.AGREE) ? lineHz : refHz;
   const scaled = (y: number): number => Math.round(_.clamp(((y - hz!) * BORNAS_SCALE.PERSON_M) / BORNAS_SCALE.EYE_M, BORNAS_ANN.PERSON_MIN * 0.6, BORNAS_ANN.PERSON_MAX * 1.6));
   return {
     v: BORNAS_ANN.BG_VERSION,
