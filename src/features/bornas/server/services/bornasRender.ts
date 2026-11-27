@@ -56,8 +56,9 @@ export const buildBornasShort = async (job: BornasJob, video: BornasVideo, plan:
   const dir = bornasVideoDir(job, video, BORNAS_DIR.SHORT);
   fs.mkdirSync(dir, { recursive: true });
   copyRuntime(dir);
+  for (const f of fs.readdirSync(video.jobDir)) if (BORNAS_SHORT.BG_FILE.test(f)) fs.copyFileSync(path.join(video.jobDir, f), path.join(dir, f));
   await reupFfmpeg(["-y", "-i", path.join(video.jobDir, "voice.wav"), "-af", `atrim=0:${cut},afade=t=out:st=${Math.max(0, cut - BORNAS_SHORT.FADE)}:d=${BORNAS_SHORT.FADE},apad=whole_dur=${total}`, path.join(dir, "voice.wav")], { signal });
-  const name = (script.hero || script.series.split(BORNAS_SHORT.SERIES_SPLIT)[0] || script.title).trim().toUpperCase();
+  const name = (script.series.split(BORNAS_SHORT.SERIES_SPLIT)[0].trim() || script.hero.split(BORNAS_SHORT.HERO_SPLIT)[0].trim() || script.title).trim().toUpperCase();
   await runKitNode("short_overlay.mjs", [name, dir, t.LINE, t.CTA], playwrightEnv(), signal);
   const planFile = bornasVideoDir(job, video, "plan_short.json");
   writeJson(planFile, short);

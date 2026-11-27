@@ -51,7 +51,7 @@ export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }
 ];
 export const BORNAS_KIND_SIZES: Record<string, { min: number; max: number; std: number }> = { person: { min: 1, max: 2.1, std: 1.75 }, animal: { min: 0.2, max: 3, std: 1 }, vehicle: { min: 1, max: 6, std: 2.4 }, weapon: { min: 0.08, max: 1.5, std: 0.3 }, prop: { min: 0.03, max: 3, std: 0.5 }, structure: { min: 0.8, max: 30, std: 3 }, nature: { min: 0.3, max: 30, std: 2 } };
 export const BORNAS_CTA: Record<string, { TITLE: string; SUB: string }> = { vi: { TITLE: "BÌNH LUẬN NGAY", SUB: "NHÂN VẬT TIẾP THEO LÀ AI?" }, en: { TITLE: "COMMENT BELOW", SUB: "WHO SHOULD BE NEXT?" }, ja: { TITLE: "コメントで教えて", SUB: "次は誰がいい？" }, ko: { TITLE: "댓글을 남겨주세요", SUB: "다음 인물은 누구?" } };
-export const BORNAS_SHORT = { CUT: 46.5, CUT_PAD: 0.25, BEAT_GAP: 0.3, END_HOLD: 3.6, END_LEAD: 0.2, FADE: 0.25, TALK: "talk", SERIES_SPLIT: /[·|:]/ } as const;
+export const BORNAS_SHORT = { CUT: 46.5, CUT_PAD: 0.25, BEAT_GAP: 0.3, END_HOLD: 3.6, END_LEAD: 0.2, FADE: 0.25, TALK: "talk", SERIES_SPLIT: /[·|:]/, HERO_SPLIT: /[|(/,]/, BG_FILE: /^bg_.*\.(png|jpg)$/ } as const;
 export const BORNAS_SHORT_TEXT: Record<string, { LINE: string; CTA: string; END: string; END_SUB: string }> = {
   vi: { LINE: "NẾU BẠN SINH RA LÀ", CTA: "XEM ĐẦY ĐỦ TRÊN KÊNH", END: "XEM TRỌN CÂU CHUYỆN", END_SUB: "Video đầy đủ trên kênh" },
   en: { LINE: "WHAT IF YOU WERE BORN AS", CTA: "FULL STORY ON THE CHANNEL", END: "WATCH THE FULL STORY", END_SUB: "Full video on the channel" },

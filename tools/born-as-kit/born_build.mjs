@@ -52,6 +52,7 @@ const LAYER = { BG: [0.25, 0.25] };
 const STEP = { ZOOM: 0.1, ZOOM2: 0.05, WIDE: 0.7, PULL: 0.6, PULL_MAX: 0, DUR: 0.8, MIN_DUR: 0.45, MIN_LEAD: 0.2, MIN_TAIL: 0.3, EARLY: 0.75, GAP: 0.9, HOLD: 0.15, DEFAULT_AT: 0.3, CENTER: 1, SY: VERT ? 640 : 520, FACE_DROP: 40, GROUP_Y: 0.35, LINE_EPS: 0.3, MID: 540, S_MAX: 1.4, EASE: "power2.inOut" };
 const VERT_TITLE_END = 2.8;
 const END_Y = { VERT: 240, WIDE: 190 };
+const END_SIZE = 64;
 const ICON = { H: 220, W: 380, GAP: 80, HAIR: 0.55, LIFT: 95, Y: 470, RAIL: 0.38 };
 const VISIT = { AHEAD: VERT ? 40 : 130, DUR_IN: 1.0, DUR_OUT: 0.6, LEAD: 0.45, DUR: 0.7, HOLD: 1.6, AFTER: 0.3, LABEL_HOLD: 1.1, LABEL_Z: VERT ? 1.12 : 1.35, ICON_Z: VERT ? 1.25 : 1.55, FACE_DROP: 60, OUT: 0.25, STEP: 1 / 15 };
 const DRIFT = { DARK_FADE: 0.8, RATE: 0.012, PUNCH: 0.03, PEAK: 0.16, BACK: 0.5, MIN_TAIL: 0.3, IN: "power2.out" };
@@ -106,7 +107,7 @@ const spread = (actors) => {
   if (over) for (const a of solid) a.x = Math.max(40 + width(a) / 2, a.x - over);
 };
 for (const s of planShots) {
-  const o = { outs: s.outs || [], actorMoves: Object.fromEntries((s.actors || []).filter((a) => a.move?.dx).map((a) => [a.sprite, a.move])), darkSteps: s.darkSteps, merged: !!s.merged, icons: (s.icons || []).map((x) => [x[0], x[1], x[2], up(x[3]), x[4]]), id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, bust: !!s.bust, soft: !!s.soft, subject: s.subject || null, shiftT: (s.actors || []).find((x) => x.shift)?.shift.t, mover: (s.actors || []).find((x) => x.move?.dx && (x.sprite === s.subject || !s.subject))?.move, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).filter((l) => !VERT || l[3] >= VERT_TITLE_END).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, chapter: s.chapter, endCard: s.endCard, moves: "" };
+  const o = { outs: s.outs || [], actorMoves: Object.fromEntries((s.actors || []).filter((a) => a.move?.dx).map((a) => [a.sprite, a.move])), darkSteps: s.darkSteps, merged: !!s.merged, icons: (s.icons || []).map((x) => [x[0], x[1], x[2], up(x[3]), x[4]]), id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, bust: !!s.bust, soft: !!s.soft, subject: s.subject || null, shiftT: (s.actors || []).find((x) => x.shift)?.shift.t, mover: (s.actors || []).find((x) => x.move?.dx && (x.sprite === s.subject || !s.subject))?.move, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).filter((l) => !VERT || l[3] >= VERT_TITLE_END).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? (VERT ? [] : [["end", up(s.endCard.text), up(s.endCard.sub), s.endCard.t, [960, END_Y.WIDE], null, END_SIZE]]) : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, chapter: s.chapter, endCard: s.endCard, moves: "" };
   const wide = o.tags.filter((g) => plateSize(g[1], g[2], 52).w > TAG_MAX_W);
   if (wide.length) {
     o.tags = o.tags.filter((g) => !wide.includes(g));
@@ -130,8 +131,9 @@ for (const s of planShots) {
       o.cam = [{ t: 0, s: 1, tx: 960, ty: 540, sx: 960, sy: 540 }, { t: 4, s: 1.06, tx: 960, ty: 520, sx: 960, sy: 540 }];
       o.focusOn = null;
     }
-    const drop = acts.filter((a) => a.startsWith("drop:")).map((a) => a.slice(5));
+    const keep = (s.actors || []).filter((a) => !a.crowd), drop = s.blur || s.bust || keep.length < 2 ? [] : acts.filter((a) => a.startsWith("drop:")).map((a) => a.slice(5)).filter((n) => n !== s.subject);
     if (drop.length) {
+      o.plates = o.plates.map((p) => [...p.slice(0, 5), null, p[6]]);
       s.actors = (s.actors || []).filter((a) => !drop.includes(a.sprite));
       const lost = o.labels.filter((l) => drop.includes(l[4]));
       o.tags.push(...lost.map((l) => [l[0], l[1], l[2], l[3], o.tags.some((g) => g[4] === "tl") ? "tr" : "tl"]));
@@ -477,8 +479,8 @@ for (const s of shots) {
   if (s.accent?.kind === "spot") js += `{const e=document.createElement('div');e.className='spot';${ov}.appendChild(e);tl.fromTo(e,{opacity:0},{opacity:1,duration:.4,immediateRender:false},${s.accent.t.toFixed(3)});tl.to(e,{opacity:0,duration:.6},${Math.min(s.t1 - 0.6, s.accent.t + 1.8).toFixed(3)});}`;
   if (s.flashAt !== undefined) js += `{const e=document.createElement('div');e.className='bw';${ov}.appendChild(e);tl.fromTo(e,{opacity:.55},{opacity:0,duration:.4,immediateRender:false},${s.flashAt});}`;
   if (s.smoke) js += `{const e=document.createElement('div');e.className='haze';${ov}.appendChild(e);tl.fromTo(e,{x:-200,opacity:0},{x:200,opacity:.45,duration:${(s.t1 - s.t0).toFixed(2)},ease:'none'},${s.t0});}`;
-  if (s.endCard) TEXTEV.push({ id: s.id, t: s.endCard.t, end: s.t1 });
-  if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:${VERT ? END_Y.VERT : END_Y.WIDE},size:${VERT ? 44 : 64},rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
+  if (s.endCard && VERT) TEXTEV.push({ id: s.id, t: s.endCard.t, end: s.t1 });
+  if (s.endCard && VERT) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:${END_Y.VERT},size:44,rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
 }
 const css = fs.readFileSync(path.join(KIT, "born_style.css"), "utf8");
 const scripts = ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js", "MotionPathPlugin.min.js", "SplitText.min.js", "CustomEase.min.js", "CustomWiggle.min.js", "noise.min.js", "kit.js"].map((f) => `<script src="${f}"></script>`).join("");

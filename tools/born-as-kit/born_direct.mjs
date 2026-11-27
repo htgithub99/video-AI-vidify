@@ -620,7 +620,7 @@ const shapeEvents = (plan, shots) => {
         const left = face.r + EVENTS.shiftDx + EVENTS.insetGap, right = 1920 - EVENTS.insetEdge, h = Math.min(EVENTS.insetH, prop.h * 3, ((Math.min(right - left, EVENTS.insetW)) * pm.h) / pm.w), w = (h * pm.w) / pm.h;
         sh.actors = [{ ...b0, shift: { t: at, dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, { sprite: prop.sprite, x: r3(Math.min(Math.max(EVENTS.insetX, left + w / 2), right - w / 2)), y: EVENTS.insetY + h / 2, h: r3(h), shadow: false, allow: true, enter: { t: r3(at + EVENTS.shiftDur * EVENTS.insetAfter), kind: "slide", from: 1 } }];
         for (const k of ["tags", "plates"]) {
-          const add = (next[k] || []).map((x, j) => [`${x[0]}i${j}`, ...x.slice(1)]);
+          const add = (next[k] || []).map((x, j) => (k === "plates" ? [`${x[0]}i${j}`, ...x.slice(1, 5), null, ...x.slice(6)] : [`${x[0]}i${j}`, ...x.slice(1)]));
           if (add.length && sh[k]?.length) sh.outs = [...(sh.outs || []), ...sh[k].map((x) => [x[0], add[0][3]])];
           sh[k] = [...(sh[k] || []), ...add];
         }
