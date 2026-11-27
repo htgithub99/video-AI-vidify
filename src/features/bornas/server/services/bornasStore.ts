@@ -5,9 +5,10 @@ import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { deleteOutputEntries, type OutputDeleteResult } from "../../../../server/utils/outputFiles.js";
 import { logger } from "../../../../lib/logger.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
-import { BORNAS_DIR, BORNAS_LIMITS, BORNAS_STEPS, bornasAiSettings } from "../../constants/bornasConfig.js";
-import { BORNAS_LOG } from "../../constants/bornasServerText.js";
-import type { BornasJob, BornasLog, BornasStepId, BornasStepState } from "../../types/bornas.js";
+import { motionLanguageCode } from "../../../../lib/motionLanguage.js";
+import { BORNAS_DIR, BORNAS_LIMITS, BORNAS_STATE, BORNAS_STEPS, bornasAiSettings, bornasDoneList, bornasGenre, bornasHeroName, bornasMusicChoice } from "../../constants/bornasConfig.js";
+import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
+import type { BornasChannel, BornasJob, BornasLog, BornasState, BornasStepId, BornasStepState } from "../../types/bornas.js";
 interface Entry {
   job: BornasJob;
   controller?: AbortController;
@@ -134,4 +135,52 @@ export const deleteBornasVideos = async (items: unknown): Promise<OutputDeleteRe
     freedBytes += res.freedBytes || 0;
   }
   return { freedBytes, failed };
+};
+export const cleanBornasChannel = (raw: Partial<BornasChannel> | undefined): BornasChannel => {
+  if (!raw?.id) throw new Error(BORNAS_ERROR.NO_CHANNEL);
+  return {
+    id: String(raw.id),
+    name: String(raw.name || raw.id).slice(0, 80),
+    topic: raw.topic || "world",
+    voiceChannel: String(raw.voiceChannel || ""),
+    language: motionLanguageCode(raw.language),
+    genre: bornasGenre(raw.genre),
+    music: bornasMusicChoice(raw.music),
+    count: _.clamp(Math.round(Number(raw.count) || 1), 1, 10),
+    seconds: _.clamp(Math.round(Number(raw.seconds) || 120), 30, 1200),
+    review: raw.review === true,
+    short: raw.short !== false,
+    done: bornasDoneList(raw.done),
+    ...(raw.sample ? { sample: String(raw.sample) } : {}),
+  };
+};
+const stateFile = (): string => path.join(getDataDirectory(), BORNAS_STATE.FILE);
+const writeState = (raw: Partial<BornasState>, save = true): BornasState => {
+  const channels = (Array.isArray(raw.channels) ? raw.channels : []).filter((c) => c?.id).slice(0, BORNAS_STATE.CHANNELS_MAX).map(cleanBornasChannel);
+  const state: BornasState = { channels, channelId: channels.some((c) => c.id === raw.channelId) ? String(raw.channelId) : channels[0]?.id || "", ai: bornasAiSettings(raw.ai), ...(raw.jobId ? { jobId: String(raw.jobId) } : {}) };
+  if (save) {
+    const file = stateFile();
+    fs.writeFileSync(file + ".tmp", stringifyJson(state));
+    fs.renameSync(file + ".tmp", file);
+  }
+  return state;
+};
+export const readBornasState = (): BornasState | null => {
+  const file = stateFile();
+  if (!fs.existsSync(file)) return null;
+  const raw = parseJson(fs.readFileSync(file, "utf8")) as Partial<BornasState> | null;
+  return raw ? writeState(raw, false) : null;
+};
+export const saveBornasState = (raw: unknown): BornasState => writeState((raw || {}) as Partial<BornasState>);
+export const addBornasDone = (channelId: string, hero: string): void => {
+  try {
+    const state = readBornasState();
+    const name = bornasHeroName(hero);
+    const channel = state?.channels.find((c) => c.id === channelId);
+    if (!state || !channel || !name || channel.done.some((d) => d.toLowerCase() === name.toLowerCase())) return;
+    channel.done = bornasDoneList([...channel.done, name]);
+    writeState(state);
+  } catch (error) {
+    logger.warn(String((error as Error)?.message || error));
+  }
 };

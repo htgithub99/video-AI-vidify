@@ -4,7 +4,7 @@ import type { ReupAiChoice } from "../../reup/types/reup.js";
 import type { BornasAiField, BornasAiSettings, BornasDrawProvider, BornasChannel, BornasLine, BornasGenre, BornasLanguage, BornasMusicChoice, BornasStepId, BornasTopic } from "../types/bornas.js";
 export const BORNAS_STEPS: readonly BornasStepId[] = ["sample", "script", "voice", "assets", "shots", "build", "package", "render"];
 export const BORNAS_VIDEO_STEPS: readonly BornasStepId[] = ["voice", "assets", "shots", "build", "package", "render"];
-export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate", DELETE_VIDEOS: "/delete-videos" } as const;
+export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", STATE: "/state", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate", DELETE_VIDEOS: "/delete-videos" } as const;
 export const BORNAS_URL = {
   SOURCE: "/api/bornas/source",
   START: "/api/bornas/start",
@@ -13,11 +13,15 @@ export const BORNAS_URL = {
   CANCEL: "/api/bornas/cancel",
   STATUS: (jobId: string): string => `/api/bornas/status/${encodeURIComponent(jobId)}`,
   JOBS: "/api/bornas/jobs",
+  STATE: "/api/bornas/state",
   DELETE: "/api/bornas/delete",
   SAVE_VIDEO: "/api/bornas/save-video",
   DELETE_VIDEOS: "/api/bornas/delete-videos",
 } as const;
 export const BORNAS_STORAGE = { STATE: "bornas_state_v1" } as const;
+export const BORNAS_STATE = { FILE: "bornas-state.json", CHANNELS_MAX: 40, DONE_MAX: 300, DONE_CHARS: 120 } as const;
+export const bornasHeroName = (hero: string): string => hero.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim().slice(0, BORNAS_STATE.DONE_CHARS);
+export const bornasDoneList = (raw: unknown): string[] => [...new Map((Array.isArray(raw) ? raw : []).map((x) => String(x ?? "").trim().slice(0, BORNAS_STATE.DONE_CHARS)).filter(Boolean).map((x) => [x.toLowerCase(), x] as const)).values()].slice(0, BORNAS_STATE.DONE_MAX);
 export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", SHORT: "short", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4" } as const;
 export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = { world: ["ancient", "medieval", "eastasia", "ww", "modern"], ww: ["ww"], ancient: ["ancient"], medieval: ["medieval"], eastasia: ["eastasia"], vietnam: ["vietnam"], modern: ["modern"], game: ["game"], wildwest: ["wildwest"], anime: [] };
 export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }[] = [
@@ -91,6 +95,8 @@ export const BORNAS_LIMITS = {
   HERO_STOP: ["the", "and", "von", "van", "der", "del", "tuoi", "age", "ages", "years", "nam"],
   POLL_MS: 2500,
   LOGS: 1500,
+  AVOID_MAX: 120,
+  STATE_SAVE_MS: 600,
   SHEETS: 4,
   SHEET_COLS: 5,
   SHEET_ROWS: 4,
@@ -157,7 +163,7 @@ export const bornasAiSettings = (raw: LegacyAi | undefined): BornasAiSettings =>
     drawAi: { ...BORNAS_AI_DEFAULT.drawAi, ...(raw?.drawHeadless === undefined ? {} : { chromeHeadless: raw.drawHeadless }), ...raw?.drawAi, provider: BORNAS_DRAW_PROVIDERS.includes(raw?.drawAi?.provider as BornasDrawProvider) ? (raw!.drawAi!.provider as BornasDrawProvider) : "gemini-chat" },
   };
 };
-export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "bornas", music: "library", count: 3, seconds: 120, review: false, short: true });
+export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "bornas", music: "library", count: 3, seconds: 120, review: false, short: true, done: [] });
 export const BORNAS_GENRES: BornasGenre[] = ["bornas", "survive", "worst", "day", "whatif"];
 export const BORNAS_MUSIC_CHOICES: BornasMusicChoice[] = ["off", "library"];
 export const bornasStyleLine = (topic: BornasTopic): string => (topic === "anime" ? BORNAS_STYLE_LINES.anime : BORNAS_STYLE_LINES.cartoon);

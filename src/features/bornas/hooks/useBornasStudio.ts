@@ -7,9 +7,9 @@ import { jsonUtils } from "../../../lib/json.js";
 import type { Lang } from "../../../lib/lang.js";
 import type { MotionVoiceChannels } from "../../../types/motionVideo.js";
 import { motionRequest } from "../../motion/components/motionApi.js";
-import { BORNAS_AI_DEFAULT, BORNAS_LIMITS, bornasAiSettings, BORNAS_STEPS, BORNAS_STORAGE, BORNAS_URL, bornasGenre, bornasMusicChoice, bornasNewChannel } from "../constants/bornasConfig.js";
+import { BORNAS_AI_DEFAULT, BORNAS_LIMITS, bornasAiSettings, bornasDoneList, bornasHeroName, BORNAS_STEPS, BORNAS_STORAGE, BORNAS_URL, bornasGenre, bornasMusicChoice, bornasNewChannel } from "../constants/bornasConfig.js";
 import { bornasTexts } from "../constants/bornasTexts.js";
-import type { BornasAiSettings, BornasChannel, BornasJob, BornasJobSummary, BornasSample, BornasScript, BornasStepId } from "../types/bornas.js";
+import type { BornasAiSettings, BornasChannel, BornasJob, BornasJobSummary, BornasSample, BornasScript, BornasState, BornasStepId } from "../types/bornas.js";
 interface Stored {
   channels?: BornasChannel[];
   channelId?: string;
@@ -72,9 +72,10 @@ export const useBornasStudio = (lang: Lang) => {
   }, []);
   useEffect(() => {
     void (async () => {
-      const saved = await jsonUtils.getAsyncItem<Stored>(BORNAS_STORAGE.STATE, {});
+      const server = await motionRequest<{ state: BornasState | null }>(BORNAS_URL.STATE).catch(() => null);
+      const saved: Stored = server?.state?.channels.length ? server.state : await jsonUtils.getAsyncItem<Stored>(BORNAS_STORAGE.STATE, {});
       const base = saved.channels?.length ? saved.channels : [bornasNewChannel(newId(), text.CHANNEL_NEW)];
-      const list = base.map((c) => ({ ...c, genre: bornasGenre(c.genre), music: bornasMusicChoice(c.music ?? "library"), ...(c.sample || !saved.sourcePath ? {} : { sample: saved.sourcePath }) }));
+      const list = base.map((c) => ({ ...c, done: bornasDoneList(c.done), genre: bornasGenre(c.genre), music: bornasMusicChoice(c.music ?? "library"), ...(c.sample || !saved.sourcePath ? {} : { sample: saved.sourcePath }) }));
       const first = saved.channelId && list.some((c) => c.id === saved.channelId) ? saved.channelId : list[0].id;
       setChannels(list);
       channelIdRef.current = first;
@@ -88,8 +89,19 @@ export const useBornasStudio = (lang: Lang) => {
   }, [openJob, reloadResults, reloadVoiceChannels, text.CHANNEL_NEW]);
   useEffect(() => {
     if (!loaded) return;
-    void jsonUtils.setAsyncItem<Stored>(BORNAS_STORAGE.STATE, { channels, channelId, ai, jobId: job?.id });
+    const timer = setTimeout(() => void motionRequest(BORNAS_URL.STATE, { state: { channels, channelId, ai, jobId: job?.id } }).catch(_.noop), BORNAS_LIMITS.STATE_SAVE_MS);
+    return () => clearTimeout(timer);
   }, [loaded, channels, channelId, ai, job?.id]);
+  useEffect(() => {
+    if (!job) return;
+    const made = job.videos.flatMap((v) => (v.status === "done" && job.scripts?.[v.index]?.hero ? [bornasHeroName(job.scripts[v.index].hero)] : [])).filter(Boolean);
+    if (!made.length) return;
+    setChannels((all) => {
+      const target = all.find((c) => c.id === job.channel.id);
+      const fresh = made.filter((m) => !target?.done.some((d) => d.toLowerCase() === m.toLowerCase()));
+      return target && fresh.length ? all.map((c) => (c === target ? { ...c, done: bornasDoneList([...c.done, ...fresh]) } : c)) : all;
+    });
+  }, [job]);
   useEffect(() => {
     if (!loaded || !sourcePath || sample?.path === sourcePath) return;
     void motionRequest<{ sample: BornasSample }>(BORNAS_URL.SOURCE, { path: sourcePath }).then(

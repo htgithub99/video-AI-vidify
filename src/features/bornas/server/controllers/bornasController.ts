@@ -5,7 +5,7 @@ import { pickMotionSaveFile } from "../../../motion/server/controllers/motionVid
 import { BORNAS_ERROR } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasJobSummary, BornasStepId } from "../../types/bornas.js";
 import { annotateLibrary, approveBornas, bornasLibraryAnnotation, cancelBornas, inspectBornasSource, rerunBornas, startBornas } from "../services/bornasPipeline.js";
-import { deleteBornasJobs, deleteBornasVideos, getBornasJob, listBornasJobs } from "../services/bornasStore.js";
+import { deleteBornasJobs, deleteBornasVideos, getBornasJob, listBornasJobs, readBornasState, saveBornasState } from "../services/bornasStore.js";
 const fail = (res: Response, status: number, error: unknown): void => void res.status(status).json({ success: false, error: String((error as Error)?.message || error) });
 const view = (job: BornasJob) => ({ ...job, analysis: job.analysis ? { ...job.analysis, transcript: "" } : undefined, videos: job.videos.map(({ words: _words, lineStarts: _starts, ...v }) => v) });
 export const bornasSourceController = async (req: Request, res: Response): Promise<void> => {
@@ -97,4 +97,11 @@ export const bornasAnnotateController = (req: Request, res: Response): void => {
   if (!/^[a-z0-9_-]+$/.test(lib)) return fail(res, 400, BORNAS_ERROR.BAD_REQUEST);
   if (req.method === "GET") return void res.json({ success: true, run: bornasLibraryAnnotation(lib) });
   res.json({ success: true, started: annotateLibrary(lib, req.body?.ai) });
+};
+export const bornasStateController = (req: Request, res: Response): void => {
+  try {
+    res.json({ success: true, state: req.method === "POST" ? saveBornasState(req.body?.state) : readBornasState() });
+  } catch (error) {
+    fail(res, 400, error);
+  }
 };

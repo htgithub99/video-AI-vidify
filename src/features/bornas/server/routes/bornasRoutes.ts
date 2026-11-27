@@ -1,6 +1,6 @@
 import express from "express";
 import { BORNAS_API } from "../../constants/bornasConfig.js";
-import { bornasAnnotateController, bornasApproveController, bornasCancelController, bornasDeleteController, bornasDeleteVideosController, bornasJobsController, bornasRerunController, bornasSaveVideoController, bornasSourceController, bornasStartController, bornasStatusController } from "../controllers/bornasController.js";
+import { bornasAnnotateController, bornasApproveController, bornasCancelController, bornasDeleteController, bornasDeleteVideosController, bornasJobsController, bornasRerunController, bornasSaveVideoController, bornasSourceController, bornasStartController, bornasStateController, bornasStatusController } from "../controllers/bornasController.js";
 const router = express.Router();
 router.post(BORNAS_API.SOURCE, bornasSourceController);
 router.post(BORNAS_API.START, bornasStartController);
@@ -9,6 +9,8 @@ router.post(BORNAS_API.APPROVE, bornasApproveController);
 router.post(BORNAS_API.RERUN, bornasRerunController);
 router.post(BORNAS_API.CANCEL, bornasCancelController);
 router.get(BORNAS_API.JOBS, bornasJobsController);
+router.get(BORNAS_API.STATE, bornasStateController);
+router.post(BORNAS_API.STATE, bornasStateController);
 router.post(BORNAS_API.DELETE, bornasDeleteController);
 router.post(BORNAS_API.DELETE_VIDEOS, bornasDeleteVideosController);
 router.post(BORNAS_API.SAVE_VIDEO, bornasSaveVideoController);

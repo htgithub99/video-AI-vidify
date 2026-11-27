@@ -101,8 +101,8 @@ export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: Abor
   const past = listBornasJobs(60)
     .filter((p) => p.id !== job.id && p.channel.id === job.channel.id)
     .flatMap((p) => p.scripts || []);
-  const avoid = _.uniq(past.map((s) => `${s.hero}: ${s.title}`)).slice(0, 40);
-  const pastHeroes = _.uniq(past.map((s) => s.hero));
+  const avoid = _.uniq([...(job.channel.done || []), ...past.map((s) => `${s.hero}: ${s.title}`)]).slice(0, BORNAS_LIMITS.AVOID_MAX);
+  const pastHeroes = _.uniq([...(job.channel.done || []), ...past.map((s) => s.hero)]);
   log(BORNAS_LOG.SCRIPTS(job.channel.count));
   const exec = reupExec(job.ai.writeAi);
   const factExec = reupExec(job.ai.factAi);

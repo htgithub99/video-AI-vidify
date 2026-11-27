@@ -4,9 +4,8 @@ import { logger } from "../../../../lib/logger.js";
 import { runInMotionAiSession, closeMotionStandaloneBrowser } from "../../../motion/server/services/motionStoryService.js";
 import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
 import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
-import { motionLanguageCode } from "../../../../lib/motionLanguage.js";
 import { packageBornasVideo } from "./bornasPackage.js";
-import { BORNAS_AI_DEFAULT, bornasAiSettings, bornasGenre, bornasMusicChoice, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
+import { BORNAS_AI_DEFAULT, bornasAiSettings, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasChannel, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
 import { annotateBornasLibrary, prepareBornasAssets } from "./bornasAssets.js";
@@ -14,26 +13,10 @@ import { buildBornasShort, buildBornasVideo, checkBornasVideo, renderBornasVideo
 import { analyzeBornasSample, dropBornasAnalysis, inspectBornasSample } from "./bornasSample.js";
 import { cleanBornasScript, writeBornasScripts } from "./bornasScript.js";
 import { planBornasShots, type BornasPlan } from "./bornasShots.js";
-import { bornasController, bornasEmptySteps, bornasLog, bornasStep, getBornasJob, saveBornasJob, setBornasController } from "./bornasStore.js";
+import { addBornasDone, bornasController, bornasEmptySteps, cleanBornasChannel, bornasLog, bornasStep, getBornasJob, saveBornasJob, setBornasController } from "./bornasStore.js";
 import { BORNAS_ABORTED, isBornasAbort, readJson } from "./bornasTools.js";
 import { bornasVideoDir, voiceBornasVideo } from "./bornasVoice.js";
 const errText = (error: unknown): string => String((error as Error)?.message || error);
-const cleanChannel = (raw: Partial<BornasChannel> | undefined): BornasChannel => {
-  if (!raw?.id) throw new Error(BORNAS_ERROR.NO_CHANNEL);
-  return {
-    id: String(raw.id),
-    name: String(raw.name || raw.id).slice(0, 80),
-    topic: raw.topic || "world",
-    voiceChannel: String(raw.voiceChannel || ""),
-    language: motionLanguageCode(raw.language),
-    genre: bornasGenre(raw.genre),
-    music: bornasMusicChoice(raw.music),
-    count: _.clamp(Math.round(Number(raw.count) || 1), 1, 10),
-    seconds: _.clamp(Math.round(Number(raw.seconds) || 120), 30, 1200),
-    review: raw.review === true,
-    short: raw.short !== false,
-  };
-};
 const cleanAi = (raw: Partial<BornasAiSettings> | undefined): BornasAiSettings => bornasAiSettings(raw);
 const heavy = <T>(job: BornasJob, kind: string, step: string, signal: AbortSignal, run: () => Promise<T>): Promise<T> =>
   runHeavyJob(kind, HEAVY_JOB_TEXT.LABEL(HEAVY_JOB_TEXT.SCREEN.BORNAS, `${job.channel.name} · ${step}`), run, { signal, onWait: (holder) => bornasLog(job, HEAVY_JOB_TEXT.WAIT(kind, holder)), onStart: (waited) => waited >= 1 && bornasLog(job, HEAVY_JOB_TEXT.START(step, waited)) }).catch((error) => {
@@ -86,6 +69,8 @@ const runVideo = async (job: BornasJob, video: BornasVideo, script: BornasScript
   }
   video.status = "done";
   video.stage = undefined;
+  const hero = job.scripts?.[video.index]?.hero;
+  if (hero) addBornasDone(job.channel.id, hero);
   log(BORNAS_LOG.VIDEO_DONE(video.index + 1));
 };
 const finishSteps = (job: BornasJob): void => {
@@ -172,7 +157,7 @@ const execute = async (job: BornasJob, from: BornasStepId, only?: number[]): Pro
 };
 export const inspectBornasSource = inspectBornasSample;
 export const startBornas = async (body: { path?: string; channel?: Partial<BornasChannel>; ai?: Partial<BornasAiSettings> }): Promise<BornasJob> => {
-  const channel = cleanChannel(body.channel);
+  const channel = cleanBornasChannel(body.channel);
   if (!channel.voiceChannel) throw new Error(BORNAS_ERROR.NO_VOICE);
   const sample = await inspectBornasSample(String(body.path || ""));
   const now = Date.now();

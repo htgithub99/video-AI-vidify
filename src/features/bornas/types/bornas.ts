@@ -21,6 +21,13 @@ export interface BornasChannel {
   review: boolean;
   short: boolean;
   sample?: string;
+  done: string[];
+}
+export interface BornasState {
+  channels: BornasChannel[];
+  channelId: string;
+  ai: BornasAiSettings;
+  jobId?: string;
 }
 export type BornasDrawProvider = "gemini-chat" | "labs-flow";
 export interface BornasDrawChoice {
