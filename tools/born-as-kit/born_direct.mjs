@@ -115,7 +115,7 @@ const RULE = {
   bustS: 1.05,
   bustSink: 0.12,
   panY: 0.0015,
-  bustNativeMax: 1.6,
+  bustNativeMax: 2.1,
   motionCycle: ["push", "push", "pull", "push", "hold"],
   babyRe: /_baby$/,
   babyH: 560,
@@ -370,7 +370,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     return info(n).kind === "person" && n.includes("__") && f && m.w / m.h <= RULE.lieAspect && f.b - f.t > RULE.bustFace;
   };
   const bgWords = `${beat.bg || ""} ${plan.bgDesc?.[beat.bg] || ""}`.toLowerCase().split(/[^a-z]+/).filter((w) => w.length >= 4 && !RULE.plainWords.has(w));
-  const inBg = (n) => RULE.builtKinds.has(info(n).kind) && poseWords(n).some((v) => bgWords.some((w) => w === v || (w.length >= 4 && v.length >= 4 && (w.startsWith(v) || v.startsWith(w)))));
+  const inBg = (n) => (RULE.builtKinds.has(info(n).kind) || info(n).kind === "nature") && poseWords(n).some((v) => bgWords.some((w) => w === v || (w.length >= 4 && v.length >= 4 && (w.startsWith(v) || v.startsWith(w)))));
   const held = new Set(beat.cast.map((c, i) => (half(c.sprite) || inBg(c.sprite) || (RULE.boatRe.test(c.sprite) && !A.boats) || (info(c.sprite).kind !== "person" && ((!isSeat(c.sprite) && people.some((p) => sameWord(poseWords(c.sprite), p))) || (isSeat(c.sprite) && bgHas(c.sprite)))) ? i : -1)).filter((i) => i >= 0));
   const isBack = (k) => BACK.has(k.kind) || (k.kind === "vehicle" && k.heightM >= 3);
   const main = [];
