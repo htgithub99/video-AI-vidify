@@ -19,7 +19,6 @@ const RULE = {
   drift: 0.04,
   close: 1.85,
   medium: 1.4,
-  glide: 1.8,
   closeSx: 768,
   closeSy: 560,
   darkMax: 0.45,
@@ -79,8 +78,6 @@ const RULE = {
   pullRate: 0.025,
   holdRate: 0.004,
   pan: 0.012,
-  thirdMedium: 0,
-  thirdClose: 0,
   nativeMax: 1.15,
   groupRe: /pallbearers|irregulars|group|column|squad|troop|testudo|family|crowd|riders|_men_/i,
   personMin: 0.34,
@@ -92,8 +89,8 @@ const RULE = {
   maxUp: 1.25,
   insertUp: 1.6,
   wideFill: 0.55,
-  wideMax: 1.35,
-  wideFollow: 0.6,
+  wideMax: 1.5,
+  wideFollow: 1,
   labelZoom: 1.2,
   softRoll: 1.5,
   clearShare: 0.2,
@@ -108,20 +105,19 @@ const RULE = {
   adultM: 1.6,
   childMin: 0.45,
   headTopMax: 0.4,
-  bustXs: [620, 1300, 960],
   twoXs: [600, 1320, 960],
   bustMax: 3,
-  bustH: 880,
+  bustH: 780,
   twoScale: 0.92,
   bustS: 1.05,
-  bustSink: 0.06,
-  punchStep: 0.12,
-  punchCycle: 3,
+  bustSink: 0.12,
   panY: 0.0015,
   bustNativeMax: 1.6,
   motionCycle: ["push", "push", "pull", "push", "hold"],
   babyRe: /_baby$/,
-  babyH: 780,
+  babyH: 560,
+  babySink: -0.22,
+  icons: [[/\bGUNS?\b|PISTOL|REVOLVER/i, /revolver|colt/], [/\bHORSES?\b/i, /saddled.*horse_standing/], [/PRICE|REWARD|WANTED|BOUNTY/i, /wanted_poster/]],
   bustPlateY: 140,
   vertPlateY: 330,
   vertInsertW: 540,
@@ -560,7 +556,6 @@ const framings = (beat, n) => {
   if (beat.cam === "pull") return Array.from({ length: n }, (_, i) => (i === n - 1 ? "pull" : "medium"));
   const start = beat.frame || "wide";
   const list = Array.from({ length: n }, (_, i) => (i === 0 ? start : "medium"));
-  if (beat.cam === "glide" && list[0] === "wide") list[0] = "glide";
   return list;
 };
 
@@ -580,7 +575,7 @@ const cameraFor = (frame, d, hook, subj, subjEnd, actors, look) => {
     const [a, b] = rate < 0 ? [Math.min(grown, cap * 1.05), k.s] : [k.s, Math.min(grown, cap * 1.05)];
     return [{ t: 0, ...k, s: r3(a) }, { t: r3(d), ...k, x: r3(k.x + pan(b)), s: r3(b) }];
   };
-  if (!subj || frame === "wide" || frame === "glide") {
+  if (!subj || frame === "wide") {
     const fill = subj && look.person ? clamp((1080 * RULE.wideFill) / Math.max(1, subj.body.b - subj.body.t), 1, Math.max(1, Math.min(cap, RULE.wideMax))) : 1;
     const tx = subj ? 960 + (subj.bx - 960) * (fill > 1 ? RULE.wideFollow : 0.25) : 960;
     const ty = fill > 1 ? 540 + (subj.by - 540) * RULE.wideFollow : 540;
@@ -592,13 +587,47 @@ const cameraFor = (frame, d, hook, subj, subjEnd, actors, look) => {
   if (frame === "close") {
     const s = clamp(Math.min(RULE.close, (1080 * 0.7) / Math.max(1, subj.fb.b - subj.fb.t), fit, cap), 1.15, Math.max(1.15, RULE.close));
     const at = wide ? { x: subj.bx, y: subj.by } : { x: subj.fx, y: subj.head + 40 };
-    return move({ s: Math.min(s, cap), ...at, sx: 960 + side * RULE.thirdClose, sy: wide ? 540 : 520 });
+    return move({ s: Math.min(s, cap), ...at, sx: 960, sy: wide ? 540 : 520 });
   }
   const s = Math.min(RULE.medium, Math.max(1.05, (1920 * 0.85) / Math.max(1, subj.body.r - subj.body.l)), cap);
-  return move({ s, x: subj.bx, y: subj.by, sx: 960 + side * RULE.thirdMedium, sy: 560 });
+  return move({ s, x: subj.bx, y: subj.by, sx: 960, sy: 560 });
 };
 
+const talkAlt = (plan, n) => {
+  const m = n.match(/^(.*_b)_(r|l|talk)$/);
+  if (!m) return null;
+  const alt = m[2] === "talk" ? `${m[1]}_r` : `${m[1]}_talk`;
+  return plan.sprites[alt] ? alt : null;
+};
+const shapeEvents = (plan, shots) => {
+  const out = [];
+  for (let i = 0; i < shots.length; i++) {
+    const sh = shots[i], next = shots[i + 1];
+    const kindOf = (n) => plan.sprites[n]?.kind;
+    if (!VERT && sh.bust && sh.actors?.length === 1 && next && next.kind === "scene" && !next.bust && next.actors?.length === 1 && kindOf(next.actors[0].sprite) === "prop" && i + 2 < shots.length) {
+      const prop = next.actors[0], h = Math.min(EVENTS.insetH, prop.h * 3);
+      sh.actors = [{ ...sh.actors[0], shift: { t: next.t0, dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, { sprite: prop.sprite, x: EVENTS.insetX, y: EVENTS.insetY + h / 2, h, shadow: false, allow: true, enter: { t: next.t0, kind: "slide", from: 1 } }];
+      for (const k of ["tags", "plates"]) sh[k] = [...(sh[k] || []), ...(next[k] || [])];
+      i++;
+    }
+    const lead = sh.actors?.[0]?.sprite;
+    for (const a of sh.actors || []) {
+      if (sh.bust && !a.enter) {
+        const alt = talkAlt(plan, a.sprite), b = (sh.bubbles || [])[0];
+        if (alt && b && a.sprite === lead) a.talk = { alt, from: b[2], to: Math.min(b[2] + EVENTS.talkMax, (shots[i + 1]?.t0 ?? b[2] + EVENTS.talkMax) - 0.05) };
+      }
+      const lab = (sh.labels || []).find((l) => l[4] === a.sprite);
+      if (!a.enter && a.sprite !== lead && lab && lab[3] > sh.t0 + EVENTS.lateLabel) a.enter = { t: lab[3] - 0.1, kind: "fade" };
+    }
+    out.push(sh);
+  }
+  return out;
+};
+const EVENTS = { insetX: 1380, insetY: 470, insetH: 460, shiftDx: -250, shiftDur: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: 14 };
+const shortName = (t) => { const w = String(t).trim().split(/\s+/); return t.length > EVENTS.labelChars && w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : t; };
+const iconOf = (plan, text) => { const hit = RULE.icons.find(([w]) => w.test(text)); const sprite = hit && Object.keys(plan.sprites || {}).find((n) => hit[1].test(n)); return sprite ? { sprite, cross: /^NO\b/i.test(String(text).trim()) } : null; };
 export const direct = (plan) => {
+  plan = { ...plan, beats: plan.beats.map((b) => ({ ...b, cast: (b.cast || []).filter((c) => !RULE.builtKinds.has(plan.sprites[c.sprite]?.kind)), ...(b.label ? { label: { ...b.label, text: shortName(b.label.text) } } : {}) })) };
   const lk = lookOf(plan);
   Object.assign(RULE, { push: CAM0.push * lk.cam.push, hookPush: CAM0.hookPush * lk.cam.push, pullRate: CAM0.pullRate * lk.cam.push, pan: CAM0.pan * lk.cam.pan });
   const onsets = plan.onsets || [];
@@ -609,7 +638,7 @@ export const direct = (plan) => {
   const sid = () => `s${String(shots.length + 1).padStart(3, "0")}`;
   let lastLook = { key: "", side: 1, frame: "", end: null };
   let motionN = 0;
-  let lastBust = { sprite: "", slot: 0, t1: -1 };
+  let lastBust = { sprite: "", t1: -1 };
   const report = [];
   const heroId = Object.entries(plan.sprites).map(([n, s]) => (s.kind === "bust" ? charId(n) : null)).find(Boolean) || null;
   const heroBust = Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust" && charId(n) === heroId) || null;
@@ -654,25 +683,24 @@ export const direct = (plan) => {
       const two = list.length > 1;
       const key = list.map((c) => c.sprite).join("+");
       const bRepeat = lastBust.sprite === key && lastBust.t1 >= beat.t0 - 0.05;
-      const bSlot = bRepeat ? (lastBust.slot + 1) % RULE.bustXs.length : beat.slot ?? 0;
       const bStep = bRepeat ? (lastBust.step || 0) + 1 : 0;
-      lastBust = { sprite: key, slot: bSlot, t1, step: bStep };
-      const punch = 1 + RULE.punchStep * (bStep % RULE.punchCycle);
-      const xs = VERT ? [960] : two ? RULE.twoXs.slice(0, list.length) : [RULE.bustXs[bSlot]];
+      lastBust = { sprite: key, t1, step: bStep };
+      const xs = VERT ? [960] : two ? RULE.twoXs.slice(0, list.length) : [960];
       const hOf = (n) => Math.min(RULE.babyRe.test(n) ? RULE.babyH * (VERT ? RULE.vertBust : 1) : RULE.bustH * (VERT ? RULE.vertBust : two ? RULE.twoScale : 1), meta(n).h * RULE.bustNativeMax);
       const hs = list.map((c) => hOf(c.sprite)), hm = Math.min(...hs);
-      const acts = list.map((c, i) => ({ sprite: c.sprite, x: xs[i], y: r3(1080 + (two ? hm : hs[i]) * RULE.bustSink), h: two ? hm : hs[i], shadow: false, allow: true, ...(c.dir ? { dir: c.dir } : { dir: xs[i] < 960 ? "r" : xs[i] > 960 ? "l" : undefined }) }));
+      const acts = list.map((c, i) => ({ sprite: c.sprite, x: xs[i], y: r3(1080 + (two ? hm : hs[i]) * (RULE.babyRe.test(c.sprite) ? RULE.babySink : RULE.bustSink)), h: two ? hm : hs[i], shadow: false, allow: true, ...(c.dir ? { dir: c.dir } : { dir: xs[i] < 960 ? "r" : xs[i] > 960 ? "l" : undefined }) }));
       const bx = two ? 960 : xs[0], bSide = bx < 960 ? 1 : bx > 960 ? -1 : (bi % 2 ? 1 : -1);
       const px = two ? 960 : bx < 960 ? 1420 : bx > 960 ? 500 : 960;
       const d = t1 - beat.t0, rate = beat.cam === "pull" ? -RULE.pullRate : hook ? RULE.hookPush : RULE.push;
-      const s0 = punch * (rate < 0 ? RULE.bustS * (1 + Math.abs(rate) * d) : RULE.bustS), s1 = punch * (rate < 0 ? RULE.bustS : RULE.bustS * (1 + rate * d));
+      const s0 = rate < 0 ? RULE.bustS * (1 + Math.abs(rate) * d) : RULE.bustS, s1 = rate < 0 ? RULE.bustS : RULE.bustS * (1 + rate * d);
+      const icon = beat.plate ? iconOf(plan, beat.plate.text) : null;
       const lab = beat.label ? acts[Math.min(acts.length - 1, beat.label.cast || 0)] : null;
       const bub = beat.bubble ? acts[Math.min(acts.length - 1, beat.bubble.cast || 0)] : null;
       const mouth = (a) => {
         const { fb } = faceBox(a.sprite, a.x, a.y, a.h, a.dir, 0.5);
         return [r3((fb.l + fb.r) / 2), r3(fb.t + (fb.b - fb.t) * 0.78)];
       };
-      shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: !!beat.blur, actors: acts, cam: [{ t: 0, s: r3(s0), x: 960, y: 540, sx: 960, sy: 540 }, { t: r3(d), s: r3(s1), x: r3(960 + bSide * 1920 * RULE.pan * d), y: r3(540 - 1080 * RULE.panY * d), sx: 960, sy: 540 }], glowAt: beat.blur ? { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 } : undefined, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: lab ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lab.sprite, "up"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, VERT ? [960, RULE.vertPlateY] : [px, RULE.bustPlateY], null]] : [], bubbles: bub ? [["b", beat.bubble.text, beat.bubble.t, null, mouth(bub)]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), flash: beat.flash, series: !VERT && beat.t0 >= plan.turnT && beat.t0 < plan.recapT, subject: acts[0]?.sprite || null });
+      shots.push({ ...base, kind: "scene", bust: true, soft: !beat.blur, id: sid(), t0: beat.t0, bg: beat.bg, blur: !!beat.blur, actors: acts, cam: [{ t: 0, s: r3(s0), x: 960, y: 540, sx: 960, sy: 540 }, { t: r3(d), s: r3(s1), x: r3(960 + bSide * 1920 * RULE.pan * d), y: r3(540 - 1080 * RULE.panY * d), sx: 960, sy: 540 }], glowAt: beat.blur ? { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 } : undefined, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: lab ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lab.sprite, "up"]] : [], plates: beat.plate && !icon ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, VERT ? [960, RULE.vertPlateY] : [px, RULE.bustPlateY], null]] : [], icons: icon ? [[icon.sprite, beat.plate.t, bStep % 2 ? "r" : "l", beat.plate.text, icon.cross]] : [], bubbles: bub ? [["b", beat.bubble.text, beat.bubble.t, null, mouth(bub)]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), flash: beat.flash, series: !VERT && beat.t0 >= plan.turnT && beat.t0 < plan.recapT, subject: acts[0]?.sprite || null });
       if (hook) hookShots.push(shots[shots.length - 1]);
       return;
     }
@@ -731,7 +759,6 @@ export const direct = (plan) => {
       const offAt = (t) => (subjA?.move ? (subjA.move * (t - beat.t0)) / D : 0);
       const offHero = (t) => (heroA?.move ? (heroA.move * (t - beat.t0)) / D : 0);
       const sp0 = subjA && subjectPoint(subjA, offAt(c0)), sp1 = subjA && subjectPoint(subjA, offAt(c1));
-      if (frames[ci] === "glide" && beat.label && beat.label.t >= c0 - 0.001 && beat.label.t < c1) frames[ci] = "wide";
       const lookKey = `${beat.bg}|${actors.filter((o) => !o.crowd).map((o) => o.sprite).sort().join(",")}`;
       const repeat = lookKey === lastLook.key;
       const side = repeat ? -lastLook.side : sp0 && sp0.bx < 960 ? -1 : 1;
@@ -816,6 +843,7 @@ export const direct = (plan) => {
       if (hook && shot.actors.length) hookShots.push(shot);
     });
   });
-  shots.report = report;
-  return shots;
+  const events = shapeEvents(plan, shots);
+  events.report = report;
+  return events;
 };

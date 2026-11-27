@@ -22,14 +22,15 @@ const BORN = {
     root.appendChild(el);
     return el;
   },
-  curve(sx, sy, ex, ey, cut = 0) {
-    const cx = sx + (ex - sx) * 0.3, cy = sy + (ey - sy) * 0.7;
+  curve(sx, sy, ex, ey, cut = 0, hook = false) {
+    const cx = sx + (ex - sx) * (hook ? 0.1 : 0.3), cy = hook ? ey : sy + (ey - sy) * 0.7;
     const ang = Math.atan2(ey - cy, ex - cx), L = Math.hypot(ex - cx, ey - cy);
     const k = Math.min(cut, Math.max(0, L - 30)), hx = ex - Math.cos(ang) * k, hy = ey - Math.sin(ang) * k;
     return { d: `M${sx} ${sy} Q${cx} ${cy} ${hx} ${hy}`, ang, hx, hy };
   },
   arrowStart(box, ex, ey, pad = 14) {
-    const x = ex > box.r ? box.r + pad * 0.6 : ex < box.l ? box.l - pad * 0.6 : Math.min(box.r - 20, Math.max(box.l + 20, ex));
+    const w = box.r - box.l, cx = (box.l + box.r) / 2, vert = ey > box.b || ey < box.t;
+    const x = vert ? (ex > box.r ? box.l + w * 0.8 : ex < box.l ? box.r - w * 0.8 : Math.min(box.r - 20, Math.max(box.l + 20, ex))) : ex > cx ? box.r + pad * 0.6 : box.l - pad * 0.6;
     const y = ey > box.b ? box.b + pad : ey < box.t ? box.t - pad : (box.t + box.b) / 2;
     return [x, y];
   },
@@ -48,7 +49,7 @@ const BORN = {
     gsap.set(t, { xPercent: dir === 1 ? 0 : dir === -1 ? -100 : -50, yPercent: below ? 0 : -100 });
     const l = dir === 1 ? ax : dir === -1 ? ax - w : ax - w / 2, tp = below ? ay : ay - h;
     const [sx, sy] = BORN.arrowStart({ l, r: l + w, t: tp, b: tp + h }, ex, ey);
-    const a = BORN.curve(sx, sy, ex, ey, stop), hx = a.hx, hy = a.hy;
+    const a = BORN.curve(sx, sy, ex, ey, stop, sy < ey), hx = a.hx, hy = a.hy;
     wrap.querySelectorAll(".bl-a > path").forEach((p) => p.setAttribute("d", a.d));
     const hl = 28, sp = 0.6;
     const hd = `M${hx - hl * Math.cos(a.ang - sp)} ${hy - hl * Math.sin(a.ang - sp)} L${hx} ${hy} L${hx - hl * Math.cos(a.ang + sp)} ${hy - hl * Math.sin(a.ang + sp)}`;
@@ -160,9 +161,9 @@ const BORN = {
 };
 const BORN_CSS = `
 .ba{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;pointer-events:none}
-.bl,.bp,.bb{position:absolute;inset:0;pointer-events:none}.bl-t{position:absolute;transform-origin:40% 70%;white-space:nowrap;font-variant-numeric:lining-nums}.bl-t b{display:block;font-family:'Alegreya Sans';font-weight:900;font-size:70px;color:#fff;-webkit-text-stroke:12px #16100c;paint-order:stroke fill;line-height:1.12;padding-top:.14em}.bl-t i{display:block;margin:-.12em 0 0 4px;font-family:'Alegreya Sans';font-style:normal;font-weight:800;font-size:38px;color:#f3e3bf;-webkit-text-stroke:8px #16100c;paint-order:stroke fill;line-height:1.2;padding-top:.1em}
+.bl,.bp,.bb{position:absolute;inset:0;pointer-events:none}.bl-t{position:absolute;transform-origin:40% 70%;white-space:nowrap;font-variant-numeric:lining-nums}.bl-t b{display:block;font-family:'Alegreya Sans';font-weight:900;font-size:58px;color:#fff;-webkit-text-stroke:10px #16100c;paint-order:stroke fill;line-height:1.12;padding-top:.14em}.bl-t i{display:block;margin:-.12em 0 0 4px;font-family:'Alegreya Sans';font-style:normal;font-weight:800;font-size:30px;color:#f3e3bf;-webkit-text-stroke:7px #16100c;paint-order:stroke fill;line-height:1.2;padding-top:.1em}
 .bl-a{position:absolute;inset:0;overflow:visible}.bl-a path{fill:none;stroke-linecap:round;stroke-linejoin:round}.bl-a path.o{stroke:#16100c;stroke-width:16}.bl-a path.w{stroke:#fff;stroke-width:9}
-.bp-p{position:absolute;white-space:nowrap;font-variant-numeric:lining-nums;text-align:center;background:#f4eee0;border:.1em solid #16100c;border-radius:.36em;padding:.1em .62em .16em;box-shadow:.1em .13em 0 rgba(8,5,3,.6);transform-origin:50% 60%}.bp-p b{display:block;font-family:'Alegreya Sans';font-weight:900;color:#16100c;line-height:1.12;padding-top:.12em}.bp-p i{display:block;font-family:'Alegreya Sans';font-style:normal;font-weight:800;font-size:.52em;color:#6e4526;line-height:1.1;margin-top:-.08em;padding-bottom:.08em}
+.icn{position:absolute;text-align:center;transform-origin:50% 60%;filter:drop-shadow(.06em .1em 0 rgba(8,5,3,.55))}.icn img{display:block}.icn svg{position:absolute;left:0;top:0;overflow:visible}.icn .xo{stroke:#16100c;stroke-width:34;stroke-linecap:round;fill:none}.icn .xi{stroke:#d3261c;stroke-width:20;stroke-linecap:round;fill:none}.icn b{display:inline-block;margin-top:14px;font:900 44px 'Alegreya Sans';color:#fff;-webkit-text-stroke:9px #16100c;paint-order:stroke fill;letter-spacing:.01em;white-space:nowrap}.bp-p{position:absolute;white-space:nowrap;font-variant-numeric:lining-nums;text-align:center;background:#f4eee0;border:.1em solid #16100c;border-radius:.36em;padding:.1em .62em .16em;box-shadow:.1em .13em 0 rgba(8,5,3,.6);transform-origin:50% 60%}.bp-p b{display:block;font-family:'Alegreya Sans';font-weight:900;color:#16100c;line-height:1.12;padding-top:.12em}.bp-p i{display:block;font-family:'Alegreya Sans';font-style:normal;font-weight:800;font-size:.52em;color:#6e4526;line-height:1.1;margin-top:-.08em;padding-bottom:.08em}
 .bb-a{position:absolute;inset:0;overflow:visible}.bb-a path{fill:#fff;stroke:#16100c;stroke-width:6;stroke-linejoin:round}.bb-p{position:absolute;font-variant-numeric:lining-nums;max-width:640px;text-align:center;background:#fff;border:6px solid #16100c;border-radius:44px;padding:.32em .8em .36em;font-family:'Alegreya Sans';font-weight:800;color:#16100c;line-height:1.15}
 .bsr{position:absolute;right:56px;top:46px;background:#16100c;border:3px solid #c7a15a;border-radius:10px;padding:8px 22px 9px;font-family:'Alegreya Sans SC';font-weight:800;font-size:25px;letter-spacing:5px;color:#ead9ae;line-height:1.2}
 .brb{position:absolute;white-space:nowrap;font-variant-numeric:lining-nums;font-family:'Alegreya Sans';font-weight:900;color:#b8231a;border:.09em solid #b8231a;border-radius:.14em;padding:.08em .32em 0;letter-spacing:.04em;line-height:1.15;mix-blend-mode:multiply}

@@ -19,7 +19,6 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
     prevBg = "",
     current: string | undefined;
   const recent: string[] = [];
-  let prevSig = "";
   for (const b of beats) {
     if (b.kind !== "scene" || !b.bg || b.montage || b.endCard) {
       last = b.kind;
@@ -54,19 +53,13 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
       } else {
         b.kind = "bust";
         b.cast = comp === "two" ? [castOf(bust(lead!, "r")), castOf(bust(others[0], "l"))] : comp === "solo" ? [castOf(bust(targetId!, "l"))] : [castOf(bust(lead!, BORNAS_ROTATION.VIEW[comp]))];
-        b.slot = comp === "two" ? 0 : comp === "solo" ? 1 : BORNAS_ROTATION.SLOT[comp];
       }
       const at = comp === "two" && targetId && targetId !== lead ? 1 : 0;
       if (keep.label) b.label = { ...keep.label, cast: at };
       if (keep.bubble) b.bubble = { ...keep.bubble, cast: at };
       b.subject = 0;
     }
-    const sig = JSON.stringify([b.kind, b.bg, b.cast.map((c) => c.sprite), b.slot]);
-    if (comp === "wide" && sig === prevSig) {
-      b.frame = "medium";
-      stats.punch = (stats.punch || 0) + 1;
-    } else stats[comp] = (stats[comp] || 0) + 1;
-    prevSig = sig;
+    stats[comp] = (stats[comp] || 0) + 1;
     last = comp;
     k++;
   }

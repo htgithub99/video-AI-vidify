@@ -7,7 +7,7 @@ const FACING = CAT.facing || {};
 const FACE_FIX = CAT.faceFix || {};
 const ACTOR = new RegExp(CAT.actor || "^$");
 const cache = {};
-const load = (n) => {
+export const load = (n) => {
   if (cache[n]) return cache[n];
   const p = [path.join(ROOT, `${n}.json`), path.join(ROOT, "pose", `${n}.json`)].find((q) => fs.existsSync(q));
   if (p) return (cache[n] = JSON.parse(fs.readFileSync(p, "utf8")));

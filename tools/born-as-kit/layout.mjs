@@ -3,14 +3,14 @@ import { SAFE, TAG_AT, VERT } from "./vert.mjs";
 const GW = JSON.parse(fs.readFileSync(new URL("./glyph_widths.json", import.meta.url), "utf8"));
 const WIDE = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uff60]/;
 export const textW = (s, px, w = 900) => [...s].reduce((a, c) => a + (GW[w][c] ?? (WIDE.test(c) ? 1.02 : 0.56)), 0) * px;
-export const LABEL = VERT ? { b: 54, i: 30 } : { b: 70, i: 38 };
+export const LABEL = VERT ? { b: 54, i: 30 } : { b: 58, i: 30 };
 export const labelSize = (text, sub) => ({ w: Math.max(textW(text, LABEL.b), textW(sub, LABEL.i, 800) + 6) + 16, h: LABEL.b * 1.26 + (sub ? LABEL.i * 1.18 : 0) + 8 });
 export const plateSize = (text, sub, s) => ({ w: Math.max(textW(text, s), textW(sub, s * 0.52, 800)) + s * 1.44 + 8, h: s * 1.24 + (sub ? s * 0.62 : 0) + s * 0.46 + 8 });
 export const camState = (keys, t0, t) => {
   const rel = t - t0;
   let i = 0;
   while (i + 1 < keys.length && keys[i + 1].t <= rel) i++;
-  const A = keys[i], B = keys[Math.min(i + 1, keys.length - 1)], u = B.t > A.t ? Math.min(1, Math.max(0, (rel - A.t) / (B.t - A.t))) : 0;
+  const A = keys[i], B = keys[Math.min(i + 1, keys.length - 1)], lin = B.t > A.t ? Math.min(1, Math.max(0, (rel - A.t) / (B.t - A.t))) : 0, u = B.ease === "power2.inOut" ? (lin < 0.5 ? 2 * lin * lin : 1 - 2 * (1 - lin) * (1 - lin)) : B.ease === "power2.out" ? 1 - (1 - lin) * (1 - lin) : lin;
   const v = (c) => { const x = c.sx - c.s * c.tx, y = c.sy - c.s * c.ty; return { s: c.s, x: Math.min(0, Math.max(1920 - 1920 * c.s, x)), y: Math.min(0, Math.max(1080 - 1080 * c.s, y)) }; };
   const a = v(A), b = v(B);
   return { s: a.s + (b.s - a.s) * u, x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u };
@@ -19,8 +19,9 @@ const area = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Ma
 const offscreen = (r) => (r.r - r.l) * (r.b - r.t) - area(r, SAFE);
 export const RESERVED = VERT ? { tl: { l: 0, r: 0, t: 0, b: 0 }, tr: { l: 0, r: 0, t: 0, b: 0 } } : { tl: { l: 60, r: 620, t: 70, b: 210 }, tr: { l: 1300, r: 1890, t: 30, b: 210 } };
 export const FACE_PAD = 0.3;
+const LABEL_POS = { AIM_OUT: 30, AIM_DOWN: 12, DX: [90, -90, 120, -120, 150, -150, 190, -190, 240, -240], DY: [-70, -95, -120, -150], ARROW_MIN: 110, ARROW_MAX: 240, PER_PX: 6, PATH_N: 6, START: 0.8, BEND: 0.1 };
 export const scoreRect = (r, sprites, extra = [], bodyW = 4) => {
-  let sc = offscreen(r) * 30;
+  let sc = offscreen(r) * 400;
   for (const p of sprites) {
     const f0 = p.fb || { l: p.l, r: p.r, t: p.t, b: p.t + (p.b - p.t) * 0.25 }, m = Math.max(f0.r - f0.l, f0.b - f0.t) * FACE_PAD;
     const f = { l: f0.l - m, r: f0.r + m, t: f0.t - m, b: f0.b + m * 0.3 };
@@ -30,7 +31,9 @@ export const scoreRect = (r, sprites, extra = [], bodyW = 4) => {
   return sc;
 };
 const toS = (q, c, o) => q && { l: c.x + c.s * (q.l + o), r: c.x + c.s * (q.r + o), t: c.y + c.s * q.t, b: c.y + c.s * q.b };
-export const spriteRects = (boxes, c, off = () => 0) => boxes.map((b) => { const o = off(b.grp); return { ...toS(b, c, o), fb: toS(b.fb, c, o), soft: b.soft }; });
+const BUST_NAME = /_b(_r|_l|_talk)?$/;
+const bustParts = (b) => (BUST_NAME.test(b.n || "") && b.fb ? [{ ...b, l: b.fb.l - (b.fb.r - b.fb.l) * 0.15, r: b.fb.r + (b.fb.r - b.fb.l) * 0.15, b: b.fb.b }, { ...b, t: b.fb.b, fb: null }] : [b]);
+export const spriteRects = (boxes, c, off = () => 0) => boxes.flatMap(bustParts).map((b) => { const o = off(b.grp); return { ...toS(b, c, o), fb: toS(b.fb, c, o), soft: b.soft }; });
 export const checkActors = (boxes, id) => {
   const act = boxes.filter((b) => b.actor);
   const errs = [];
@@ -72,8 +75,8 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
   };
   const faceNear = (P) => (s.boxes || []).filter((b) => b.fb && !b.grp?.startsWith?.("x")).map((b) => ({ b, d: Math.hypot(Math.max(b.fb.l - P[0], 0, P[0] - b.fb.r), Math.max(b.fb.t - P[1], 0, P[1] - b.fb.b)) })).filter((q) => q.d < 90).sort((a, c) => a.d - c.d)[0]?.b.fb;
   const GAP = 30;
-  const aim = (to, fb, dx, dy) => (!fb ? to : dx > 20 ? [fb.r + GAP, fb.t + (fb.b - fb.t) * 0.35] : dx < -20 ? [fb.l - GAP, fb.t + (fb.b - fb.t) * 0.35] : dy < 0 ? [(fb.l + fb.r) / 2, Math.min(fb.t, fb.top ?? fb.t) - GAP] : [(fb.l + fb.r) / 2, fb.b + GAP]);
-  const startAt = (bx, ex, ey) => [ex > bx.r ? bx.r + 8 : ex < bx.l ? bx.l - 8 : Math.min(bx.r - 20, Math.max(bx.l + 20, ex)), ey > bx.b ? bx.b + 14 : ey < bx.t ? bx.t - 14 : (bx.t + bx.b) / 2];
+  const aim = (to, fb, dx, dy) => (!fb ? to : dx > 20 ? [fb.r + LABEL_POS.AIM_OUT, (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dx < -20 ? [fb.l - LABEL_POS.AIM_OUT, (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dy < 0 ? [(fb.l + fb.r) / 2, Math.min(fb.t, fb.top ?? fb.t) - GAP] : [(fb.l + fb.r) / 2, fb.b + GAP]);
+  const startAt = (bx, ex, ey) => { const w = bx.r - bx.l, vert = ey > bx.b || ey < bx.t; return [vert ? (ex > bx.r ? bx.l + w * LABEL_POS.START : ex < bx.l ? bx.r - w * LABEL_POS.START : Math.min(bx.r - 20, Math.max(bx.l + 20, ex))) : ex > (bx.l + bx.r) / 2 ? bx.r + 8 : bx.l - 8, ey > bx.b ? bx.b + 14 : ey < bx.t ? bx.t - 14 : (bx.t + bx.b) / 2]; };
   for (const [k, text, sub, t, to0, side, follow] of s.labels || []) {
     const hit = typeof to0 === "string" ? (s.boxes || []).find((b) => b.n === to0) : null, ref = hit ? hit.fb || { l: hit.l, r: hit.r, t: hit.t, b: hit.b } : null;
     const own = typeof to0 === "string" ? (s.boxes || []).find((x) => x.n === to0) : (s.boxes || []).find((x) => x.fb === faceNear(to0));
@@ -81,15 +84,15 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
     const end = Math.min(s.t1, s.labelOut || s.t1), sz = labelSize(text, sub), c0 = camAt(s, t);
     const cands = [];
     const zoom = fb && fb.b - fb.t < 220 ? Math.min(3, Math.max(1, ((fb.r - fb.l) * c0.s) / 110)) : 1;
-    for (const dx of [0, 90, -90, 130, -130, 180, -180, 230, -230]) for (const dy of [-30, -60, -90, -120, -160, 40, 80, 120]) cands.push({ dx: Math.round(dx * zoom), dy: Math.round(dy * zoom) });
+    for (const dx of LABEL_POS.DX) for (const dy of LABEL_POS.DY) cands.push({ dx: Math.round(dx * zoom), dy: Math.round(dy * zoom) });
     const mk = (dx, dy) => (ax, ay, z) => { const X = ax + dx * z, Y = ay + dy * z, w = sz.w * z, h = sz.h * z, l = dx > 20 ? X : dx < -20 ? X - w : X - w / 2, tp = dy > 0 ? Y : Y - h; return { l, r: l + w, t: tp, b: tp + h }; };
     const pref = (q) => (side === "left" && q.dx > 0) || (side === "right" && q.dx < 0) ? 2500 : 0;
     const arrowCost = (q) => {
       const ax = c0.x + c0.s * (q.tp[0] + (follow ? off(follow, t) : 0)), ay = c0.y + c0.s * q.tp[1], bx = mk(q.dx, q.dy)(ax, ay, 1);
-      const [sx, sy] = startAt(bx, ax, ay), cx = sx + (ax - sx) * 0.3, cy = sy + (ay - sy) * 0.7, rs = rectsAt(t + 0.35);
+      const [sx, sy] = startAt(bx, ax, ay), cx = sx + (ax - sx) * LABEL_POS.BEND, cy = ay, rs = rectsAt(t + 0.35);
       const L = Math.hypot(ax - sx, ay - sy);
-      let c = L < 120 ? (120 - L) * 80 : L > 210 * zoom ? (L - 210 * zoom) * 120 : 0;
-      for (let k = 1; k <= 9; k++) { const u = k / 10, px = (1 - u) * (1 - u) * sx + 2 * u * (1 - u) * cx + u * u * ax, py = (1 - u) * (1 - u) * sy + 2 * u * (1 - u) * cy + u * u * ay; c += scoreRect({ l: px - 9, r: px + 9, t: py - 9, b: py + 9 }, rs) * 2; }
+      let c = L * LABEL_POS.PER_PX + (L < LABEL_POS.ARROW_MIN ? (LABEL_POS.ARROW_MIN - L) * 80 : L > LABEL_POS.ARROW_MAX * zoom ? (L - LABEL_POS.ARROW_MAX * zoom) * 120 : 0);
+      for (let k = 1; k <= LABEL_POS.PATH_N; k++) { const u = k / 10, px = (1 - u) * (1 - u) * sx + 2 * u * (1 - u) * cx + u * u * ax, py = (1 - u) * (1 - u) * sy + 2 * u * (1 - u) * cy + u * u * ay; c += scoreRect({ l: px - 9, r: px + 9, t: py - 9, b: py + 9 }, rs) * 2; }
       return c;
     };
     const stop = fb ? 0 : GAP;
@@ -103,7 +106,7 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
     if (!T) {
       const fixedAt = (q) => ({ l: q[0] - sz.w / 2, r: q[0] + sz.w / 2, t: q[1] - sz.h / 2, b: q[1] + sz.h / 2 });
       const P1 = [c0.x + c0.s * P0[0], c0.y + c0.s * P0[1]], cands = [P1];
-      if (size < 100) for (let x = VERT ? 760 : 240; x <= (VERT ? 1160 : 1680); x += 80) for (let y = VERT ? 260 : 160; y <= (VERT ? 600 : 360); y += 40) cands.push([x, y]);
+      if (size < 100) for (let x = VERT ? 760 : 240; x <= (VERT ? 1160 : 1680); x += 80) for (let y = VERT ? 260 : 160; y <= (VERT ? 600 : 360); y += 40) cands.push([Math.min(Math.max(x, SAFE.l + sz.w / 2), SAFE.r - sz.w / 2), y]);
       const best = cands.map((q, i) => ({ q, sc: ((n) => Array.from({ length: n }, (_, j) => t + 0.2 + ((end - t - 0.25) * j) / (n - 1)))(Math.max(3, Math.ceil((end - t) / 0.25))).reduce((a, u) => a + scoreRect(fixedAt(q), rectsAt(u), [...placed, ...reserved], 8), 0) + (i ? Math.hypot(q[0] - P1[0], q[1] - P1[1]) * 6 : 0) })).sort((a, b) => a.sc - b.sc)[0].q;
       placed.push(fixedAt(best));
       js += `{const e=BORN.plate(${hud},{id:'${s.id}${k}',text:'${text}',sub:'${sub}',x:${Math.round(best[0])},y:${Math.round(best[1])},size:${size},rot:${best[0] < 960 ? -3 : 3}});BORN.plateIn(tl,e,${t});}`;

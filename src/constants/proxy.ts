@@ -85,6 +85,8 @@ export const PROXY_TEXTS = {
     studioAll: "Mở tất cả Studio",
     openAllHint: "Mở lần lượt mọi proxy đang hiện trong danh sách",
     openedAll: (done: number, total: number) => `Đã mở ${done}/${total} proxy`,
+    closeAll: "Đóng tất cả trình duyệt",
+    closedAll: (done: number, total: number) => `Đã đóng ${done}/${total} trình duyệt`,
     sessionClosed: "Đã đóng phiên trình duyệt",
     loadError: "Không thể tải danh sách proxy.",
     retry: "Thử lại",
@@ -199,6 +201,8 @@ export const PROXY_TEXTS = {
     studioAll: "Open all Studio",
     openAllHint: "Opens every proxy shown in the list, one after another",
     openedAll: (done: number, total: number) => `Opened ${done}/${total} proxies`,
+    closeAll: "Close all browsers",
+    closedAll: (done: number, total: number) => `Closed ${done}/${total} browsers`,
     sessionClosed: "Browser session closed",
     loadError: "Could not load proxies.",
     retry: "Retry",
@@ -231,5 +235,6 @@ export const PROXY_TEXTS = {
     specsTitle: "Network Specs",
   },
 } as const;
+export const PROXY_BULK_CLOSE = "close-all";
 export const PROXY_BULK_STYLES = { ROW: "flex flex-wrap items-center gap-2", BUTTON: "px-3 py-2 text-[11px] whitespace-nowrap" } as const;
 export const PROXY_REFRESH_MS = 5000;

@@ -30,7 +30,7 @@ export interface BornasBeat {
   cast: BornasCast[];
   subject: number;
   frame: "wide" | "medium" | "close";
-  cam: "push" | "glide" | "pull";
+  cam: "push" | "pull";
   tag?: At & { text: string; sub: string; corner: "tl" | "tr" };
   plate?: At & { text: string; sub: string; at: number | null };
   label?: At & { text: string; sub: string; cast: number };
@@ -46,7 +46,6 @@ export interface BornasBeat {
   paper?: { lines: (At & { text: string; size: string })[]; stamp?: At & { text: string } };
   montage?: { bgs: string[]; caps: string[]; capT: number[] };
   endCard?: At & { text: string; sub: string };
-  slot?: number;
 }
 export interface BornasPlan {
   total: number;
@@ -73,14 +72,7 @@ const str = (v: unknown, max = 80): string =>
   String(v ?? "")
     .trim()
     .slice(0, max);
-const TEXT_RULE = {
-  DATE: /(\b\d{1,2}\/\d{1,2}\/\d{3,4}\b|\b\d{1,2}\/\d{4}\b|\b1[0-9]{3}\b|\b20\d\d\b|tuổi|\bage\b|years? old)/i,
-  TITLE: /^(chương|chapter|phần|part)\b|:/i,
-  MANY: /\s[·&,]\s|,|&/,
-  QUOTE: /["“”«»]/,
-  TAG_MAX: 26,
-  LABEL_MAX: 22,
-};
+const TEXT_RULE = { DATE: /(\b\d{1,2}\/\d{1,2}\/\d{3,4}\b|\b\d{1,2}\/\d{4}\b|\b1[0-9]{3}\b|\b20\d\d\b|tuổi|\bage\b|years? old)/i, TITLE: /^(chương|chapter|phần|part)\b|:/i, MANY: /\s[·&,]\s|,|&/, QUOTE: /["“”«»]/, TAG_MAX: 26, LABEL_MAX: 22 };
 const LIVING = new Set(["person", "animal"]);
 const typeTexts = (beat: BornasBeat, kindOf: (cast: number) => string, quote: boolean): void => {
   const moveToPlate = (text: string, sub: string, t: number, at: number | null = null) => {
@@ -183,7 +175,7 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
     }
     const bg = bgs.has(String(b.bg)) ? String(b.bg) : (_.last(beats)?.bg ?? firstBg);
     if ((kind === "scene" || kind === "bust") && !bg) continue;
-    const beat: BornasBeat = { t0: _.round(t0, 3), kind, bg, cast, subject: Math.round(num(b.subject, 0, 0, Math.max(0, cast.length - 1))), frame: b.frame === "close" || b.frame === "medium" ? b.frame : "wide", cam: b.cam === "glide" || b.cam === "pull" ? b.cam : "push" };
+    const beat: BornasBeat = { t0: _.round(t0, 3), kind, bg, cast, subject: Math.round(num(b.subject, 0, 0, Math.max(0, cast.length - 1))), frame: b.frame === "close" || b.frame === "medium" ? b.frame : "wide", cam: b.cam === "pull" ? "pull" : "push" };
     const tag = b.tag as Obj | undefined;
     if (tag?.text) beat.tag = { text: str(tag.text), sub: str(tag.sub), corner: tag.corner === "tr" ? "tr" : "tl", t: tAt(tag) };
     const plate = b.plate as Obj | undefined;
