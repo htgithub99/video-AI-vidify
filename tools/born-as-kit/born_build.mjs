@@ -43,8 +43,9 @@ const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
 const PAPER_W = VERT ? 540 : 1640;
 const OVT_OUT = 2.6;
 const LAYER = { BG: [0.25, 0.25] };
-const STEP = { ZOOM: 0.1, ZOOM2: 0.05, WIDE: 0.7, PULL: 0.6, PULL_MAX: 0, DUR: 0.8, MIN_DUR: 0.45, MIN_LEAD: 0.2, MIN_TAIL: 0.3, EARLY: 0.75, GAP: 0.9, HOLD: 0.15, DEFAULT_AT: 0.3, CENTER: 1, SY: VERT ? 640 : 520, FACE_DROP: 40, GROUP_Y: 0.35, LINE_EPS: 0.3, S_MAX: 1.4, EASE: "power2.inOut" };
+const STEP = { ZOOM: 0.1, ZOOM2: 0.05, WIDE: 0.7, PULL: 0.6, PULL_MAX: 0, DUR: 0.8, MIN_DUR: 0.45, MIN_LEAD: 0.2, MIN_TAIL: 0.3, EARLY: 0.75, GAP: 0.9, HOLD: 0.15, DEFAULT_AT: 0.3, CENTER: 1, SY: VERT ? 640 : 520, FACE_DROP: 40, GROUP_Y: 0.35, LINE_EPS: 0.3, MID: 540, S_MAX: 1.4, EASE: "power2.inOut" };
 const VERT_TITLE_END = 2.8;
+const END_Y = { VERT: 240, WIDE: 190 };
 const ICON = { H: 220, W: 280, GAP: 80, HAIR: 0.55, LIFT: 95, Y: 470, RAIL: 0.38 };
 const VISIT = { AHEAD: VERT ? 40 : 130, DUR_IN: 1.0, DUR_OUT: 0.6, LEAD: 0.45, DUR: 0.7, HOLD: 1.6, AFTER: 0.3, LABEL_HOLD: 1.1, LABEL_Z: VERT ? 1.12 : 1.35, ICON_Z: VERT ? 1.25 : 1.55, FACE_DROP: 60, OUT: 0.25, STEP: 1 / 15 };
 const DRIFT = { DARK_FADE: 0.8, RATE: 0.012, PUNCH: 0.03, PEAK: 0.16, BACK: 0.5, MIN_TAIL: 0.3, IN: "power2.out" };
@@ -195,6 +196,7 @@ const focusOf = (s, name) => {
   if (!b) return null;
   return b.fb ? [(b.fb.l + b.fb.r) / 2, (b.fb.t + b.fb.b) / 2 + STEP.FACE_DROP] : [(b.l + b.r) / 2, (b.t + b.b) / 2];
 };
+const syOf = (s) => ((s.boxes || []).some((b) => b.fb && !b.soft) ? STEP.SY : STEP.MID);
 const stepKeys = (s) => {
   const d = s.t1 - s.t0, k0 = s.cam[0], pull = s.cam[s.cam.length - 1].s < k0.s - 1e-3;
   const marks = [...(s.labels || []).map((l) => [l[3], typeof l[4] === "string" ? l[4] : null]), ...(s.focusOn ? [[s.focusOn.t, s.focusOn.sprite]] : []), ...(s.plates || []).map((p) => [p[3], null]), ...(s.tags || []).map((g) => [g[3], null])]
@@ -210,7 +212,7 @@ const stepKeys = (s) => {
     if (dur <= STEP.MIN_DUR * 0.5) return;
     const z = (n || s.cont ? STEP.ZOOM2 : STEP.ZOOM) * (pull ? -STEP.PULL : 1) * (s.bust ? 1 : STEP.WIDE);
     keys.push({ ...cur, t: r3(at), ease: undefined });
-    cur = { ...cur, t: r3(at + dur), s: r3(Math.min(Math.max(cur.s, STEP.S_MAX), cur.s * (1 + z))), tx: r3(cur.tx + (f[0] - cur.tx) * STEP.CENTER), ty: r3(cur.ty + (f[1] - cur.ty) * STEP.CENTER), sx: 960, sy: STEP.SY, ease: STEP.EASE };
+    cur = { ...cur, t: r3(at + dur), s: r3(Math.min(Math.max(cur.s, STEP.S_MAX), cur.s * (1 + z))), tx: r3(cur.tx + (f[0] - cur.tx) * STEP.CENTER), ty: r3(cur.ty + (f[1] - cur.ty) * STEP.CENTER), sx: 960, sy: syOf(s), ease: STEP.EASE };
     keys.push(cur);
     at = Math.max(at + dur + STEP.HOLD, (steps[n + 1]?.[0] ?? 0) - s.t0 - STEP.EARLY);
   });
@@ -219,7 +221,7 @@ const stepKeys = (s) => {
 };
 const trackKeys = (s, m) => {
   const k0 = s.cam[0], f = focusOf(s, s.subject) || [k0.tx, k0.ty], d = s.t1 - s.t0, a = Math.max(0, m.t - s.t0), e = Math.min(d, a + m.dur);
-  const start = { ...k0, t: 0, tx: f[0], ty: f[1], sx: 960, sy: STEP.SY, ease: undefined };
+  const start = { ...k0, t: 0, tx: f[0], ty: f[1], sx: 960, sy: syOf(s), ease: undefined };
   const keys = [start, { ...start, t: r3(a) }, { ...start, t: r3(e), tx: r3(f[0] + m.dx * ((e - a) / m.dur)), s: r3(s.cont ? k0.s : k0.s * (1 + STEP.ZOOM2)), ease: "none" }];
   if (e < d) keys.push({ ...keys[2], t: r3(d), ease: undefined });
   return keys.filter((k, i) => i === 0 || k.t > keys[i - 1].t);
@@ -233,7 +235,7 @@ const camShot = (s) => s.kind === "scene" && s.cam?.length && !s.roll;
 shots.forEach((s, i) => { const n = shots[i + 1]; s.runNext = !!(n && camShot(s) && camShot(n) && sceneKey(s) === sceneKey(n) && !s.mover && !n.mover); });
 const beatsOf = (s) => [...(s.icons || []).map((x) => x[1]), ...(s.plates || []).map((p) => p[3]), ...(s.labels || []).map((l) => l[3]), ...(s.tags || []).map((g) => g[3])].filter((t) => t > s.t0 && t < s.t1 - DRIFT.MIN_TAIL).sort((a, b) => a - b);
 const driftKeys = (s) => {
-  const d = s.t1 - s.t0, f = focusOf(s, s.subject), k0 = s.cont ? s.cam[0] : { ...s.cam[0], tx: f?.[0] ?? s.cam[0].tx, ty: f?.[1] ?? s.cam[0].ty, sx: 960, sy: STEP.SY };
+  const d = s.t1 - s.t0, f = focusOf(s, s.subject), k0 = s.cont ? s.cam[0] : { ...s.cam[0], tx: f?.[0] ?? s.cam[0].tx, ty: f?.[1] ?? s.cam[0].ty, sx: 960, sy: syOf(s) };
   const at = (t) => ({ ...k0, t: r3(t), s: r3(Math.min(STEP.S_MAX, k0.s * (1 + DRIFT.RATE * t))), ease: undefined });
   const keys = [at(0)];
   for (const te of beatsOf(s)) {
@@ -290,9 +292,9 @@ const visitKeys = (s, visits) => {
     return { s: prv.s * Math.pow(cur.s / prv.s, p), tx: prv.tx + (cur.tx - prv.tx) * p, ty: prv.ty + (cur.ty - prv.ty) * p };
   };
   const keys = [];
-  for (let u = 0; u < d; u += VISIT.STEP) { const c = at(u); keys.push({ ...s.cam[0], t: r3(u), s: r3(c.s), tx: r3(c.tx), ty: r3(c.ty), sx: 960, sy: STEP.SY, ease: undefined }); }
+  for (let u = 0; u < d; u += VISIT.STEP) { const c = at(u); keys.push({ ...s.cam[0], t: r3(u), s: r3(c.s), tx: r3(c.tx), ty: r3(c.ty), sx: 960, sy: syOf(s), ease: undefined }); }
   const c = at(d);
-  keys.push({ ...s.cam[0], t: r3(d), s: r3(c.s), tx: r3(c.tx), ty: r3(c.ty), sx: 960, sy: STEP.SY, ease: undefined });
+  keys.push({ ...s.cam[0], t: r3(d), s: r3(c.s), tx: r3(c.tx), ty: r3(c.ty), sx: 960, sy: syOf(s), ease: undefined });
   return keys;
 };
 let prevShot = null;
@@ -445,7 +447,8 @@ for (const s of shots) {
   if (s.accent?.kind === "spot") js += `{const e=document.createElement('div');e.className='spot';${ov}.appendChild(e);tl.fromTo(e,{opacity:0},{opacity:1,duration:.4,immediateRender:false},${s.accent.t.toFixed(3)});tl.to(e,{opacity:0,duration:.6},${Math.min(s.t1 - 0.6, s.accent.t + 1.8).toFixed(3)});}`;
   if (s.flashAt !== undefined) js += `{const e=document.createElement('div');e.className='bw';${ov}.appendChild(e);tl.fromTo(e,{opacity:.55},{opacity:0,duration:.4,immediateRender:false},${s.flashAt});}`;
   if (s.smoke) js += `{const e=document.createElement('div');e.className='haze';${ov}.appendChild(e);tl.fromTo(e,{x:-200,opacity:0},{x:200,opacity:.45,duration:${(s.t1 - s.t0).toFixed(2)},ease:'none'},${s.t0});}`;
-  if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:${VERT ? 760 : 190},size:${VERT ? 44 : 64},rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
+  if (s.endCard) TEXTEV.push({ id: s.id, t: s.endCard.t, end: s.t1 });
+  if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:${VERT ? END_Y.VERT : END_Y.WIDE},size:${VERT ? 44 : 64},rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
 }
 const css = fs.readFileSync(path.join(KIT, "born_style.css"), "utf8");
 const scripts = ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js", "MotionPathPlugin.min.js", "SplitText.min.js", "CustomEase.min.js", "CustomWiggle.min.js", "noise.min.js", "kit.js"].map((f) => `<script src="${f}"></script>`).join("");

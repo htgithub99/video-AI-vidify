@@ -19,7 +19,8 @@ const area = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Ma
 const offscreen = (r) => (r.r - r.l) * (r.b - r.t) - area(r, SAFE);
 export const RESERVED = VERT ? { tl: { l: 0, r: 0, t: 0, b: 0 }, tr: { l: 0, r: 0, t: 0, b: 0 } } : { tl: { l: 60, r: 620, t: 70, b: 210 }, tr: { l: 1300, r: 1890, t: 30, b: 210 } };
 export const FACE_PAD = 0.3;
-const LABEL_POS = { AIM_OUT: 30, AIM_DOWN: 12, DX: VERT ? [0, 40, -40, 80, -80] : [90, -90, 120, -120, 150, -150, 190, -190, 240, -240], DY: [-70, -95, -120, -150, 70, 110], ARROW_MIN: 110, ARROW_MAX: 240, PER_PX: 6, PATH_N: 6, START: 0.8, BEND: 0.1 };
+const TEXT_GAP = 24;
+const LABEL_POS = { AIM_OUT: 30, AIM_DOWN: 12, DX: VERT ? [-10, 10] : [90, -90, 120, -120, 150, -150, 190, -190, 240, -240], DY: [-70, -95, -120, -150, 70, 110], ARROW_MIN: 110, ARROW_MAX: 240, PER_PX: 6, PATH_N: 6, START: 0.8, SHIFT: 90, VERT_IN: 0.25, VERT_UP: 24, BEND: 0.1 };
 export const scoreRect = (r, sprites, extra = [], bodyW = 4) => {
   let sc = offscreen(r) * 400;
   for (const p of sprites) {
@@ -55,7 +56,7 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
     const cands = VERT ? ["tl", "bl"] : [pref, pref === "tl" ? "tr" : "tl"].filter((c) => !(c === "tr" && s.series));
     const best = cands.map((c, i) => ({ c, sc: scoreRect(tagRect(c, sz.w, sz.h), rectsAt(t + 0.3)) + scoreRect(tagRect(c, sz.w, sz.h), rectsAt(s.t1 - 0.05)) + i * 500 })).sort((a, b) => a.sc - b.sc)[0];
     const rr = tagRect(best.c, sz.w, sz.h);
-    placed.push(rr);
+    placed.push({ l: rr.l - TEXT_GAP, r: rr.r + TEXT_GAP, t: rr.t - TEXT_GAP, b: rr.b + TEXT_GAP });
     js += `{const e=BORN.tag(${hud},{id:'${s.id}${k}',text:'${text}',sub:'${sub}',corner:'${best.c}'});BORN.plateIn(tl,e,${t});}`;
   }
   if (s.series) reserved.push(RESERVED.tr);
@@ -75,8 +76,8 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
   };
   const faceNear = (P) => (s.boxes || []).filter((b) => b.fb && !b.grp?.startsWith?.("x")).map((b) => ({ b, d: Math.hypot(Math.max(b.fb.l - P[0], 0, P[0] - b.fb.r), Math.max(b.fb.t - P[1], 0, P[1] - b.fb.b)) })).filter((q) => q.d < 90).sort((a, c) => a.d - c.d)[0]?.b.fb;
   const GAP = 30;
-  const aim = (to, fb, dx, dy) => (!fb ? to : dx > 20 ? [fb.r + LABEL_POS.AIM_OUT, dy > 0 ? fb.b : (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dx < -20 ? [fb.l - LABEL_POS.AIM_OUT, dy > 0 ? fb.b : (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dy < 0 ? [(fb.l + fb.r) / 2, Math.min(fb.t, fb.top ?? fb.t) - GAP] : [(fb.l + fb.r) / 2, fb.b + GAP]);
-  const startAt = (bx, ex, ey) => { const w = bx.r - bx.l, vert = ey > bx.b || ey < bx.t; return [vert ? (ex > bx.r ? bx.l + w * LABEL_POS.START : ex < bx.l ? bx.r - w * LABEL_POS.START : Math.min(bx.r - 20, Math.max(bx.l + 20, ex))) : ex > (bx.l + bx.r) / 2 ? bx.r + 8 : bx.l - 8, ey > bx.b ? bx.b + 14 : ey < bx.t ? bx.t - 14 : (bx.t + bx.b) / 2]; };
+  const aim = (to, fb, dx, dy) => (!fb ? to : dx > 20 ? [fb.r + LABEL_POS.AIM_OUT, dy > 0 ? fb.b : (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dx < -20 ? [fb.l - LABEL_POS.AIM_OUT, dy > 0 ? fb.b : (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dy < 0 ? (VERT ? [dx < 0 ? fb.r - (fb.r - fb.l) * LABEL_POS.VERT_IN : fb.l + (fb.r - fb.l) * LABEL_POS.VERT_IN, (fb.top ?? fb.t) - LABEL_POS.VERT_UP] : [(fb.l + fb.r) / 2, Math.min(fb.t, fb.top ?? fb.t) - GAP]) : [(fb.l + fb.r) / 2, fb.b + GAP]);
+  const startAt = (bx, ex, ey) => { const w = bx.r - bx.l, vert = ey > bx.b || ey < bx.t; return [vert ? (ex > bx.r ? bx.l + w * LABEL_POS.START : ex < bx.l ? bx.r - w * LABEL_POS.START : Math.min(bx.r - 20, Math.max(bx.l + 20, ex + (ex >= (bx.l + bx.r) / 2 ? LABEL_POS.SHIFT : -LABEL_POS.SHIFT)))) : ex > (bx.l + bx.r) / 2 ? bx.r + 8 : bx.l - 8, ey > bx.b ? bx.b + 14 : ey < bx.t ? bx.t - 14 : (bx.t + bx.b) / 2]; };
   for (const [k, text, sub, t, to0, side, follow] of s.labels || []) {
     const hit = typeof to0 === "string" ? (s.boxes || []).find((b) => b.n === to0) : null, ref = hit ? hit.fb || { l: hit.l, r: hit.r, t: hit.t, b: hit.b } : null;
     const own = typeof to0 === "string" ? (s.boxes || []).find((x) => x.n === to0) : (s.boxes || []).find((x) => x.fb === faceNear(to0));
@@ -132,8 +133,9 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
     const c0 = camAt(s, t), w = textW(text, 50, 800) + 92, h = 50 * 1.15 + 50 * 0.68 + 12, end = s.t1;
     const mk = (dx, dy) => (ax, ay, z) => ({ l: ax + (dx - w / 2) * z, r: ax + (dx + w / 2) * z, t: ay + (dy - h / 2) * z, b: ay + (dy + h / 2) * z });
     const cands = [];
-    for (const dx of [-520, -420, -320, -220, 220, 320, 420, 520]) for (const dy of [-60, -130, -200, -270]) cands.push({ dx, dy });
-    const best = cands.map((q) => ({ ...q, sc: evalRect(T, null, t, end, mk(q.dx, q.dy)) + Math.abs(q.dy) * 3 })).sort((a, b) => a.sc - b.sc)[0];
+    for (const dx of [-620, -520, -420, -320, -220, 220, 320, 420, 520, 620]) for (const dy of [-60, -130, -200, -270, -340, -410]) cands.push({ dx, dy });
+    const tailCost = (q) => { const ax = c0.x + c0.s * T[0], ay = c0.y + c0.s * T[1], rs = rectsAt(t + 0.35); let c = 0; for (let k = 2; k <= 7; k++) { const u = k / 10, px = ax + q.dx * c0.s * (1 - u), py = ay + q.dy * c0.s * (1 - u); c += scoreRect({ l: px - 9, r: px + 9, t: py - 9, b: py + 9 }, rs) * 2; } return c; };
+    const best = cands.map((q) => ({ ...q, sc: evalRect(T, null, t, end, mk(q.dx, q.dy)) + tailCost(q) + Math.abs(q.dy) * 3 })).sort((a, b) => a.sc - b.sc)[0];
     placed.push(mk(best.dx, best.dy)(c0.x + c0.s * T[0], c0.y + c0.s * T[1], 1));
     js += `{const b=BORN.bubble(${root(T, c0.s)},{id:'${s.id}${k}',text:'${text}',x:${Math.round(T[0] + best.dx)},y:${Math.round(T[1] + best.dy)},tail:[${T.map(Math.round)}]});BORN.bubbleIn(tl,b,${t});}`;
   }

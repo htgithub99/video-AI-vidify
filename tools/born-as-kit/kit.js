@@ -30,7 +30,7 @@ const BORN = {
   },
   arrowStart(box, ex, ey, pad = 14) {
     const w = box.r - box.l, cx = (box.l + box.r) / 2, vert = ey > box.b || ey < box.t;
-    const x = vert ? (ex > box.r ? box.l + w * 0.8 : ex < box.l ? box.r - w * 0.8 : Math.min(box.r - 20, Math.max(box.l + 20, ex))) : ex > cx ? box.r + pad * 0.6 : box.l - pad * 0.6;
+    const x = vert ? (ex > box.r ? box.l + w * 0.8 : ex < box.l ? box.r - w * 0.8 : Math.min(box.r - 20, Math.max(box.l + 20, ex + (ex >= cx ? 90 : -90)))) : ex > cx ? box.r + pad * 0.6 : box.l - pad * 0.6;
     const y = ey > box.b ? box.b + pad : ey < box.t ? box.t - pad : (box.t + box.b) / 2;
     return [x, y];
   },

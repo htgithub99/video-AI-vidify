@@ -97,6 +97,8 @@ const RULE = {
   clearPad: 30,
   clearStep: 1.1,
   edgePad: 120,
+  leapRe: /jump|leap|falling|plunge/i,
+  leapOut: 260,
   lineup: { 1: [960], 2: [700, 1220], 3: [560, 960, 1360], 4: [480, 800, 1120, 1440] },
   animalMax: 1.15,
   animalMin: 0.3,
@@ -257,8 +259,10 @@ const compose = (plan, main, crowds, A) => {
   }
   const slots = RULE.lineup[people.length];
   if (!slots || main.some((a) => a && !a.back && !people.includes(a) && a.kind !== "prop" && a.place !== "sky" && a.place !== "wall")) return;
+  const xs = A.spots.map((p) => p.x), lo = xs.length > 1 ? Math.min(...xs) : 0, hi = xs.length > 1 ? Math.max(...xs) : 1920, s0 = slots[0], s1 = slots[slots.length - 1];
+  const fit = (x) => (s1 - s0 > hi - lo ? lo + ((x - s0) / Math.max(1, s1 - s0)) * (hi - lo) : clamp(x + clamp(0, lo - s0, hi - s1), lo, hi));
   [...people].sort((u, v) => u.x - v.x).forEach((a, k) => {
-    a.x = slots[k];
+    a.x = xs.length > 1 ? (RULE.leapRe.test(a.sprite) ? Math.min(1920 - RULE.edgePad, hi + RULE.leapOut) : fit(slots[k])) : slots[k];
     a.y = A.groundAt(a.x) + a.pad * a.h;
   });
 };
@@ -606,7 +610,7 @@ const shapeEvents = (plan, shots) => {
     const kindOf = (n) => plan.sprites[n]?.kind;
     if (!VERT && sh.bust && sh.actors?.length === 1 && next && next.kind === "scene" && !next.bust && next.actors?.length === 1 && kindOf(next.actors[0].sprite) === "prop" && i + 2 < shots.length) {
       const prop = next.actors[0], h = Math.min(EVENTS.insetH, prop.h * 3);
-      sh.actors = [{ ...sh.actors[0], shift: { t: next.t0, dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, { sprite: prop.sprite, x: EVENTS.insetX, y: EVENTS.insetY + h / 2, h, shadow: false, allow: true, enter: { t: next.t0, kind: "slide", from: 1 } }];
+      sh.actors = [{ ...sh.actors[0], shift: { t: r3(Math.max(sh.t0, next.t0 - EVENTS.shiftLead)), dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, { sprite: prop.sprite, x: EVENTS.insetX, y: EVENTS.insetY + h / 2, h, shadow: false, allow: true, enter: { t: r3(Math.max(sh.t0, next.t0 - EVENTS.shiftLead) + EVENTS.shiftDur * EVENTS.insetAfter), kind: "slide", from: 1 } }];
       for (const k of ["tags", "plates"]) sh[k] = [...(sh[k] || []), ...(next[k] || [])];
       i++;
     }
@@ -623,7 +627,7 @@ const shapeEvents = (plan, shots) => {
   }
   return out;
 };
-const EVENTS = { insetX: 1380, insetY: 470, insetH: 460, shiftDx: -250, shiftDur: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: 15 };
+const EVENTS = { insetX: 1380, insetY: 470, insetH: 460, shiftDx: -250, shiftDur: 0.6, shiftLead: 0.3, insetAfter: 0.75, talkMax: 2.4, lateLabel: 0.4, labelChars: 15 };
 const shortName = (t) => { const w = String(t).trim().split(/\s+/), two = w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : w.join(" "); return t.length <= EVENTS.labelChars ? t : two.length <= EVENTS.labelChars ? two : w[w.length - 1]; };
 const iconOf = (plan, text) => { const hit = RULE.icons.find(([w]) => w.test(text)); const sprite = hit && Object.keys(plan.sprites || {}).find((n) => hit[1].test(n)); return sprite ? { sprite, cross: /^NO\b/i.test(String(text).trim()) } : null; };
 export const direct = (plan) => {
