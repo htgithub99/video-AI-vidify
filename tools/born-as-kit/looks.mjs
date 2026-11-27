@@ -6,7 +6,7 @@ const BATTLE = "battles?|fights?|fighting|attacks?|attacked|siege|legions?|arena
 export const LOOKS = {
   base: { grade: "", fx: "", cam: { push: 1, pan: 1 }, impact: { re: W(`${BLAST}|${GUN}|${BLADE}`), kind: "hit" }, accent: null, amb: "" },
   ww: { grade: "war", fx: "ash", cam: { push: 1.1, pan: 1 }, impact: { re: W(`${BLAST}|${GUN}|machine|tanks?|attack|attacked`), kind: "hit" }, accent: null, amb: "news" },
-  wildwest: { grade: "old", fx: "dust", cam: { push: 1, pan: 1.1 }, impact: { re: W(`${GUN}|robs?|robbed|robbery|ambush`), kind: "hit" }, accent: { re: W("wanted|reward|duel|draw|draws|sheriff|outlaw|outlaws|marshal|hanged|noose|bounty"), kind: "zoom", amt: 0.07, dur: 0.35 }, amb: "sun" },
+  wildwest: { grade: "", fx: "dust", cam: { push: 1, pan: 1.1 }, impact: { re: W(`${GUN}|robs?|robbed|robbery|ambush`), kind: "hit" }, accent: { re: W("wanted|reward|duel|draw|draws|sheriff|outlaw|outlaws|marshal|hanged|noose|bounty"), kind: "zoom", amt: 0.07, dur: 0.35 }, amb: "sun" },
   ancient: { grade: "warm", fx: "motes", cam: { push: 0.8, pan: 0.85 }, impact: { re: W(`${BLADE}|${BATTLE}|crucified|whips?`), kind: "hit" }, accent: { re: W("rome|emperor|senate|gods?|consul|dictator|triumph|crown|empire"), kind: "zoom", amt: 0.05, dur: 0.8 }, amb: "rays" },
   victorian: { grade: "gaslight", fx: "fog", cam: { push: 0.75, pan: 0.8 }, impact: { re: W(`${GUN}|screams?|murder|murdered|falls|fell|falling|waterfall`), kind: "hit" }, accent: { re: W("clues?|footprints?|ash|letter|note|poison|poisoned|evidence|deduce|deduction|tracks|mud|cipher"), kind: "spot", amt: 0.05, dur: 0.5 }, amb: "gas" },
   eastasia: { grade: "silk", fx: "petals", cam: { push: 1, pan: 1 }, impact: { re: W(`${BLADE}|${BATTLE}|${GUN}`), kind: "slash" }, accent: null, amb: "" },
