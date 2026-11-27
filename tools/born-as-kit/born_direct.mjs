@@ -99,6 +99,7 @@ const RULE = {
   edgePad: 120,
   leapRe: /jump|leap|falling|plunge/i,
   leapOut: 260,
+  insertCY: 540,
   lineup: { 1: [960], 2: [700, 1220], 3: [560, 960, 1360], 4: [480, 800, 1120, 1440] },
   animalMax: 1.15,
   animalMin: 0.3,
@@ -609,9 +610,21 @@ const shapeEvents = (plan, shots) => {
     const sh = shots[i], next = shots[i + 1];
     const kindOf = (n) => plan.sprites[n]?.kind;
     if (!VERT && sh.bust && sh.actors?.length === 1 && next && next.kind === "scene" && !next.bust && next.actors?.length === 1 && kindOf(next.actors[0].sprite) === "prop" && i + 2 < shots.length) {
-      const prop = next.actors[0], h = Math.min(EVENTS.insetH, prop.h * 3);
-      sh.actors = [{ ...sh.actors[0], shift: { t: r3(Math.max(sh.t0, next.t0 - EVENTS.shiftLead)), dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, { sprite: prop.sprite, x: EVENTS.insetX, y: EVENTS.insetY + h / 2, h, shadow: false, allow: true, enter: { t: r3(Math.max(sh.t0, next.t0 - EVENTS.shiftLead) + EVENTS.shiftDur * EVENTS.insetAfter), kind: "slide", from: 1 } }];
-      for (const k of ["tags", "plates"]) sh[k] = [...(sh[k] || []), ...(next[k] || [])];
+      const prop = next.actors[0], b0 = sh.actors[0], face = faceBox(b0.sprite, b0.x, b0.y, b0.h, b0.dir, b0.anchorX ?? 0.5).fb, text = next.plates?.[0]?.[1] || next.tags?.[0]?.[1] || "";
+      if (/^NO\b/i.test(text.trim())) {
+        sh.icons = [...(sh.icons || []), [prop.sprite, r3(next.plates?.[0]?.[3] ?? next.tags?.[0]?.[3] ?? next.t0), (face.l + face.r) / 2 < 960 ? "r" : "l", text, true]];
+        const shown = [...(sh.plates || []), ...(sh.tags || []), ...(sh.labels || [])];
+        if (shown.length) sh.outs = [...(sh.outs || []), ...shown.map((x) => [x[0], r3(Math.max(x[3] + EVENTS.textMin, sh.icons.at(-1)[1] - EVENTS.textOut))])];
+      } else {
+        const pm = meta(prop.sprite), at = r3(Math.max(sh.t0, next.t0 - EVENTS.shiftLead));
+        const left = face.r + EVENTS.shiftDx + EVENTS.insetGap, right = 1920 - EVENTS.insetEdge, h = Math.min(EVENTS.insetH, prop.h * 3, ((Math.min(right - left, EVENTS.insetW)) * pm.h) / pm.w), w = (h * pm.w) / pm.h;
+        sh.actors = [{ ...b0, shift: { t: at, dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, { sprite: prop.sprite, x: r3(Math.min(Math.max(EVENTS.insetX, left + w / 2), right - w / 2)), y: EVENTS.insetY + h / 2, h: r3(h), shadow: false, allow: true, enter: { t: r3(at + EVENTS.shiftDur * EVENTS.insetAfter), kind: "slide", from: 1 } }];
+        for (const k of ["tags", "plates"]) {
+          const add = (next[k] || []).map((x, j) => [`${x[0]}i${j}`, ...x.slice(1)]);
+          if (add.length && sh[k]?.length) sh.outs = [...(sh.outs || []), ...sh[k].map((x) => [x[0], add[0][3]])];
+          sh[k] = [...(sh[k] || []), ...add];
+        }
+      }
       i++;
     }
     const lead = sh.actors?.[0]?.sprite;
@@ -627,7 +640,7 @@ const shapeEvents = (plan, shots) => {
   }
   return out;
 };
-const EVENTS = { insetX: 1380, insetY: 470, insetH: 460, shiftDx: -250, shiftDur: 0.6, shiftLead: 0.3, insetAfter: 0.75, talkMax: 2.4, lateLabel: 0.4, labelChars: 15 };
+const EVENTS = { insetX: 1380, insetY: 470, insetH: 380, insetW: 620, insetGap: 60, insetEdge: 60, shiftDx: -250, shiftDur: 0.6, shiftLead: 0.3, insetAfter: 0.75, textOut: 0.5, textMin: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: VERT ? 13 : 15 };
 const shortName = (t) => { const w = String(t).trim().split(/\s+/), two = w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : w.join(" "); return t.length <= EVENTS.labelChars ? t : two.length <= EVENTS.labelChars ? two : w[w.length - 1]; };
 const iconOf = (plan, text) => { const hit = RULE.icons.find(([w]) => w.test(text)); const sprite = hit && Object.keys(plan.sprites || {}).find((n) => hit[1].test(n)); return sprite ? { sprite, cross: /^NO\b/i.test(String(text).trim()) } : null; };
 export const direct = (plan) => {
@@ -724,8 +737,9 @@ export const direct = (plan) => {
     }
     if (lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal"))) {
       const m = meta(lead.sprite), asp = m.w / m.h, h = Math.min(RULE.insertH, RULE.insertW / asp, m.h * RULE.insertUp), d = t1 - beat.t0;
-      const one = { sprite: lead.sprite, x: 960, y: 820, h: r3(VERT ? Math.min(h, RULE.vertInsertW / asp) : h) };
-      const top = [960, 820 - h * 0.7];
+      const ih = r3(VERT ? Math.min(h, RULE.vertInsertW / asp) : h), iy = r3(RULE.insertCY + ih / 2);
+      const one = { sprite: lead.sprite, x: 960, y: iy, h: ih, shadow: false };
+      const top = [960, iy - h * 0.7];
       const inBeat = (o) => o && o.t >= beat.t0 - 0.001 && o.t < t1;
       shots.push({ ...base, kind: "scene", id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [one], swaps: [], bubbles: [], cam: [{ t: 0, s: 1.0, x: 960, y: 560 }, { t: r3(d), s: r3(1 + (hook ? 0.06 : 0.03) * d), x: 960, y: 600 }], glowAt: { x: 960, y: 640, r: 520, color: "255,190,110", t: beat.t0 }, tags: inBeat(beat.tag) ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: inBeat(beat.label) ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lead.sprite, "up"]] : [], plates: inBeat(beat.plate) ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, VERT ? RULE.vertPlateY : 200], beat.plate.at === lead.cast ? top : null]] : [], dark: beat.dark ? Math.min(RULE.darkMax, beat.dark) : 0, flash: beat.flash, endCard: beat.endCard, series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
       return;

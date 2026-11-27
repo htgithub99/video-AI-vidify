@@ -22,6 +22,7 @@ let MARK = 0;
 export const FACEMAP = () => ({ ...FACES, ...FACE_FIX });
 export const faces = (n) => FACING[n] || "r";
 export const markGroup = (id) => { for (let i = MARK; i < BOXES.length; i++) BOXES[i].grp = id; MARK = BOXES.length; };
+export const tagBox = (o) => { if (BOXES.length) Object.assign(BOXES[BOXES.length - 1], o); };
 export const takeBoxes = () => { const b = BOXES; BOXES = []; MARK = 0; return b; };
 export const spriteDefs = () => `<svg width="0" height="0" style="position:absolute"><defs>${[...used].map((n) => `<g id="S_${n}">${load(n).body}</g>`).join("")}</defs></svg>`;
 export const sp = (n, x, y, h, o = {}) => {

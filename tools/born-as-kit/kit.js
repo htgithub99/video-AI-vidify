@@ -82,12 +82,12 @@ const BORN = {
     const at = BORN.TAG_AT || { tl: [330, 140], tr: [1570, 140] }, x = (at[corner] || at.tr)[0], y = at[corner] ? at[corner][1] : corner[0] === "b" ? 950 : at.tr[1];
     return BORN.plate(root, { id, text, sub, x, y, size, rot: corner === "tl" ? -3 : 3 });
   },
-  bubble(root, { id, text, x, y, tail, size = 50 }) {
+  bubble(root, { id, text, x, y, tail, size = 50, maxW = 640 }) {
     const wrap = document.createElement("div");
     wrap.className = "bb";
     wrap.id = id;
     const [tx, ty] = tail, s = tx < x ? -1 : 1;
-    wrap.innerHTML = `<svg class="bb-a" width="1920" height="1080" viewBox="0 0 1920 1080"><path d="M${x - 34 + s * 30} ${y} L${tx} ${ty} L${x + 34 + s * 30} ${y}Z"/></svg><div class="bb-p" style="left:${x}px;top:${y}px;font-size:${size}px">${text}</div>`;
+    wrap.innerHTML = `<svg class="bb-a" width="1920" height="1080" viewBox="0 0 1920 1080"><path d="M${x - 34 + s * 30} ${y} L${tx} ${ty} L${x + 34 + s * 30} ${y}Z"/></svg><div class="bb-p" style="left:${x}px;top:${y}px;font-size:${size}px;max-width:${maxW}px">${text}</div>`;
     root.appendChild(wrap);
     const p = wrap.querySelector(".bb-p");
     gsap.set(p, { xPercent: -50, yPercent: -50 });

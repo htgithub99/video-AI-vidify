@@ -4,11 +4,11 @@ import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 const KIT = path.dirname(fileURLToPath(import.meta.url));
 const [planFile, jobDir] = process.argv.slice(2);
-const { sp, box, spriteDefs, takeBoxes, markGroup, FACEMAP, pngUsed, load } = await import(pathToFileURL(path.join(KIT, "sprites.mjs")).href);
+const { sp, box, spriteDefs, takeBoxes, tagBox, markGroup, FACEMAP, pngUsed, load } = await import(pathToFileURL(path.join(KIT, "sprites.mjs")).href);
 const { camState, textJs, checkActors, plateSize, textW } = await import(pathToFileURL(path.join(KIT, "layout.mjs")).href);
 const plan = JSON.parse(fs.readFileSync(planFile, "utf8"));
 const { direct } = await import(pathToFileURL(path.join(KIT, "born_direct.mjs")).href);
-const { VERT, VIEW, TAG_AT } = await import(pathToFileURL(path.join(KIT, "vert.mjs")).href);
+const { VERT, VIEW, TAG_AT, SAFE } = await import(pathToFileURL(path.join(KIT, "vert.mjs")).href);
 const { lookEvents, punchCam, AMB } = await import(pathToFileURL(path.join(KIT, "looks.mjs")).href);
 const VERT_CSS = `#root{width:1080px!important;height:1920px!important}#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;transform:translateX(${-((VIEW.l + VIEW.r) / 2) * VIEW.k + 540}px) scale(${VIEW.k})}#ovl,#ovt{position:absolute;left:0;top:0;width:1080px;height:1920px;z-index:60;pointer-events:none}.bl-t b{font-size:54px!important;-webkit-text-stroke:10px #16100c!important}.bl-t i{font-size:30px!important}`;
 const FIXRAW = process.env.BORN_FIX ? JSON.parse(fs.readFileSync(process.env.BORN_FIX, "utf8")) : {};
@@ -23,19 +23,25 @@ const mergeRuns = (list) => {
     if (!a || !sameScene(a, s)) { out.push({ ...s, actors: (s.actors || []).map((x) => ({ ...x })) }); continue; }
     a.actors.forEach((x, i) => { x.move = joinMove(x.move, s.actors[i].move); });
     a.part = (a.part || 0) + 1;
+    const rename = new Map();
     for (const [k, ti] of Object.entries(TEXT_T)) {
-      const add = (s[k] || []).map((x, j) => [`${x[0]}${a.part}${j}`, ...x.slice(1)]);
+      const add = (s[k] || []).map((x, j) => { rename.set(x[0], `${x[0]}${a.part}${j}`); return [`${x[0]}${a.part}${j}`, ...x.slice(1)]; });
       if (add.length) a.outs = [...(a.outs || []), ...(a[k] || []).map((x) => [x[0], add[0][ti]])];
       a[k] = [...(a[k] || []), ...add];
     }
     for (const k of ["icons", "swaps"]) a[k] = [...(a[k] || []), ...(s[k] || [])];
+    if (s.outs?.length) a.outs = [...(a.outs || []), ...s.outs.map(([k, t]) => [rename.get(k) ?? k, t])];
     for (const k of ["focusOn", "flash", "glowAt", "smoke"]) if (a[k] === undefined && s[k] !== undefined) a[k] = s[k];
     if ((s.dark || 0) !== (a.darkSteps?.at(-1)?.[1] ?? a.dark ?? 0)) a.darkSteps = [...(a.darkSteps || [[a.t0, a.dark || 0]]), [s.t0, s.dark || 0]];
     a.merged = true;
   }
   return Object.assign(out, { report: list.report });
 };
-const planShots = mergeRuns(plan.beats ? direct(plan) : plan.shots);
+const BUST_LIFT = 110;
+const lift = (a, n) => (box(n, a.x, a.y, a.h).b <= VIEW.b ? { ...a, y: a.y - BUST_LIFT } : a);
+const liftBust = (s) => (VERT && s.bust && !s.blur && !(s.plates || []).some((p) => p[5]) ? { ...s, actors: (s.actors || []).map((a) => lift(a, a.sprite)), swaps: (s.swaps || []).map((w) => lift(w, w.to)) } : s);
+const merged = mergeRuns(plan.beats ? direct(plan) : plan.shots);
+const planShots = Object.assign(merged.map(liftBust), { report: merged.report });
 const CAST = {};
 const TOTAL = plan.total;
 const safe = (s) => String(s ?? "").replace(/'/g, "’").replace(/[\\`$]/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\s+/g, " ").trim();
@@ -46,7 +52,7 @@ const LAYER = { BG: [0.25, 0.25] };
 const STEP = { ZOOM: 0.1, ZOOM2: 0.05, WIDE: 0.7, PULL: 0.6, PULL_MAX: 0, DUR: 0.8, MIN_DUR: 0.45, MIN_LEAD: 0.2, MIN_TAIL: 0.3, EARLY: 0.75, GAP: 0.9, HOLD: 0.15, DEFAULT_AT: 0.3, CENTER: 1, SY: VERT ? 640 : 520, FACE_DROP: 40, GROUP_Y: 0.35, LINE_EPS: 0.3, MID: 540, S_MAX: 1.4, EASE: "power2.inOut" };
 const VERT_TITLE_END = 2.8;
 const END_Y = { VERT: 240, WIDE: 190 };
-const ICON = { H: 220, W: 280, GAP: 80, HAIR: 0.55, LIFT: 95, Y: 470, RAIL: 0.38 };
+const ICON = { H: 220, W: 380, GAP: 80, HAIR: 0.55, LIFT: 95, Y: 470, RAIL: 0.38 };
 const VISIT = { AHEAD: VERT ? 40 : 130, DUR_IN: 1.0, DUR_OUT: 0.6, LEAD: 0.45, DUR: 0.7, HOLD: 1.6, AFTER: 0.3, LABEL_HOLD: 1.1, LABEL_Z: VERT ? 1.12 : 1.35, ICON_Z: VERT ? 1.25 : 1.55, FACE_DROP: 60, OUT: 0.25, STEP: 1 / 15 };
 const DRIFT = { DARK_FADE: 0.8, RATE: 0.012, PUNCH: 0.03, PEAK: 0.16, BACK: 0.5, MIN_TAIL: 0.3, IN: "power2.out" };
 const r3 = (v) => Math.round(v * 1000) / 1000;
@@ -147,7 +153,8 @@ for (const s of planShots) {
       const swaps = (s.swaps || []).filter((w) => w.from === a.sprite);
       let one = sp(a.sprite, a.x, a.y, a.h, { ...(dir ? { dir } : {}), crowd: !!a.crowd, allow: !!a.allow, noBox: !!a.noBox, shadow: a.shadow !== false, anchorX: a.anchorX ?? 0.5 });
       if (swaps.length) {
-        one = `<g id="${s.id}a${i}p">${one}</g>` + swaps.map((w, k) => `<g id="${s.id}a${i}w${k}" style="opacity:0">${sp(w.to, w.x, w.y, w.h, { ...(dir ? { dir } : {}), allow: true, shadow: false, anchorX: w.anchorX ?? 0.5 })}</g>`).join("");
+        if (!a.noBox) tagBox({ vis: [-Infinity, swaps[0].t] });
+        one = `<g id="${s.id}a${i}p">${one}</g>` + swaps.map((w, k) => { const html = sp(w.to, w.x, w.y, w.h, { ...(dir ? { dir } : {}), allow: true, shadow: false, anchorX: w.anchorX ?? 0.5 }); tagBox({ vis: [w.t, swaps[k + 1]?.t ?? Infinity] }); return `<g id="${s.id}a${i}w${k}" style="opacity:0">${html}</g>`; }).join("");
         o.moves += swaps.map((w, k) => `tl.set('#${s.id}a${i}${k ? `w${k - 1}` : "p"}',{opacity:0},${w.t});tl.set('#${s.id}a${i}w${k}',{opacity:1},${w.t});tl.fromTo('#${s.id}a${i}w${k}',{y:14},{y:0,duration:.25,ease:'back.out(2)',immediateRender:false},${w.t});`).join("");
       }
       if (a.talk) {
@@ -160,7 +167,7 @@ for (const s of planShots) {
         const gid = `${s.id}a${i}e`;
         one = `<g id="${gid}" style="opacity:0">${one}</g>`;
         const t = a.enter.t.toFixed(3);
-        o.moves += a.enter.kind === "slide" ? `tl.fromTo('#${gid}',{opacity:0,x:${EVENT.SLIDE * (a.enter.from || 1)},rotation:${EVENT.ROT}},{opacity:1,x:0,rotation:0,duration:${EVENT.SLIDE_DUR},ease:'back.out(1.6)',svgOrigin:'${a.x} ${a.y - a.h / 2}',immediateRender:false},${t});tl.set('#${gid}',{opacity:0},${s.t0});` : `tl.fromTo('#${gid}',{opacity:0},{opacity:1,duration:${EVENT.FADE},ease:'none',immediateRender:false},${t});tl.set('#${gid}',{opacity:0},${s.t0});`;
+        o.moves += a.enter.kind === "slide" ? `tl.fromTo('#${gid}',{opacity:0,x:${EVENT.SLIDE * (a.enter.from || 1)},rotation:${EVENT.ROT}},{opacity:1,x:0,rotation:0,duration:${EVENT.SLIDE_DUR},ease:'back.out(1.6)',svgOrigin:'${a.x} ${a.y - a.h / 2}',immediateRender:false},${t});tl.set('#${gid}',{opacity:0},${s.t0});` : `tl.fromTo('#${gid}',{opacity:0},{opacity:1,duration:${EVENT.FADE},ease:'none',immediateRender:false},${t});tl.set('#${gid}',{opacity:0},${s.t0});`
       }
       if (a.shift) {
         const gid = `${s.id}a${i}s`;
@@ -198,7 +205,7 @@ const focusOf = (s, name) => {
 };
 const syOf = (s) => ((s.boxes || []).some((b) => b.fb && !b.soft) ? STEP.SY : STEP.MID);
 const stepKeys = (s) => {
-  const d = s.t1 - s.t0, k0 = s.cam[0], pull = s.cam[s.cam.length - 1].s < k0.s - 1e-3;
+  const d = s.t1 - s.t0, f0 = VERT && !s.cont ? focusOf(s, s.subject) : null, k0 = f0 ? { ...s.cam[0], tx: f0[0], ty: f0[1], sx: 960, sy: syOf(s) } : s.cam[0], pull = s.cam[s.cam.length - 1].s < k0.s - 1e-3;
   const marks = [...(s.labels || []).map((l) => [l[3], typeof l[4] === "string" ? l[4] : null]), ...(s.focusOn ? [[s.focusOn.t, s.focusOn.sprite]] : []), ...(s.plates || []).map((p) => [p[3], null]), ...(s.tags || []).map((g) => [g[3], null])]
     .filter(([t]) => t > s.t0 + STEP.MIN_LEAD && t < Math.min(s.t1 - STEP.MIN_TAIL, (s.shiftT ?? Infinity) - STEP.DUR))
     .sort((a, b) => a[0] - b[0]);
@@ -318,6 +325,30 @@ for (const s of shots) {
   if (s.bust && s.svg) s.bgCam = layerKeys(s.cam, LAYER.BG, s.layerBase);
 }
 for (const s of shots) if (s.accent && !s.accent.still && !s.roll) s.cam = punchCam(s.cam, s.t0, s.t1, s.accent);
+const cover = (d) => Math.cos((Math.abs(d) * Math.PI) / 180) + (16 / 9) * Math.sin((Math.abs(d) * Math.PI) / 180);
+const FIT = { LABEL: 200, BOTTOM: 230, EDGE: 20, HAIR: 20, TOP_Y: 170, TAG: 44, STACK_GAP: 40, GAP: 30, DT: 0.1 };
+const textBottom = (s) => {
+  const end = (k) => (s.outs || []).find((o) => o[0] === k)?.[1] ?? s.t1;
+  const items = [...(s.tags || []).map((g) => ({ k: g[0], t: g[3], h: plateSize(g[1], g[2], FIT.TAG).h })), ...(s.plates || []).filter((p) => !p[5]).map((p) => ({ k: p[0], t: p[3], h: plateSize(p[1], p[2], p[6]).h }))];
+  let m = 0;
+  for (let t = s.t0; t < s.t1; t += FIT.DT) {
+    const live = items.filter((x) => t >= x.t - FIT.DT && t < end(x.k));
+    if (live.length) m = Math.max(m, Math.max(FIT.TOP_Y - live[0].h / 2, SAFE.t) + live.reduce((a, x) => a + x.h, 0) + (live.length - 1) * FIT.STACK_GAP);
+  }
+  return m;
+};
+const fitVert = (s) => {
+  if (!VERT || s.kind !== "scene" || !s.cam?.length || s.blur || s.mover || s.iconBoxes?.length || (s.plates || []).some((p) => p[5])) return;
+  const people = (s.boxes || []).filter((b) => b.fb && !b.soft && !b.crowd && (!s.bust || b.b <= VIEW.b));
+  if (!people.length) return;
+  const F = Math.max(...people.map((b) => b.b)), H = Math.min(...people.map((b) => b.fb.t)) - FIT.HAIR, T = Math.max(textBottom(s), SAFE.t) + FIT.GAP + ((s.labels || []).length || (s.bubbles || []).length ? FIT.LABEL : 0);
+  const want = VIEW.b - FIT.BOTTOM, sCap = s.bust ? Infinity : Math.max(1, (want - T) / (F - H));
+  const keys = s.cam.map((c) => ({ ...c, s: Math.min(c.s, sCap) })), sMin = Math.min(...keys.map((c) => c.s)), sKey = Math.max(...keys.map((c) => c.s));
+  const B = Math.min(VIEW.b - FIT.EDGE, Math.max(want, T + (F - H) * sKey, VIEW.b - sMin * (VIEW.b - F)));
+  const lead = people.find((b) => b.n === s.subject) || people.find((b) => b.actor) || people[0], cx = (lead.fb.l + lead.fb.r) / 2;
+  s.cam = keys.map((c) => ({ ...c, s: r3(Math.max(c.s, (VIEW.b - B) / (VIEW.b - F))), tx: r3(cx), ty: r3(F), sx: 960, sy: r3(B) }));
+};
+for (const s of shots) fitVert(s);
 shots.forEach((s, i) => { const p = shots[i - 1]; if (s.cont && p?.icons?.length) { const own = new Set(s.icons.map((x) => x[2])); s.icons = [...p.icons.filter((x) => !own.has(x[2])).map((x) => [x[0], s.t0, x[2], x[3], x[4], true]), ...s.icons]; } });
 const ICON_PNG = new Set(shots.flatMap((s) => (s.icons || []).map((x) => x[0])));
 const iconJs = (s) => (s.iconBoxes || []).map(({ n, t, x, y, w, h, cross, end, held, side }, k) => {
@@ -424,8 +455,7 @@ for (const s of shots) {
   if (s.cool) js += `{const g=BORN.glow(${ov},'${s.id}cg',960,520,380,'120,150,230',.45);BORN.fadeIn(tl,g,${s.t0 + 0.2},.6);}`;
   if (s.warm) js += `{const g=BORN.glow(${ov},'${s.id}wg',960,600,560,'255,180,100',.5);BORN.fadeIn(tl,g,${s.t0},.6);}`;
   if (s.roll) {
-    const cover = (d) => (Math.cos((Math.abs(d) * Math.PI) / 180) + (16 / 9) * Math.sin((Math.abs(d) * Math.PI) / 180)).toFixed(3);
-    js += `tl.fromTo('#${s.id}k',{rotation:0,scale:1},{rotation:${s.roll.deg},scale:${cover(s.roll.deg)},duration:${s.roll.dur.toFixed(3)},ease:'sine.inOut',transformOrigin:'50% 50%'},${s.roll.t});`;
+    js += `tl.fromTo('#${s.id}k',{rotation:0,scale:1},{rotation:${s.roll.deg},scale:${cover(s.roll.deg).toFixed(3)},duration:${s.roll.dur.toFixed(3)},ease:'sine.inOut',transformOrigin:'50% 50%'},${s.roll.t});`;
   }
   if (s.bar) js += bar(s);
   js += textJs(s, { camAt, MV, MOVES, hud });

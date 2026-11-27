@@ -19,14 +19,23 @@ const area = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Ma
 const offscreen = (r) => (r.r - r.l) * (r.b - r.t) - area(r, SAFE);
 export const RESERVED = VERT ? { tl: { l: 0, r: 0, t: 0, b: 0 }, tr: { l: 0, r: 0, t: 0, b: 0 } } : { tl: { l: 60, r: 620, t: 70, b: 210 }, tr: { l: 1300, r: 1890, t: 30, b: 210 } };
 export const FACE_PAD = 0.3;
+const FACE_PAD_MAX = 30;
 const TEXT_GAP = 24;
+const FACE_W = 40;
+const V_STACK = { Y: Array.from({ length: 17 }, (_, i) => 170 + i * 40), STEP: 120, BODY: 2 };
+const HEAD_BAND = { SIDE: 0.2, H: 0.18, W: 40 };
+const BUBBLE_MAX = 500;
+const TAG_SIZE = VERT ? 44 : 52;
+const WIDTH_SLACK = 1.06;
+const ROT_PAD = Math.sin((3 * Math.PI) / 180);
 const LABEL_POS = { AIM_OUT: 30, AIM_DOWN: 12, DX: VERT ? [-10, 10] : [90, -90, 120, -120, 150, -150, 190, -190, 240, -240], DY: [-70, -95, -120, -150, 70, 110], ARROW_MIN: 110, ARROW_MAX: 240, PER_PX: 6, PATH_N: 6, START: 0.8, SHIFT: 90, VERT_IN: 0.25, VERT_UP: 24, BEND: 0.1 };
 export const scoreRect = (r, sprites, extra = [], bodyW = 4) => {
   let sc = offscreen(r) * 400;
   for (const p of sprites) {
-    const f0 = p.fb || { l: p.l, r: p.r, t: p.t, b: p.t + (p.b - p.t) * 0.25 }, m = Math.max(f0.r - f0.l, f0.b - f0.t) * FACE_PAD;
-    const f = { l: f0.l - m, r: f0.r + m, t: f0.t - m, b: f0.b + m * 0.3 };
-    sc += area(r, f) * 10 + Math.max(0, area(r, p) - area(r, f)) * (p.soft ? 0.3 : bodyW);
+    const f0 = p.fb, m = f0 ? Math.min(FACE_PAD_MAX, Math.max(f0.r - f0.l, f0.b - f0.t) * FACE_PAD) : 0;
+    const f = f0 ? { l: f0.l - m, r: f0.r + m, t: f0.t - m, b: f0.b + m * 0.3 } : { l: 0, r: 0, t: 0, b: 0 };
+    sc += area(r, f) * FACE_W + Math.max(0, area(r, p) - area(r, f)) * (p.soft ? 0.3 : bodyW);
+    if (!p.soft && p.fb && p.b - p.t > p.r - p.l) { const w = p.r - p.l, hb = { l: p.l + w * HEAD_BAND.SIDE, r: p.r - w * HEAD_BAND.SIDE, t: p.t, b: p.t + (p.b - p.t) * HEAD_BAND.H }; sc += Math.max(0, area(r, hb) - area(r, f)) * HEAD_BAND.W; }
   }
   for (const e of extra) sc += area(r, e) * 12;
   return sc;
@@ -34,7 +43,7 @@ export const scoreRect = (r, sprites, extra = [], bodyW = 4) => {
 const toS = (q, c, o) => q && { l: c.x + c.s * (q.l + o), r: c.x + c.s * (q.r + o), t: c.y + c.s * q.t, b: c.y + c.s * q.b };
 const BUST_NAME = /_b(_r|_l|_talk)?$/;
 const bustParts = (b) => (BUST_NAME.test(b.n || "") && b.fb ? [{ ...b, l: b.fb.l - (b.fb.r - b.fb.l) * 0.15, r: b.fb.r + (b.fb.r - b.fb.l) * 0.15, b: b.fb.b }, { ...b, t: b.fb.b, fb: null }] : [b]);
-export const spriteRects = (boxes, c, off = () => 0) => boxes.flatMap(bustParts).map((b) => { const o = off(b.grp); return { ...toS(b, c, o), fb: toS(b.fb, c, o), soft: b.soft }; });
+export const spriteRects = (boxes, c, off = () => 0, u) => boxes.filter((b) => u === undefined || !b.vis || (u >= b.vis[0] && u < b.vis[1])).flatMap(bustParts).map((b) => { const o = off(b.grp); return { ...toS(b, c, o), fb: toS(b.fb, c, o), soft: b.soft }; });
 export const checkActors = (boxes, id) => {
   const act = boxes.filter((b) => b.actor);
   const errs = [];
@@ -47,17 +56,31 @@ export const checkActors = (boxes, id) => {
 export const textJs = (s, { camAt, MV, MOVES, hud }) => {
   let js = "";
   const off = (g, u) => { const m = MV[g]; return m ? m.dx * Math.min(1, Math.max(0, (u - m.t) / m.dur)) : 0; };
-  const rectsAt = (u) => (s.boxes ? spriteRects(s.boxes, camAt(s, u), (g) => off(g, u)) : []);
+  const rectsAt = (u) => (s.boxes ? spriteRects(s.boxes, camAt(s, u), (g) => off(g, u), u) : []);
   const placed = [];
   const reserved = [];
+  const pad = (r) => ({ l: r.l - TEXT_GAP, r: r.r + TEXT_GAP, t: r.t - TEXT_GAP, b: r.b + TEXT_GAP });
+  const vPlaced = [];
+  const outOf = (k) => (s.outs || []).find((o) => o[0] === k)?.[1] ?? s.t1;
+  const vStack = (sz, t, end, k) => {
+    end = Math.min(end, outOf(k));
+    const live = vPlaced.filter((p) => p.t < end && t < p.end).map((p) => p.r);
+    const at = (y) => ({ l: 960 - sz.w / 2, r: 960 + sz.w / 2, t: y - sz.h / 2, b: y + sz.h / 2 }), ys = V_STACK.Y.map((y) => Math.min(Math.max(y, SAFE.t + sz.h / 2), SAFE.b - sz.h / 2));
+    const times = Array.from({ length: 4 }, (_, j) => t + 0.2 + ((end - t - 0.25) * j) / 3);
+    const free = ys.filter((y) => ![...live, ...placed].some((e) => area(at(y), e) > 0));
+    const y = (free.length ? free : ys).map((y, i) => ({ y, sc: times.reduce((n, u) => n + scoreRect(at(y), rectsAt(u), [...live, ...placed], V_STACK.BODY), 0) + (y - ys[0]) / 40 * V_STACK.STEP })).sort((p, q) => p.sc - q.sc)[0].y;
+    vPlaced.push({ r: pad(at(y)), t, end });
+    return y;
+  };
   const tagRect = (corner, w, h) => { const [cx, cy] = TAG_AT[corner] || TAG_AT.tl; return { l: cx - w / 2, r: cx + w / 2, t: cy - h / 2, b: cy + h / 2 }; };
   for (const g of s.tags || []) {
-    const [k, text, sub, t, pref] = g, sz = plateSize(text, sub, 52);
-    const cands = VERT ? ["tl", "bl"] : [pref, pref === "tl" ? "tr" : "tl"].filter((c) => !(c === "tr" && s.series));
-    const best = cands.map((c, i) => ({ c, sc: scoreRect(tagRect(c, sz.w, sz.h), rectsAt(t + 0.3)) + scoreRect(tagRect(c, sz.w, sz.h), rectsAt(s.t1 - 0.05)) + i * 500 })).sort((a, b) => a.sc - b.sc)[0];
+    const [k, text, sub, t, pref] = g, sz = plateSize(text, sub, TAG_SIZE);
+    if (VERT) { js += `{const e=BORN.plate(${hud},{id:'${s.id}${k}',text:'${text}',sub:'${sub}',x:960,y:${Math.round(vStack(sz, t, s.t1, k))},size:${TAG_SIZE},rot:-3});BORN.plateIn(tl,e,${t});}`; continue; }
+    const cands = VERT ? ["tl", "ta", "tb", "ma", "mb", "bl"] : [pref, pref === "tl" ? "tr" : "tl"].filter((c) => !(c === "tr" && s.series));
+    const best = cands.map((c, i) => ({ c, sc: [0.3, (s.t1 - t) / 2, s.t1 - t - 0.05].reduce((n, u) => n + scoreRect(tagRect(c, sz.w, sz.h), rectsAt(t + u)), 0) + i * 500 })).sort((a, b) => a.sc - b.sc)[0];
     const rr = tagRect(best.c, sz.w, sz.h);
     placed.push({ l: rr.l - TEXT_GAP, r: rr.r + TEXT_GAP, t: rr.t - TEXT_GAP, b: rr.b + TEXT_GAP });
-    js += `{const e=BORN.tag(${hud},{id:'${s.id}${k}',text:'${text}',sub:'${sub}',corner:'${best.c}'});BORN.plateIn(tl,e,${t});}`;
+    js += `{const e=BORN.tag(${hud},{id:'${s.id}${k}',text:'${text}',sub:'${sub}',corner:'${best.c}',size:${TAG_SIZE}});BORN.plateIn(tl,e,${t});}`;
   }
   if (s.series) reserved.push(RESERVED.tr);
   const camEl = `document.getElementById('${s.id}t')`;
@@ -82,7 +105,7 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
     const hit = typeof to0 === "string" ? (s.boxes || []).find((b) => b.n === to0) : null, ref = hit ? hit.fb || { l: hit.l, r: hit.r, t: hit.t, b: hit.b } : null;
     const own = typeof to0 === "string" ? (s.boxes || []).find((x) => x.n === to0) : (s.boxes || []).find((x) => x.fb === faceNear(to0));
     const fb0 = ref || faceNear(to0), fb = fb0 && own ? { ...fb0, top: own.t } : fb0, to = ref ? [(ref.l + ref.r) / 2, (ref.t + ref.b) / 2] : to0;
-    const end = Math.min(s.t1, s.labelOut || s.t1), sz = labelSize(text, sub), c0 = camAt(s, t);
+    const end = Math.min(outOf(k), s.labelOut || s.t1), sz = labelSize(text, sub), c0 = camAt(s, t);
     const cands = [];
     const zoom = fb && fb.b - fb.t < 220 ? Math.min(3, Math.max(1, ((fb.r - fb.l) * c0.s) / 110)) : 1;
     for (const dx of LABEL_POS.DX) for (const dy of LABEL_POS.DY) cands.push({ dx: Math.round(dx * zoom), dy: Math.round(dy * zoom) });
@@ -103,7 +126,8 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
     js += `{const l=BORN.label(${root(best.tp, c0.s, follow)},{id:'${s.id}${k}',text:'${text}',sub:'${sub}',to:[${best.tp.map(Math.round)}],dx:${best.dx},dy:${best.dy},w:${Math.round(sz.w)},h:${Math.round(sz.h)},stop:${stop}});BORN.labelIn(tl,l,${t});${s.labelOut ? `BORN.out(tl,l,${s.labelOut});` : ""}}`;
   }
   for (const [k, text, sub, t, P0, T, size = 56] of s.plates || []) {
-    const c0 = camAt(s, t), sz = plateSize(text, sub, size), end = s.t1;
+    const c0 = camAt(s, t), sz0 = plateSize(text, sub, size), sz = { w: sz0.w * WIDTH_SLACK + sz0.h * ROT_PAD, h: sz0.h + sz0.w * ROT_PAD }, end = outOf(k);
+    if (!T && VERT) { js += `{const e=BORN.plate(${hud},{id:'${s.id}${k}',text:'${text}',sub:'${sub}',x:960,y:${Math.round(vStack(sz, t, end, k))},size:${size},rot:3});BORN.plateIn(tl,e,${t});}`; continue; }
     if (!T) {
       const fixedAt = (q) => ({ l: q[0] - sz.w / 2, r: q[0] + sz.w / 2, t: q[1] - sz.h / 2, b: q[1] + sz.h / 2 });
       const P1 = [c0.x + c0.s * P0[0], c0.y + c0.s * P0[1]], cands = [P1];
@@ -130,14 +154,14 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
     js += `{const e=BORN.plate(${root(P, c0.s)},{id:'${s.id}${k}',text:'${text}',sub:'${sub}',x:${Math.round(P[0])},y:${Math.round(P[1])},size:${size},rot:${P[0] < 960 ? -3 : 3}${loc ? `,tail:[${loc}]` : ""}});BORN.plateIn(tl,e,${t});}`;
   }
   for (const [k, text, t, , T] of s.bubbles || []) {
-    const c0 = camAt(s, t), w = textW(text, 50, 800) + 92, h = 50 * 1.15 + 50 * 0.68 + 12, end = s.t1;
+    const one = textW(text, 50, 800) + 92, lines = Math.ceil(one / BUBBLE_MAX), c0 = camAt(s, t), w = Math.min(one, BUBBLE_MAX), h = 50 * 1.15 * lines + 50 * 0.68 + 12, end = s.t1;
     const mk = (dx, dy) => (ax, ay, z) => ({ l: ax + (dx - w / 2) * z, r: ax + (dx + w / 2) * z, t: ay + (dy - h / 2) * z, b: ay + (dy + h / 2) * z });
     const cands = [];
     for (const dx of [-620, -520, -420, -320, -220, 220, 320, 420, 520, 620]) for (const dy of [-60, -130, -200, -270, -340, -410]) cands.push({ dx, dy });
-    const tailCost = (q) => { const ax = c0.x + c0.s * T[0], ay = c0.y + c0.s * T[1], rs = rectsAt(t + 0.35); let c = 0; for (let k = 2; k <= 7; k++) { const u = k / 10, px = ax + q.dx * c0.s * (1 - u), py = ay + q.dy * c0.s * (1 - u); c += scoreRect({ l: px - 9, r: px + 9, t: py - 9, b: py + 9 }, rs) * 2; } return c; };
+    const tailCost = (q) => { const ax = c0.x + c0.s * T[0], ay = c0.y + c0.s * T[1], rs = rectsAt(t + 0.35); let c = 0; for (let k = 2; k <= 5; k++) { const u = k / 10, px = ax + q.dx * c0.s * (1 - u), py = ay + q.dy * c0.s * (1 - u); c += scoreRect({ l: px - 9, r: px + 9, t: py - 9, b: py + 9 }, rs) * 2; } return c; };
     const best = cands.map((q) => ({ ...q, sc: evalRect(T, null, t, end, mk(q.dx, q.dy)) + tailCost(q) + Math.abs(q.dy) * 3 })).sort((a, b) => a.sc - b.sc)[0];
     placed.push(mk(best.dx, best.dy)(c0.x + c0.s * T[0], c0.y + c0.s * T[1], 1));
-    js += `{const b=BORN.bubble(${root(T, c0.s)},{id:'${s.id}${k}',text:'${text}',x:${Math.round(T[0] + best.dx)},y:${Math.round(T[1] + best.dy)},tail:[${T.map(Math.round)}]});BORN.bubbleIn(tl,b,${t});}`;
+    js += `{const b=BORN.bubble(${root(T, c0.s)},{id:'${s.id}${k}',text:'${text}',x:${Math.round(T[0] + best.dx)},y:${Math.round(T[1] + best.dy)},tail:[${T.map(Math.round)}],maxW:${Math.round(w)}});BORN.bubbleIn(tl,b,${t});}`;
   }
   return js;
 };
