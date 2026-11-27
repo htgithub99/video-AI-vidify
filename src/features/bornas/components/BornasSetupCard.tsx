@@ -58,18 +58,14 @@ export const BornasSetupCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({
           </Button>
         </div>
         <StudioInput className={S.INPUT} value={studio.sourcePath} placeholder={text.PATH_PLACEHOLDER} disabled={locked} onChange={(e) => studio.setSourcePath(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void studio.loadSource(e.currentTarget.value)} onBlur={(e) => e.target.value.trim() !== sample?.path && void studio.loadSource(e.target.value)} />
-        {sample ? (
-          <div className={S.STATS}>
-            <MotionStatCard icon={Clock} iconClassName={S.STAT_ICON_A} label={text.STAT_LENGTH}>
-              {reupClock(sample.duration)}
-            </MotionStatCard>
-            <MotionStatCard icon={Monitor} iconClassName={S.STAT_ICON_B} label={text.STAT_SIZE}>
-              {`${sample.width}×${sample.height}`}
-            </MotionStatCard>
-          </div>
-        ) : (
-          <p className={S.HINT}>{text.NO_SOURCE}</p>
-        )}
+        <div className={S.STATS}>
+          <MotionStatCard icon={Clock} iconClassName={S.STAT_ICON_A} label={text.STAT_LENGTH}>
+            {sample ? reupClock(sample.duration) : text.STAT_EMPTY_LENGTH}
+          </MotionStatCard>
+          <MotionStatCard icon={Monitor} iconClassName={S.STAT_ICON_B} label={text.STAT_SIZE}>
+            {sample ? `${sample.width}×${sample.height}` : text.STAT_EMPTY_SIZE}
+          </MotionStatCard>
+        </div>
         <StudioFieldset disabled={locked} className={S.GROUPS}>
           <MotionSettingsGroup title={text.GROUP_CHANNEL}>
             <ReupTextField label={text.CHANNEL_NAME} value={channel.name} maxLength={80} onChange={(name) => patchChannel({ name })} />

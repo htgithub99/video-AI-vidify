@@ -32,6 +32,7 @@ export const useBornasStudio = (lang: Lang) => {
   const [voiceChannels, setVoiceChannels] = useState<MotionVoiceChannels>({ channels: [] });
   const channelsRef = useRef<MotionVoiceChannels>({ channels: [] });
   const channelIdRef = useRef("");
+  const samplesRef = useRef(new Map<string, BornasSample>());
   const channel = useMemo(() => channels.find((c) => c.id === channelId) || channels[0], [channels, channelId]);
   const sourcePath = channel?.sample || "";
   const running = job?.status === "running";
@@ -54,7 +55,9 @@ export const useBornasStudio = (lang: Lang) => {
     setSourcePath(path);
     setBusy(true);
     try {
-      setSample((await motionRequest<{ sample: BornasSample }>(BORNAS_URL.SOURCE, { path })).sample);
+      const found = (await motionRequest<{ sample: BornasSample }>(BORNAS_URL.SOURCE, { path })).sample;
+      samplesRef.current.set(found.path, found);
+      setSample(found);
     } catch (error) {
       setSample(null);
       toast.error(errorText(error));
@@ -105,7 +108,10 @@ export const useBornasStudio = (lang: Lang) => {
   useEffect(() => {
     if (!loaded || !sourcePath || sample?.path === sourcePath) return;
     void motionRequest<{ sample: BornasSample }>(BORNAS_URL.SOURCE, { path: sourcePath }).then(
-      (r) => setSample(r.sample),
+      (r) => {
+        samplesRef.current.set(r.sample.path, r.sample);
+        setSample(r.sample);
+      },
       () => setSample(null),
     );
   }, [loaded, sourcePath, sample?.path]);
@@ -121,11 +127,15 @@ export const useBornasStudio = (lang: Lang) => {
     }, BORNAS_LIMITS.POLL_MS);
     return () => clearInterval(timer);
   }, [job?.id, job?.status, reloadResults]);
-  const selectChannel = useCallback((id: string) => {
-    channelIdRef.current = id;
-    setChannelId(id);
-    setSample(null);
-  }, []);
+  const selectChannel = useCallback(
+    (id: string) => {
+      const path = channels.find((c) => c.id === id)?.sample;
+      channelIdRef.current = id;
+      setChannelId(id);
+      setSample((path && samplesRef.current.get(path)) || null);
+    },
+    [channels],
+  );
   const patchChannel = useCallback((value: Partial<BornasChannel>) => setChannels((all) => all.map((c) => (c.id === channel?.id ? { ...c, ...value } : c))), [channel?.id]);
   const addChannel = useCallback(() => {
     const created = bornasNewChannel(newId(), `${text.CHANNEL_NEW} ${channels.length + 1}`);
