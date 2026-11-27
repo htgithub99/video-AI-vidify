@@ -220,7 +220,8 @@ const matchPeople = (plan, main) => {
 };
 const compose = (plan, main, crowds, A) => {
   const people = main.filter((a) => a && standing(a) && a.place !== "near");
-  const tallest = Math.max(0, ...people.map((a) => a.h), ...crowds.filter((c) => c.kind === "person").map((c) => c.h));
+  const groups = main.filter((a) => a && a.kind === "person" && !a.back && a.onGround && a.place !== "near" && RULE.groupRe.test(a.sprite));
+  const tallest = Math.max(0, ...people.map((a) => a.h), ...groups.map((a) => a.h), ...crowds.filter((c) => c.kind === "person").map((c) => c.h));
   if (tallest)
     for (const a of main)
       if (a && (a.kind === "vehicle" || a.kind === "ship" || a.kind === "aircraft") && a.h > tallest * RULE.vehicleWithPeople) {
