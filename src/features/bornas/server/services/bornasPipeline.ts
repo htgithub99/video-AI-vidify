@@ -1,11 +1,13 @@
 import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
 import _ from "lodash";
 import { logger } from "../../../../lib/logger.js";
 import { runInMotionAiSession, closeMotionStandaloneBrowser } from "../../../motion/server/services/motionStoryService.js";
 import { HEAVY_RENDER, HEAVY_VOICE, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
 import { HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
 import { packageBornasVideo } from "./bornasPackage.js";
-import { BORNAS_AI_DEFAULT, bornasAiSettings, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
+import { BORNAS_AI_DEFAULT, bornasAiSettings, BORNAS_DIR, BORNAS_RESUME, BORNAS_STEPS, BORNAS_VIDEO_STEPS } from "../../constants/bornasConfig.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasChannel, BornasJob, BornasScript, BornasStepId, BornasVideo } from "../../types/bornas.js";
 import { annotateBornasLibrary, prepareBornasAssets } from "./bornasAssets.js";
@@ -13,7 +15,7 @@ import { buildBornasShort, buildBornasVideo, checkBornasVideo, renderBornasVideo
 import { analyzeBornasSample, dropBornasAnalysis, inspectBornasSample } from "./bornasSample.js";
 import { cleanBornasScript, writeBornasScripts } from "./bornasScript.js";
 import { planBornasShots, type BornasPlan } from "./bornasShots.js";
-import { addBornasDone, bornasController, bornasEmptySteps, cleanBornasChannel, bornasLog, bornasStep, getBornasJob, saveBornasJob, setBornasController } from "./bornasStore.js";
+import { addBornasDone, bornasController, bornasRoot, bornasEmptySteps, cleanBornasChannel, bornasLog, bornasStep, getBornasJob, saveBornasJob, setBornasController } from "./bornasStore.js";
 import { BORNAS_ABORTED, isBornasAbort, readJson } from "./bornasTools.js";
 import { bornasVideoDir, voiceBornasVideo } from "./bornasVoice.js";
 const errText = (error: unknown): string => String((error as Error)?.message || error);
@@ -189,6 +191,7 @@ export const rerunBornas = (jobId: string, step: BornasStepId, video?: number, a
   if (job.status === "running") throw new Error(BORNAS_ERROR.BUSY);
   if (!BORNAS_STEPS.includes(step)) throw new Error(BORNAS_ERROR.NO_JOB);
   if (ai) job.ai = cleanAi(ai);
+  job.resumeStep = undefined;
   const at = BORNAS_STEPS.indexOf(step);
   const seoOnly = step === "package" && video !== undefined && !!job.videos[video]?.outputUrl;
   for (const id of seoOnly ? [step] : BORNAS_STEPS.slice(at)) job.steps[id] = { status: "idle", progress: 0, message: "" };
@@ -222,4 +225,28 @@ export const annotateLibrary = (lib: string, ai?: Partial<BornasAiSettings>): bo
     .then((r) => Object.assign(run, { status: "done", result: r }))
     .catch((error) => Object.assign(run, { status: "error", error: String((error as Error)?.message || error) }));
   return true;
+};
+
+// After an app restart (tsx watch reload, crash), jobs that were running continue from the interrupted step;
+// every step reuses its cached results (voice, asset plan, shots), so only the unfinished work is redone.
+export const resumeBornasJobs = (): void => {
+  setTimeout(() => {
+    const root = bornasRoot();
+    if (!fs.existsSync(root)) return;
+    for (const d of fs.readdirSync(root, { withFileTypes: true })) {
+      const file = path.join(root, d.name, BORNAS_DIR.JOB_FILE);
+      if (!d.isDirectory() || !fs.existsSync(file)) continue;
+      const raw = readJson<{ status?: string; updatedAt?: number } | null>(file, null);
+      if (raw?.status !== "running" || Date.now() - (raw.updatedAt || 0) > BORNAS_RESUME.MAX_AGE_MS) continue;
+      const job = getBornasJob(d.name);
+      const step = job?.resumeStep;
+      if (!job || !step || BORNAS_RESUME.SKIP.includes(step)) continue;
+      try {
+        rerunBornas(job.id, step);
+        bornasLog(job, BORNAS_LOG.RESUMED(step), "warn");
+      } catch (error) {
+        bornasLog(job, String((error as Error)?.message || error), "error");
+      }
+    }
+  }, BORNAS_RESUME.DELAY_MS);
 };

@@ -54,6 +54,9 @@ const RULE = {
   eyeShare: 0.92,
   minDepth: 0.05,
   builtKinds: new Set(["structure", "building"]),
+  bgDupKinds: new Set(["prop", "weapon", "vehicle", "animal"]),
+  bustTextDx: 380,
+  bustTextLead: 0.3,
   railRe: /locomotive|train|boxcar|railcar|railroad|caboose|freight_car|tender/i,
   boatRe: /steamship|steamer|liner|ship|ferry|rowboat|canoe|raft|skiff|boat/i,
   textLead: 0.8,
@@ -368,6 +371,7 @@ const gateLayout = (list, A, subject, plan, report, id) => {
   }
   return keep;
 };
+const CROWD_TURN = new Map();
 const layout = (beat, plan, refs, report = [], id = "") => {
   const A = anchorsOf(plan, beat.bg);
   const info = (n) => plan.sprites[n] || { kind: "prop", heightM: 1 };
@@ -380,8 +384,8 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     return info(n).kind === "person" && n.includes("__") && f && m.w / m.h <= RULE.lieAspect && f.b - f.t > RULE.bustFace;
   };
   const bgWords = `${beat.bg || ""} ${plan.bgDesc?.[beat.bg] || ""}`.toLowerCase().split(/[^a-z]+/).filter((w) => w.length >= 4 && !RULE.plainWords.has(w));
-  const inBg = (n) => (RULE.builtKinds.has(info(n).kind) || info(n).kind === "nature") && poseWords(n).some((v) => bgWords.some((w) => w === v || (w.length >= 4 && v.length >= 4 && (w.startsWith(v) || v.startsWith(w)))));
-  const held = new Set(beat.cast.map((c, i) => (half(c.sprite) || inBg(c.sprite) || (RULE.boatRe.test(c.sprite) && !A.boats) || (info(c.sprite).kind !== "person" && ((!isSeat(c.sprite) && people.some((p) => sameWord(poseWords(c.sprite), p))) || (isSeat(c.sprite) && bgHas(c.sprite)))) ? i : -1)).filter((i) => i >= 0));
+  const inBg = (n, i) => (RULE.builtKinds.has(info(n).kind) || info(n).kind === "nature" || (RULE.bgDupKinds.has(info(n).kind) && i !== beat.subject)) && poseWords(n).some((v) => bgWords.some((w) => w === v || (w.length >= 4 && v.length >= 4 && (w.startsWith(v) || v.startsWith(w)))));
+  const held = new Set(beat.cast.map((c, i) => (half(c.sprite) || inBg(c.sprite, i) || (RULE.boatRe.test(c.sprite) && !A.boats) || (info(c.sprite).kind !== "person" && ((!isSeat(c.sprite) && people.some((p) => sameWord(poseWords(c.sprite), p))) || (isSeat(c.sprite) && bgHas(c.sprite)))) ? i : -1)).filter((i) => i >= 0));
   const isBack = (k) => BACK.has(k.kind) || (k.kind === "vehicle" && k.heightM >= 3);
   const main = [];
   const crowds = [];
@@ -410,7 +414,13 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     seen.add(personOf(c.sprite));
     const flatOnly = k.kind === "prop" || k.kind === "weapon";
     const want = flatOnly && (ann.place === "wall" || ann.place === "table") ? ann.place : flatOnly || c.place === "near" || c.place === "ground" ? c.place : "ground";
-    const place = want === "wall" && !A.walls.length ? "ground" : want === "table" && !A.table ? "ground" : want;
+    const bad = (want === "wall" && !A.walls.length) || (want === "table" && !A.table);
+    if (bad && i !== subject) {
+      report.push([id, "place_unsupported", c.sprite, want]);
+      continue;
+    }
+    if (bad) report.push([id, "place_to_insert", c.sprite, want]);
+    const place = bad ? "ground" : want;
     let x = RULE.slots[c.slot] ?? RULE.slots.c;
     if (c.place === "sky") {
       const m = meta(c.sprite), hs = RULE.skyW / (m.w / m.h);
@@ -458,8 +468,13 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     const dir = c.move ? c.move : TURNS.has(k.kind) ? c.dir : undefined;
     const pad = ann.pad || 0, foot = ann.foot ?? 0.5;
     if (c.crowd > 1 && !back) {
-      const pool = [c.sprite, ...Object.keys(plan.sprites).filter((n) => plan.sprites[n].pool === c.sprite && n !== c.sprite)];
-      const n = Math.min(RULE.crowdMax, c.crowd, pool.length > 1 ? pool.length : RULE.cloneMax);
+      const pool = [c.sprite, ...Object.keys(plan.sprites).filter((n) => plan.sprites[n].pool === c.sprite && n !== c.sprite)].filter((n, j) => j === 0 || !seen.has(personOf(n)));
+      const n = Math.min(RULE.crowdMax, c.crowd, pool.length);
+      const turn = CROWD_TURN.get(c.sprite) || 0;
+      CROWD_TURN.set(c.sprite, turn + n);
+      if (pool.length > n) pool.push(...pool.splice(0, turn % pool.length));
+      pool.slice(0, n).forEach((q) => seen.add(personOf(q)));
+      if (n < c.crowd) report.push([id, "crowd_short", c.sprite, `${n}/${c.crowd}`]);
       for (let j = 0; j < n; j++) {
         const sp = pool[j % pool.length], kj = info(sp), aj = kj.ann || {};
         const hj = readableHeight(kj.kind, sp, clamp(kj.kind === "person" ? personHeight(plan, refs, sp, kj.heightM * pxm, pxm) : kj.heightM * pxm, 18, 980), per) * (0.95 + ((j * 13) % 7) / 70);
@@ -664,7 +679,31 @@ const EVENTS = { insetX: 1380, insetY: 470, insetH: 380, insetW: 620, insetTwo: 
 const shortName = (t) => { const w = String(t).trim().split(/\s+/), two = w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : w.join(" "); return t.length <= EVENTS.labelChars ? t : two.length <= EVENTS.labelChars ? two : w[w.length - 1]; };
 const iconOf = (plan, text) => { const hit = RULE.icons.find(([w]) => w.test(text)); const sprite = hit && Object.keys(plan.sprites || {}).find((n) => hit[1].test(n)); return sprite ? { sprite, cross: /^NO\b/i.test(String(text).trim()) } : null; };
 export const direct = (plan) => {
-  plan = { ...plan, beats: plan.beats.map((b) => ({ ...b, cast: (b.cast || []).filter((c) => !RULE.builtKinds.has(plan.sprites[c.sprite]?.kind)), ...(b.label ? { label: { ...b.label, text: shortName(b.label.text) } } : {}) })) };
+  const kindOf = (c) => plan.sprites[c?.sprite]?.kind, pre = [], isWho = (c) => ["person", "bust"].includes(kindOf(c));
+  plan = { ...plan, beats: plan.beats.map((b0, bi) => {
+    const all = b0.cast || [], keep = all.map((c, i) => (RULE.builtKinds.has(kindOf(c)) ? -1 : i)).filter((i) => i >= 0);
+    const at = (i) => (typeof i === "number" ? keep.indexOf(i) : i), cast = keep.map((i) => all[i]);
+    const b = { ...b0, cast, ...(typeof b0.subject === "number" ? { subject: at(b0.subject) } : {}) };
+    if (b0.plate && typeof b0.plate.at === "number") b.plate = { ...b0.plate, at: at(b0.plate.at) < 0 ? null : at(b0.plate.at) };
+    if (b0.label) {
+      const li = at(b0.label.cast || 0), lk = kindOf(cast[li]);
+      if (isWho(cast[li])) b.label = { ...b0.label, cast: li, text: shortName(b0.label.text) };
+      else {
+        delete b.label;
+        if (!b.plate) b.plate = { text: shortName(b0.label.text), sub: b0.label.sub || "", t: b0.label.t, at: li >= 0 && lk ? li : null };
+        pre.push([`b${bi}`, lk ? "label_to_plate" : "label_drop", b0.label.text]);
+      }
+    }
+    if (b0.bubble) {
+      const ui = at(b0.bubble.cast || 0), speaker = isWho(cast[ui]) ? ui : cast.findIndex((c) => isWho(c) && !(c.crowd > 1));
+      if (speaker >= 0) b.bubble = { ...b0.bubble, cast: speaker };
+      else {
+        delete b.bubble;
+        pre.push([`b${bi}`, "bubble_drop", b0.bubble.text]);
+      }
+    }
+    return b;
+  }) };
   const lk = lookOf(plan);
   Object.assign(RULE, { push: CAM0.push * lk.cam.push, hookPush: CAM0.hookPush * lk.cam.push, pullRate: CAM0.pullRate * lk.cam.push, pan: CAM0.pan * lk.cam.pan });
   const onsets = plan.onsets || [];
@@ -676,7 +715,7 @@ export const direct = (plan) => {
   let lastLook = { key: "", side: 1, frame: "", end: null };
   let motionN = 0;
   let lastBust = { sprite: "", t1: -1 };
-  const report = [];
+  const report = [...pre];
   const heroId = Object.entries(plan.sprites).map(([n, s]) => (s.kind === "bust" ? charId(n) : null)).find(Boolean) || null;
   const heroBust = Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust" && charId(n) === heroId) || null;
   const inserts = {};
@@ -727,9 +766,17 @@ export const direct = (plan) => {
       const hs = list.map((c) => hOf(c.sprite)), hm = Math.min(...hs);
       const acts = list.map((c, i) => ({ sprite: c.sprite, x: xs[i], y: r3(1080 + (two ? hm : hs[i]) * (RULE.babyRe.test(c.sprite) ? RULE.babySink : RULE.bustSink)), h: two ? hm : hs[i], shadow: false, allow: true, ...(c.dir ? { dir: c.dir } : { dir: xs[i] < 960 ? "r" : xs[i] > 960 ? "l" : undefined }) }));
       const bx = two ? 960 : xs[0], bSide = bx < 960 ? 1 : bx > 960 ? -1 : (bi % 2 ? 1 : -1);
-      const px = two ? 960 : bx < 960 ? 1420 : bx > 960 ? 500 : 960;
+      const icon0 = beat.plate ? iconOf(plan, beat.plate.text) : null;
+      const textT = !two && !VERT && bx === 960 ? Math.min(beat.plate && !icon0 ? beat.plate.t : Infinity, beat.endCard ? beat.endCard.t : Infinity) : Infinity;
+      const aside = Number.isFinite(textT), sideDx = (bi % 2 ? 1 : -1) * RULE.bustTextDx;
+      if (aside) {
+        const st = Math.max(beat.t0, textT - RULE.bustTextLead);
+        if (st - beat.t0 < 0.5) acts[0].x = 960 + sideDx;
+        else acts[0].shift = { t: r3(st), dx: sideDx, dur: 0.6 };
+      }
+      const px = two ? 960 : aside ? (sideDx < 0 ? 1420 : 500) : bx < 960 ? 1420 : bx > 960 ? 500 : 960;
       const d = t1 - beat.t0, rate = beat.cam === "pull" ? -RULE.pullRate : hook ? RULE.hookPush : RULE.push;
-      const near = beat.frame === "close" && !two && !VERT && !RULE.babyRe.test(acts[0].sprite) ? Math.min(RULE.bustClose, (meta(acts[0].sprite).h * RULE.bustCloseNative) / acts[0].h) : 1;
+      const near = beat.frame === "close" && !two && !VERT && !beat.plate && !beat.tag && !beat.label && !beat.bubble && !beat.endCard && !RULE.babyRe.test(acts[0].sprite) ? Math.min(RULE.bustClose, (meta(acts[0].sprite).h * RULE.bustCloseNative) / acts[0].h) : 1;
       const zoom = near >= RULE.bustCloseMin ? near : 1, nfb = faceBox(acts[0].sprite, acts[0].x, acts[0].y, acts[0].h, acts[0].dir, 0.5).fb;
       const [cx, cy, csy] = zoom > 1 ? [r3((nfb.l + nfb.r) / 2), r3((nfb.t + nfb.b) / 2), RULE.bustCloseY] : [960, 540, 540];
       const s0 = zoom * (rate < 0 ? RULE.bustS * (1 + Math.abs(rate) * d) : RULE.bustS), s1 = zoom * (rate < 0 ? RULE.bustS : RULE.bustS * (1 + rate * d));
@@ -740,7 +787,7 @@ export const direct = (plan) => {
         const { fb } = faceBox(a.sprite, a.x, a.y, a.h, a.dir, 0.5);
         return [r3((fb.l + fb.r) / 2), r3(fb.t + (fb.b - fb.t) * 0.78)];
       };
-      shots.push({ ...base, kind: "scene", bust: true, soft: !beat.blur, id: sid(), t0: beat.t0, bg: beat.bg, blur: !!beat.blur, actors: acts, cam: [{ t: 0, s: r3(s0), x: cx, y: cy, sx: 960, sy: csy }, { t: r3(d), s: r3(s1), x: r3(cx + bSide * 1920 * RULE.pan * d), y: r3(cy - 1080 * RULE.panY * d), sx: 960, sy: csy }], glowAt: beat.blur ? { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 } : undefined, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: lab ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lab.sprite, "up"]] : [], plates: beat.plate && !icon ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, VERT ? [960, RULE.vertPlateY] : [px, RULE.bustPlateY], null]] : [], icons: icon ? [[icon.sprite, beat.plate.t, bStep % 2 ? "r" : "l", beat.plate.text, icon.cross]] : [], bubbles: bub ? [["b", beat.bubble.text, beat.bubble.t, null, mouth(bub)]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), flash: beat.flash, series: !VERT && beat.t0 >= plan.turnT && beat.t0 < plan.recapT, subject: acts[0]?.sprite || null });
+      shots.push({ ...base, ...(aside && beat.endCard ? { endCard: { ...beat.endCard, x: px } } : {}), kind: "scene", bust: true, soft: !beat.blur, id: sid(), t0: beat.t0, bg: beat.bg, blur: !!beat.blur, actors: acts, cam: [{ t: 0, s: r3(s0), x: cx, y: cy, sx: 960, sy: csy }, { t: r3(d), s: r3(s1), x: r3(cx + bSide * 1920 * RULE.pan * d), y: r3(cy - 1080 * RULE.panY * d), sx: 960, sy: csy }], glowAt: beat.blur ? { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 } : undefined, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: lab ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lab.sprite, "up"]] : [], plates: beat.plate && !icon ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, VERT ? [960, RULE.vertPlateY] : [px, RULE.bustPlateY], null]] : [], icons: icon ? [[icon.sprite, beat.plate.t, bStep % 2 ? "r" : "l", beat.plate.text, icon.cross]] : [], bubbles: bub ? [["b", beat.bubble.text, beat.bubble.t, null, mouth(bub)]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), flash: beat.flash, series: !VERT && beat.t0 >= plan.turnT && beat.t0 < plan.recapT, subject: acts[0]?.sprite || null });
       if (hook) hookShots.push(shots[shots.length - 1]);
       return;
     }
@@ -755,7 +802,8 @@ export const direct = (plan) => {
     if (!beat.keep && lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal")) && !insertOk(lead.sprite) && heroBust) {
       report.push([`b${bi}`, "insert_repeat_to_bust", lead.sprite]);
       const d = t1 - beat.t0;
-      shots.push({ ...base, kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [{ sprite: heroBust, x: 960, y: 1090, h: 1010, shadow: false, allow: true }], cam: [{ t: 0, s: 1.02, x: 960, y: 540 }, { t: r3(d), s: r3(1.02 * (1 + 0.03 * d)), x: 962, y: 480, sx: 960, sy: 480 }], tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [960, 220], null]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
+      const rAside = !VERT && (beat.plate || beat.endCard), rDx = (bi % 2 ? 1 : -1) * RULE.bustTextDx, rPx = rDx < 0 ? 1420 : 500;
+      shots.push({ ...base, ...(rAside && beat.endCard ? { endCard: { ...beat.endCard, x: rPx } } : {}), kind: "scene", bust: true, id: sid(), t0: beat.t0, bg: beat.bg, blur: true, actors: [{ sprite: heroBust, x: rAside ? 960 + rDx : 960, y: 1090, h: 1010, shadow: false, allow: true }], cam: [{ t: 0, s: 1.02, x: 960, y: 540 }, { t: r3(d), s: r3(1.02 * (1 + 0.03 * d)), x: 962, y: 480, sx: 960, sy: 480 }], tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], plates: beat.plate ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, [rAside ? rPx : 960, 220], null]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), series: beat.t0 >= plan.turnT && beat.t0 < plan.recapT });
       return;
     }
     if (lead && lead.kind === "prop" && !actors.some((a) => !a.back && (a.kind === "person" || a.kind === "animal"))) {
@@ -848,11 +896,11 @@ export const direct = (plan) => {
       if (beat.tag && inside(beat.tag.t)) shot.tags.push(["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]);
       if (beat.label && inside(beat.label.t) && actors[beat.label.cast] && !actors[beat.label.cast].crowd) {
         const la = actors.find((a) => a.cast === beat.label.cast && !a.crowd);
-        if (la) shot.labels.push(["l", beat.label.text, beat.label.sub || "", beat.label.t, la.sprite, "up"]);
+        if (la && ["person", "bust"].includes(la.kind)) shot.labels.push(["l", beat.label.text, beat.label.sub || "", beat.label.t, la.sprite, "up"]);
       }
       if (beat.plate && inside(beat.plate.t)) {
         const ta = typeof beat.plate.at === "number" ? actors.find((a) => a.cast === beat.plate.at && !a.crowd) : null;
-        const target = ta ? [ta.x, ta.y - ta.h - 30] : null;
+        const target = ta && !["person", "bust"].includes(ta.kind) ? [ta.x, ta.y - ta.h - 30] : null;
         const c = camState(shot.cam.map((k) => ({ t: k.t, s: k.s, tx: k.x, ty: k.y, sx: k.sx ?? 960, sy: k.sy ?? 540 })), c0, beat.plate.t);
         const toScreen = (w) => [c.x + c.s * w[0], c.y + c.s * w[1]];
         const subjX = sp0 ? toScreen([sp0.fx, sp0.fy])[0] : 960;

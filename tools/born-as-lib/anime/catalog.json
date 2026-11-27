@@ -1,0 +1,1887 @@
+{
+ "style": "anime style, clean line art, soft cel shading",
+ "items": {
+  "hand_sherlock__beehive": {
+   "sheet": "hand_sherlock",
+   "era": "anime",
+   "kind": "prop",
+   "heightM": 0.9,
+   "facing": "r",
+   "px": [
+    254,
+    256
+   ],
+   "note": "beehive",
+   "ann": {
+    "facing": "r",
+    "aspect": 0.9922,
+    "foot": 0.5571,
+    "pad": 0.0156,
+    "v": 2,
+    "place": "ground",
+    "is": "beehive",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_sherlock__bull_terrier": {
+   "sheet": "hand_sherlock",
+   "era": "anime",
+   "kind": "animal",
+   "heightM": 0.5,
+   "facing": "r",
+   "px": [
+    311,
+    252
+   ],
+   "note": "bull terrier",
+   "ann": {
+    "facing": "r",
+    "aspect": 1.2341,
+    "foot": 0.5378,
+    "pad": 0.0159,
+    "v": 2,
+    "place": "ground",
+    "is": "bull terrier",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_sherlock__cane": {
+   "sheet": "hand_sherlock",
+   "era": "anime",
+   "kind": "prop",
+   "heightM": 0.9,
+   "facing": "r",
+   "px": [
+    411,
+    83
+   ],
+   "note": "cane",
+   "ann": {
+    "facing": "r",
+    "aspect": 4.9518,
+    "foot": 0.0718,
+    "pad": 0.0482,
+    "v": 2,
+    "place": "ground",
+    "is": "cane",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_sherlock__hound": {
+   "sheet": "hand_sherlock",
+   "era": "anime",
+   "kind": "animal",
+   "heightM": 1.0,
+   "facing": "r",
+   "px": [
+    489,
+    261
+   ],
+   "note": "hound",
+   "ann": {
+    "facing": "r",
+    "aspect": 1.8736,
+    "foot": 0.6063,
+    "pad": 0.023,
+    "v": 2,
+    "place": "ground",
+    "is": "hound",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_sherlock__violin": {
+   "sheet": "hand_sherlock",
+   "era": "anime",
+   "kind": "prop",
+   "heightM": 0.6,
+   "facing": "r",
+   "px": [
+    350,
+    133
+   ],
+   "note": "violin",
+   "ann": {
+    "facing": "r",
+    "aspect": 2.6316,
+    "foot": 0.1586,
+    "pad": 0.0226,
+    "v": 2,
+    "place": "table",
+    "is": "violin",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_musashi__boat": {
+   "sheet": "hand_musashi",
+   "era": "anime",
+   "kind": "vehicle",
+   "heightM": 1.2,
+   "facing": "r",
+   "px": [
+    466,
+    192
+   ],
+   "note": "boat",
+   "ann": {
+    "facing": "r",
+    "aspect": 2.4271,
+    "foot": 0.8498,
+    "pad": 0.0156,
+    "v": 2,
+    "place": "ground",
+    "is": "boat",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_musashi__book": {
+   "sheet": "hand_musashi",
+   "era": "anime",
+   "kind": "prop",
+   "heightM": 0.3,
+   "facing": "r",
+   "px": [
+    283,
+    198
+   ],
+   "note": "book",
+   "ann": {
+    "facing": "r",
+    "aspect": 1.4293,
+    "foot": 0.5141,
+    "pad": 0.0152,
+    "v": 2,
+    "place": "table",
+    "is": "book",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_musashi__notice": {
+   "sheet": "hand_musashi",
+   "era": "anime",
+   "kind": "prop",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    253,
+    343
+   ],
+   "note": "notice",
+   "ann": {
+    "facing": "r",
+    "aspect": 0.7376,
+    "foot": 0.5119,
+    "pad": 0.0087,
+    "v": 2,
+    "place": "ground",
+    "is": "notice",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_musashi__pine": {
+   "sheet": "hand_musashi",
+   "era": "anime",
+   "kind": "nature",
+   "heightM": 8.0,
+   "facing": "r",
+   "px": [
+    481,
+    370
+   ],
+   "note": "pine",
+   "ann": {
+    "facing": "r",
+    "aspect": 1.3,
+    "foot": 0.5151,
+    "pad": 0.0081,
+    "v": 2,
+    "place": "ground",
+    "is": "pine",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_musashi__scabbard": {
+   "sheet": "hand_musashi",
+   "era": "anime",
+   "kind": "prop",
+   "heightM": 0.9,
+   "facing": "r",
+   "px": [
+    435,
+    156
+   ],
+   "note": "scabbard",
+   "ann": {
+    "facing": "r",
+    "aspect": 2.7885,
+    "foot": 0.4816,
+    "pad": 0.0321,
+    "v": 2,
+    "place": "ground",
+    "is": "scabbard",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_musashi__shrike": {
+   "sheet": "hand_musashi",
+   "era": "anime",
+   "kind": "prop",
+   "heightM": 1.4,
+   "facing": "r",
+   "px": [
+    176,
+    360
+   ],
+   "note": "shrike",
+   "ann": {
+    "facing": "r",
+    "aspect": 0.4889,
+    "foot": 0.5,
+    "pad": 0.0083,
+    "v": 2,
+    "place": "wall",
+    "is": "shrike",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  },
+  "hand_musashi__students": {
+   "sheet": "hand_musashi",
+   "era": "anime",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    390,
+    376
+   ],
+   "note": "students",
+   "ann": {
+    "facing": "r",
+    "aspect": 1.0372,
+    "foot": 0.4249,
+    "pad": 0.008,
+    "face": {
+     "l": 0.5073,
+     "r": 0.6183,
+     "t": 0.1144,
+     "b": 0.2472
+    },
+    "mouth": [
+     0.5628,
+     0.2118
+    ],
+    "v": 2,
+    "place": "ground",
+    "is": "students",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "aims": false
+   }
+  }
+ },
+ "backgrounds": {
+  "bg_sh_221b": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Victorian sitting room at 221B Baker Street",
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     890,
+     880
+    ],
+    "person": [
+     448,
+     459,
+     448
+    ],
+    "horizon": 470,
+    "spots": [
+     [
+      300,
+      883,
+      452
+     ],
+     [
+      560,
+      886,
+      455
+     ],
+     [
+      820,
+      889,
+      458
+     ],
+     [
+      1080,
+      889,
+      458
+     ],
+     [
+      1300,
+      886,
+      456
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      240,
+      420,
+      720,
+      600
+     ],
+     [
+      0,
+      0,
+      480,
+      180
+     ],
+     [
+      720,
+      240,
+      1200,
+      420
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_college": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Victorian college room with a bed and desk",
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     890,
+     880
+    ],
+    "person": [
+     508,
+     518,
+     508
+    ],
+    "horizon": 416,
+    "spots": [
+     [
+      700,
+      887,
+      515
+     ],
+     [
+      960,
+      890,
+      518
+     ],
+     [
+      1200,
+      888,
+      516
+     ],
+     [
+      1450,
+      885,
+      513
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      240,
+      0,
+      720,
+      180
+     ],
+     [
+      240,
+      240,
+      720,
+      420
+     ],
+     [
+      1320,
+      0,
+      1800,
+      180
+     ]
+    ],
+    "seats": [
+     {
+      "k": "bed",
+      "x0": 360,
+      "x1": 760,
+      "y": 600
+     }
+    ],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_dining": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Victorian country house dining hall",
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     890,
+     880
+    ],
+    "person": [
+     455,
+     466,
+     455
+    ],
+    "horizon": 464,
+    "spots": [
+     [
+      240,
+      882,
+      458
+     ],
+     [
+      520,
+      885,
+      461
+     ],
+     [
+      800,
+      888,
+      464
+     ],
+     [
+      1100,
+      889,
+      464
+     ],
+     [
+      1400,
+      885,
+      461
+     ],
+     [
+      1680,
+      882,
+      458
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      720,
+      300,
+      1200,
+      480
+     ],
+     [
+      600,
+      480,
+      1080,
+      660
+     ],
+     [
+      0,
+      0,
+      480,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_falls": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "narrow ledge path beside the Reichenbach Falls",
+   "ann": {
+    "v": 6,
+    "ground": [
+     900,
+     880,
+     900
+    ],
+    "person": [
+     372,
+     350,
+     372
+    ],
+    "horizon": 560,
+    "spots": [
+     [
+      260,
+      895,
+      366
+     ],
+     [
+      480,
+      890,
+      361
+     ],
+     [
+      700,
+      885,
+      356
+     ],
+     [
+      920,
+      881,
+      351
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      840,
+      0,
+      1320,
+      180
+     ],
+     [
+      0,
+      300,
+      480,
+      480
+     ],
+     [
+      1320,
+      480,
+      1800,
+      660
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_lab": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Victorian hospital chemistry laboratory",
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     890,
+     880
+    ],
+    "person": [
+     464,
+     475,
+     464
+    ],
+    "horizon": 456,
+    "spots": [
+     [
+      760,
+      888,
+      472
+     ],
+     [
+      1000,
+      890,
+      474
+     ],
+     [
+      1240,
+      887,
+      471
+     ],
+     [
+      1480,
+      885,
+      469
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      600,
+      480,
+      1080,
+      660
+     ],
+     [
+      1320,
+      300,
+      1800,
+      480
+     ],
+     [
+      1320,
+      480,
+      1800,
+      660
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_lodge": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Victorian villa street at dusk",
+   "ann": {
+    "v": 6,
+    "ground": [
+     900,
+     900,
+     900
+    ],
+    "person": [
+     381,
+     381,
+     381
+    ],
+    "horizon": 552,
+    "spots": [
+     [
+      240,
+      900,
+      381
+     ],
+     [
+      520,
+      900,
+      381
+     ],
+     [
+      800,
+      900,
+      381
+     ],
+     [
+      1100,
+      900,
+      381
+     ],
+     [
+      1400,
+      900,
+      381
+     ],
+     [
+      1680,
+      900,
+      381
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      0,
+      0,
+      480,
+      180
+     ],
+     [
+      0,
+      480,
+      480,
+      660
+     ],
+     [
+      1320,
+      240,
+      1800,
+      420
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_moor": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Dartmoor at night under the moon",
+   "ann": {
+    "v": 6,
+    "ground": [
+     900,
+     900,
+     900
+    ],
+    "person": [
+     372,
+     372,
+     372
+    ],
+    "horizon": 560,
+    "spots": [
+     [
+      240,
+      900,
+      372
+     ],
+     [
+      520,
+      900,
+      372
+     ],
+     [
+      800,
+      900,
+      372
+     ],
+     [
+      1100,
+      900,
+      372
+     ],
+     [
+      1400,
+      900,
+      372
+     ],
+     [
+      1680,
+      900,
+      372
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      0,
+      0,
+      480,
+      180
+     ],
+     [
+      480,
+      120,
+      960,
+      300
+     ],
+     [
+      1320,
+      120,
+      1800,
+      300
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_street": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "foggy Victorian London street with gas lamps",
+   "ann": {
+    "v": 6,
+    "ground": [
+     900,
+     900,
+     900
+    ],
+    "person": [
+     319,
+     319,
+     319
+    ],
+    "horizon": 608,
+    "spots": [
+     [
+      240,
+      900,
+      319
+     ],
+     [
+      520,
+      900,
+      319
+     ],
+     [
+      800,
+      900,
+      319
+     ],
+     [
+      1100,
+      900,
+      319
+     ],
+     [
+      1400,
+      900,
+      319
+     ],
+     [
+      1680,
+      900,
+      319
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1200,
+      0,
+      1680,
+      180
+     ],
+     [
+      240,
+      0,
+      720,
+      180
+     ],
+     [
+      720,
+      120,
+      1200,
+      300
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_sussex": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Sussex Downs cottage with beehives by the sea",
+   "ann": {
+    "v": 6,
+    "ground": [
+     900,
+     900,
+     900
+    ],
+    "person": [
+     372,
+     372,
+     372
+    ],
+    "horizon": 560,
+    "spots": [
+     [
+      240,
+      900,
+      372
+     ],
+     [
+      520,
+      900,
+      372
+     ],
+     [
+      800,
+      900,
+      372
+     ],
+     [
+      1100,
+      900,
+      372
+     ],
+     [
+      1400,
+      900,
+      372
+     ],
+     [
+      1680,
+      900,
+      372
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      840,
+      0,
+      1320,
+      180
+     ],
+     [
+      1320,
+      60,
+      1800,
+      240
+     ],
+     [
+      240,
+      0,
+      720,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_sh_tibet": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "snowy Tibetan monastery courtyard",
+   "ann": {
+    "v": 6,
+    "ground": [
+     900,
+     900,
+     900
+    ],
+    "person": [
+     416,
+     416,
+     416
+    ],
+    "horizon": 520,
+    "spots": [
+     [
+      240,
+      900,
+      416
+     ],
+     [
+      520,
+      900,
+      416
+     ],
+     [
+      800,
+      900,
+      416
+     ],
+     [
+      1100,
+      900,
+      416
+     ],
+     [
+      1400,
+      900,
+      416
+     ],
+     [
+      1680,
+      900,
+      416
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1200,
+      120,
+      1680,
+      300
+     ],
+     [
+      720,
+      0,
+      1200,
+      180
+     ],
+     [
+      1200,
+      300,
+      1680,
+      480
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_ea_sea_coast": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "bg_ea_sea_coast",
+   "ann": {
+    "v": 6,
+    "ground": [
+     960,
+     970,
+     965
+    ],
+    "person": [
+     250,
+     230,
+     220
+    ],
+    "spots": [
+     [
+      320,
+      960,
+      250
+     ],
+     [
+      640,
+      965,
+      240
+     ],
+     [
+      960,
+      970,
+      230
+     ],
+     [
+      1240,
+      970,
+      225
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": 470,
+    "free": [
+     [
+      0,
+      300,
+      480,
+      480
+     ],
+     [
+      120,
+      120,
+      600,
+      300
+     ],
+     [
+      600,
+      0,
+      1080,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_battle": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Sekigahara battlefield after battle, banners, smoke",
+   "ann": {
+    "v": 6,
+    "ground": [
+     930,
+     930,
+     920
+    ],
+    "person": [
+     448,
+     448,
+     438
+    ],
+    "horizon": 520,
+    "spots": [
+     [
+      240,
+      930,
+      448
+     ],
+     [
+      520,
+      930,
+      448
+     ],
+     [
+      800,
+      930,
+      448
+     ],
+     [
+      1100,
+      929,
+      447
+     ],
+     [
+      1400,
+      925,
+      443
+     ],
+     [
+      1680,
+      922,
+      440
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      840,
+      0,
+      1320,
+      180
+     ],
+     [
+      1320,
+      0,
+      1800,
+      180
+     ],
+     [
+      360,
+      0,
+      840,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_castle": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Kumamoto castle courtyard",
+   "ann": {
+    "v": 6,
+    "ground": [
+     950,
+     940,
+     950
+    ],
+    "person": [
+     427,
+     416,
+     427
+    ],
+    "horizon": 560,
+    "spots": [
+     [
+      240,
+      948,
+      424
+     ],
+     [
+      520,
+      945,
+      421
+     ],
+     [
+      800,
+      942,
+      417
+     ],
+     [
+      1100,
+      941,
+      417
+     ],
+     [
+      1400,
+      945,
+      421
+     ],
+     [
+      1680,
+      948,
+      424
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      0,
+      0,
+      480,
+      180
+     ],
+     [
+      600,
+      180,
+      1080,
+      360
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_cave": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Reigando cave with Buddhist statue and candles",
+   "ann": {
+    "v": 6,
+    "ground": [
+     930,
+     920,
+     920
+    ],
+    "person": [
+     405,
+     394,
+     394
+    ],
+    "horizon": 560,
+    "spots": [
+     [
+      300,
+      927,
+      401
+     ],
+     [
+      560,
+      924,
+      398
+     ],
+     [
+      820,
+      921,
+      395
+     ],
+     [
+      1080,
+      920,
+      394
+     ],
+     [
+      1340,
+      920,
+      394
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1080,
+      0,
+      1560,
+      180
+     ],
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      600,
+      240,
+      1080,
+      420
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_island": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Ganryujima island beach with sea",
+   "ann": {
+    "v": 6,
+    "ground": [
+     950,
+     940,
+     930
+    ],
+    "person": [
+     580,
+     569,
+     558
+    ],
+    "horizon": 420,
+    "spots": [
+     [
+      240,
+      948,
+      577
+     ],
+     [
+      520,
+      945,
+      574
+     ],
+     [
+      800,
+      942,
+      571
+     ],
+     [
+      1100,
+      939,
+      567
+     ],
+     [
+      1400,
+      935,
+      564
+     ],
+     [
+      1680,
+      932,
+      561
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      0,
+      0,
+      480,
+      180
+     ],
+     [
+      1320,
+      0,
+      1800,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_kyoto": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "autumn field outside Kyoto with pagoda in distance",
+   "ann": {
+    "v": 6,
+    "ground": [
+     950,
+     940,
+     950
+    ],
+    "person": [
+     492,
+     481,
+     492
+    ],
+    "horizon": 500,
+    "spots": [
+     [
+      240,
+      948,
+      489
+     ],
+     [
+      520,
+      945,
+      486
+     ],
+     [
+      800,
+      942,
+      483
+     ],
+     [
+      1100,
+      941,
+      483
+     ],
+     [
+      1400,
+      945,
+      486
+     ],
+     [
+      1680,
+      948,
+      489
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      720,
+      240,
+      1200,
+      420
+     ],
+     [
+      720,
+      0,
+      1200,
+      180
+     ],
+     [
+      1200,
+      240,
+      1680,
+      420
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_pine": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Ichijoji pine tree crossroads at dawn",
+   "ann": {
+    "v": 6,
+    "ground": [
+     960,
+     950,
+     960
+    ],
+    "person": [
+     503,
+     492,
+     503
+    ],
+    "horizon": 500,
+    "spots": [
+     [
+      240,
+      958,
+      500
+     ],
+     [
+      480,
+      955,
+      498
+     ],
+     [
+      720,
+      952,
+      495
+     ],
+     [
+      960,
+      950,
+      492
+     ],
+     [
+      1200,
+      952,
+      495
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      0,
+      0,
+      480,
+      180
+     ],
+     [
+      480,
+      0,
+      960,
+      180
+     ],
+     [
+      0,
+      180,
+      480,
+      360
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_road": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "forest road through cedar trees",
+   "ann": {
+    "v": 6,
+    "ground": [
+     980,
+     960,
+     980
+    ],
+    "person": [
+     394,
+     372,
+     394
+    ],
+    "horizon": 620,
+    "spots": [
+     [
+      420,
+      971,
+      384
+     ],
+     [
+      660,
+      966,
+      379
+     ],
+     [
+      900,
+      961,
+      373
+     ],
+     [
+      1140,
+      964,
+      376
+     ],
+     [
+      1380,
+      969,
+      381
+     ],
+     [
+      1560,
+      972,
+      386
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      120,
+      180,
+      600,
+      360
+     ],
+     [
+      600,
+      480,
+      1080,
+      660
+     ],
+     [
+      0,
+      480,
+      480,
+      660
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_temple": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Buddhist temple courtyard with stone lanterns",
+   "ann": {
+    "v": 6,
+    "ground": [
+     960,
+     960,
+     960
+    ],
+    "person": [
+     394,
+     394,
+     394
+    ],
+    "horizon": 600,
+    "spots": [
+     [
+      220,
+      960,
+      394
+     ],
+     [
+      460,
+      960,
+      394
+     ],
+     [
+      700,
+      960,
+      394
+     ],
+     [
+      940,
+      960,
+      394
+     ],
+     [
+      1180,
+      960,
+      394
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1200,
+      180,
+      1680,
+      360
+     ],
+     [
+      1320,
+      0,
+      1800,
+      180
+     ],
+     [
+      960,
+      480,
+      1440,
+      660
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  },
+  "bg_mu_village": {
+   "era": "anime",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Japanese farm village, thatched houses, rice paddies",
+   "ann": {
+    "v": 6,
+    "ground": [
+     950,
+     940,
+     950
+    ],
+    "person": [
+     427,
+     416,
+     427
+    ],
+    "horizon": 560,
+    "spots": [
+     [
+      240,
+      948,
+      424
+     ],
+     [
+      520,
+      945,
+      421
+     ],
+     [
+      800,
+      942,
+      417
+     ],
+     [
+      1100,
+      941,
+      417
+     ],
+     [
+      1400,
+      945,
+      421
+     ],
+     [
+      1680,
+      948,
+      424
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      720,
+      60,
+      1200,
+      240
+     ],
+     [
+      1320,
+      60,
+      1800,
+      240
+     ],
+     [
+      0,
+      0,
+      480,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   }
+  }
+ }
+}

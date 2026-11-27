@@ -1,7 +1,9 @@
 import express from "express";
 import { BORNAS_API } from "../../constants/bornasConfig.js";
 import { bornasAnnotateController, bornasApproveController, bornasCancelController, bornasDeleteController, bornasDeleteVideosController, bornasJobsController, bornasRerunController, bornasSaveVideoController, bornasSourceController, bornasStartController, bornasStateController, bornasStatusController } from "../controllers/bornasController.js";
+import { resumeBornasJobs } from "../services/bornasPipeline.js";
 const router = express.Router();
+resumeBornasJobs();
 router.post(BORNAS_API.SOURCE, bornasSourceController);
 router.post(BORNAS_API.START, bornasStartController);
 router.get(BORNAS_API.STATUS, bornasStatusController);

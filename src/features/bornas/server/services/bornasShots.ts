@@ -1,14 +1,10 @@
-import { createHash } from "crypto";
-import fs from "fs";
 import _ from "lodash";
-import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
-import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_CHAPTER, BORNAS_CHAPTER_LABEL, BORNAS_DIR, BORNAS_LIMITS, BORNAS_ROTATION, bornasChapterLines, bornasTokens, BORNAS_CTA } from "../../constants/bornasConfig.js";
+import { BORNAS_AI_CACHE, BORNAS_CHAPTER, BORNAS_CHAPTER_LABEL, BORNAS_DIR, BORNAS_LIMITS, BORNAS_ROTATION, bornasChapterLines, bornasTokens, BORNAS_CTA } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasBgAnn, BornasSpriteAnn, BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
-import { readJson, writeJson } from "./bornasTools.js";
 import { rotateBornasBeats } from "./bornasRotate.js";
+import { bornasAiCached } from "./bornasAiCache.js";
 import { bornasVideoDir } from "./bornasVoice.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 type Obj = Record<string, unknown>;
@@ -138,9 +134,7 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
       first: k === 0,
       last: k === chunks.length - 1,
     });
-    const cache = bornasVideoDir(job, video, BORNAS_DIR.SHOTS, `${createHash("sha1").update(`${job.ai.directAi.provider}|${job.ai.directAi.model}|${prompt}`).digest("hex").slice(0, 12)}.json`);
-    const res = readJson<{ beats?: unknown } | null>(cache, null) ?? (await runMotionAi(prompt, BORNAS_ARTIFACT.SHOTS, reupExec(job.ai.directAi), signal, (line) => line && log(line)));
-    if (Array.isArray(res?.beats) && !fs.existsSync(cache)) writeJson(cache, res);
+    const res = await bornasAiCached<{ beats?: unknown } | null>({ dir: bornasVideoDir(job, video, BORNAS_DIR.SHOTS), prefix: BORNAS_AI_CACHE.SHOTS_PREFIX, ai: job.ai.directAi, prompt, artifact: BORNAS_ARTIFACT.SHOTS, log, signal, ok: (r) => Array.isArray(r?.beats) });
     raw.push(...((Array.isArray(res?.beats) ? res.beats : []) as Obj[]));
   }
   const beats: BornasBeat[] = [];

@@ -217,6 +217,7 @@ export interface BornasJob {
   updatedAt: number;
   status: BornasJobStatus;
   error?: string;
+  resumeStep?: BornasStepId;
   channel: BornasChannel;
   ai: BornasAiSettings;
   sample: BornasSample;

@@ -836,6 +836,7 @@ export interface MotionAiExecution {
   urgent?: boolean;
   renderRecovery?: boolean;
   light?: { provider: string; model: string; chromeHeadless: boolean; allowFallback: boolean; multiRoom?: boolean };
+  routeUsed?: (route: { provider: string; model: string }) => void;
 }
 export interface MotionAiActivity {
   workerId: string;

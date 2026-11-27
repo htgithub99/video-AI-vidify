@@ -55,6 +55,7 @@ export const getBornasJob = (id: string): BornasJob | undefined => {
   job.ai = bornasAiSettings(job.ai);
   job.steps = { ...bornasEmptySteps(), ...job.steps };
   if (job.status === "running") {
+    job.resumeStep = BORNAS_STEPS.find((step) => job.steps[step]?.status === "running");
     for (const step of BORNAS_STEPS) if (job.steps[step]?.status === "running") job.steps[step] = { ...job.steps[step], status: "error", message: BORNAS_LOG.INTERRUPTED };
     for (const video of job.videos) if (video.status === "running") video.status = "error";
     job.status = "error";

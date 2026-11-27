@@ -1195,7 +1195,9 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     const workerId = motionAiRunStore.getStore()!.workerId;
     const provider = mode === AiPlanningExecutionMode.ApiOnly || exec.provider === AiPlanningFallbackProvider.Disabled ? MOTION_STORY_CONFIG.API_PROVIDER : String(exec.provider);
     log?.(AIR.ACTIVE(provider, String(exec.model || MR.MOTION_TEXT_EMPTY), artifactType), { workerId, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PRIMARY });
-    return request(exec, attempt);
+    const out = await request(exec, attempt);
+    exec.routeUsed?.({ provider, model: String(exec.model || "") });
+    return out;
   }
   const configured = motionAiRoutes(exec);
   const routes = exec.allowFallback !== false && editorial?.route && (!exec.role || exec.role === MOTION_AI_ROLE.MAIN) ? [editorial.route, ...configured.filter((route) => route.provider !== editorial.route!.provider || route.model !== editorial.route!.model)] : configured;
@@ -1215,6 +1217,7 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     try {
       const out = await request(routes[i]);
       if (editorial && (!exec.role || exec.role === MOTION_AI_ROLE.MAIN)) editorial.route = routes[i];
+      exec.routeUsed?.({ provider: String(routes[i].provider), model: String(routes[i].model || "") });
       logMotionAiChain({ ...step, result: MOTION_AI_FALLBACK.RESULT_OK });
       return out;
     } catch (error: any) {
@@ -1235,9 +1238,18 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
       if (next) log?.(MOTION_AI_FALLBACK.LOG_SWITCH(String(routes[i].provider), String(next.provider), _.truncate(_.toString(error?.message), { length: MOTION_AI_FALLBACK.REASON_MAX })));
     }
   }
-  if (!failure && routes.length) return request([...routes].sort((a, b) => motionRoomBlockedMs(String(a.provider), a.model) - motionRoomBlockedMs(String(b.provider), b.model))[0]);
+  if (!failure && routes.length) {
+    const last = [...routes].sort((a, b) => motionRoomBlockedMs(String(a.provider), a.model) - motionRoomBlockedMs(String(b.provider), b.model))[0];
+    const out = await request(last);
+    exec.routeUsed?.({ provider: String(last.provider), model: String(last.model || "") });
+    return out;
+  }
   log?.(MOTION_AI_FALLBACK.LOG_ALL_FAILED(_.map(routes, (r) => String(r.provider)).join(MOTION_AI_FALLBACK.LIST_SEP)));
-  if (mode === AiPlanningExecutionMode.Hybrid) return request({ ...exec, mode: AiPlanningExecutionMode.ApiOnly });
+  if (mode === AiPlanningExecutionMode.Hybrid) {
+    const out = await request({ ...exec, mode: AiPlanningExecutionMode.ApiOnly });
+    exec.routeUsed?.({ provider: MOTION_STORY_CONFIG.API_PROVIDER, model: String(exec.model || "") });
+    return out;
+  }
   if (AIR.REPLAYABLE_ARTIFACT.test(artifactType)) throw Object.assign(failure instanceof Error ? failure : exhaustedMotionRoom(String(exec.provider)), { [AIR.EXHAUSTED_FLAG]: true });
   throw failure;
 };

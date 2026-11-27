@@ -1,16 +1,16 @@
-import { createHash } from "crypto";
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { reupFfmpeg } from "../../../reup/server/services/reupFfmpeg.js";
-import { BORNAS_ANN, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, bornasStyleLine, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
+import { BORNAS_AI_CACHE, BORNAS_ANN, BORNAS_LIB_KEEP, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, bornasStyleLine, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_BUST_LOOKS, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasDrawChoice, BornasAssetPlan, BornasBackground, BornasBgAnn, BornasJob, BornasScript, BornasSprite, BornasSpriteAnn, BornasVideo } from "../../types/bornas.js";
 import { annotateBackgrounds, annotateSprites, bornasBadAnn } from "./bornasAnnotate.js";
 import { bornasVideoDir } from "./bornasVoice.js";
+import { bornasAiCached } from "./bornasAiCache.js";
 import { BORNAS_ABORTED, bornasDraw, bornasLib, isBornasAbort, readJson, runKitPy, slug, writeJson } from "./bornasTools.js";
 const sizeOf = (name: string, kind: string, guess: number): number => {
   const n = name.toLowerCase().replace(/_/g, " "),
@@ -171,31 +171,22 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
   const allItems = Object.fromEntries(Object.entries(itemLib).flatMap(([n, lib]) => (cats[lib].items[n]?.ann && bornasBadAnn(cats[lib].items[n].ann!) ? [] : [[n, cats[lib].items[n]]])));
   const allBgs = Object.fromEntries(Object.entries(bgLib).map(([n, lib]) => [n, cats[lib].backgrounds[n]]));
   const assets = bornasVideoDir(job, video, BORNAS_DIR.ASSETS);
-  const planFile = path.join(assets, `plan_${createHash("sha1").update(JSON.stringify(script.lines)).digest("hex").slice(0, 12)}.json`);
-  if (!fs.existsSync(planFile)) log(BORNAS_LOG.PLAN);
-  const raw =
-    readJson<unknown>(planFile, null) ??
-    (await runMotionAi(
-      BORNAS_PROMPT.ASSETS({
-        script,
-        items: Object.entries(allItems)
-          .slice(0, BORNAS_LIMITS.CATALOG_PROMPT_MAX * 4)
-          .map(([n, it]) => `${n} | ${it.kind} | ${it.heightM}`)
-          .join("\n"),
-        backgrounds: Object.entries(allBgs)
-          .map(([n, b]) => `${n}: ${b.desc || words(n)}`)
-          .join("\n"),
-        analysis: job.analysis!,
-        topic: job.channel.topic,
-      }),
-      BORNAS_ARTIFACT.ASSETS,
-      reupExec(job.ai.directAi),
-      signal,
-      (line) => line && log(line),
-    ));
+  const prompt = BORNAS_PROMPT.ASSETS({
+    script,
+    items: Object.entries(allItems)
+      .slice(0, BORNAS_LIMITS.CATALOG_PROMPT_MAX * 4)
+      .map(([n, it]) => `${n} | ${it.kind} | ${it.heightM}`)
+      .join("\n"),
+    backgrounds: Object.entries(allBgs)
+      .map(([n, b]) => `${n}: ${b.desc || words(n)}`)
+      .join("\n"),
+    analysis: job.analysis!,
+    topic: job.channel.topic,
+  });
+  log(BORNAS_LOG.PLAN);
+  const raw = await bornasAiCached<unknown>({ dir: assets, prefix: BORNAS_AI_CACHE.PLAN_PREFIX, ai: job.ai.directAi, prompt, artifact: BORNAS_ARTIFACT.ASSETS, log, signal, ok: (r) => !!r && typeof r === "object" });
   const plan = cleanPlan(raw, allItems, allBgs);
   if (!plan.cast.length && !plan.items.length) throw new Error(BORNAS_ERROR.NO_PLAN);
-  if (!fs.existsSync(planFile)) writeJson(planFile, raw);
   log(BORNAS_LOG.PLAN_DONE(plan.items.length, plan.backgrounds.length, plan.cast.length, plan.newItems.length + plan.newBackgrounds.length));
   const png = path.join(assets, "png");
   const raws = path.join(assets, BORNAS_DIR.RAW);
@@ -264,6 +255,10 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
   }
   const stamp = new Date().toISOString().slice(2, 10).replace(/-/g, "");
   const added: { lib: string; names: string[] } = { lib: home, names: [] };
+  // Pictures of a main character (a portrait of the hero, the hero's horse by name) stay with this video only:
+  // they are drawn into the library folder but never written to its catalog, so other videos cannot reuse them.
+  const castWords = new Set(plan.cast.flatMap((c) => `${c.id} ${String(c.desc || "").split(BORNAS_LIB_KEEP.NAME_END)[0]} ${script.hero || ""}`.toLowerCase().split(/[^a-z]+/)).filter((w) => w.length >= BORNAS_LIB_KEEP.MIN_WORD && !BORNAS_LIB_KEEP.GENERIC.includes(w)));
+  const personal = (name: string, desc = ""): boolean => `${name} ${desc}`.toLowerCase().split(/[^a-z]+/).some((w) => castWords.has(w));
   for (const [k, group] of _.chunk(plan.newItems, BORNAS_LIMITS.SHEET_ITEMS).entries()) {
     const cols = Math.min(6, group.length),
       rows = Math.ceil(group.length / cols);
@@ -283,7 +278,8 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
       cats[home].items[name] = cat.items[name];
       itemLib[name] = home;
       plan.items.push(name);
-      added.names.push(name);
+      if (personal(it.name, it.desc)) delete cat.items[name];
+      else added.names.push(name);
     }
     writeJson(catalogFile(home), cat);
   }

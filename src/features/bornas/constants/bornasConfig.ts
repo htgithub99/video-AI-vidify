@@ -23,7 +23,7 @@ export const BORNAS_STATE = { FILE: "bornas-state.json", CHANNELS_MAX: 40, DONE_
 export const bornasHeroName = (hero: string): string => hero.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim().slice(0, BORNAS_STATE.DONE_CHARS);
 export const bornasDoneList = (raw: unknown): string[] => [...new Map((Array.isArray(raw) ? raw : []).map((x) => String(x ?? "").trim().slice(0, BORNAS_STATE.DONE_CHARS)).filter(Boolean).map((x) => [x.toLowerCase(), x] as const)).values()].slice(0, BORNAS_STATE.DONE_MAX);
 export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", SHORT: "short", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4" } as const;
-export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = { world: ["ancient", "medieval", "eastasia", "ww", "modern"], ww: ["ww"], ancient: ["ancient"], medieval: ["medieval"], eastasia: ["eastasia"], vietnam: ["vietnam"], modern: ["modern"], game: ["game"], wildwest: ["wildwest"], anime: [] };
+export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = { world: ["ancient", "medieval", "eastasia", "ww", "modern"], ww: ["ww"], ancient: ["ancient"], medieval: ["medieval"], eastasia: ["eastasia"], vietnam: ["vietnam"], modern: ["modern"], game: ["game"], wildwest: ["wildwest"], anime: ["anime"] };
 export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }[] = [
   { re: /\b(?:mounted|galloping|riding|rider|horseman|cavalryman)\b/, min: 1.8, max: 2.8, std: 2.4 },
   { re: /(?:nightstand|bedside|side_table)s?\b/, min: 0.5, max: 0.85, std: 0.7 },
@@ -70,6 +70,8 @@ export const BORNAS_CHAPTER = { MIN_SECONDS: 180, CARD_SECONDS: 1.8, LEAD: 0.15,
 export const bornasChapterLines = (lines: BornasLine[], seconds: number): number[] => (seconds >= BORNAS_CHAPTER.MIN_SECONDS ? lines.flatMap((l, i) => (i && l.chapter ? [i] : [])).slice(0, BORNAS_CHAPTER.MAX) : []);
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 export const BORNAS_CHAPTER_LABEL: Record<string, (n: number) => string> = { vi: (n) => `CHƯƠNG ${ROMAN[n - 1] || n}`, en: (n) => `CHAPTER ${ROMAN[n - 1] || n}`, ja: (n) => `第${n}章`, ko: (n) => `제${n}장` };
+export const BORNAS_LIB_KEEP = { MIN_WORD: 3, GENERIC: ["hero", "young", "adult", "old", "teen", "child", "baby", "boy", "girl", "bust", "kid", "man", "woman", "the", "and", "with"] as string[], NAME_END: /,| at age | aged | in (?:the )?\d/ } as const;
+export const BORNAS_AI_CACHE = { KEY_LEN: 12, SHOTS_PREFIX: "", PLAN_PREFIX: "plan_", REVIEW_PREFIX: "review_" } as const;
 export const BORNAS_ROTATION = { ORDER: ["wide", "act", "prop", "two", "act", "bust"], RECENT: 8, BUST_SHARE: 0.18, BUST_GAP: 6, REPEAT_GAP: 30, BUST_WARN: 0.25, PROP_KINDS: ["prop", "weapon"] } as const;
 export const BORNAS_BUSTS = { SHEETS: [{ file: "", views: ["r", "talk", "l"] }, { file: "_2", views: ["fierce", "shock", "smile"] }], NEUTRAL: ["r", "l", "talk"], FACING: { r: "r", talk: "r", l: "l", fierce: "r", shock: "l", smile: "r" } as Record<string, "l" | "r">, SUFFIX: "_b_", SKIP: /baby|bust/, MIN_TALL: 0.7, TRIES: 2 } as const;
 export const BORNAS_SIZE_RANGE: Record<string, [number, number]> = { person: [0.5, 2.3], bust: [0.5, 2.3], animal: [0.08, 4.5], vehicle: [0.8, 7], prop: [0.02, 3], weapon: [0.1, 2.6], structure: [0.8, 60], building: [2, 80], nature: [0.1, 45] };
@@ -78,6 +80,7 @@ export const BORNAS_REVIEW = { TEXT_DELAY: 0.7, SNAP_BATCH: 40, FIXES: ["wide", 
 export const BORNAS_TOPICS = Object.keys(BORNAS_TOPIC_LIBS) as BornasTopic[];
 export const BORNAS_LENGTHS = [60, 120, 180, 300, 480, 600] as const;
 export const BORNAS_COUNTS = [1, 2, 3, 4, 5, 6, 8, 10] as const;
+export const BORNAS_RESUME = { DELAY_MS: 20000, MAX_AGE_MS: 12 * 3600 * 1000, SKIP: ["sample", "script"] as readonly BornasStepId[] } as const;
 export const BORNAS_LIMITS = {
   END_HOLD: 2.5,
   POOL_KINDS: ["person", "animal"] as string[],

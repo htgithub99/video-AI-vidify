@@ -84,6 +84,11 @@ const reviewSnaps = async (job: BornasJob, video: BornasVideo, frames: Frame[], 
   const heroes = (video.plan?.cast || []).map((c) => `${c.id}_`);
   const castOf = readJson<Record<string, string[]>>(path.join(dir, "cast.json"), {});
   if (!frames.length) return {};
+  const said = readJson<{ words?: [number, number, string][][] }>(bornasVideoDir(job, video, "plan.json"), {}).words || [];
+  const lineAt = (t: number): string => {
+    const k = _.findLastIndex(said, (w) => (w[0]?.[0] ?? Infinity) <= t + 0.01);
+    return k >= 0 ? said[k].map((w) => w[2]).join(" ") : "";
+  };
   const manifest = path.join(snaps, "frames.json");
   writeJson(
     manifest,
@@ -106,6 +111,7 @@ const reviewSnaps = async (job: BornasJob, video: BornasVideo, frames: Frame[], 
       BORNAS_PROMPT.SNAP_REVIEW(
         batch.map((b) => ({ start: b.start, count: b.count })),
         cast,
+        _.flatMap(batch, (b) => _.range(b.start, b.start + b.count)).flatMap((n) => (frames[n - 1] && lineAt(frames[n - 1].t) ? [{ n, text: lineAt(frames[n - 1].t) }] : [])),
       ),
       BORNAS_ARTIFACT.SNAP_REVIEW,
       reupExec(job.ai.visionAi),
