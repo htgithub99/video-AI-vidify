@@ -3,6 +3,7 @@ import {
   cancelVideoExport,
   createVideoExportPreview,
   deleteVideoExportResults,
+  inspectVideoExportResults,
   cancelVideoExportAiClips,
   createCapcutProjectController,
   getCapcutResourceCatalogController,
@@ -26,6 +27,7 @@ router.post(VIDEO_EXPORT_API_PATHS.CANCEL, cancelVideoExport);
 router.post(VIDEO_EXPORT_API_PATHS.SELECT_SAVE_DESTINATION, selectVideoExportSaveDestination);
 router.post(VIDEO_EXPORT_API_PATHS.SAVE_VIDEO, saveVideoExportVideo);
 router.post(VIDEO_EXPORT_API_PATHS.DELETE_RESULTS, deleteVideoExportResults);
+router.post(VIDEO_EXPORT_API_PATHS.INSPECT_RESULTS, inspectVideoExportResults);
 router.get(VIDEO_EXPORT_API_PATHS.CAPCUT_CATALOG, getCapcutResourceCatalogController);
 router.post(VIDEO_EXPORT_API_PATHS.CAPCUT_CATALOG, getCapcutResourceCatalogController);
 router.post(VIDEO_EXPORT_API_PATHS.CAPCUT_PROJECT, createCapcutProjectController);

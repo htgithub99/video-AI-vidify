@@ -102,6 +102,7 @@ export const RUNTIME_TEXT = {
   P_1_TEXT_PURPLE_400_HOVER_TEXT_PURPLE_300_TRANSITION: "p-1 text-purple-400 hover:text-purple-300 transition-colors shrink-0 cursor-pointer flex items-center justify-center",
   W_4_H_4_ML_0_5: "w-4 h-4 ml-0.5",
   TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_100_TRUNCATE: "text-xs font-semibold text-slate-100 truncate",
+  CODEC_NOTE: "mt-2 text-[11px] leading-snug text-amber-300/90 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1.5",
   PX_2_PY_0_5_ROUNDED_FULL_BG_AMBER_500: "px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-bold font-mono flex items-center gap-1 shrink-0",
   FLEX_ITEMS_CENTER_GAP_0_5_SHRINK_0: "flex items-center gap-0.5 shrink-0",
   P_1_TEXT_SLATE_400_HOVER_TEXT_PURPLE_300_TRANSITION: "p-1 text-slate-400 hover:text-purple-300 transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed",

@@ -96,6 +96,7 @@ import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExpo
 import { VideoExportOptionGrid, VideoExportOptionItem, VideoExportOptionSection, VideoExportOptionTone } from "./VideoExportOptionGrid.js";
 import { VideoExportVisualSelector } from "./VideoExportVisualSelector.js";
 import { VideoExportAiClipPanel } from "./VideoExportAiClipPanel.js";
+import { hevcHidden } from "./videoExportUtils.js";
 type VideoExportConfigCardProps = { exporter: Pick<VideoExporterState, "text" | "config" | "title" | "slidePlan" | "totalAudioSeconds" | "selectedAudios" | "job" | "isExporting" | "canRender" | "isRanking" | "isScanning" | "aiClips" | "updateConfig" | "setTitle" | "startExport" | "stopExport"> };
 export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter }) => {
   const { text, config, title, slidePlan, totalAudioSeconds, selectedAudios, job, isExporting, canRender, isRanking, isScanning } = exporter;
@@ -359,6 +360,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
             <VideoExportOptionGrid label={text.BITRATE_LABEL} options={bitrateOptions} value={config.bitrate} columns={2} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_BITRATE, value)} />
           </div>
           <VideoExportOptionGrid label={text.CODEC_LABEL} options={codecOptions} value={config.codec} columns={2} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_CODEC, value)} />
+          {hevcHidden(config.codec) && <p className={RT_VIDEO_EXPORT.CODEC_NOTE}>{text.CODEC_HEVC_HINT}</p>}
         </div>
         <div className={cn(RT_VIDEO_EXPORT.SPACE_Y_1_5_PT_0_5)}>
           <label htmlFor={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_TITLE} className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_300_FLEX_ITEMS_CENTER_JUS)}>

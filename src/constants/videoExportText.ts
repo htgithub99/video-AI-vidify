@@ -345,8 +345,6 @@ export const VIDEO_EXPORT_TEXT_0_V = "0:v" as const;
 export const VIDEO_EXPORT_TEXT_1_A = "1:a" as const;
 export const VIDEO_EXPORT_TEXT_COPY = "copy" as const;
 export const VIDEO_EXPORT_TEXT_SHORTEST = "-shortest" as const;
-export const VIDEO_EXPORT_TEXT_MOVFLAGS = "-movflags" as const;
-export const VIDEO_EXPORT_TEXT_FASTSTART = "+faststart" as const;
 export const VIDEO_EXPORT_TEXT_S0 = "[s0]" as const;
 export const VIDEO_EXPORT_TEMPLATE_X = (value0: string): string => "[x" + value0 + "]";
 export const VIDEO_EXPORT_TEMPLATE_S_XFADE_TRANSITION_DURATION_OFFSET = (value0: string, value1: string, value2: string, value3: string, value4: string, value5: string): string => value0 + "[s" + value1 + "]xfade=transition=" + value2 + ":duration=" + value3 + ":offset=" + value4 + value5;

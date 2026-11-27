@@ -55,7 +55,6 @@ import {
   VIDEO_EXPORT_TEXT_EQ_CONTRAST_1_3_SATURATION_1,
   VIDEO_EXPORT_TEXT_F,
   VIDEO_EXPORT_TEXT_FADE_T_IN_ST_0_D,
-  VIDEO_EXPORT_TEXT_FASTSTART,
   VIDEO_EXPORT_TEXT_FILTER_COMPLEX,
   VIDEO_EXPORT_TEXT_FRAMERATE,
   VIDEO_EXPORT_TEXT_HUE_H_T_120_S_1,
@@ -65,7 +64,6 @@ import {
   VIDEO_EXPORT_TEXT_IW_2_IW_ZOOM_2,
   VIDEO_EXPORT_TEXT_LOOP,
   VIDEO_EXPORT_TEXT_MAP,
-  VIDEO_EXPORT_TEXT_MOVFLAGS,
   VIDEO_EXPORT_TEXT_NOISE_ALLS_28_ALLF_T_U,
   VIDEO_EXPORT_TEXT_R,
   VIDEO_EXPORT_TEXT_RGBASHIFT_RH_12_RV_3_GH,
@@ -93,7 +91,7 @@ import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { probeMediaDurationSeconds, probeMediaHasAudio, runFfmpeg, throwIfAborted } from "./videoExportFfmpegService.js";
 import { logger } from "../../../../lib/logger.js";
 import { computeVideoExportSlidePlan } from "../../lib/videoExportPlan.js";
-import { VIDEO_EXPORT_BITRATE_CRF, VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_PREVIEW_DIMENSIONS, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_RESOLUTIONS, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
+import { VIDEO_EXPORT_BITRATE_CRF, VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_PREVIEW_DIMENSIONS, VIDEO_EXPORT_TIMING_STAGES, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_RESOLUTIONS, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
 import { ShortsReframeMode } from "../../../../types/shorts.js";
 import { VIDEO_EXPORT_SPEED } from "../../constants/videoExportSpeed.js";
 import { MEDIA_ENCODER, HEAVY_JOB_TEXT } from "../../../../constants/mediaEncoder.js";
@@ -321,8 +319,6 @@ const buildConcatMergeArgs = (listPath: string, audioPath: string, outputPath: s
   VIDEO_EXPORT_TEXT_C_A,
   VIDEO_EXPORT_TEXT_COPY,
   VIDEO_EXPORT_TEXT_SHORTEST,
-  VIDEO_EXPORT_TEXT_MOVFLAGS,
-  VIDEO_EXPORT_TEXT_FASTSTART,
   VIDEO_EXPORT_TEXT_Y,
   outputPath,
 ];
@@ -414,8 +410,6 @@ const buildAiClipSingleMuxArgs = (videoPath: string, audioPath: string, totalSec
   VIDEO_EXPORT_TEXT_T,
   totalSeconds.toFixed(3),
   VIDEO_EXPORT_TEXT_SHORTEST,
-  VIDEO_EXPORT_TEXT_MOVFLAGS,
-  VIDEO_EXPORT_TEXT_FASTSTART,
   VIDEO_EXPORT_TEXT_Y,
   outputPath,
 ];
@@ -440,8 +434,6 @@ const buildStreamLoopMuxArgs = (cycleVideoPath: string, audioPath: string, total
   VIDEO_EXPORT_TEXT_T,
   totalSeconds.toFixed(3),
   VIDEO_EXPORT_TEXT_SHORTEST,
-  VIDEO_EXPORT_TEXT_MOVFLAGS,
-  VIDEO_EXPORT_TEXT_FASTSTART,
   VIDEO_EXPORT_TEXT_Y,
   outputPath,
 ];
@@ -571,9 +563,11 @@ const renderVideoExportNow = async (params: RenderVideoExportParams): Promise<{ 
     notify(VideoExportJobStage.PREPARING, 0, VIDEO_EXPORT_SERVER_TEXTS.MSG_PREPARING);
     const audioOutputPath = path.join(tempDir, VIDEO_EXPORT_CONSTANTS.AUDIO_FILE_NAME);
     notify(VideoExportJobStage.AUDIO, 0, VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO);
+    const audioStarted = Date.now();
     const totalSeconds = await prepareConcatenatedAudio(audioPaths, audioOutputPath, tempDir, signal, (ratio) => notify(VideoExportJobStage.AUDIO, toPercent(0, audioWeight, ratio), VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO), config.playlistLoops);
     throwIfAborted(signal);
     if (!(totalSeconds > 0)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_AUDIO_DURATION);
+    logger.log(VIDEO_EXPORT_LOG_MESSAGES.STAGE_TIME(VIDEO_EXPORT_TIMING_STAGES.AUDIO, (Date.now() - audioStarted) / 1000));
     const render = async (profile: EncodeProfile): Promise<number> => {
       if (!_.isEmpty(aiClipPaths)) {
         await renderAiClipOutput({
@@ -653,12 +647,14 @@ const renderVideoExportNow = async (params: RenderVideoExportParams): Promise<{ 
     };
     const encoder = isPreview ? base.codec : await pickMediaEncoder("auto", config.codec === VideoExportCodec.HEVC ? "hevc" : "h264");
     logger.log(HEAVY_JOB_TEXT.ENCODER(encoder));
+    const videoStarted = Date.now();
     const durationSeconds = await withEncoderFallback(
       encoder,
       (codec) => render({ ...base, codec }),
       (codec) => logger.warn(HEAVY_JOB_TEXT.GPU_FALLBACK(codec)),
       signal,
     );
+    logger.log(VIDEO_EXPORT_LOG_MESSAGES.STAGE_TIME(VIDEO_EXPORT_TIMING_STAGES.VIDEO, (Date.now() - videoStarted) / 1000));
     notify(VideoExportJobStage.DONE, 100, VIDEO_EXPORT_SERVER_TEXTS.MSG_DONE);
     completed = true;
     return { durationSeconds };

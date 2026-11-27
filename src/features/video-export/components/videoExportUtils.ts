@@ -2,9 +2,9 @@ import { openIndexedDatabase } from "../../../lib/indexedDatabase.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { VIDEO_EXPORT_TEXT_ABORTERROR, VIDEO_EXPORT_TEXT_APPLICATION_JSON, VIDEO_EXPORT_TEXT_ID, VIDEO_EXPORT_TEXT_NAME, VIDEO_EXPORT_TEXT_POST, VIDEO_EXPORT_TEXT_READONLY, VIDEO_EXPORT_TEXT_READWRITE } from "../../../constants/videoExportText";
 import _ from "lodash";
-import { VIDEO_EXPORT_CONSTANTS } from "../constants/videoExport.js";
+import { VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_HEVC_MIME } from "../constants/videoExport.js";
 import { VIDEO_EXPORT_TEXTS } from "../../../constants/texts.js";
-import { VideoExportResultItem } from "../types/videoExport.js";
+import { VideoExportCodec, VideoExportResultItem } from "../types/videoExport.js";
 import type { VideoExportOptionItem, VideoExportOptionSection } from "./VideoExportOptionGrid";
 export const getVideoExportOptions = <T extends string | number>(options: VideoExportOptionItem<T>[] = [], sections?: VideoExportOptionSection<T>[]): VideoExportOptionItem<T>[] => (_.isEmpty(sections) ? options : _.flatMap(sections, (section) => section.options));
 export type VideoExportTexts = (typeof VIDEO_EXPORT_TEXTS)[keyof typeof VIDEO_EXPORT_TEXTS];
@@ -48,3 +48,5 @@ export const saveStoredResults = async (items: VideoExportResultItem[]): Promise
       .put({ id: VIDEO_EXPORT_CONSTANTS.DB_KEY_RESULTS, items: _.take(items, VIDEO_EXPORT_CONSTANTS.MAX_STORED_RESULTS) });
   } catch {}
 };
+export const canPlayHevc = _.once((): boolean => typeof document !== "undefined" && document.createElement("video").canPlayType(VIDEO_EXPORT_HEVC_MIME) !== "");
+export const hevcHidden = (codec?: VideoExportCodec): boolean => codec === VideoExportCodec.HEVC && !canPlayHevc();

@@ -9,7 +9,7 @@ import { randomUUID } from "crypto";
 import _ from "lodash";
 import { getVideoExportSource, pickVideoExportFolder, resolveVideoExportMediaPath, scanVideoExportFolder } from "../services/videoExportScanService.js";
 import { renderVideoExport, renderVideoExportMultiPreviews, VideoExportQuality } from "../services/videoExportRenderService.js";
-import { isAbortError } from "../services/videoExportFfmpegService.js";
+import { isAbortError, probeMediaDurationSeconds, probeMediaVideoCodec, runFfmpeg } from "../services/videoExportFfmpegService.js";
 import { getDataDirectory, getPythonCommand, getStaticResourcePath } from "../../../../server/utils/paths.js";
 import { deleteOutputEntries } from "../../../../server/utils/outputFiles.js";
 import { getCapcutResourceCatalog } from "../services/capcutResourceService.js";
@@ -20,8 +20,8 @@ import { isPlanningChatModel } from "../../../../lib/chatPlanningUtils.js";
 import { logger } from "../../../../lib/logger.js";
 import { SUNO_AUTOMATION_CONFIG } from "../../../../constants/sunoAutomation.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../../types.js";
-import { VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
-import { VideoExportAspectRatio, VideoExportCancelTarget, VideoExportConfig, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportResultItem } from "../../types/videoExport.js";
+import { VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_POSTER, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_TIMING_STAGES, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
+import { VideoExportAspectRatio, VideoExportCancelTarget, VideoExportCodec, VideoExportConfig, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportResultInfo, VideoExportResultItem } from "../../types/videoExport.js";
 type RenderJob = VideoExportJobState & { abortController: AbortController };
 type SelectionResult = { audioPaths: string[]; imagePaths: string[]; aiClipPaths: string[]; aiClipKeepAudio: boolean[] };
 const renderJobs = new Map<string, RenderJob>();
@@ -129,6 +129,44 @@ export const createVideoExportPreview = async (req: Request, res: Response): Pro
     if (activePreviewController === abortController) activePreviewController = null;
   }
 };
+const posterNameOf = (fileName: string): string => `${path.parse(path.basename(fileName)).name}${VIDEO_EXPORT_POSTER.EXT}`;
+const writePoster = async (videoPath: string, durationSeconds: number): Promise<string> => {
+  const posterName = posterNameOf(videoPath);
+  const posterPath = path.join(getExportDirectory(), posterName);
+  const started = Date.now();
+  const ok = await fs.promises.access(posterPath).then(
+    () => true,
+    () =>
+      runFfmpeg(VIDEO_EXPORT_POSTER.ARGS(videoPath, Math.min(VIDEO_EXPORT_POSTER.AT_SECONDS, durationSeconds / 2), posterPath)).then(
+        () => true,
+        () => false,
+      ),
+  );
+  logger.log(VIDEO_EXPORT_LOG_MESSAGES.STAGE_TIME(VIDEO_EXPORT_TIMING_STAGES.POSTER, (Date.now() - started) / 1000));
+  return ok ? `${VIDEO_EXPORT_CONSTANTS.ASSETS_URL_PREFIX}${posterName}` : "";
+};
+export const inspectVideoExportResults = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const names = _.uniq(_.compact(_.castArray(req.body?.fileNames ?? []).map((name) => path.basename(_.toString(name)))));
+    const entries = await Promise.all(
+      _.map(names, async (fileName): Promise<[string, VideoExportResultInfo] | null> => {
+        const videoPath = path.join(getExportDirectory(), fileName);
+        if (
+          !(await fs.promises.access(videoPath).then(
+            () => true,
+            () => false,
+          ))
+        )
+          return null;
+        const [codec, seconds] = await Promise.all([probeMediaVideoCodec(videoPath), probeMediaDurationSeconds(videoPath)]);
+        return [fileName, { codec: codec === VideoExportCodec.HEVC ? VideoExportCodec.HEVC : VideoExportCodec.H264, posterUrl: await writePoster(videoPath, seconds) }];
+      }),
+    );
+    res.json({ success: true, items: Object.fromEntries(_.compact(entries)) });
+  } catch (error: any) {
+    sendError(res, 500, error, VIDEO_EXPORT_SERVER_TEXTS.ERR_FILE_NOT_FOUND);
+  }
+};
 const runRenderJob = async (job: RenderJob, selection: SelectionResult, config: VideoExportConfig, title: string): Promise<void> => {
   const fileName = VIDEO_EXPORT_TEMPLATE_SYMBOL_7(`${buildSafeFileStem(title)}`, `${Date.now()}`, `${VIDEO_EXPORT_CONSTANTS.EXT_MP4}`);
   const outputPath = path.join(getExportDirectory(), fileName);
@@ -147,6 +185,7 @@ const runRenderJob = async (job: RenderJob, selection: SelectionResult, config: 
       },
     });
     const sizeBytes = (await fs.promises.stat(outputPath)).size;
+    const posterUrl = await writePoster(outputPath, durationSeconds);
     const result: VideoExportResultItem = {
       id: job.jobId,
       title: _.trim(title) || VIDEO_EXPORT_CONSTANTS.DEFAULT_TITLE,
@@ -159,6 +198,8 @@ const runRenderJob = async (job: RenderJob, selection: SelectionResult, config: 
       imageCount: selection.aiClipPaths.length || selection.imagePaths.length,
       aspectRatio: config.aspectRatio,
       createdAt: new Date().toISOString(),
+      codec: config.codec,
+      posterUrl,
     };
     _.assign(job, { status: VideoExportJobStatus.COMPLETED, stage: VideoExportJobStage.DONE, percent: 100, message: VIDEO_EXPORT_SERVER_TEXTS.MSG_DONE, result });
     logger.log(VIDEO_EXPORT_LOG_MESSAGES.RENDER_DONE(job.jobId, outputPath));
@@ -266,7 +307,8 @@ export const saveVideoExportVideo = async (req: Request, res: Response): Promise
 };
 export const deleteVideoExportResults = async (req: Request, res: Response): Promise<void> => {
   try {
-    res.json({ success: true, ...(await deleteOutputEntries(getExportDirectory(), req.body?.fileNames)) });
+    const names = _.compact(_.castArray(req.body?.fileNames ?? []).map((name) => _.toString(name)));
+    res.json({ success: true, ...(await deleteOutputEntries(getExportDirectory(), [...names, ..._.map(names, posterNameOf)])) });
   } catch (error: any) {
     sendError(res, 500, error, VIDEO_EXPORT_SERVER_TEXTS.ERR_FILE_NOT_FOUND);
   }

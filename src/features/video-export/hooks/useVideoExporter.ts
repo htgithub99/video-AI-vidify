@@ -17,7 +17,7 @@ import { Lang } from "../../../lib/lang.js";
 import { computeVideoExportSlidePlan } from "../lib/videoExportPlan.js";
 import { isPlanningChatModel } from "../../../lib/chatPlanningUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
-import { VideoExportAudioItem, VideoExportCancelTarget, VideoExportConfig, VideoExportImageItem, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportMultiPreviews, VideoExportPreviewResult, VideoExportResultItem, VideoExportSource, VideoExportSourceTab, VideoExportTransition } from "../types/videoExport.js";
+import { VideoExportAudioItem, VideoExportCancelTarget, VideoExportConfig, VideoExportImageItem, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportMultiPreviews, VideoExportPreviewResult, VideoExportResultInfo, VideoExportResultItem, VideoExportSource, VideoExportSourceTab, VideoExportTransition } from "../types/videoExport.js";
 import { isAbortRequest, loadStoredResults, requestJson, saveStoredResults } from "../components/videoExportUtils.js";
 import { ShortsReframeMode } from "../../../types/shorts.js";
 import { VIDEO_EXPORT_AI_CLIP_CONSTANTS } from "../constants/videoExportAiClip.js";
@@ -155,10 +155,15 @@ export function useVideoExporter(lang: Lang) {
   }, [preview, totalAudioSeconds, previewSignature, currentPreviewSignature]);
   useEffect(() => {
     isMountedRef.current = true;
-    loadStoredResults().then((items) => {
+    loadStoredResults().then(async (items) => {
       if (!isMountedRef.current) return;
       setResults(items);
       setResultsLoaded(true);
+      const missing = _.filter(items, (item) => !item.codec);
+      if (_.isEmpty(missing)) return;
+      const data = await requestJson<{ items?: Record<string, VideoExportResultInfo> }>(API_ROUTES.VIDEO_EXPORT_INSPECT_RESULTS, { fileNames: _.map(missing, "fileName") }).catch(() => null);
+      if (!isMountedRef.current || !data?.items) return;
+      setResults((prev) => _.map(prev, (item) => (data.items![item.fileName] ? { ...item, ...data.items![item.fileName] } : item)));
     });
     if (initialSettings.savedFolderPath) {
       setIsScanning(true);

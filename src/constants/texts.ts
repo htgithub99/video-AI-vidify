@@ -2633,6 +2633,8 @@ export const VIDEO_EXPORT_TEXTS = {
     CODEC_LABEL: "Bộ giải mã (Codec)",
     CODEC_H264: "H.264 (Tương thích cao)",
     CODEC_HEVC: "H.265 / HEVC (Nhẹ & nét)",
+    CODEC_HEVC_HINT: "Trình duyệt này không phát được H.265, nên khi xem trong app video chỉ có tiếng, hình đen. File vẫn đúng: YouTube nhận bình thường, xem trên máy bằng Phim & TV hoặc VLC. Chọn H.264 nếu muốn xem trước ngay trong app.",
+    RESULT_HEVC_NOTE: "H.265: app không hiện hình được (chỉ có tiếng). File vẫn đúng, mở bằng Phim & TV hoặc VLC.",
   },
   en: {
     HEADER_TITLE: "Video Export",
@@ -2863,5 +2865,7 @@ export const VIDEO_EXPORT_TEXTS = {
     CODEC_LABEL: "Codec",
     CODEC_H264: "H.264 (High Compatibility)",
     CODEC_HEVC: "H.265 / HEVC (Compact & Crisp)",
+    CODEC_HEVC_HINT: "This browser cannot play H.265, so in the app the video shows black with sound only. The file is fine: YouTube accepts it, and it plays in Films & TV or VLC. Choose H.264 to preview inside the app.",
+    RESULT_HEVC_NOTE: "H.265: the app cannot show the picture (sound only). The file is fine; open it in Films & TV or VLC.",
   },
 } as const;

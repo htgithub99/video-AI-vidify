@@ -147,6 +147,7 @@ export const VIDEO_EXPORT_REGEX = {
   IMAGE_EXT: /\.(jpg|jpeg|png|webp|bmp)$/i,
   DURATION: /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/,
   AUDIO_STREAM: /Stream #\d+:\d+.*Audio:/i,
+  VIDEO_CODEC: /Stream #\d+:\d+.*Video:\s*(\w+)/i,
   OUT_TIME: /out_time_(?:us|ms)=(\d+)/g,
   UNSAFE_FILENAME: /[^a-zA-Z0-9_-]+/g,
   TRIM_UNDERSCORE: /^_+|_+$/g,
@@ -173,12 +174,20 @@ export const VIDEO_EXPORT_SERVER_TEXTS = {
   MSG_DONE: "Xuất video hoàn tất!",
   MSG_CANCELLED: "Đã dừng xuất video.",
 } as const;
+export const VIDEO_EXPORT_POSTER = {
+  EXT: ".jpg",
+  AT_SECONDS: 2,
+  ARGS: (videoPath: string, seconds: number, posterPath: string): string[] => ["-ss", seconds.toFixed(3), "-i", videoPath, "-frames:v", "1", "-vf", "scale=960:-2", "-q:v", "4", "-y", posterPath],
+} as const;
+export const VIDEO_EXPORT_HEVC_MIME = 'video/mp4; codecs="hvc1.1.6.L120.90"';
+export const VIDEO_EXPORT_TIMING_STAGES = { AUDIO: "audio", VIDEO: "video", POSTER: "poster" } as const;
 export const VIDEO_EXPORT_LOG_MESSAGES = {
   PICKER_ERROR: (message: string) => `[VIDEO_EXPORT] Folder picker error: ${message}`,
   SCAN_ERROR: (directory: string, message: string) => `[VIDEO_EXPORT] Scan directory error ${directory}: ${message}`,
   RENDER_START: (jobId: string, tracks: number, images: number) => `[VIDEO_EXPORT] Render ${jobId} started: ${tracks} tracks, ${images} images`,
   RENDER_DONE: (jobId: string, outputPath: string) => `[VIDEO_EXPORT] Render ${jobId} completed: ${outputPath}`,
   RENDER_ERROR: (jobId: string, message: string) => `[VIDEO_EXPORT] Render ${jobId} failed: ${message}`,
+  STAGE_TIME: (stage: string, seconds: number) => `[VIDEO_EXPORT] ${stage}: ${seconds.toFixed(1)} s`,
   PREVIEW_ERROR: (message: string) => `[VIDEO_EXPORT] Preview failed: ${message}`,
   CLEANUP_WARN: (target: string, message: string) => `[VIDEO_EXPORT] Cleanup warning ${target}: ${message}`,
   SAVE_ERROR: (message: string) => `[VIDEO_EXPORT] Save video failed: ${message}`,
