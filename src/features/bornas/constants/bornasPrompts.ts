@@ -56,7 +56,7 @@ export const BORNAS_PROMPT = {
   SCRIPTS: (a: { count: number; topic: BornasTopic; genre: BornasGenre; language: BornasLanguage; seconds: number; rate: number; rhythm: string; analysis: BornasAnalysis; avoid: string[]; channel: string }) =>
     [
       `Write ${a.count} new video scripts for the YouTube channel "${a.channel}" in ${motionLanguage(a.language).promptName}. Topic of the channel: ${TOPIC[a.topic]}.`,
-      `Each script is one video of about ${a.seconds} seconds of narration (the voice reads about ${a.rate.toFixed(1)} ${motionLanguage(a.language).unit.promptName} per second, so at most ${Math.round(a.seconds * a.rate * 0.9)} of them in all lines together, in about ${Math.round(a.seconds / BORNAS_LIMITS.LINE_TARGET_SECONDS)} short lines; cut chapters rather than go over).`,
+      `Each script is one video of about ${a.seconds} seconds of narration (the voice reads about ${a.rate.toFixed(1)} ${motionLanguage(a.language).unit.promptName} per second, so between ${Math.round(a.seconds * a.rate * 0.8)} and ${Math.round(a.seconds * a.rate * 0.9)} of them in all lines together; a script under the lower number makes the video too short, in about ${Math.round(a.seconds / BORNAS_LIMITS.LINE_TARGET_SECONDS)} short lines; cut chapters rather than go over).`,
       a.seconds < BORNAS_CHAPTER.MIN_SECONDS ? "A short video keeps only: the hook with 3 shocking beats, the turn, 3–4 life stages told in quick short lines, one verdict and the closing question; no recap and no planted callbacks." : "",
       `${GENRE[a.genre]} Use the sample only for its rhythm, devices and on-screen text habits, not for its formula.`,
       `Narration card (follow it closely): ${a.analysis.narration}`,
