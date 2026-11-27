@@ -189,7 +189,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
         topic: job.channel.topic,
       }),
       BORNAS_ARTIFACT.ASSETS,
-      reupExec(job.ai.directAi),
+      reupExec(job.ai.writeAi),
       signal,
       (line) => line && log(line),
     ));

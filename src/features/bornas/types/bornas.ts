@@ -38,13 +38,10 @@ export interface BornasDrawChoice {
 export interface BornasAiSettings {
   writeAi: ReupAiChoice;
   factAi: ReupAiChoice;
-  directAi: ReupAiChoice;
   visionAi: ReupAiChoice;
-  lightAi: ReupAiChoice;
-  seoAi: ReupAiChoice;
   drawAi: BornasDrawChoice;
 }
-export type BornasAiField = "writeAi" | "factAi" | "directAi" | "visionAi" | "seoAi" | "lightAi";
+export type BornasAiField = "writeAi" | "factAi" | "visionAi";
 export interface BornasStepState {
   status: BornasStepStatus;
   progress: number;

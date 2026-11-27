@@ -19,7 +19,7 @@ export const BORNAS_URL = {
   DELETE_VIDEOS: "/api/bornas/delete-videos",
 } as const;
 export const BORNAS_STORAGE = { STATE: "bornas_state_v1" } as const;
-export const BORNAS_STATE = { FILE: "bornas-state.json", CHANNELS_MAX: 40, DONE_MAX: 300, DONE_CHARS: 120 } as const;
+export const BORNAS_STATE = { FILE: "bornas-state.json", CHANNELS_MAX: 40, DONE_MAX: 300, DONE_CHARS: 120, DONE_JOIN: ", ", DONE_SPLIT: /[,\n]/ } as const;
 export const bornasHeroName = (hero: string): string => hero.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim().slice(0, BORNAS_STATE.DONE_CHARS);
 export const bornasDoneList = (raw: unknown): string[] => [...new Map((Array.isArray(raw) ? raw : []).map((x) => String(x ?? "").trim().slice(0, BORNAS_STATE.DONE_CHARS)).filter(Boolean).map((x) => [x.toLowerCase(), x] as const)).values()].slice(0, BORNAS_STATE.DONE_MAX);
 export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", SHORT: "short", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4" } as const;
@@ -142,9 +142,8 @@ const BORNAS_STYLE_LINES = { cartoon: "Bold cartoon illustration, thick black ou
 const AI_DEFAULT: ReupAiChoice = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: true, allowFallback: true, multiRoom: true };
 const CLAUDE: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.ClaudeChat, model: encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, "medium") };
 const CHATGPT: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.ChatGptUi, model: AiPlanningChatModel.ChatGptAuto };
-const META: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.MetaAi, model: AiPlanningChatModel.MetaAiAuto };
-export const BORNAS_AI_DEFAULT: BornasAiSettings = { writeAi: CLAUDE, factAi: CHATGPT, directAi: CLAUDE, visionAi: AI_DEFAULT, lightAi: META, seoAi: CLAUDE, drawAi: { provider: "gemini-chat", chromeHeadless: true, allowFallback: false } };
-export const BORNAS_AI_FIELDS: BornasAiField[] = ["writeAi", "factAi", "directAi", "visionAi", "seoAi", "lightAi"];
+export const BORNAS_AI_DEFAULT: BornasAiSettings = { writeAi: CLAUDE, factAi: CHATGPT, visionAi: AI_DEFAULT, drawAi: { provider: "gemini-chat", chromeHeadless: true, allowFallback: false } };
+export const BORNAS_AI_FIELDS: BornasAiField[] = ["writeAi", "factAi", "visionAi"];
 export const BORNAS_VISION_PROVIDERS: AiPlanningFallbackProvider[] = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat];
 export const BORNAS_DRAW_PROVIDERS: BornasDrawProvider[] = ["gemini-chat", "labs-flow"];
 export const BORNAS_LIBRARY_DRAW: BornasDrawProvider = "gemini-chat";
@@ -156,10 +155,7 @@ export const bornasAiSettings = (raw: LegacyAi | undefined): BornasAiSettings =>
   return {
     writeAi: pick("writeAi", main),
     factAi: pick("factAi", main),
-    directAi: pick("directAi", main),
-    seoAi: pick("seoAi"),
     visionAi: BORNAS_VISION_PROVIDERS.includes(vision.provider as AiPlanningFallbackProvider) ? vision : { ...vision, provider: AiPlanningFallbackProvider.GeminiChat },
-    lightAi: pick("lightAi"),
     drawAi: { ...BORNAS_AI_DEFAULT.drawAi, ...(raw?.drawHeadless === undefined ? {} : { chromeHeadless: raw.drawHeadless }), ...raw?.drawAi, provider: BORNAS_DRAW_PROVIDERS.includes(raw?.drawAi?.provider as BornasDrawProvider) ? (raw!.drawAi!.provider as BornasDrawProvider) : "gemini-chat" },
   };
 };

@@ -99,7 +99,7 @@ export const packageBornasVideo = async (job: BornasJob, video: BornasVideo, scr
     .filter((p) => p.channel.id === job.channel.id)
     .flatMap((p) => p.videos.flatMap((v) => (v === video ? [] : (v.seo?.options || []).map((o) => o.title))))
     .slice(0, 20);
-  const raw = (await runMotionAi(BORNAS_PROMPT.SEO({ title: script.title, hero: script.hero, lines: script.lines.map((l) => l.text), language: job.channel.language, genre: bornasGenre(job.channel.genre), seconds: video.seconds || job.channel.seconds, chapters: chapters.slice(1).map((c) => c.title), avoid }), BORNAS_ARTIFACT.SEO, reupExec(job.ai.seoAi), signal, (line) => line && log(line))) as
+  const raw = (await runMotionAi(BORNAS_PROMPT.SEO({ title: script.title, hero: script.hero, lines: script.lines.map((l) => l.text), language: job.channel.language, genre: bornasGenre(job.channel.genre), seconds: video.seconds || job.channel.seconds, chapters: chapters.slice(1).map((c) => c.title), avoid }), BORNAS_ARTIFACT.SEO, reupExec(job.ai.writeAi), signal, (line) => line && log(line))) as
     | Obj
     | undefined;
   const options = _.compact((Array.isArray(raw?.options) ? (raw!.options as Obj[]) : []).map(cleanOption)).slice(0, BORNAS_SEO.OPTIONS);

@@ -12,7 +12,7 @@ import { MotionSettingsGroup } from "../../motion/components/MotionSettingsGroup
 import { MOTION_NOTICE_IDS } from "../../motion/constants/motionNotices.js";
 import { ReupSelect, ReupTextArea, ReupTextField, ReupToggle, reupClock } from "../../reup/components/ReupControls.js";
 import { REUP_STYLES as S } from "../../reup/constants/reupStyles.js";
-import { BORNAS_COUNTS, BORNAS_GENRES, BORNAS_LENGTHS, BORNAS_MUSIC_CHOICES, BORNAS_STEPS, BORNAS_TOPICS } from "../constants/bornasConfig.js";
+import { BORNAS_COUNTS, BORNAS_GENRES, BORNAS_STATE, BORNAS_LENGTHS, BORNAS_MUSIC_CHOICES, BORNAS_STEPS, BORNAS_TOPICS } from "../constants/bornasConfig.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import type { BornasStudio } from "../hooks/useBornasStudio.js";
 import type { BornasGenre, BornasLanguage, BornasMusicChoice, BornasTopic } from "../types/bornas.js";
@@ -82,7 +82,7 @@ export const BornasSetupCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({
           <MotionSettingsGroup title={text.GROUP_CONTENT}>
             <ReupSelect<BornasTopic> label={text.TOPIC} title={text.TOPIC_HINT} value={channel.topic} options={BORNAS_TOPICS.map((value) => ({ value, label: text.TOPICS[value] }))} onChange={(topic) => patchChannel({ topic })} />
             <ReupSelect<BornasGenre> label={text.GENRE} title={text.GENRE_HINT} value={channel.genre} options={BORNAS_GENRES.map((value) => ({ value, label: text.GENRES[value] }))} onChange={(genre) => patchChannel({ genre })} />
-            <ReupTextArea label={text.DONE(channel.done.length)} placeholder={text.DONE_HINT} value={channel.done.join("\n")} onChange={(value) => patchChannel({ done: value.split("\n").map((line) => line.trim()).filter(Boolean) })} />
+            <ReupTextArea label={text.DONE(channel.done.length)} placeholder={text.DONE_HINT} value={channel.done.join(BORNAS_STATE.DONE_JOIN)} onChange={(value) => patchChannel({ done: value.split(BORNAS_STATE.DONE_SPLIT).map((item) => item.trim()).filter(Boolean) })} />
           </MotionSettingsGroup>
           <MotionSettingsGroup title={text.GROUP_AUDIO}>
             <ReupSelect<string> label={text.VOICE} title={voiceText.CHANNELS_HINT} value={channel.voiceChannel} options={[{ value: "", label: voiceText.NO_CHANNEL }, ...studio.voiceChannels.channels.map((c) => ({ value: c.id, label: c.name }))]} onChange={(voiceChannel) => patchChannel({ voiceChannel })} />

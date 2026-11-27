@@ -7,7 +7,7 @@ export const BORNAS_STYLES = {
   RIGHT: "xl:col-span-5 2xl:col-span-4 flex flex-col gap-6 min-w-0 xl:self-start",
   CHANNEL_BAR: "flex flex-wrap items-center gap-1",
   CHANNEL_BUTTON: "inline-flex max-w-[220px] items-center gap-1 truncate rounded-lg px-2 py-1 text-[11px] font-bold transition-colors",
-  CHANNEL_ON: "bg-purple-500/15 text-purple-200 ring-1 ring-purple-400/30",
+  CHANNEL_ON: "bg-slate-800/70 text-white",
   CHANNEL_OFF: "text-slate-400 hover:bg-slate-800/70 hover:text-white",
   CHANNEL_ADD: "text-purple-300/80 hover:bg-purple-500/10 hover:text-purple-200",
   CHANNEL_DELETE: "text-rose-300/80 hover:bg-rose-500/10 hover:text-rose-200",

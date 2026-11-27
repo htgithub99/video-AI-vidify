@@ -106,7 +106,7 @@ export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: Abor
   log(BORNAS_LOG.SCRIPTS(job.channel.count));
   const exec = reupExec(job.ai.writeAi);
   const factExec = reupExec(job.ai.factAi);
-  const lightExec = reupExec(job.ai.lightAi);
+  const lightExec = reupExec(job.ai.factAi);
   const model = voiceModel(job);
   const rate = 1 / (model.perWord * (1 + model.perLine / BORNAS_LIMITS.LINE_SPEECH_SECONDS));
   const rhythm = rhythmOf(readJson<Profile>(bornasKit(SAMPLE_PROFILE), { sentence_seconds: { median: 2.24, p90: 4.86 }, fragment_share: 0.19, question_share: 0.04, second_person_per_100: 9.5 }), rate, job.channel.language);
