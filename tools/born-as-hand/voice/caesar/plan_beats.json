@@ -1,0 +1,5723 @@
+{
+ "total": 502.832,
+ "series": "JULIUS CAESAR · ROME",
+ "turnT": 17.196,
+ "recapT": 432.43552,
+ "beats": [
+  {
+   "t0": 0.0,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_young_hide",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "JULIUS CAESAR",
+    "sub": "100 - 44 BC",
+    "cast": 0,
+    "t": 1.651
+   }
+  },
+  {
+   "t0": 5.396,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_laugh",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "pirates",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 9.339,
+   "kind": "scene",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "THE RUBICON",
+    "sub": "",
+    "at": null,
+    "t": 10.624
+   }
+  },
+  {
+   "t0": 12.839,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "senators",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 15.324,
+   "kind": "bust",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 17.196,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 18.347,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO LEGIONS",
+    "sub": "no crown",
+    "at": null,
+    "t": 18.91
+   }
+  },
+  {
+   "t0": 19.541,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 23.289,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 26.478,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER I",
+    "title": "The Subura"
+   }
+  },
+  {
+   "t0": 28.428,
+   "kind": "scene",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "JULY, 100 BC",
+    "sub": "Rome",
+    "corner": "tl",
+    "t": 28.428
+   }
+  },
+  {
+   "t0": 30.751,
+   "kind": "scene",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 31.623,
+   "kind": "scene",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 34.625,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 37.793,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 38.909,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 40.401,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 42.772,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 44.39,
+   "kind": "bust",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "THE SUBURA",
+    "sub": "Rome",
+    "at": null,
+    "t": 45.6
+   }
+  },
+  {
+   "t0": 46.349,
+   "kind": "bust",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 48.794,
+   "kind": "scene",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "rome_civ__merchant_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_civ__plebeian_woman_basket",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 51.984,
+   "kind": "scene",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "rome_civ__merchant_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_civ__plebeian_woman_basket",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 54.225,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "label": {
+    "text": "AURELIA",
+    "sub": "your mother",
+    "cast": 0,
+    "t": 55.885
+   },
+   "warm": true
+  },
+  {
+   "t0": 57.848,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "aurelia_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 62.014,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 65.014,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 65.772,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 67.689,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 69.297,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "REMEMBER",
+    "sub": "Aurelia",
+    "at": null,
+    "t": 69.297
+   },
+   "warm": true
+  },
+  {
+   "t0": 70.892,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER II",
+    "title": "Blood in the Streets"
+   }
+  },
+  {
+   "t0": 72.842,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_legion_act__general_pointing",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "GAIUS MARIUS",
+    "sub": "your uncle",
+    "cast": 0,
+    "t": 74.75
+   }
+  },
+  {
+   "t0": 76.013,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 78.366,
+   "kind": "paper",
+   "bg": "bg_ca_forum",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "7x CONSUL",
+      "size": "h",
+      "t": 78.366
+     }
+    ]
+   }
+  },
+  {
+   "t0": 80.361,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_legion_act__general_pointing",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "sulla",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 82.829,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 84.643,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_legion_act__general_pointing",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "sulla",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 86.152,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 87.865,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_legion__legionary_attack",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_legion__legionary_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2,
+   "smoke": true
+  },
+  {
+   "t0": 89.939,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2,
+   "smoke": true
+  },
+  {
+   "t0": 92.307,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_sad",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "AGE 15",
+    "sub": "",
+    "corner": "tl",
+    "t": 93.033
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 94.864,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 95.741,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 97.87,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 99.709,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 100.859,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER III",
+    "title": "The Dictator"
+   }
+  },
+  {
+   "t0": 102.809,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "sulla_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "82 BC",
+    "sub": "",
+    "corner": "tl",
+    "t": 102.809
+   },
+   "label": {
+    "text": "SULLA",
+    "sub": "dictator",
+    "cast": 0,
+    "t": 102.809
+   }
+  },
+  {
+   "t0": 104.328,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "sulla",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 105.654,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 107.747,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "list",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 109.668,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 111.506,
+   "kind": "paper",
+   "bg": "bg_ca_forum",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2,
+   "paper": {
+    "lines": [
+     {
+      "text": "PROSCRIBED",
+      "size": "h",
+      "t": 111.506
+     }
+    ],
+    "stamp": {
+     "text": "DEATH",
+     "t": 112.149
+    }
+   }
+  },
+  {
+   "t0": 113.057,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "list",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 114.805,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_young_hide",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "cornelia",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "AGE 18",
+    "sub": "",
+    "corner": "tl",
+    "t": 114.805
+   },
+   "label": {
+    "text": "CORNELIA",
+    "sub": "your wife",
+    "cast": 1,
+    "t": 115.154
+   },
+   "warm": true
+  },
+  {
+   "t0": 115.919,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_young_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 117.803,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_young_hide",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "cornelia",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 120.227,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_young_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 122.018,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 123.311,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 124.723,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 127.518,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_young_run",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 128.665,
+   "kind": "bust",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_young_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 130.486,
+   "kind": "bust",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_young_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 132.832,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_young_sick",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 134.174,
+   "kind": "bust",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_young_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 135.855,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_young_hide",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_legion__legionary_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 137.265,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_young_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 140.259,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "sulla",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 142.354,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_young_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 143.825,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "aurelia_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "bubble": {
+    "text": "In this boy, there are many Mariuses.",
+    "cast": 0,
+    "t": 143.825
+   }
+  },
+  {
+   "t0": 146.805,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IV",
+    "title": "The Pirates"
+   }
+  },
+  {
+   "t0": 148.755,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "ship",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "75 BC",
+    "sub": "Aegean Sea",
+    "corner": "tl",
+    "t": 148.755
+   }
+  },
+  {
+   "t0": 151.663,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_young_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 154.346,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "pirates",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 156.308,
+   "kind": "paper",
+   "bg": "bg_ca_sea",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "20 TALENTS",
+      "size": "h",
+      "t": 157.088
+     }
+    ]
+   }
+  },
+  {
+   "t0": 159.565,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 160.705,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_laugh",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "pirates",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 161.568,
+   "kind": "paper",
+   "bg": "bg_ca_sea",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "50 TALENTS",
+      "size": "n",
+      "t": 162.91
+     }
+    ]
+   }
+  },
+  {
+   "t0": 163.648,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_read",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "pirates",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "38 DAYS",
+    "sub": "",
+    "corner": "tl",
+    "t": 163.928
+   },
+   "warm": true
+  },
+  {
+   "t0": 166.701,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 168.215,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_read",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "pirates",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 169.781,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 173.211,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 177.047,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_point",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "pirates",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 178.221,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 179.833,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_laugh",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 181.784,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 183.09,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "ship",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 184.639,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 186.32,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "cross",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 188.209,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 189.766,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "cross",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 191.157,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 193.097,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER V",
+    "title": "The Climb"
+   }
+  },
+  {
+   "t0": 195.047,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_point",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 197.414,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 199.153,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 201.663,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_arena__gladiator_murmillo",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 203.123,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_arena__gladiator_murmillo",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "SILVER ARMOR",
+    "sub": "",
+    "at": null,
+    "t": 204.265
+   }
+  },
+  {
+   "t0": 205.649,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 207.227,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_arena__gladiator_murmillo",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 208.96,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 212.535,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "statue",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 213.938,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 216.406,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "statue",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 217.987,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "crassus",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "60 BC",
+    "sub": "",
+    "corner": "tl",
+    "t": 217.987
+   },
+   "warm": true
+  },
+  {
+   "t0": 222.001,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "pompey_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "POMPEY",
+    "sub": "the greatest general",
+    "cast": 0,
+    "t": 222.338
+   },
+   "warm": true
+  },
+  {
+   "t0": 224.513,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "crassus",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 227.621,
+   "kind": "paper",
+   "bg": "bg_ca_house",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "3 MEN",
+      "size": "h",
+      "t": 227.621
+     },
+     {
+      "text": "1 DEAL",
+      "size": "l",
+      "t": 228.721
+     }
+    ]
+   }
+  },
+  {
+   "t0": 229.868,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 231.65,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "julia",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 235.484,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 238.395,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "julia",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 240.454,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VI",
+    "title": "Gaul"
+   }
+  },
+  {
+   "t0": 242.404,
+   "kind": "scene",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "58 BC",
+    "sub": "Gaul",
+    "corner": "tl",
+    "t": 242.404
+   }
+  },
+  {
+   "t0": 245.076,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 246.81,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 248.731,
+   "kind": "scene",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "ancient_enemies__gaul_warrior",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 251.509,
+   "kind": "scene",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "ancient_enemies__gaul_warrior",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 254.116,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "8 YEARS",
+    "sub": "",
+    "corner": "tl",
+    "t": 256.851
+   },
+   "smoke": true
+  },
+  {
+   "t0": 257.976,
+   "kind": "scene",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "rome_legion_act__legionary_dig",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 261.74,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "ship",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 263.41,
+   "kind": "bust",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 264.438,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 266.72,
+   "kind": "scene",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 268.077,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "bubble": {
+    "text": "Caesar did this.",
+    "cast": 0,
+    "t": 268.077
+   },
+   "warm": true
+  },
+  {
+   "t0": 269.565,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 270.978,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VII",
+    "title": "Alesia"
+   }
+  },
+  {
+   "t0": 272.928,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 274.642,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 277.598,
+   "kind": "bust",
+   "bg": "bg_ca_gaul",
+   "cast": [
+    {
+     "sprite": "caesar_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 280.544,
+   "kind": "scene",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "52 BC",
+    "sub": "Alesia",
+    "corner": "tl",
+    "t": 280.544
+   }
+  },
+  {
+   "t0": 282.85,
+   "kind": "bust",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 285.5,
+   "kind": "bust",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "vercingetorix_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "label": {
+    "text": "VERCINGETORIX",
+    "sub": "king of the Gauls",
+    "cast": 0,
+    "t": 285.5
+   }
+  },
+  {
+   "t0": 287.425,
+   "kind": "bust",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 290.187,
+   "kind": "paper",
+   "bg": "bg_ca_alesia",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "80,000",
+      "size": "n",
+      "t": 290.187
+     }
+    ]
+   }
+  },
+  {
+   "t0": 292.155,
+   "kind": "scene",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "wall",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 294.092,
+   "kind": "paper",
+   "bg": "bg_ca_alesia",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "18 KM",
+      "size": "n",
+      "t": 294.092
+     }
+    ]
+   }
+  },
+  {
+   "t0": 295.99,
+   "kind": "scene",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "ancient_enemies__gaul_warrior",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 4
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 298.945,
+   "kind": "scene",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "ancient_enemies__gaul_warrior",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 4
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 300.146,
+   "kind": "bust",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 302.352,
+   "kind": "scene",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "ancient_enemies__gaul_warrior",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 4
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 303.713,
+   "kind": "bust",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 306.528,
+   "kind": "scene",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_point",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_enemies__gaul_warrior",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 308.823,
+   "kind": "bust",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 310.792,
+   "kind": "scene",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "vercingetorix",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 313.043,
+   "kind": "bust",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 315.095,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VIII",
+    "title": "The Rubicon"
+   }
+  },
+  {
+   "t0": 317.045,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "senators",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 320.055,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 321.896,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "crassus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 323.397,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "julia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 326.73,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 327.758,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 329.489,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "senators",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 331.39,
+   "kind": "bust",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 333.763,
+   "kind": "scene",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JAN, 49 BC",
+    "sub": "",
+    "corner": "tl",
+    "t": 333.763
+   },
+   "cool": true
+  },
+  {
+   "t0": 336.366,
+   "kind": "bust",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "THE RUBICON",
+    "sub": "",
+    "at": null,
+    "t": 338.332
+   },
+   "cool": true
+  },
+  {
+   "t0": 339.296,
+   "kind": "bust",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 340.924,
+   "kind": "scene",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 343.631,
+   "kind": "bust",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 344.737,
+   "kind": "scene",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 346.415,
+   "kind": "bust",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 347.85,
+   "kind": "paper",
+   "bg": "bg_ca_rubicon",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "ALEA IACTA EST",
+      "size": "h",
+      "t": 347.85
+     },
+     {
+      "text": "the die is cast",
+      "size": "l",
+      "t": 348.24
+     }
+    ]
+   }
+  },
+  {
+   "t0": 349.731,
+   "kind": "scene",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "rome_legion__legionary_march",
+     "slot": "l",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 352.29,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IX",
+    "title": "Civil War"
+   }
+  },
+  {
+   "t0": 354.24,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 356.22,
+   "kind": "bust",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 357.499,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "rome_legion__legionary_attack",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_mounted__roman_cavalry_gallop",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "PHARSALUS",
+    "sub": "48 BC",
+    "at": null,
+    "t": 357.722
+   },
+   "smoke": true
+  },
+  {
+   "t0": 361.322,
+   "kind": "bust",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 362.961,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "rome_legion__legionary_attack",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_mounted__roman_cavalry_gallop",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 365.513,
+   "kind": "scene",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_enemies__egyptian_soldier",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 368.78,
+   "kind": "bust",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 369.941,
+   "kind": "bust",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 371.156,
+   "kind": "scene",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_enemies__egyptian_soldier",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 372.501,
+   "kind": "bust",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 374.013,
+   "kind": "scene",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "cleopatra",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 376.281,
+   "kind": "bust",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "cleopatra_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "CLEOPATRA",
+    "sub": "queen of Egypt",
+    "cast": 0,
+    "t": 376.281
+   },
+   "warm": true
+  },
+  {
+   "t0": 377.597,
+   "kind": "scene",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "cleopatra",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 379.913,
+   "kind": "bust",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 381.957,
+   "kind": "bust",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "cleopatra_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 383.503,
+   "kind": "bust",
+   "bg": "bg_ca_egypt",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 385.437,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_general_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 387.018,
+   "kind": "bust",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 388.066,
+   "kind": "paper",
+   "bg": "bg_ca_hills",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "VENI, VIDI, VICI",
+      "size": "h",
+      "t": 388.066
+     }
+    ]
+   }
+  },
+  {
+   "t0": 391.217,
+   "kind": "bust",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_general_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 393.175,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER X",
+    "title": "The Ides of March"
+   }
+  },
+  {
+   "t0": 395.125,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 397.323,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 399.839,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 401.683,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 403.444,
+   "kind": "paper",
+   "bg": "bg_ca_forum",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "365 DAYS",
+      "size": "n",
+      "t": 403.444
+     },
+     {
+      "text": "+ LEAP YEAR",
+      "size": "l",
+      "t": 405.608
+     }
+    ]
+   }
+  },
+  {
+   "t0": 406.39,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 407.986,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 409.326,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 411.369,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "brutus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "MARCUS BRUTUS",
+    "sub": "",
+    "cast": 0,
+    "t": 412.804
+   }
+  },
+  {
+   "t0": 414.185,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 415.342,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "brutus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 417.628,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_civ__patrician_woman",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "MARCH 15, 44 BC",
+    "sub": "the Ides of March",
+    "corner": "tl",
+    "t": 417.628
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 420.434,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 422.48,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 425.371,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_civ__patrician_woman",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 427.221,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 428.707,
+   "kind": "bust",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 431.944,
+   "kind": "paper",
+   "bg": "bg_ca_senate",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3,
+   "paper": {
+    "lines": [
+     {
+      "text": "23",
+      "size": "n",
+      "t": 431.944
+     }
+    ]
+   }
+  },
+  {
+   "t0": 433.656,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "brutus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 435.424,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "pompey_statue",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 437.778,
+   "kind": "bust",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 440.146,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_fall",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "pompey_statue",
+     "slot": "cr",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "AGE 55",
+    "sub": "",
+    "corner": "tl",
+    "t": 441.34
+   },
+   "dark": 0.4
+  },
+  {
+   "t0": 442.13,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER XI",
+    "title": "After"
+   }
+  },
+  {
+   "t0": 444.08,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "senators",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 446.499,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 449.091,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "senators",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 451.098,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 455.55,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 456.639,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 457.623,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 459.187,
+   "kind": "paper",
+   "bg": "bg_ca_forum",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "CAESAR",
+      "size": "h",
+      "t": 459.187
+     },
+     {
+      "text": "KAISER · TSAR",
+      "size": "l",
+      "t": 459.187
+     }
+    ]
+   }
+  },
+  {
+   "t0": 460.991,
+   "kind": "scene",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 462.84,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 464.652,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 465.9,
+   "kind": "scene",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "aurelia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 467.932,
+   "kind": "bust",
+   "bg": "bg_ca_house",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 470.898,
+   "kind": "scene",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "caesar_boy_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 472.421,
+   "kind": "bust",
+   "bg": "bg_ca_subura",
+   "cast": [
+    {
+     "sprite": "caesar_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 475.004,
+   "kind": "scene",
+   "bg": "bg_ca_hills",
+   "cast": [
+    {
+     "sprite": "caesar_young_run",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 477.458,
+   "kind": "scene",
+   "bg": "bg_ca_sea",
+   "cast": [
+    {
+     "sprite": "caesar_pirate_laugh",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 480.357,
+   "kind": "scene",
+   "bg": "bg_ca_alesia",
+   "cast": [
+    {
+     "sprite": "caesar_general_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 481.855,
+   "kind": "scene",
+   "bg": "bg_ca_rubicon",
+   "cast": [
+    {
+     "sprite": "caesar_general_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 483.88,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_fall",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 487.77,
+   "kind": "bust",
+   "bg": "bg_ca_forum",
+   "cast": [
+    {
+     "sprite": "caesar_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 489.731,
+   "kind": "bust",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 492.288,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "brutus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 494.834,
+   "kind": "bust",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "caesar_dictator_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 497.881,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "brutus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 499.712,
+   "kind": "scene",
+   "bg": "bg_ca_senate",
+   "cast": [
+    {
+     "sprite": "brutus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "WAS BRUTUS RIGHT?",
+    "sub": "comment below",
+    "at": null,
+    "t": 499.712
+   },
+   "endCard": {
+    "text": "WHO SHOULD BE NEXT?",
+    "sub": "Drop a name in the comments",
+    "t": 499.712
+   }
+  }
+ ],
+ "onsets": [
+  0.4,
+  0.592,
+  0.843,
+  1.15,
+  1.458,
+  1.651,
+  2.074,
+  2.72,
+  2.974,
+  3.167,
+  3.59,
+  3.782,
+  3.917,
+  4.456,
+  4.648,
+  5.396,
+  5.686,
+  6.03,
+  6.211,
+  6.773,
+  6.954,
+  7.407,
+  7.642,
+  8.095,
+  8.276,
+  8.729,
+  9.339,
+  9.676,
+  10.076,
+  10.476,
+  10.624,
+  11.024,
+  11.298,
+  11.698,
+  11.846,
+  12.246,
+  12.839,
+  13.105,
+  13.37,
+  13.636,
+  13.901,
+  14.412,
+  14.739,
+  15.324,
+  15.73,
+  15.989,
+  17.196,
+  17.436,
+  17.787,
+  18.347,
+  18.774,
+  18.91,
+  19.541,
+  19.898,
+  20.851,
+  21.178,
+  22.021,
+  22.296,
+  23.289,
+  23.624,
+  23.77,
+  24.105,
+  24.377,
+  24.712,
+  24.984,
+  25.319,
+  25.78,
+  28.428,
+  29.178,
+  29.46,
+  30.243,
+  30.751,
+  31.623,
+  32.207,
+  32.632,
+  33.136,
+  33.72,
+  34.625,
+  34.917,
+  35.319,
+  35.611,
+  35.794,
+  36.141,
+  36.433,
+  36.67,
+  37.127,
+  37.793,
+  38.909,
+  39.406,
+  40.401,
+  40.701,
+  41.208,
+  41.853,
+  42.083,
+  42.772,
+  43.024,
+  43.508,
+  43.76,
+  44.39,
+  44.644,
+  44.956,
+  45.151,
+  45.346,
+  45.6,
+  46.349,
+  46.518,
+  47.249,
+  47.68,
+  48.794,
+  49.734,
+  51.054,
+  51.984,
+  52.574,
+  52.992,
+  53.296,
+  53.601,
+  54.225,
+  54.557,
+  55.885,
+  55.969,
+  56.301,
+  56.571,
+  56.966,
+  57.298,
+  57.443,
+  57.848,
+  58.294,
+  59.038,
+  59.37,
+  60.228,
+  60.327,
+  60.631,
+  61.218,
+  62.014,
+  62.217,
+  62.419,
+  62.809,
+  63.011,
+  63.214,
+  63.463,
+  63.946,
+  64.289,
+  64.444,
+  65.014,
+  65.772,
+  66.117,
+  66.752,
+  66.952,
+  67.168,
+  67.689,
+  68.236,
+  68.607,
+  69.297,
+  69.981,
+  72.842,
+  73.21,
+  73.647,
+  73.876,
+  74.52,
+  74.75,
+  75.187,
+  76.013,
+  76.272,
+  76.591,
+  77.03,
+  77.528,
+  77.728,
+  78.366,
+  78.896,
+  79.427,
+  80.361,
+  80.661,
+  81.031,
+  81.262,
+  81.978,
+  82.209,
+  82.829,
+  83.368,
+  83.613,
+  83.931,
+  84.643,
+  85.013,
+  85.208,
+  85.462,
+  86.152,
+  86.495,
+  86.838,
+  87.052,
+  87.267,
+  87.865,
+  88.424,
+  89.06,
+  89.939,
+  90.357,
+  90.578,
+  91.062,
+  91.282,
+  91.568,
+  92.307,
+  92.613,
+  93.033,
+  93.407,
+  93.765,
+  94.186,
+  94.864,
+  95.741,
+  96.212,
+  96.401,
+  96.646,
+  97.004,
+  97.305,
+  97.87,
+  98.051,
+  98.358,
+  98.539,
+  98.762,
+  98.901,
+  99.082,
+  99.709,
+  99.952,
+  102.809,
+  103.716,
+  104.328,
+  104.874,
+  105.654,
+  105.87,
+  106.281,
+  106.822,
+  107.747,
+  108.129,
+  108.368,
+  108.894,
+  109.668,
+  109.915,
+  110.275,
+  110.465,
+  110.711,
+  111.506,
+  111.91,
+  112.149,
+  112.443,
+  113.057,
+  113.334,
+  113.867,
+  114.016,
+  114.805,
+  115.154,
+  115.919,
+  116.127,
+  116.478,
+  116.877,
+  117.037,
+  117.803,
+  118.024,
+  118.498,
+  118.668,
+  118.889,
+  119.058,
+  119.482,
+  120.227,
+  120.576,
+  120.926,
+  121.165,
+  121.349,
+  122.018,
+  122.658,
+  123.311,
+  123.705,
+  124.099,
+  124.723,
+  124.902,
+  125.028,
+  125.53,
+  125.763,
+  126.104,
+  126.499,
+  126.786,
+  126.911,
+  127.518,
+  127.748,
+  128.046,
+  128.665,
+  128.94,
+  129.278,
+  129.49,
+  129.765,
+  130.486,
+  130.763,
+  131.232,
+  131.701,
+  132.106,
+  132.832,
+  133.061,
+  133.396,
+  133.519,
+  134.174,
+  134.66,
+  134.913,
+  135.282,
+  135.855,
+  136.15,
+  136.582,
+  137.265,
+  137.558,
+  138.071,
+  138.474,
+  138.767,
+  139.115,
+  139.353,
+  139.646,
+  140.259,
+  140.536,
+  141.23,
+  141.674,
+  142.354,
+  142.612,
+  142.81,
+  143.187,
+  143.825,
+  144.058,
+  144.431,
+  144.915,
+  145.267,
+  145.57,
+  145.943,
+  148.755,
+  149.685,
+  150.355,
+  150.698,
+  151.663,
+  151.923,
+  152.244,
+  152.444,
+  152.884,
+  153.085,
+  153.465,
+  154.346,
+  154.908,
+  155.268,
+  155.628,
+  156.308,
+  156.637,
+  157.088,
+  157.54,
+  158.054,
+  158.259,
+  158.711,
+  158.978,
+  159.565,
+  159.898,
+  160.705,
+  161.568,
+  161.854,
+  162.272,
+  162.492,
+  162.91,
+  163.648,
+  163.928,
+  164.724,
+  165.408,
+  165.518,
+  165.862,
+  166.206,
+  166.701,
+  167.005,
+  167.45,
+  168.215,
+  168.434,
+  168.703,
+  168.973,
+  169.192,
+  169.781,
+  170.1,
+  170.359,
+  170.857,
+  171.236,
+  171.591,
+  171.832,
+  172.151,
+  172.47,
+  173.211,
+  173.472,
+  173.733,
+  174.055,
+  174.281,
+  175.241,
+  175.357,
+  175.799,
+  176.302,
+  176.623,
+  177.047,
+  177.438,
+  178.221,
+  178.483,
+  178.793,
+  179.153,
+  179.833,
+  180.186,
+  180.784,
+  181.784,
+  182.088,
+  182.334,
+  182.581,
+  183.09,
+  183.365,
+  183.768,
+  183.916,
+  184.639,
+  184.929,
+  185.286,
+  185.643,
+  186.32,
+  186.624,
+  186.929,
+  187.514,
+  188.209,
+  188.943,
+  189.766,
+  189.987,
+  190.361,
+  191.157,
+  191.397,
+  191.636,
+  191.986,
+  192.447,
+  195.047,
+  195.489,
+  195.766,
+  196.317,
+  196.622,
+  197.414,
+  197.992,
+  198.255,
+  199.153,
+  199.424,
+  199.883,
+  200.217,
+  200.738,
+  200.947,
+  201.663,
+  201.954,
+  202.378,
+  203.123,
+  204.005,
+  204.265,
+  204.835,
+  205.649,
+  205.905,
+  206.337,
+  206.652,
+  207.227,
+  207.57,
+  208.233,
+  208.96,
+  209.167,
+  209.79,
+  209.945,
+  210.215,
+  210.36,
+  210.816,
+  211.023,
+  211.666,
+  211.936,
+  212.535,
+  212.791,
+  213.165,
+  213.362,
+  213.938,
+  214.229,
+  214.794,
+  215.03,
+  215.376,
+  215.558,
+  215.849,
+  216.406,
+  216.622,
+  216.987,
+  217.252,
+  217.987,
+  218.647,
+  218.833,
+  219.377,
+  220.307,
+  220.357,
+  220.816,
+  221.016,
+  221.632,
+  222.001,
+  222.338,
+  223.021,
+  223.185,
+  223.775,
+  224.513,
+  224.828,
+  225.803,
+  225.934,
+  226.54,
+  226.855,
+  227.098,
+  227.621,
+  228.221,
+  228.721,
+  229.087,
+  229.868,
+  230.314,
+  230.545,
+  230.831,
+  231.65,
+  231.884,
+  232.259,
+  232.61,
+  232.856,
+  233.231,
+  233.747,
+  234.121,
+  234.58,
+  235.484,
+  236.008,
+  236.904,
+  237.324,
+  238.395,
+  238.747,
+  239.099,
+  239.319,
+  239.671,
+  242.404,
+  243.254,
+  243.854,
+  244.23,
+  245.076,
+  245.382,
+  245.745,
+  245.993,
+  246.185,
+  246.81,
+  247.07,
+  247.33,
+  247.891,
+  248.091,
+  248.731,
+  249.136,
+  249.39,
+  249.567,
+  249.973,
+  250.226,
+  250.631,
+  251.509,
+  252.439,
+  253.269,
+  254.116,
+  254.429,
+  255.031,
+  255.296,
+  255.742,
+  255.982,
+  256.636,
+  256.851,
+  257.309,
+  257.976,
+  258.233,
+  258.609,
+  258.867,
+  259.243,
+  259.441,
+  259.579,
+  260.015,
+  260.272,
+  260.648,
+  260.846,
+  261.103,
+  261.74,
+  262.014,
+  262.352,
+  262.562,
+  263.41,
+  264.438,
+  264.666,
+  264.893,
+  265.226,
+  265.401,
+  265.629,
+  265.909,
+  266.72,
+  266.882,
+  267.093,
+  267.401,
+  268.077,
+  268.581,
+  268.878,
+  269.565,
+  270.045,
+  270.329,
+  272.928,
+  273.123,
+  273.318,
+  273.468,
+  273.663,
+  273.858,
+  274.642,
+  274.839,
+  275.153,
+  275.527,
+  275.96,
+  276.215,
+  276.412,
+  276.668,
+  277.598,
+  277.926,
+  278.698,
+  278.748,
+  278.948,
+  279.338,
+  279.605,
+  280.117,
+  280.544,
+  281.471,
+  281.934,
+  282.85,
+  283.156,
+  283.603,
+  284.05,
+  284.497,
+  284.803,
+  285.5,
+  287.425,
+  287.622,
+  287.996,
+  288.488,
+  288.685,
+  288.823,
+  289.315,
+  290.187,
+  290.763,
+  291.495,
+  292.155,
+  292.322,
+  292.538,
+  292.855,
+  292.972,
+  293.238,
+  293.605,
+  294.092,
+  294.658,
+  295.346,
+  295.99,
+  296.327,
+  296.475,
+  296.939,
+  297.276,
+  297.677,
+  297.888,
+  298.352,
+  298.945,
+  299.116,
+  299.508,
+  300.146,
+  300.363,
+  300.645,
+  301.056,
+  301.208,
+  301.685,
+  302.352,
+  303.007,
+  303.713,
+  303.983,
+  304.44,
+  304.96,
+  305.48,
+  305.75,
+  306.528,
+  306.949,
+  307.37,
+  307.791,
+  308.823,
+  309.769,
+  310.186,
+  310.792,
+  310.964,
+  311.344,
+  311.568,
+  311.999,
+  312.171,
+  312.447,
+  313.043,
+  313.666,
+  314.055,
+  317.045,
+  317.341,
+  317.569,
+  318.215,
+  318.439,
+  319.009,
+  319.305,
+  320.055,
+  320.801,
+  321.099,
+  321.896,
+  322.322,
+  322.516,
+  322.768,
+  323.397,
+  324.04,
+  324.379,
+  325.437,
+  325.517,
+  326.73,
+  326.993,
+  327.758,
+  328.063,
+  328.254,
+  328.616,
+  328.921,
+  329.489,
+  329.728,
+  330.132,
+  330.537,
+  330.776,
+  331.39,
+  331.879,
+  332.192,
+  332.5,
+  332.698,
+  333.069,
+  333.763,
+  334.683,
+  335.727,
+  336.366,
+  336.586,
+  337.184,
+  338.066,
+  338.332,
+  339.296,
+  339.562,
+  340.012,
+  340.216,
+  340.924,
+  341.062,
+  341.555,
+  341.93,
+  342.305,
+  342.561,
+  342.877,
+  343.631,
+  343.931,
+  344.174,
+  344.737,
+  344.976,
+  345.324,
+  345.508,
+  345.746,
+  346.415,
+  346.758,
+  347.036,
+  347.315,
+  347.85,
+  348.24,
+  348.631,
+  348.931,
+  349.731,
+  350.383,
+  351.036,
+  354.24,
+  354.762,
+  355.141,
+  355.378,
+  356.22,
+  356.497,
+  356.902,
+  357.499,
+  357.722,
+  358.749,
+  358.871,
+  359.228,
+  359.451,
+  359.875,
+  360.165,
+  360.522,
+  360.745,
+  361.322,
+  361.59,
+  361.981,
+  362.187,
+  362.961,
+  363.532,
+  363.947,
+  364.461,
+  364.71,
+  365.513,
+  365.834,
+  366.094,
+  366.693,
+  366.875,
+  367.496,
+  367.817,
+  368.078,
+  368.218,
+  368.78,
+  369.315,
+  369.941,
+  370.342,
+  371.156,
+  371.333,
+  371.562,
+  371.845,
+  372.501,
+  372.773,
+  373.107,
+  374.013,
+  374.202,
+  374.783,
+  374.918,
+  375.221,
+  375.353,
+  375.712,
+  376.281,
+  377.597,
+  377.851,
+  378.106,
+  378.595,
+  379.143,
+  379.339,
+  379.913,
+  380.292,
+  380.465,
+  380.637,
+  380.758,
+  381.137,
+  381.413,
+  381.957,
+  382.423,
+  383.503,
+  383.831,
+  384.234,
+  384.562,
+  385.437,
+  385.768,
+  386.036,
+  386.305,
+  387.018,
+  387.298,
+  388.066,
+  388.311,
+  389.116,
+  389.238,
+  390.166,
+  390.216,
+  391.217,
+  391.489,
+  392.157,
+  392.394,
+  395.125,
+  395.52,
+  395.99,
+  396.311,
+  397.323,
+  397.718,
+  398.409,
+  398.729,
+  399.05,
+  399.839,
+  400.173,
+  400.757,
+  401.029,
+  401.683,
+  401.963,
+  402.242,
+  402.522,
+  403.444,
+  403.992,
+  404.714,
+  405.608,
+  406.39,
+  406.709,
+  406.881,
+  407.273,
+  407.986,
+  408.182,
+  408.555,
+  408.81,
+  409.326,
+  409.61,
+  410.155,
+  410.504,
+  411.369,
+  411.761,
+  412.005,
+  412.429,
+  412.804,
+  413.343,
+  414.185,
+  414.427,
+  414.78,
+  415.342,
+  415.598,
+  416.03,
+  416.345,
+  416.6,
+  416.915,
+  417.052,
+  417.628,
+  418.147,
+  418.938,
+  419.813,
+  420.434,
+  420.821,
+  421.297,
+  421.595,
+  422.48,
+  422.841,
+  423.17,
+  424.05,
+  424.26,
+  424.418,
+  425.371,
+  425.608,
+  425.9,
+  426.136,
+  426.319,
+  426.61,
+  427.221,
+  427.558,
+  427.817,
+  428.707,
+  428.896,
+  429.029,
+  429.446,
+  429.897,
+  430.041,
+  430.401,
+  430.59,
+  430.836,
+  431.366,
+  431.944,
+  432.631,
+  432.928,
+  433.656,
+  433.883,
+  434.109,
+  434.493,
+  434.824,
+  435.424,
+  435.641,
+  435.858,
+  436.124,
+  436.391,
+  436.658,
+  436.925,
+  437.191,
+  437.778,
+  438.027,
+  438.333,
+  438.524,
+  438.773,
+  439.079,
+  439.271,
+  439.405,
+  440.146,
+  441.036,
+  441.34,
+  444.08,
+  444.4,
+  444.839,
+  445.039,
+  445.359,
+  445.619,
+  446.499,
+  447.599,
+  447.901,
+  448.649,
+  449.091,
+  449.62,
+  450.249,
+  451.098,
+  451.465,
+  451.833,
+  452.406,
+  453.828,
+  454.438,
+  454.747,
+  455.046,
+  455.18,
+  455.55,
+  456.639,
+  456.831,
+  457.067,
+  457.623,
+  457.827,
+  458.337,
+  458.48,
+  459.187,
+  460.157,
+  460.991,
+  461.263,
+  461.536,
+  462.122,
+  462.84,
+  463.356,
+  463.926,
+  464.652,
+  465.043,
+  465.9,
+  466.168,
+  466.498,
+  467.076,
+  467.283,
+  467.932,
+  468.369,
+  468.627,
+  468.945,
+  469.441,
+  469.639,
+  470.898,
+  471.086,
+  471.5,
+  471.801,
+  472.421,
+  472.696,
+  473.034,
+  473.246,
+  473.584,
+  473.796,
+  473.944,
+  474.346,
+  475.004,
+  475.276,
+  475.61,
+  475.757,
+  476.342,
+  476.552,
+  477.458,
+  477.728,
+  478.124,
+  478.332,
+  478.988,
+  479.253,
+  479.773,
+  480.357,
+  480.641,
+  481.186,
+  481.855,
+  482.172,
+  482.634,
+  482.951,
+  483.88,
+  484.113,
+  484.346,
+  484.58,
+  484.759,
+  484.992,
+  485.279,
+  485.459,
+  485.746,
+  486.02,
+  486.502,
+  486.681,
+  486.968,
+  487.77,
+  488.265,
+  488.838,
+  489.731,
+  490.113,
+  490.39,
+  490.98,
+  491.309,
+  491.639,
+  492.288,
+  492.554,
+  492.77,
+  492.886,
+  493.251,
+  493.467,
+  493.833,
+  494.049,
+  494.834,
+  495.011,
+  495.241,
+  495.525,
+  495.755,
+  495.985,
+  496.322,
+  496.605,
+  496.888,
+  497.172,
+  497.881,
+  498.189,
+  498.59,
+  499.083,
+  499.712,
+  499.931,
+  500.303,
+  500.471,
+  500.691,
+  501.011
+ ]
+}

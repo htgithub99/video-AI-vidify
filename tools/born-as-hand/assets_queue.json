@@ -1,0 +1,513 @@
+{
+ "jesse": {
+  "j_adult": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character pose sheet on a plain pure white background: the same character in 5 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Jesse James, lean young American man, light brown hair, clean-shaven or light stubble, sharp blue eyes, narrow face, age 25, outlaw in a long tan duster coat over a grey vest, dark wide-brim hat, gun belt. Poses in order: 1) walking with revolver holstered; 2) aiming a revolver at an enemy off to the right; 3) galloping on a dark bay horse, holding the reins; 4) standing with arms crossed; 5) bust, head and shoulders, three-quarter view facing the viewer, calm mouth. Exactly 5 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery.",
+   "names": [
+    "walk",
+    "aim",
+    "ride",
+    "stand",
+    "bust"
+   ],
+   "ref": null,
+   "kind": "cast"
+  },
+  "j_young": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character pose sheet on a plain pure white background: the same character in 7 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Jesse James, lean young American man, light brown hair, clean-shaven or light stubble, sharp blue eyes, narrow face. Poses in order: 1) boy age 6 in a plain shirt and short trousers, barefoot, standing; 2) boy age 6 running; 3) farm boy age 15 in a homespun shirt and suspenders holding a hoe; 4) boy age 15 kneeling in the dirt with his head down, sad; 5) teen age 17 Confederate bushwhacker in a decorated guerrilla shirt and slouch hat holding a revolver; 6) teen age 17 bushwhacker riding a galloping horse; 7) teen age 17 lying flat on his back resting, eyes closed, a bandage around his chest. Exactly 7 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery. This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.",
+   "names": [
+    "boy",
+    "boy_run",
+    "teen_hoe",
+    "teen_kneel",
+    "guerrilla",
+    "guerrilla_ride",
+    "wounded"
+   ],
+   "ref": "j_adult",
+   "kind": "cast"
+  },
+  "j_old": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character pose sheet on a plain pure white background: the same character in 5 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Jesse James, lean young American man, light brown hair, clean-shaven or light stubble, sharp blue eyes, narrow face, age 34, now with a short full beard, in a white shirt, dark waistcoat and trousers, no hat, no gun. Poses in order: 1) standing, looking up at a wall; 2) standing on a small wooden chair, reaching up with both hands to straighten a picture frame; 3) lying face down on the floor, fallen; 4) walking with a gun belt on; 5) bust, head and shoulders, three-quarter view facing the viewer. Exactly 5 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery. This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.",
+   "names": [
+    "stand",
+    "reach",
+    "fallen",
+    "walk",
+    "bust"
+   ],
+   "ref": "j_adult",
+   "kind": "cast"
+  },
+  "jj_family": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A sprite sheet on a plain pure white background with exactly 8 separate items in a 4x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) Robert James, Baptist preacher in a black frock coat holding a Bible, dark hair, 1840s; 2) Zerelda James, tall strong young mother in a plain 1850s dress and apron, dark hair in a bun; 3) Zerelda Samuel, older tall stern woman in a black dress, her right sleeve empty and pinned up, no right arm; 4) Dr Reuben Samuel, quiet country doctor in a brown coat, grey beard; 5) Archie, boy age 8 in a nightshirt; 6) Zee Mimms, slim young woman with auburn hair in a modest blue 1870s dress; 7) Frank James at 19, Confederate guerrilla with a dark moustache and a black slouch hat; 8) Union militiaman in a blue coat and kepi holding a coiled rope. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "robert_preacher",
+    "zerelda_young",
+    "zerelda_old",
+    "reuben_samuel",
+    "archie",
+    "zee",
+    "frank_teen",
+    "union_militia"
+   ],
+   "heights": [
+    1.8,
+    1.8,
+    1.8,
+    1.75,
+    1.25,
+    1.65,
+    1.8,
+    1.78
+   ],
+   "kind": "items"
+  },
+  "jj_others": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A sprite sheet on a plain pure white background with exactly 8 separate items in a 4x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) Bob Ford, skinny young man age 20, slicked dark hair, no hat, brown suit, aiming a revolver to the right; 2) Charley Ford, older brother, round face, moustache, bowler hat, grey suit; 3) Joseph Heywood, bank cashier in a black suit and spectacles, hands raised in refusal; 4) young medical student in a white shirt firing a rifle to the right; 5) Minnesota shopkeeper in an apron aiming a shotgun to the right; 6) Governor Thomas Crittenden, grey-bearded politician in a black suit; 7) newspaper editor John Newman Edwards writing in a notebook, frock coat; 8) Pinkerton detective in a bowler hat throwing a round iron device to the right. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "bob_ford",
+    "charley_ford",
+    "heywood",
+    "student_rifle",
+    "townsman_rifle",
+    "crittenden",
+    "edwards_editor",
+    "pinkerton_throw"
+   ],
+   "heights": [
+    1.75,
+    1.78,
+    1.78,
+    1.75,
+    1.75,
+    1.8,
+    1.78,
+    1.78
+   ],
+   "kind": "items"
+  },
+  "jj_props": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A sprite sheet on a plain pure white background with exactly 6 separate items in a 3x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) framed cross-stitch sampler picture with a plain border, no words; 2) pile of silver dollar coins; 3) round black iron incendiary device with a short burning fuse; 4) brass telegraph key; 5) glass laboratory test tube in a rack; 6) old granite gravestone, blank face. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "sampler",
+    "coins",
+    "iron_device",
+    "telegraph_key",
+    "dna_vial",
+    "gravestone"
+   ],
+   "heights": [
+    0.4,
+    0.1,
+    0.25,
+    0.15,
+    0.2,
+    1.0
+   ],
+   "kind": "items"
+  },
+  "bg_jj_farm": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a Missouri farm in the 1850s: a two-room log farmhouse with a stone chimney, a big old coffee bean tree in the yard, hemp fields and a rail fence behind, rolling green hills. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_northfield": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: Northfield, Minnesota in 1876: a main street with a two-storey stone bank building with tall windows, a hardware store and a hotel, dirt street, hitching rails. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_mn_swamp": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a Minnesota slough at the edge of the woods: tall reeds, willows, muddy water, autumn grey sky. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_stage_1880": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: an 1880s theatre stage seen from the front row: red velvet curtains pulled open, a painted parlour backdrop, footlights along the stage edge. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "j_baby": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. On a plain pure white background: this character as a newborn baby at age 0, sitting in a simple wooden crib, front view facing the viewer, a cross angry frown, arms crossed, whole crib visible and not cut off. The baby wears only simple baby clothes of the era (a plain gown or swaddle): no hat, no weapon, no belt, no adult costume. Same face features and hair colour as the reference picture of this character: Jesse James, lean young American man, light brown hair, clean-shaven or light stubble, sharp blue eyes, narrow face. No text, no captions, no ground shadow, no room behind.",
+   "names": [
+    "baby"
+   ],
+   "ref": "j_adult",
+   "kind": "cast"
+  }
+ },
+ "redbaron": {
+  "mr_adult": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character pose sheet on a plain pure white background: the same character in 6 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Manfred von Richthofen, slim German man, short fair blond hair parted, light blue eyes, clean-shaven, square jaw, age 24, German pilot in a long dark leather flying coat over a grey uniform, peaked officer cap. Poses in order: 1) standing straight; 2) walking; 3) standing proudly with a blue cross medal at his collar, field grey uniform; 4) standing with a white bandage wrapped around his head; 5) walking slowly carrying medals on a black cushion; 6) bust, head and shoulders, three-quarter view facing the viewer, leather flying helmet pushed up. Exactly 6 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery.",
+   "names": [
+    "stand",
+    "walk",
+    "medal",
+    "bandage",
+    "cushion",
+    "bust"
+   ],
+   "ref": null,
+   "kind": "cast"
+  },
+  "mr_young": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character pose sheet on a plain pure white background: the same character in 7 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Manfred von Richthofen, slim German man, short fair blond hair parted, light blue eyes, clean-shaven, square jaw. Poses in order: 1) boy age 10 in a Norfolk jacket aiming a hunting rifle at a deer off to the right; 2) boy age 10 holding up a pair of deer antlers; 3) cadet age 13 in a dark Prussian cadet uniform standing at attention; 4) Uhlan lancer age 20 in a Prussian ulan uniform and square-top czapka helmet riding a horse with a long lance; 5) Uhlan lancer age 20 standing holding a long lance; 6) officer age 22 in field grey handing out a crate of food; 7) observer age 23 in a flying coat holding a map and binoculars. Exactly 7 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery. This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.",
+   "names": [
+    "boy_hunt",
+    "boy_antlers",
+    "cadet",
+    "uhlan_ride",
+    "uhlan",
+    "supply",
+    "observer"
+   ],
+   "ref": "mr_adult",
+   "kind": "cast"
+  },
+  "mr_people": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A sprite sheet on a plain pure white background with exactly 10 separate items in a 5x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) Oswald Boelcke, German ace pilot with dark brown hair and dark eyes, white scarf, black leather jacket; 2) Lothar von Richthofen, younger brother, taller, wavy light brown hair, long grey coat; 3) Kunigunde von Richthofen, Prussian noblewoman in a dark 1910s dress; 4) Albrecht von Richthofen, Prussian cavalry major with a grey moustache; 5) Captain Roy Brown, Canadian RAF pilot, dark hair, brown flying coat; 6) Wilfrid May, young Canadian pilot with a boyish face, brown leather coat; 7) Australian soldier in a slouch hat firing a Lewis machine gun up into the sky to the right; 8) six Australian officers carrying a coffin on their shoulders, walking right; 9) Major Lanoe Hawker, British pilot with a moustache, leather coat; 10) British soldier running away with a strip of red fabric. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "boelcke",
+    "lothar",
+    "mother",
+    "father",
+    "roy_brown",
+    "wop_may",
+    "aus_gunner",
+    "pallbearers",
+    "hawker",
+    "souvenir_soldier"
+   ],
+   "heights": [
+    1.75,
+    1.8,
+    1.68,
+    1.8,
+    1.78,
+    1.75,
+    1.75,
+    1.8,
+    1.78,
+    1.75
+   ],
+   "kind": "items"
+  },
+  "mr_planes": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A sprite sheet on a plain pure white background with exactly 6 separate items in a 3x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) all-red German Albatros D.III biplane fighter with black iron crosses, flying; 2) green German Albatros two-seat reconnaissance biplane with observer in the back seat, flying; 3) British FE.2b two-seat pusher biplane with RAF roundels, flying; 4) British Airco DH.2 single-seat pusher biplane with roundels, flying; 5) all-red Fokker Dr.I triplane with black iron crosses, flying; 6) all-red Fokker Dr.I triplane crash-landed in a field, nose down, wings broken. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "albatros_red",
+    "albatros_two",
+    "fe2b",
+    "dh2",
+    "dr1_red",
+    "dr1_crashed"
+   ],
+   "heights": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "kind": "items"
+  },
+  "mr_props": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A sprite sheet on a plain pure white background with exactly 6 separate items in a 3x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) small engraved silver trophy cup; 2) Pour le Merite medal, blue enamel Maltese cross; 3) mounted deer antlers on a wooden plaque; 4) trophy Lewis machine gun hanging on a wall; 5) wooden shelf holding many small silver cups in a row; 6) funeral wreath of laurel with a ribbon, no words. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "silver_cup",
+    "blue_max",
+    "antlers",
+    "lewis_gun",
+    "cups_shelf",
+    "wreath"
+   ],
+   "heights": [
+    0.12,
+    0.06,
+    0.6,
+    1.3,
+    0.5,
+    0.8
+   ],
+   "kind": "items"
+  },
+  "bg_mr_bedroom": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a Prussian manor bedroom around 1917: wood-panelled walls covered with deer antlers and hunting trophies, a narrow bed, a window with lace curtains. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_mr_cadet": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a grey Prussian military cadet school courtyard around 1905, brick barracks, a flagpole, gravel parade ground. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_mr_airfield": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a German WW1 front-line airfield in 1917: canvas aircraft hangar tents, a grass field, wooden huts, poplars. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_mr_sky_low": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: the view from a low-flying plane over the Somme valley in 1918: a winding river, a ridge, shell-cratered fields and trench lines below, grey clouds. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_mr_cemetery": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a small French village military cemetery at Bertangles in 1918, wooden crosses, a low stone wall, poplars, overcast sky. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "mr_baby": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. On a plain pure white background: this character as a newborn baby at age 0, sitting in a simple wooden crib, front view facing the viewer, a cross angry frown, arms crossed, whole crib visible and not cut off. The baby wears only simple baby clothes of the era (a plain gown or swaddle): no hat, no weapon, no belt, no adult costume. Same face features and hair colour as the reference picture of this character: Manfred von Richthofen, slim German man, short fair blond hair parted, light blue eyes, clean-shaven, square jaw. No text, no captions, no ground shadow, no room behind.",
+   "names": [
+    "baby"
+   ],
+   "ref": "mr_adult",
+   "kind": "cast"
+  }
+ },
+ "spartacus": {
+  "sp_adult": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character pose sheet on a plain pure white background: the same character in 7 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Spartacus, tall muscular Thracian man, dark curly hair, short dark beard, strong nose, olive skin, age 30, rebel leader in a brown tunic with a bronze Thracian helmet carried, belt, curved sica sword. Poses in order: 1) standing holding a curved sword; 2) pointing forward with his sword, leading; 3) fighting, sword swinging to the right; 4) running with a kitchen cleaver, wearing a plain gladiator loincloth and arm wrap; 5) climbing down a long rope ladder made of twisted vines, the ladder drawn with him; 6) riding a brown horse, sword raised; 7) bust, head and shoulders, three-quarter view facing the viewer. Exactly 7 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery.",
+   "names": [
+    "stand",
+    "point",
+    "fight",
+    "cleaver",
+    "climb",
+    "ride",
+    "bust"
+   ],
+   "ref": null,
+   "kind": "cast"
+  },
+  "sp_young": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character pose sheet on a plain pure white background: the same character in 7 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Spartacus, tall muscular Thracian man, dark curly hair, short dark beard, strong nose, olive skin. Poses in order: 1) boy age 8 in a wool Thracian tunic standing beside a small horse, holding its rope; 2) young Thracian warrior age 20 with a curved rhomphaia blade and a fox-skin cap; 3) young man age 22 in Roman auxiliary armour; 4) slave age 24 walking with chained wrists, head down; 5) gladiator age 26 in thraex armour: griffin-crested helmet, small square shield, curved short sword; 6) gladiator age 26 sitting on the ground hugging his knees; 7) man age 24 lying flat asleep on his back, a small snake coiled near his face. Exactly 7 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery. This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.",
+   "names": [
+    "boy",
+    "youth",
+    "auxiliary",
+    "chained",
+    "thraex",
+    "sit_cell",
+    "sleep"
+   ],
+   "ref": "sp_adult",
+   "kind": "cast"
+  },
+  "sp_people": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A sprite sheet on a plain pure white background with exactly 10 separate items in a 5x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) Thracian prophetess of Dionysus, a woman in a long dark robe with ivy in her hair; 2) Crixus, big Gaulish gladiator with long red hair and a drooping moustache, bare chest, long sword; 3) Oenomaus, Gaulish gladiator with a shaved head and blond beard, round shield; 4) Lentulus Batiatus, plump gladiator school owner in a fine tunic, ringed fingers; 5) Marcus Crassus, middle-aged Roman general, receding hair, muscled bronze cuirass, red cloak; 6) Roman praetor Glaber in a white toga with a red border; 7) Pompey, Roman general with a tuft of hair over his forehead, gilded armour; 8) Cilician pirate captain with a curved sword and a headscarf; 9) runaway farm slave with a pitchfork, ragged tunic; 10) runaway shepherd with a staff and sheepskin cloak. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "prophetess",
+    "crixus",
+    "oenomaus",
+    "batiatus",
+    "crassus",
+    "glaber",
+    "pompey",
+    "pirate",
+    "rebel_farm",
+    "rebel_shepherd"
+   ],
+   "heights": [
+    1.68,
+    1.85,
+    1.8,
+    1.7,
+    1.75,
+    1.75,
+    1.75,
+    1.75,
+    1.72,
+    1.72
+   ],
+   "kind": "items"
+  },
+  "sp_props": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A sprite sheet on a plain pure white background with exactly 6 separate items in a 3x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) iron butcher cleaver; 2) long iron meat spit; 3) long rope ladder of twisted green vines; 4) ox wagon loaded with gladiator weapons and shields; 5) coiled snake; 6) brown horse lying dead on its side. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "cleaver",
+    "meat_spit",
+    "vine_ladder",
+    "weapon_wagon",
+    "snake",
+    "dead_horse"
+   ],
+   "heights": [
+    0.35,
+    1.0,
+    4.0,
+    2.2,
+    0.3,
+    0.8
+   ],
+   "kind": "items"
+  },
+  "bg_sp_thrace": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a Thracian mountain village around 100 BC: round wooden huts with thatched roofs, wooded mountains, horses' paddock. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sp_ludus": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: the training yard of a Roman gladiator school in Capua: sand yard, wooden training posts, colonnade with barred cell doors. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sp_cell": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: inside a small stone gladiator cell: bare stone walls, straw on the floor, one tiny barred window, a heavy wooden door. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sp_kitchen": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a Roman school kitchen: brick hearth with fire, hanging pots, butcher table, clay jars. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sp_vesuvius": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: the green summit of Mount Vesuvius in 73 BC before the eruption: a wide flat crater with rocky cliffs covered in wild grapevines, a view down to the bay of Naples. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sp_camp": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a huge rebel camp in the hills of southern Italy at dusk: rough tents, campfires, wagons, olive trees. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sp_trench": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a long Roman trench with an earth wall and wooden palisade crossing a snowy hilly landscape in southern Italy, winter. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sp_river": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: a wide open plain beside the Silarus river in southern Italy, low hills, spring grass, morning. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sp_appian": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A 16:9 background scene at eye level: the Appian Way at dusk: a straight Roman stone road running into the distance, lined on both sides by tall plain wooden crosses as distant silhouettes, red sky. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "sp_baby": {
+   "prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. On a plain pure white background: this character as a newborn baby at age 0, sitting in a simple wooden crib, front view facing the viewer, a cross angry frown, arms crossed, whole crib visible and not cut off. The baby wears only simple baby clothes of the era (a plain gown or swaddle): no hat, no weapon, no belt, no adult costume. Same face features and hair colour as the reference picture of this character: Spartacus, tall muscular Thracian man, dark curly hair, short dark beard, strong nose, olive skin. No text, no captions, no ground shadow, no room behind.",
+   "names": [
+    "baby"
+   ],
+   "ref": "sp_adult",
+   "kind": "cast"
+  }
+ },
+ "sherlock": {
+  "sh_adult": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A character pose sheet on a plain pure white background: the same character in 7 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Sherlock Holmes, tall very thin English man, sharp hawk-like nose, grey eyes, slicked-back black hair, pale skin, age 30, in a grey Inverness cape and matching deerstalker cap. Poses in order: 1) standing with a magnifying glass; 2) walking briskly; 3) pointing to the right, explaining; 4) at home in a mouse-grey dressing gown, holding a violin and bow; 5) lying flat on his back with his hands folded, bored, dressing gown; 6) grappling, arms out to the right, in a dark travelling coat; 7) bust, head and shoulders, three-quarter view facing the viewer, calm. Exactly 7 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery.",
+   "names": [
+    "stand",
+    "walk",
+    "point",
+    "home",
+    "lie",
+    "fight",
+    "bust"
+   ],
+   "ref": null,
+   "kind": "cast"
+  },
+  "sh_young": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A character pose sheet on a plain pure white background: the same character in 7 poses side by side in one row (or two rows), each pose clearly separated with empty white space, full body, side view facing right, same scale, feet visible, every companion a pose mentions (horse, baby, rope) drawn with that pose as one connected figure (a pose described as a bust is head and shoulders facing the viewer instead). Character: Sherlock Holmes, tall very thin English man, sharp hawk-like nose, grey eyes, slicked-back black hair, pale skin. Poses in order: 1) boy age 10 in a Victorian school suit, reading a book; 2) college student age 19 in a dark academic gown; 3) college student age 19 lying flat with a bandaged ankle; 4) age 34 disguised as a nonconformist clergyman with a broad black hat; 5) age 40 disguised as an old hunched book collector with white sideburns, carrying books; 6) age 27 in shirtsleeves holding up a test tube; 7) age 60 with grey hair in a beekeeper's veil hat, holding a smoker. Exactly 7 figures. Each held item appears once, never doubled. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows, no background scenery. This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.",
+   "names": [
+    "boy",
+    "student",
+    "student_bed",
+    "priest",
+    "bookseller",
+    "lab",
+    "old_bees"
+   ],
+   "ref": "sh_adult",
+   "kind": "cast"
+  },
+  "sh_people": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A sprite sheet on a plain pure white background with exactly 10 separate items in a 5x2 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) Dr John Watson, sturdy Englishman with a brown moustache, bowler hat, brown tweed suit, walking stick; 2) Mycroft Holmes, very large heavy man in a black frock coat, same hawk nose; 3) Mrs Hudson, motherly landlady in a dark Victorian dress and white apron, carrying a tea tray; 4) Inspector Lestrade, small thin man with a sallow ferret-like face, brown coat; 5) Irene Adler, elegant opera singer with dark hair in an evening gown; 6) Professor James Moriarty, tall, thin, round-shouldered, high domed bald forehead, deep-set eyes, black frock coat; 7) Colonel Sebastian Moran, burly man with a grey moustache aiming an air rifle to the right; 8) old Mr Trevor, burly country squire with a cauliflower ear, tweed; 9) Victor Trevor, cheerful young college student; 10) Von Bork, German spy in an evening suit, blond. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "watson",
+    "mycroft",
+    "hudson",
+    "lestrade",
+    "irene",
+    "moriarty",
+    "moran",
+    "trevor_old",
+    "victor",
+    "von_bork"
+   ],
+   "heights": [
+    1.78,
+    1.82,
+    1.6,
+    1.65,
+    1.7,
+    1.85,
+    1.8,
+    1.78,
+    1.78,
+    1.82
+   ],
+   "kind": "items"
+  },
+  "sh_things": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A sprite sheet on a plain pure white background with exactly 9 separate items in a 3x3 grid, read left to right, top to bottom, each item whole and not cut off, empty white space between items, side view facing right, consistent scale within kinds, every person clearly different from the others at a glance. Items in order: 1) bull terrier dog; 2) huge black hound with a glowing outline, snarling; 3) three ragged Victorian street boys walking; 4) black Victorian hansom cab pulled by a horse; 5) wax bust of a thin man with a hawk nose; 6) white wooden beehive; 7) violin with bow; 8) Swiss boy messenger running; 9) walking stick. Never draw furniture with a figure (no bed, cot, chair, bench, stool or sofa) unless a pose names it: a lying figure lies flat on nothing, a sitting figure sits on nothing; the scene already has the furniture. No text, no captions, no labels, no ground shadows.",
+   "names": [
+    "bull_terrier",
+    "hound",
+    "irregulars",
+    "hansom",
+    "wax_bust",
+    "beehive",
+    "violin",
+    "telegram_boy",
+    "cane"
+   ],
+   "heights": [
+    0.5,
+    1.0,
+    1.3,
+    2.5,
+    0.6,
+    0.9,
+    0.6,
+    1.4,
+    0.9
+   ],
+   "kind": "items"
+  },
+  "bg_sh_221b": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: the sitting room of 221B Baker Street in 1881: a fireplace with two armchairs, bookshelves, chemistry bench by the window, papers everywhere, gaslight. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_street": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: Baker Street, London in the 1880s on a foggy evening: brick terraced houses, gas lamps, wet cobblestones. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_lab": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: a Victorian hospital chemistry laboratory at St Bartholomew's: long wooden benches with glass retorts, test tubes and Bunsen burners, tall windows. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_college": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: a small Victorian college room: a narrow bed, a desk with books, a tall window over stone quadrangle. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_dining": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: a country house dining room in Norfolk: long table set for dinner with candles, portraits, wood panelling. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_falls": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: the Reichenbach Falls in the Swiss Alps: a narrow wet rock path at the edge of a deep gorge with a huge roaring waterfall, mist, pines. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_moor": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: Dartmoor at night: misty empty moorland, granite tors, a moon behind clouds. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_tibet": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: a Tibetan monastery high in snowy mountains, prayer flags, stone steps. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_sussex": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: a small farm cottage on the Sussex Downs by the sea: chalky green hills, white beehives in a garden, sea cliffs. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "bg_sh_lodge": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A 16:9 background scene at eye level: a pretty Victorian villa on a quiet London street at dusk, gas lamp, front garden gate. No people, no animals, no vehicles, no text. Keep the lower third open flat ground where characters can stand.",
+   "kind": "bg"
+  },
+  "sh_baby": {
+   "prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. On a plain pure white background: this character as a newborn baby at age 0, sitting in a simple wooden crib, front view facing the viewer, a cross angry frown, arms crossed, whole crib visible and not cut off. The baby wears only simple baby clothes of the era (a plain gown or swaddle): no hat, no weapon, no belt, no adult costume. Same face features and hair colour as the reference picture of this character: Sherlock Holmes, tall very thin English man, sharp hawk-like nose, grey eyes, slicked-back black hair, pale skin. No text, no captions, no ground shadow, no room behind.",
+   "names": [
+    "baby"
+   ],
+   "ref": "sh_adult",
+   "kind": "cast"
+  }
+ }
+}

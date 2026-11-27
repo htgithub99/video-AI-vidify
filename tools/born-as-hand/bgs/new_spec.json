@@ -1,0 +1,780 @@
+{
+"bg_jj_farm": {
+"horizon": 580,
+"ground": [
+870,
+860,
+880
+],
+"desc": "1850s Missouri log farmhouse with a big tree and fields"
+},
+"bg_northfield": {
+"horizon": 576,
+"ground": [
+880,
+880,
+900
+],
+"desc": "Northfield Minnesota main street with stone bank, 1876"
+},
+"bg_mn_swamp": {
+"horizon": 470,
+"ground": [
+910,
+900,
+910
+],
+"desc": "Minnesota swamp with reeds and willows"
+},
+"bg_stage_1880": {
+"horizon": 646,
+"ground": [
+900,
+900,
+900
+],
+"xs": [
+520,
+760,
+960,
+1160,
+1400
+],
+"desc": "1880s theatre stage with red curtains"
+},
+"bg_mr_bedroom": {
+"horizon": 520,
+"ground": [
+890,
+880,
+890
+],
+"seats": [
+{
+"k": "bed",
+"x0": 250,
+"x1": 820,
+"y": 665
+}
+],
+"walls": [
+[
+560,
+880,
+430
+],
+[
+1480,
+1700,
+430
+]
+],
+"xs": [
+900,
+1100,
+1300,
+1500,
+1700
+],
+"desc": "Prussian manor bedroom with antlers on the walls and a narrow bed"
+},
+"bg_mr_cadet": {
+"horizon": 464,
+"ground": [
+880,
+880,
+880
+],
+"desc": "Prussian cadet school courtyard"
+},
+"bg_mr_airfield": {
+"horizon": 560,
+"ground": [
+900,
+900,
+900
+],
+"desc": "WW1 German airfield with hangar tents"
+},
+"bg_mr_sky_low": {
+"horizon": 300,
+"ground": [
+1000,
+1000,
+1000
+],
+"desc": "low flight over the Somme valley"
+},
+"bg_mr_cemetery": {
+"horizon": 528,
+"ground": [
+880,
+880,
+880
+],
+"desc": "Bertangles military cemetery 1918"
+},
+"bg_ww_sky_clouds": {
+"horizon": 300,
+"ground": [
+1000,
+1000,
+1000
+],
+"desc": "open sky with clouds"
+},
+"bg_sh_221b": {
+"horizon": 470,
+"ground": [
+880,
+890,
+880
+],
+"xs": [
+300,
+560,
+820,
+1080,
+1300
+],
+"desc": "Victorian sitting room at 221B Baker Street"
+},
+"bg_sh_college": {
+"horizon": 416,
+"ground": [
+880,
+890,
+880
+],
+"xs": [
+700,
+960,
+1200,
+1450
+],
+"desc": "Victorian college room with a bed and desk",
+"seats": [
+{
+"k": "bed",
+"x0": 360,
+"x1": 760,
+"y": 600
+}
+]
+},
+"bg_sh_dining": {
+"horizon": 464,
+"ground": [
+880,
+890,
+880
+],
+"desc": "Victorian country house dining hall"
+},
+"bg_sh_falls": {
+"horizon": 560,
+"ground": [
+900,
+880,
+900
+],
+"xs": [
+260,
+480,
+700,
+920
+],
+"desc": "narrow ledge path beside the Reichenbach Falls"
+},
+"bg_sh_lab": {
+"horizon": 456,
+"ground": [
+880,
+890,
+880
+],
+"xs": [
+760,
+1000,
+1240,
+1480
+],
+"desc": "Victorian hospital chemistry laboratory"
+},
+"bg_sh_lodge": {
+"horizon": 552,
+"ground": [
+900,
+900,
+900
+],
+"desc": "Victorian villa street at dusk"
+},
+"bg_sh_moor": {
+"horizon": 560,
+"ground": [
+900,
+900,
+900
+],
+"desc": "Dartmoor at night under the moon"
+},
+"bg_sh_street": {
+"horizon": 608,
+"ground": [
+900,
+900,
+900
+],
+"desc": "foggy Victorian London street with gas lamps"
+},
+"bg_sh_sussex": {
+"horizon": 560,
+"ground": [
+900,
+900,
+900
+],
+"desc": "Sussex Downs cottage with beehives by the sea"
+},
+"bg_sh_tibet": {
+"horizon": 520,
+"ground": [
+900,
+900,
+900
+],
+"desc": "snowy Tibetan monastery courtyard"
+},
+"bg_sp_appian": {
+"horizon": 448,
+"ground": [
+900,
+900,
+900
+],
+"desc": "the Appian Way lined with crosses at sunset"
+},
+"bg_sp_camp": {
+"horizon": 470,
+"ground": [
+900,
+900,
+900
+],
+"desc": "rebel camp in the hills at dusk"
+},
+"bg_sp_cell": {
+"horizon": 456,
+"ground": [
+880,
+880,
+880
+],
+"desc": "stone gladiator cell"
+},
+"bg_sp_kitchen": {
+"horizon": 450,
+"ground": [
+880,
+880,
+880
+],
+"xs": [
+400,
+700,
+960
+],
+"desc": "ancient Roman kitchen with hearth"
+},
+"bg_sp_ludus": {
+"horizon": 560,
+"ground": [
+900,
+900,
+900
+],
+"desc": "gladiator school training yard in Capua"
+},
+"bg_sp_river": {
+"horizon": 584,
+"ground": [
+900,
+900,
+900
+],
+"desc": "open river valley in Italy"
+},
+"bg_sp_thrace": {
+"horizon": 576,
+"ground": [
+900,
+900,
+900
+],
+"desc": "Thracian mountain village"
+},
+"bg_sp_trench": {
+"horizon": 448,
+"ground": [
+900,
+900,
+900
+],
+"desc": "Crassus's ditch and wall in winter"
+},
+"bg_sp_vesuvius": {
+"horizon": 592,
+"ground": [
+900,
+900,
+900
+],
+"xs": [
+440,
+700,
+960,
+1220,
+1480
+],
+"desc": "wild ravine on the slopes of Vesuvius"
+},
+"bg_ww_train_station": {
+"horizon": 610,
+"ground": [
+960,
+880,
+760
+],
+"xs": [
+200,
+420,
+640,
+860
+],
+"walls": [
+[
+885,
+985,
+575
+]
+],
+"seats": [
+{
+"k": "bench",
+"x0": 0,
+"x1": 290,
+"y": 725
+}
+],
+"desc": "railway station platform"
+},
+"bg_au_cotton": {
+"horizon": 470,
+"ground": [
+880,
+880,
+880
+],
+"desc": "Texas cotton field with a sharecropper shack, 1930s"
+},
+"bg_au_shack": {
+"horizon": 520,
+"ground": [
+920,
+940,
+920
+],
+"desc": "inside a poor sharecropper shack"
+},
+"bg_au_recruit": {
+"horizon": 520,
+"ground": [
+900,
+920,
+900
+],
+"desc": "1942 US Army recruiting office"
+},
+"bg_au_anzio": {
+"horizon": 450,
+"ground": [
+860,
+880,
+860
+],
+"desc": "Anzio beachhead 1944, muddy fields and a ruined house"
+},
+"bg_au_hill": {
+"horizon": 520,
+"ground": [
+900,
+900,
+900
+],
+"desc": "dry hill with vineyards, southern France"
+},
+"bg_au_hollywood": {
+"horizon": 570,
+"ground": [
+880,
+900,
+880
+],
+"desc": "1950s Hollywood western film set"
+},
+"bg_au_bedroom": {
+"horizon": 560,
+"ground": [
+900,
+940,
+900
+],
+"desc": "1950s bedroom at night"
+},
+"bg_au_arlington": {
+"horizon": 470,
+"ground": [
+900,
+900,
+900
+],
+"desc": "Arlington cemetery with white headstones"
+},
+"bg_au_fog": {
+"horizon": 520,
+"ground": [
+930,
+930,
+930
+],
+"desc": "foggy Virginia mountains in rain"
+},
+"bg_bk_santafe": {
+"horizon": 580,
+"ground": [
+880,
+900,
+880
+],
+"desc": "Santa Fe plaza 1870s, adobe buildings"
+},
+"bg_bk_silver": {
+"horizon": 600,
+"ground": [
+880,
+900,
+880
+],
+"desc": "Silver City mining town street 1870s"
+},
+"bg_bk_lincoln": {
+"horizon": 560,
+"ground": [
+880,
+900,
+880
+],
+"desc": "Lincoln New Mexico 1878 adobe main street"
+},
+"bg_bk_road": {
+"horizon": 450,
+"ground": [
+880,
+880,
+880
+],
+"desc": "lonely dirt road through juniper hills"
+},
+"bg_bk_snow": {
+"horizon": 400,
+"ground": [
+880,
+880,
+880
+],
+"desc": "snowy New Mexico plain at dawn"
+},
+"bg_bk_maxwell": {
+"horizon": 560,
+"ground": [
+880,
+900,
+880
+],
+"desc": "dark adobe bedroom at night"
+},
+"bg_bk_dance": {
+"horizon": 560,
+"ground": [
+900,
+920,
+900
+],
+"desc": "Fort Sumner dance hall 1880"
+},
+"bg_mu_village": {
+"horizon": 560,
+"ground": [
+950,
+940,
+950
+],
+"desc": "Japanese farm village, thatched houses, rice paddies"
+},
+"bg_mu_temple": {
+"horizon": 600,
+"ground": [
+960,
+960,
+960
+],
+"xs": [
+220,
+460,
+700,
+940,
+1180
+],
+"desc": "Buddhist temple courtyard with stone lanterns"
+},
+"bg_mu_battle": {
+"horizon": 520,
+"ground": [
+930,
+930,
+920
+],
+"desc": "Sekigahara battlefield after battle, banners, smoke"
+},
+"bg_mu_road": {
+"horizon": 620,
+"ground": [
+980,
+960,
+980
+],
+"xs": [
+420,
+660,
+900,
+1140,
+1380,
+1560
+],
+"desc": "forest road through cedar trees"
+},
+"bg_mu_kyoto": {
+"horizon": 500,
+"ground": [
+950,
+940,
+950
+],
+"desc": "autumn field outside Kyoto with pagoda in distance"
+},
+"bg_mu_pine": {
+"horizon": 500,
+"ground": [
+960,
+950,
+960
+],
+"xs": [
+240,
+480,
+720,
+960,
+1200
+],
+"desc": "Ichijoji pine tree crossroads at dawn"
+},
+"bg_mu_island": {
+"horizon": 420,
+"ground": [
+950,
+940,
+930
+],
+"desc": "Ganryujima island beach with sea"
+},
+"bg_mu_cave": {
+"horizon": 560,
+"ground": [
+930,
+920,
+920
+],
+"xs": [
+300,
+560,
+820,
+1080,
+1340
+],
+"desc": "Reigando cave with Buddhist statue and candles"
+},
+"bg_mu_castle": {
+"horizon": 560,
+"ground": [
+950,
+940,
+950
+],
+"desc": "Kumamoto castle courtyard"
+},
+"bg_ca_alesia": {
+"horizon": 440,
+"ground": [
+970,
+960,
+970
+],
+"desc": "Alesia hill fort with Roman siege walls"
+},
+"bg_ca_egypt": {
+"horizon": 540,
+"ground": [
+950,
+940,
+950
+],
+"xs": [
+440,
+700,
+960,
+1220,
+1480
+],
+"desc": "Alexandria palace hall with lighthouse view"
+},
+"bg_ca_forum": {
+"horizon": 560,
+"ground": [
+970,
+960,
+970
+],
+"xs": [
+420,
+680,
+940,
+1200,
+1460
+],
+"desc": "Roman Forum"
+},
+"bg_ca_gaul": {
+"horizon": 420,
+"ground": [
+970,
+960,
+970
+],
+"desc": "Gaul forest river valley with hill fort"
+},
+"bg_ca_hills": {
+"horizon": 420,
+"ground": [
+960,
+950,
+950
+],
+"xs": [
+240,
+480,
+720,
+960,
+1180
+],
+"desc": "Sabine hills with shepherd hut"
+},
+"bg_ca_house": {
+"horizon": 520,
+"ground": [
+950,
+950,
+950
+],
+"xs": [
+300,
+520,
+760,
+1160,
+1400,
+1620
+],
+"desc": "Roman atrium house"
+},
+"bg_ca_rubicon": {
+"horizon": 480,
+"ground": [
+980,
+980,
+980
+],
+"desc": "Rubicon river bank in winter"
+},
+"bg_ca_sea": {
+"horizon": 330,
+"ground": [
+970,
+960,
+960
+],
+"desc": "rocky Aegean shore, pirate island"
+},
+"bg_ca_senate": {
+"horizon": 600,
+"ground": [
+990,
+990,
+990
+],
+"xs": [
+300,
+560,
+820,
+1100,
+1360,
+1620
+],
+"desc": "Theatre of Pompey senate hall with statue"
+},
+"bg_ca_subura": {
+"horizon": 560,
+"ground": [
+970,
+960,
+970
+],
+"desc": "Subura slum street in Rome"
+},
+"bg_west_jail_interior": {
+"horizon": 280,
+"ground": [
+720,
+720,
+720
+],
+"xs": [
+620,
+820,
+1020,
+1220
+],
+"walls": [
+[
+480,
+940,
+380
+]
+],
+"table": [
+170,
+610,
+410
+],
+"desc": "Sheriff's office interior: desk against the far left wall, rifle rack, wood stove, iron jail cells on the right"
+}
+}

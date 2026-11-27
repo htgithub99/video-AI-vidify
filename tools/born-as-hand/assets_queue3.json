@@ -1,0 +1,522 @@
+{
+"jesse": {
+"jb_boy": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Jesse James, lean young American man, light brown hair, sharp blue eyes, narrow face, age 6, a small boy in a plain shirt. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"jb_farm": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Jesse James, lean young American man, light brown hair, sharp blue eyes, narrow face, age 15, farm boy in a homespun shirt and suspenders. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"jb_bush": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Jesse James, lean young American man, light brown hair, sharp blue eyes, narrow face, age 17, Confederate bushwhacker in a decorated guerrilla shirt and slouch hat. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"jb_adult": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Jesse James, lean young American man, light brown hair, sharp blue eyes, narrow face, age 25, outlaw in a long tan duster coat over a grey vest, dark wide-brim hat. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"jb_old": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Jesse James, lean young American man, light brown hair, sharp blue eyes, narrow face, age 34, short full beard, white shirt and dark waistcoat, no hat. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"jb_p1": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) Robert James, Baptist preacher in a black frock coat, dark hair, 1840s; 2) Zerelda James, tall strong mother in a plain 1850s dress, dark hair in a bun; 3) Frank James, Confederate guerrilla with a dark moustache and a black slouch hat. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"robert",
+"zerelda",
+"frank"
+],
+"kind": "bust3"
+},
+"jb_p2": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) Bob Ford, skinny young man age 20, slicked dark hair, brown suit; 2) Zee Mimms, slim young woman with auburn hair in a modest blue 1870s dress; 3) Pinkerton detective in a bowler hat and dark suit, stern. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"bob",
+"zee",
+"pinkerton"
+],
+"kind": "bust3"
+}
+},
+"redbaron": {
+"rb_boy": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Manfred von Richthofen, slim German man, short fair blond hair parted, light blue eyes, clean-shaven, square jaw, age 10, boy in a brown Norfolk jacket. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"rb_cadet": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Manfred von Richthofen, slim German man, short fair blond hair parted, light blue eyes, clean-shaven, square jaw, age 13, in a dark Prussian cadet uniform. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"rb_uhlan": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Manfred von Richthofen, slim German man, short fair blond hair parted, light blue eyes, clean-shaven, square jaw, age 20, Uhlan lancer officer in a Prussian ulan uniform and square-top czapka helmet. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"rb_observer": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Manfred von Richthofen, slim German man, short fair blond hair parted, light blue eyes, clean-shaven, square jaw, age 23, in a brown leather flying coat and goggles pushed up on a flying cap. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"rb_adult": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Manfred von Richthofen, slim German man, short fair blond hair parted, light blue eyes, clean-shaven, square jaw, age 24, German fighter pilot in a long dark leather flying coat over a grey uniform, peaked officer cap, Pour le Merite medal at the collar. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"rb_p1": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) Oswald Boelcke, German ace pilot with dark brown hair, white scarf, black leather jacket; 2) Lothar von Richthofen, wavy light brown hair, long grey coat; 3) Kunigunde von Richthofen, Prussian noblewoman in a dark 1910s dress. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"boelcke",
+"lothar",
+"mother"
+],
+"kind": "bust3"
+},
+"rb_p2": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) Albrecht von Richthofen, Prussian cavalry major with a grey moustache; 2) Captain Roy Brown, Canadian pilot, dark hair, brown flying coat; 3) Wilfrid May, young Canadian pilot with a boyish face, brown leather coat. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"father",
+"brown",
+"may"
+],
+"kind": "bust3"
+}
+},
+"spartacus": {
+"sb_boy": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Spartacus, tall muscular Thracian man, dark curly hair, short dark beard, strong nose, olive skin, age 8, a boy in a wool Thracian tunic, no beard. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"sb_warrior": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Spartacus, tall muscular Thracian man, dark curly hair, short dark beard, strong nose, olive skin, age 20, young Thracian warrior in a fox-skin cap, short beard. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"sb_slave": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Spartacus, tall muscular Thracian man, dark curly hair, short dark beard, strong nose, olive skin, age 24, slave in a torn grey tunic with an iron collar, tired. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"sb_gladiator": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Spartacus, tall muscular Thracian man, dark curly hair, short dark beard, strong nose, olive skin, age 26, gladiator with a bare muscular chest and a leather shoulder guard, no helmet. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"sb_adult": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Spartacus, tall muscular Thracian man, dark curly hair, short dark beard, strong nose, olive skin, age 30, rebel leader in a brown tunic with a leather chest strap and a red cloak. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"sb_p1": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) Crixus, big Gaulish gladiator with long red hair and a drooping moustache, bare chest; 2) Lentulus Batiatus, plump gladiator school owner in a fine tunic; 3) Thracian prophetess, a woman in a long dark robe with ivy in her hair. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"crixus",
+"batiatus",
+"prophetess"
+],
+"kind": "bust3"
+},
+"sb_p2": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) Marcus Crassus, middle-aged Roman general, receding hair, muscled bronze cuirass, red cloak; 2) Roman praetor Glaber in a white toga with a red border; 3) Oenomaus, Gaulish gladiator with a shaved head and blond beard. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"crassus",
+"glaber",
+"oenomaus"
+],
+"kind": "bust3"
+}
+},
+"sherlock": {
+"hb_boy": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Sherlock Holmes, tall very thin English man, sharp hawk-like nose, grey eyes, slicked-back black hair, pale skin, age 10, boy in a Victorian school suit. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"hb_student": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Sherlock Holmes, tall very thin English man, sharp hawk-like nose, grey eyes, slicked-back black hair, pale skin, age 19, college student in a dark academic gown. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"hb_home": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Sherlock Holmes, tall very thin English man, sharp hawk-like nose, grey eyes, slicked-back black hair, pale skin, age 27, in a white shirt with rolled sleeves and a dark waistcoat. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"hb_adult": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Sherlock Holmes, tall very thin English man, sharp hawk-like nose, grey eyes, slicked-back black hair, pale skin, age 30, in a grey Inverness cape and matching deerstalker cap. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"hb_old": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Sherlock Holmes, tall very thin English man, sharp hawk-like nose, grey eyes, slicked-back black hair, pale skin, age 60, grey hair, in a tweed country jacket. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"hb_p1": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) Dr John Watson, sturdy Englishman with a brown moustache, brown tweed suit; 2) Mrs Hudson, motherly landlady in a dark Victorian dress and white apron; 3) Inspector Lestrade, small thin man with a sallow ferret-like face, brown coat. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"watson",
+"hudson",
+"lestrade"
+],
+"kind": "bust3"
+},
+"hb_p2": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, Victorian England. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) Irene Adler, elegant opera singer with dark hair in an evening gown; 2) Professor James Moriarty, tall thin, high domed bald forehead, deep-set eyes, black frock coat; 3) Mycroft Holmes, very large heavy man in a black frock coat, hawk nose. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"irene",
+"moriarty",
+"mycroft"
+],
+"kind": "bust3"
+}
+},
+"audie": {
+"ab_kid": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Audie Murphy, small slim American boy-faced young man, wavy reddish-brown hair, freckles, hazel eyes, boyish round face, age 10, in patched faded overalls and a torn shirt. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"ab_teen": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Audie Murphy, small slim American boy-faced young man, wavy reddish-brown hair, freckles, hazel eyes, boyish round face, age 16, in a worn work shirt and an old cap. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"ab_gi": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Audie Murphy, small slim American boy-faced young man, wavy reddish-brown hair, freckles, hazel eyes, boyish round face, age 18, US Army WW2 infantry private in olive drab uniform and M1 steel helmet. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"ab_sgt": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Audie Murphy, small slim American boy-faced young man, wavy reddish-brown hair, freckles, hazel eyes, boyish round face, age 19, US Army WW2 sergeant in an olive drab field jacket and M1 helmet. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"ab_lt": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Audie Murphy, small slim American boy-faced young man, wavy reddish-brown hair, freckles, hazel eyes, boyish round face, age 19, US Army second lieutenant in a winter olive drab overcoat and M1 helmet. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"ab_star": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Audie Murphy, small slim American boy-faced young man, wavy reddish-brown hair, freckles, hazel eyes, boyish round face, age 30, Hollywood actor in a smart grey 1950s suit and tie. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"ab_p1": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) tired thin 1930s Texas sharecropper mother in a faded print dress; 2) lanky 1930s Texas sharecropper father in overalls and a battered hat; 3) young woman age 20 in a 1940s dress. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"mother",
+"father",
+"sister"
+],
+"kind": "bust3"
+},
+"ab_p2": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) US Army WW2 soldier, friendly older man with a moustache, M1 helmet; 2) 1940s US Army recruiting sergeant in uniform; 3) 1950s young woman in a neat blouse. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"tipton",
+"recruiter",
+"wife"
+],
+"kind": "bust3"
+}
+},
+"billy": {
+"kb_boy": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Billy the Kid, skinny young American with light brown hair, slightly buck front teeth, grey-blue eyes, cheerful face, age 12, in a plain shirt and suspenders. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"kb_teen": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Billy the Kid, skinny young American with light brown hair, slightly buck front teeth, grey-blue eyes, cheerful face, age 15, thin, in a dirty shirt and cap. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"kb_kid": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Billy the Kid, skinny young American with light brown hair, slightly buck front teeth, grey-blue eyes, cheerful face, age 18, cowboy in a wide grey sombrero-style hat, vest and bandana. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"kb_kid2": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Billy the Kid, skinny young American with light brown hair, slightly buck front teeth, grey-blue eyes, cheerful face, age 21, outlaw in a wide grey hat and dark vest. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"kb_p1": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) cheerful Irish-American woman in a plain 1870s dress, curly hair; 2) young English rancher age 24 in a tweed jacket and hat, kind face; 3) very tall thin 1880s lawman with a black moustache, black hat, sheriff badge. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"catherine",
+"tunstall",
+"garrett"
+],
+"kind": "bust3"
+},
+"kb_p2": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) 1880s governor with a grey beard in a black frock coat; 2) big mean deputy with a moustache and a hat; 3) stern thin man in an 1870s miner's clothes and hat. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"wallace",
+"olinger",
+"antrim"
+],
+"kind": "bust3"
+}
+},
+"musashi": {
+"mb_boy": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, feudal Japan around 1600. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Miyamoto Musashi, a tall rugged Japanese swordsman with untidy long black hair tied loosely back, thick dark eyebrows, intense eyes, strong jaw, an original design, age 13, a wiry tough boy in a plain grey kimono. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"mb_ronin": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, feudal Japan around 1600. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Miyamoto Musashi, a tall rugged Japanese swordsman with untidy long black hair tied loosely back, thick dark eyebrows, intense eyes, strong jaw, an original design, age 20, wandering ronin in a worn dark blue kimono. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"mb_two": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, feudal Japan around 1600. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Miyamoto Musashi, a tall rugged Japanese swordsman with untidy long black hair tied loosely back, thick dark eyebrows, intense eyes, strong jaw, an original design, age 21, ronin in a dark blue kimono with a headband. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"mb_island": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, feudal Japan around 1600. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Miyamoto Musashi, a tall rugged Japanese swordsman with untidy long black hair tied loosely back, thick dark eyebrows, intense eyes, strong jaw, an original design, age 28, in a dark kimono with sleeves tied back, headband. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"mb_old": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, feudal Japan around 1600. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Miyamoto Musashi, a tall rugged Japanese swordsman with untidy long black hair tied loosely back, thick dark eyebrows, intense eyes, strong jaw, an original design, age 60, old with long grey hair and beard, plain brown robe. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"mb_p1": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, feudal Japan around 1600. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) stern Japanese martial artist father with a moustache in a dark kimono; 2) kind elderly Buddhist priest with shaved head in grey robes; 3) elegant samurai swordmaster in a fine white and black kimono. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"father",
+"dorin",
+"seijuro"
+],
+"kind": "bust3"
+},
+"mb_p2": {
+"prompt": "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions, feudal Japan around 1600. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) handsome samurai with long hair in a red kimono; 2) proud arrogant samurai in a brown kimono; 3) Japanese lord in formal court robes. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"kojiro",
+"kihei",
+"lord"
+],
+"kind": "bust3"
+}
+},
+"caesar": {
+"cb_boy": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Julius Caesar, slim Roman man with a sharp face, dark eyes, short dark hair combed forward, clean-shaven, age 15, in a white boy's toga with a purple border. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"cb_young": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Julius Caesar, slim Roman man with a sharp face, dark eyes, short dark hair combed forward, clean-shaven, age 20, in a plain tunic and cloak. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"cb_pirate": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Julius Caesar, slim Roman man with a sharp face, dark eyes, short dark hair combed forward, clean-shaven, age 25, in a fine white tunic and red cloak. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"cb_general": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Julius Caesar, slim Roman man with a sharp face, dark eyes, short dark hair combed forward, clean-shaven, age 45, Roman general in a muscled bronze cuirass and a long red cloak. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"cb_dictator": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. A character sheet: the same character drawn 3 times; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing. Character: Julius Caesar, slim Roman man with a sharp face, dark eyes, short dark hair combed forward, clean-shaven, age 55, thinning hair and a laurel wreath, purple-bordered toga. Drawings in order: 1) three-quarter view turned to the right, calm, mouth closed; 2) three-quarter view turned to the right, talking, mouth open, serious; 3) three-quarter view turned to the left, worried frown, mouth closed. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"r",
+"talk",
+"l"
+],
+"kind": "bust3"
+},
+"cb_p1": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) strict elegant Roman mother in a stola, hair in a bun; 2) cruel old Roman dictator with a blotchy red face in a toga; 3) heavy Roman general with a round face and a forelock of hair, red cloak. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"aurelia",
+"sulla",
+"pompey"
+],
+"kind": "bust3"
+},
+"cb_p2": {
+"prompt": "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon. Three different people side by side; each drawing is a medium shot from the top of the head down to the middle of the chest, as tall as the full image height, the head near the top edge and the chest cut off flat by the bottom edge of the image, shoulders fully inside the drawing; every person in three-quarter view turned to the left, mouth closed. People in order: 1) young Egyptian queen with a gold headdress; 2) serious young Roman senator in a toga; 3) Gallic king with a long blond moustache and a winged helmet. Exactly 3 drawings side by side in one row, clearly separated with empty white space, same scale, plain pure white background. No hands raised, no held items in front of the face. No text, no captions, no labels, no frame, no shadows, no background scenery.",
+"names": [
+"cleopatra",
+"brutus",
+"vercingetorix"
+],
+"kind": "bust3"
+}
+}
+}

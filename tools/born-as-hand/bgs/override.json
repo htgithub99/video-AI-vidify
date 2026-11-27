@@ -1,0 +1,69 @@
+{
+"bg_missouri_forest_trail": {
+"horizon": 560
+},
+"bg_west_bank_interior": {
+"horizon": 590
+},
+"bg_west_cabin_interior": {
+"horizon": 420
+},
+"bg_west_camp_night": {
+"horizon": 520
+},
+"bg_west_cemetery": {
+"horizon": 400
+},
+"bg_west_prairie": {
+"horizon": 480
+},
+"bg_west_railroad": {
+"horizon": 470
+},
+"bg_wyoming_governor_office": {
+"horizon": 400
+},
+"bg_home_front": {
+"horizon": 600,
+"ground": [
+900,
+900,
+900
+]
+},
+"bg_ww_country_road": {
+"horizon": 530
+},
+"bg_ww_steppe": {
+"horizon": 620
+},
+"bg_alps_pass": {
+"horizon": 560
+},
+"bg_ancient_battlefield": {
+"horizon": 330,
+"ground": [
+640,
+620,
+640
+]
+},
+"bg_mediterranean_harbor": {
+"ground": [
+820,
+820,
+820
+]
+},
+"bg_rome_camp": {
+"horizon": 680,
+"ground": [
+900,
+860,
+900
+]
+},
+"bg_rome_colosseum_arena": {
+"horizon": 662
+}
+}

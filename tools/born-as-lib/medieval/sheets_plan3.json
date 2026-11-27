@@ -1,0 +1,774 @@
+{
+ "sheets": [
+  {
+   "id": "med_soldiers",
+   "kind": "person",
+   "era": "medieval",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "medieval_knight_full_plate_armor",
+     1.75,
+     "medieval knight in full plate armor walking with sword"
+    ],
+    [
+     "medieval_knight_standing_sword_point",
+     1.75,
+     "medieval knight standing with sword point down and shield"
+    ],
+    [
+     "manatarms_halberd",
+     1.75,
+     "man-at-arms with halberd"
+    ],
+    [
+     "english_longbowman_longbow",
+     1.75,
+     "English longbowman with longbow"
+    ],
+    [
+     "crossbowman_crossbow",
+     1.75,
+     "crossbowman with crossbow"
+    ],
+    [
+     "medieval_spearman_kite_shield",
+     1.75,
+     "medieval spearman with kite shield"
+    ],
+    [
+     "templar_knight_white_surcoat_red",
+     1.75,
+     "Templar knight with white surcoat and red cross"
+    ],
+    [
+     "viking_warrior_round_shield_axe",
+     1.75,
+     "Viking warrior with round shield and axe"
+    ],
+    [
+     "saracen_warrior_scimitar_turban_helmet",
+     1.75,
+     "Saracen warrior with scimitar and turban helmet"
+    ],
+    [
+     "mongol_warrior_foot_bow",
+     1.75,
+     "Mongol warrior on foot with bow"
+    ]
+   ]
+  },
+  {
+   "id": "med_act",
+   "kind": "person",
+   "era": "medieval",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "medieval_knight_charging_sword_raised",
+     1.75,
+     "medieval knight charging with sword raised"
+    ],
+    [
+     "longbowman_drawing_bow_shoot",
+     1.75,
+     "longbowman drawing a bow to shoot"
+    ],
+    [
+     "medieval_soldier_blocking_shield",
+     1.75,
+     "medieval soldier blocking with a shield"
+    ],
+    [
+     "wounded_medieval_soldier_lying_ground",
+     0.6,
+     "wounded medieval soldier lying on the ground"
+    ],
+    [
+     "knight_kneeling_being_knighted",
+     1.2,
+     "knight kneeling being knighted"
+    ],
+    [
+     "two_knights_dueling_swords_pair",
+     1.8,
+     "two knights dueling with swords as one pair"
+    ],
+    [
+     "medieval_soldier_carrying_banner_symbols",
+     1.75,
+     "medieval soldier carrying a banner without symbols"
+    ],
+    [
+     "medieval_soldier_walking_sword_shoulder",
+     1.75,
+     "medieval soldier walking with sword on shoulder"
+    ],
+    [
+     "medieval_soldier_knees_surrendering",
+     1.2,
+     "medieval soldier on knees surrendering"
+    ],
+    [
+     "viking_warrior_charging_axe_raised",
+     1.75,
+     "Viking warrior charging with axe raised"
+    ]
+   ]
+  },
+  {
+   "id": "med_civ",
+   "kind": "person",
+   "era": "medieval",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "medieval_king_crown_royal_robe",
+     1.7,
+     "medieval king with crown and royal robe"
+    ],
+    [
+     "medieval_queen_crown_gown",
+     1.7,
+     "medieval queen with crown and gown"
+    ],
+    [
+     "medieval_princess_long_dress",
+     1.7,
+     "medieval princess in long dress"
+    ],
+    [
+     "medieval_monk_brown_robe",
+     1.7,
+     "medieval monk in brown robe"
+    ],
+    [
+     "medieval_bishop_mitre_staff",
+     1.7,
+     "medieval bishop with mitre and staff"
+    ],
+    [
+     "medieval_peasant_man_hoe",
+     1.7,
+     "medieval peasant man with hoe"
+    ],
+    [
+     "medieval_peasant_woman_basket",
+     1.7,
+     "medieval peasant woman with basket"
+    ],
+    [
+     "medieval_blacksmith_hammer_apron",
+     1.7,
+     "medieval blacksmith with hammer and apron"
+    ],
+    [
+     "medieval_merchant_purse",
+     1.7,
+     "medieval merchant with purse"
+    ],
+    [
+     "court_jester",
+     1.7,
+     "court jester"
+    ]
+   ]
+  },
+  {
+   "id": "med_civ2",
+   "kind": "person",
+   "era": "medieval",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "medieval_bard_playing_lute",
+     1.7,
+     "medieval bard playing a lute"
+    ],
+    [
+     "medieval_town_guard_spear",
+     1.7,
+     "medieval town guard with spear"
+    ],
+    [
+     "medieval_peasant_child",
+     1.2,
+     "medieval peasant child"
+    ],
+    [
+     "old_peasant_woman_cane",
+     1.7,
+     "old peasant woman with a cane"
+    ],
+    [
+     "medieval_nun",
+     1.7,
+     "medieval nun"
+    ],
+    [
+     "medieval_alchemist_holding_flask",
+     1.7,
+     "medieval alchemist holding a flask"
+    ],
+    [
+     "miller_carrying_flour_sack",
+     1.7,
+     "miller carrying a flour sack"
+    ],
+    [
+     "shepherd_crook",
+     1.7,
+     "shepherd with crook"
+    ],
+    [
+     "medieval_baker_bread",
+     1.7,
+     "medieval baker with bread"
+    ],
+    [
+     "medieval_executioner_hoodfree_axeman_black",
+     1.7,
+     "medieval executioner hood-free axeman with black clothes"
+    ]
+   ]
+  },
+  {
+   "id": "med_mounted",
+   "kind": "animal",
+   "era": "medieval",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 2.6,
+   "items": [
+    [
+     "knight_armored_horse_walking",
+     2.6,
+     "knight on armored horse walking"
+    ],
+    [
+     "knight_horse_charging_lance",
+     2.6,
+     "knight on horse charging with lance"
+    ],
+    [
+     "mongol_horse_archer_shooting_while",
+     2.6,
+     "Mongol horse archer shooting while galloping"
+    ],
+    [
+     "saracen_rider_horse_scimitar",
+     2.6,
+     "Saracen rider on horse with scimitar"
+    ],
+    [
+     "king_riding_white_horse",
+     2.6,
+     "king riding a white horse"
+    ],
+    [
+     "viking_chieftain_horse",
+     2.6,
+     "Viking chieftain on horse"
+    ]
+   ]
+  },
+  {
+   "id": "med_animals",
+   "kind": "animal",
+   "era": "medieval",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.0,
+   "items": [
+    [
+     "warhorse_caparison_rider",
+     1.7,
+     "warhorse with caparison without rider"
+    ],
+    [
+     "plow_horse",
+     1.6,
+     "plow horse"
+    ],
+    [
+     "pig",
+     0.7,
+     "pig"
+    ],
+    [
+     "chicken",
+     0.4,
+     "chicken"
+    ],
+    [
+     "goose",
+     0.5,
+     "goose"
+    ],
+    [
+     "cow",
+     1.4,
+     "cow"
+    ],
+    [
+     "sheep",
+     0.8,
+     "sheep"
+    ],
+    [
+     "wolf",
+     0.8,
+     "wolf"
+    ],
+    [
+     "falcon",
+     0.3,
+     "falcon"
+    ],
+    [
+     "bear",
+     1.3,
+     "bear"
+    ]
+   ]
+  },
+  {
+   "id": "med_vehicles",
+   "kind": "vehicle",
+   "era": "medieval",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 3.0,
+   "items": [
+    [
+     "medieval_trebuchet",
+     9.0,
+     "medieval trebuchet"
+    ],
+    [
+     "medieval_siege_tower",
+     12.0,
+     "medieval siege tower"
+    ],
+    [
+     "medieval_battering_ram_roof",
+     3.0,
+     "medieval battering ram with roof"
+    ],
+    [
+     "horsedrawn_wooden_cart_driver",
+     2.2,
+     "horse-drawn wooden cart with driver"
+    ],
+    [
+     "hay_wagon_pulled_by_ox",
+     2.5,
+     "hay wagon pulled by an ox"
+    ],
+    [
+     "royal_horsedrawn_carriage",
+     2.6,
+     "royal horse-drawn carriage"
+    ]
+   ]
+  },
+  {
+   "id": "med_ships",
+   "kind": "ship",
+   "era": "medieval",
+   "cols": 2,
+   "rows": 2,
+   "heightM": 10.0,
+   "items": [
+    [
+     "viking_longship_striped_sail_shields",
+     10.0,
+     "Viking longship with striped sail and shields"
+    ],
+    [
+     "medieval_cog_ship_sail",
+     10.0,
+     "medieval cog ship with one sail"
+    ],
+    [
+     "mediterranean_galley_oars",
+     10.0,
+     "Mediterranean galley with oars"
+    ],
+    [
+     "carrack_sailing_ship_three_masts",
+     20.0,
+     "carrack sailing ship with three masts"
+    ]
+   ]
+  },
+  {
+   "id": "med_props",
+   "kind": "prop",
+   "era": "medieval",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.5,
+   "items": [
+    [
+     "medieval_sword",
+     1.0,
+     "medieval sword"
+    ],
+    [
+     "kite_shield",
+     1.0,
+     "kite shield"
+    ],
+    [
+     "heater_shield_blank_design",
+     0.9,
+     "heater shield with blank design"
+    ],
+    [
+     "knight_helmet_great_helm",
+     0.35,
+     "knight helmet great helm"
+    ],
+    [
+     "battle_axe",
+     0.9,
+     "battle axe"
+    ],
+    [
+     "mace",
+     0.7,
+     "mace"
+    ],
+    [
+     "longbow_arrows",
+     1.8,
+     "longbow and arrows"
+    ],
+    [
+     "crossbow",
+     0.9,
+     "crossbow"
+    ],
+    [
+     "war_banner_pole_symbols",
+     3.0,
+     "war banner on pole without symbols"
+    ],
+    [
+     "treasure_chest_gold",
+     0.6,
+     "treasure chest with gold"
+    ],
+    [
+     "wooden_barrel",
+     0.9,
+     "wooden barrel"
+    ],
+    [
+     "stack_firewood",
+     0.6,
+     "stack of firewood"
+    ],
+    [
+     "iron_cauldron_fire",
+     0.8,
+     "iron cauldron on fire"
+    ],
+    [
+     "anvil",
+     0.7,
+     "anvil"
+    ],
+    [
+     "royal_crown",
+     0.2,
+     "royal crown"
+    ],
+    [
+     "goblet",
+     0.2,
+     "goblet"
+    ],
+    [
+     "candle_holder_candles",
+     0.4,
+     "candle holder with candles"
+    ],
+    [
+     "book_blank_cover",
+     0.3,
+     "book with blank cover"
+    ]
+   ]
+  },
+  {
+   "id": "med_structures",
+   "kind": "structure",
+   "era": "medieval",
+   "cols": 4,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "castle_gate_portcullis",
+     10.0,
+     "castle gate with portcullis"
+    ],
+    [
+     "round_stone_tower",
+     15.0,
+     "round stone tower"
+    ],
+    [
+     "wooden_palisade_gate",
+     4.0,
+     "wooden palisade with gate"
+    ],
+    [
+     "knight_tournament_pavilion_tent",
+     4.0,
+     "knight tournament pavilion tent"
+    ],
+    [
+     "medieval_market_stall",
+     4.0,
+     "medieval market stall"
+    ],
+    [
+     "stone_well",
+     1.2,
+     "stone well"
+    ],
+    [
+     "wooden_pillory",
+     2.0,
+     "wooden pillory"
+    ],
+    [
+     "windmill",
+     12.0,
+     "windmill"
+    ]
+   ]
+  },
+  {
+   "id": "med_buildings",
+   "kind": "building",
+   "era": "medieval",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 12.0,
+   "items": [
+    [
+     "stone_castle_towers",
+     30.0,
+     "stone castle with towers"
+    ],
+    [
+     "gothic_cathedral",
+     40.0,
+     "gothic cathedral"
+    ],
+    [
+     "halftimbered_town_house",
+     12.0,
+     "half-timbered town house"
+    ],
+    [
+     "peasant_hut_thatched_roof",
+     5.0,
+     "peasant hut with thatched roof"
+    ],
+    [
+     "medieval_tavern_hanging_sign_letters",
+     12.0,
+     "medieval tavern with hanging sign without letters"
+    ],
+    [
+     "watermill_wheel",
+     8.0,
+     "watermill with wheel"
+    ]
+   ]
+  },
+  {
+   "id": "med_nature",
+   "kind": "nature",
+   "era": "medieval",
+   "cols": 6,
+   "rows": 2,
+   "heightM": 8.0,
+   "items": [
+    [
+     "big_oak_tree",
+     14.0,
+     "big oak tree"
+    ],
+    [
+     "birch_tree",
+     12.0,
+     "birch tree"
+    ],
+    [
+     "spruce_tree",
+     14.0,
+     "spruce tree"
+    ],
+    [
+     "willow_tree",
+     10.0,
+     "willow tree"
+    ],
+    [
+     "apple_tree",
+     5.0,
+     "apple tree"
+    ],
+    [
+     "dead_tree",
+     8.0,
+     "dead tree"
+    ],
+    [
+     "hedge_bush",
+     1.2,
+     "hedge bush"
+    ],
+    [
+     "wild_flowers_bush",
+     0.6,
+     "wild flowers bush"
+    ],
+    [
+     "haystack",
+     2.0,
+     "haystack"
+    ],
+    [
+     "tree_stump",
+     0.6,
+     "tree stump"
+    ],
+    [
+     "mossy_boulder",
+     1.5,
+     "mossy boulder"
+    ],
+    [
+     "fallen_log",
+     0.6,
+     "fallen log"
+    ]
+   ]
+  },
+  {
+   "id": "bg_castle_courtyard",
+   "bgs": [
+    [
+     "bg_castle_courtyard",
+     "medieval",
+     "Castle courtyard with stone walls, towers and wooden stairs"
+    ]
+   ]
+  },
+  {
+   "id": "bg_throne_room",
+   "bgs": [
+    [
+     "bg_throne_room",
+     "medieval",
+     "Medieval throne room with banners, pillars and a throne"
+    ]
+   ]
+  },
+  {
+   "id": "bg_med_village",
+   "bgs": [
+    [
+     "bg_med_village",
+     "medieval",
+     "Medieval village street with timber houses and muddy road"
+    ]
+   ]
+  },
+  {
+   "id": "bg_tavern_interior",
+   "bgs": [
+    [
+     "bg_tavern_interior",
+     "medieval",
+     "Medieval tavern interior with tables, fireplace and barrels"
+    ]
+   ]
+  },
+  {
+   "id": "bg_med_battlefield",
+   "bgs": [
+    [
+     "bg_med_battlefield",
+     "medieval",
+     "Open field battlefield with a castle on a hill far away"
+    ]
+   ]
+  },
+  {
+   "id": "bg_forest_road",
+   "bgs": [
+    [
+     "bg_forest_road",
+     "medieval",
+     "Forest road through old oaks in daylight"
+    ]
+   ]
+  },
+  {
+   "id": "bg_monastery",
+   "bgs": [
+    [
+     "bg_monastery",
+     "medieval",
+     "Monastery cloister with arches and garden"
+    ]
+   ]
+  },
+  {
+   "id": "bg_siege_walls",
+   "bgs": [
+    [
+     "bg_siege_walls",
+     "medieval",
+     "Castle walls and towers seen from outside with a moat"
+    ]
+   ]
+  },
+  {
+   "id": "bg_viking_fjord",
+   "bgs": [
+    [
+     "bg_viking_fjord",
+     "medieval",
+     "Norwegian fjord with Viking village and longhouses"
+    ]
+   ]
+  },
+  {
+   "id": "bg_jerusalem_walls",
+   "bgs": [
+    [
+     "bg_jerusalem_walls",
+     "medieval",
+     "Desert city walls of Jerusalem in the Crusades era"
+    ]
+   ]
+  }
+ ]
+}

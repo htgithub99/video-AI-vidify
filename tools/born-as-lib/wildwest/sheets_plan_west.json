@@ -1,0 +1,1390 @@
+{
+ "sheets": [
+  {
+   "id": "west_outlaws",
+   "kind": "person",
+   "era": "wildwest",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.78,
+   "items": [
+    [
+     "wild_west_outlaw_duster_coat",
+     1.78,
+     "Wild West outlaw in duster coat and cowboy hat walking with revolver holstered"
+    ],
+    [
+     "wild_west_outlaw_bandana_over",
+     1.78,
+     "Wild West outlaw with bandana over his face holding a revolver"
+    ],
+    [
+     "wild_west_outlaw_standing_winchester",
+     1.78,
+     "Wild West outlaw standing with Winchester rifle on shoulder"
+    ],
+    [
+     "young_ragged_wild_west_outlaw",
+     1.78,
+     "young ragged Wild West outlaw in torn clothes and battered hat"
+    ],
+    [
+     "wild_west_gang_leader_black",
+     1.78,
+     "Wild West gang leader in black coat and black hat"
+    ],
+    [
+     "wild_west_outlaw_drawing_revolver",
+     1.78,
+     "Wild West outlaw drawing a revolver from the holster"
+    ],
+    [
+     "wild_west_outlaw_aiming_revolver",
+     1.78,
+     "Wild West outlaw aiming a revolver with both hands"
+    ],
+    [
+     "wild_west_outlaw_counting_stolen",
+     1.78,
+     "Wild West outlaw counting stolen money"
+    ],
+    [
+     "mexican_bandit_sombrero_bandolier",
+     1.78,
+     "Mexican bandit with sombrero and bandolier"
+    ],
+    [
+     "female_wild_west_outlaw_riding",
+     1.78,
+     "female Wild West outlaw in riding skirt with revolver"
+    ]
+   ]
+  },
+  {
+   "id": "west_outlaws_act",
+   "kind": "person",
+   "era": "wildwest",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.78,
+   "items": [
+    [
+     "wild_west_outlaw_running_away",
+     1.78,
+     "Wild West outlaw running away looking back"
+    ],
+    [
+     "wild_west_outlaw_crouching_behind",
+     1.2,
+     "Wild West outlaw crouching behind cover firing a revolver"
+    ],
+    [
+     "wild_west_outlaw_lying_prone",
+     0.5,
+     "Wild West outlaw lying prone aiming a rifle"
+    ],
+    [
+     "wounded_wild_west_outlaw_sitting",
+     1.0,
+     "wounded Wild West outlaw sitting holding his bleeding side"
+    ],
+    [
+     "wild_west_outlaw_hands_tied",
+     1.78,
+     "Wild West outlaw with hands tied behind his back walking"
+    ],
+    [
+     "wild_west_outlaw_lying_dead",
+     0.5,
+     "Wild West outlaw lying dead on the ground face up"
+    ],
+    [
+     "wild_west_outlaw_sleeping_ground",
+     0.5,
+     "Wild West outlaw sleeping on the ground under a blanket"
+    ],
+    [
+     "wild_west_outlaw_sitting_by",
+     1.0,
+     "Wild West outlaw sitting by a campfire eating from a tin plate"
+    ],
+    [
+     "wild_west_outlaw_raising_hands",
+     1.78,
+     "Wild West outlaw raising hands in surrender"
+    ],
+    [
+     "wild_west_outlaw_shot_back",
+     1.78,
+     "Wild West outlaw shot in the back falling forward"
+    ],
+    [
+     "cowboy_hat_falling",
+     0.2,
+     "hat"
+    ],
+    [
+     "campfire",
+     0.6,
+     "campfire"
+    ]
+   ],
+   "splitNames": [
+    "wild_west_outlaw_running_away",
+    "wild_west_outlaw_crouching_behind",
+    "wild_west_outlaw_lying_prone",
+    "wounded_wild_west_outlaw_sitting",
+    "wild_west_outlaw_hands_tied",
+    "wild_west_outlaw_raising_hands",
+    "cowboy_hat_falling",
+    "wild_west_outlaw_lying_dead",
+    "wild_west_outlaw_sleeping_ground",
+    "wild_west_outlaw_sitting_by",
+    "campfire",
+    "wild_west_outlaw_shot_back"
+   ]
+  },
+  {
+   "id": "west_law",
+   "kind": "person",
+   "era": "wildwest",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.8,
+   "items": [
+    [
+     "wild_west_sheriff_star_badge",
+     1.8,
+     "Wild West sheriff with star badge and revolver standing"
+    ],
+    [
+     "wild_west_sheriff_walking_hand",
+     1.8,
+     "Wild West sheriff walking with hand near holster"
+    ],
+    [
+     "wild_west_deputy_shotgun",
+     1.8,
+     "Wild West deputy with shotgun"
+    ],
+    [
+     "us_marshal_long_coat_badge",
+     1.8,
+     "US Marshal in long coat with badge and rifle"
+    ],
+    [
+     "wild_west_bounty_hunter_poncho",
+     1.8,
+     "Wild West bounty hunter in poncho with rifle"
+    ],
+    [
+     "wild_west_sheriff_aiming_revolver",
+     1.8,
+     "Wild West sheriff aiming a revolver"
+    ],
+    [
+     "wild_west_texas_ranger_rifle",
+     1.8,
+     "Wild West Texas Ranger with rifle"
+    ],
+    [
+     "wild_west_judge_black_suit",
+     1.8,
+     "Wild West judge in black suit with gavel"
+    ],
+    [
+     "wild_west_hangman_executioner_plain",
+     1.8,
+     "Wild West hangman executioner in plain clothes holding a rope"
+    ],
+    [
+     "pinkerton_detective_bowler_hat_suit",
+     1.8,
+     "Pinkerton detective in bowler hat and suit"
+    ]
+   ]
+  },
+  {
+   "id": "west_town",
+   "kind": "person",
+   "era": "wildwest",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.72,
+   "items": [
+    [
+     "wild_west_saloon_keeper_apron",
+     1.72,
+     "Wild West saloon keeper with apron and mustache"
+    ],
+    [
+     "wild_west_saloon_girl_ruffled",
+     1.72,
+     "Wild West saloon girl in ruffled dress"
+    ],
+    [
+     "wild_west_shopkeeper_apron_sleeve",
+     1.72,
+     "Wild West shopkeeper with apron and sleeve garters"
+    ],
+    [
+     "wild_west_banker_suit_pocket",
+     1.72,
+     "Wild West banker in suit with pocket watch"
+    ],
+    [
+     "wild_west_blacksmith_hammer",
+     1.72,
+     "Wild West blacksmith with hammer"
+    ],
+    [
+     "wild_west_preacher_black_bible",
+     1.72,
+     "Wild West preacher in black with bible"
+    ],
+    [
+     "wild_west_town_doctor_black",
+     1.72,
+     "Wild West town doctor with black bag and spectacles"
+    ],
+    [
+     "wild_west_newspaper_editor_visor",
+     1.72,
+     "Wild West newspaper editor with visor"
+    ],
+    [
+     "wild_west_stagecoach_driver_whip",
+     1.72,
+     "Wild West stagecoach driver with whip"
+    ],
+    [
+     "wild_west_bartender_polishing_glass",
+     1.72,
+     "Wild West bartender polishing a glass"
+    ]
+   ]
+  },
+  {
+   "id": "west_frontier",
+   "kind": "person",
+   "era": "wildwest",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "poor_frontier_farmer_patched_overalls",
+     1.7,
+     "poor frontier farmer in patched overalls and straw hat"
+    ],
+    [
+     "frontier_mother_long_faded_dress",
+     1.7,
+     "frontier mother in long faded dress and bonnet"
+    ],
+    [
+     "ragged_frontier_boy_barefoot",
+     1.25,
+     "ragged frontier boy barefoot"
+    ],
+    [
+     "frontier_girl_plain_dress_bonnet",
+     1.2,
+     "frontier girl in plain dress and bonnet"
+    ],
+    [
+     "frontier_baby_wrapped_blanket_being",
+     1.7,
+     "frontier baby wrapped in a blanket being held by mother"
+    ],
+    [
+     "gold_prospector_miner_pickaxe_pan",
+     1.7,
+     "gold prospector miner with pickaxe and pan"
+    ],
+    [
+     "cattle_cowboy_lasso_chaps",
+     1.7,
+     "cattle cowboy with lasso and chaps"
+    ],
+    [
+     "old_frontier_man_long_gray",
+     1.7,
+     "old frontier man with long gray beard and cane"
+    ],
+    [
+     "chinese_railroad_worker_straw_hat",
+     1.7,
+     "Chinese railroad worker with straw hat and hammer"
+    ],
+    [
+     "african_american_cowboy_rope_hat",
+     1.7,
+     "African American cowboy with rope and hat"
+    ]
+   ]
+  },
+  {
+   "id": "west_frontier2",
+   "kind": "person",
+   "era": "wildwest",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.72,
+   "items": [
+    [
+     "frontier_settler_family_three_walking",
+     1.75,
+     "frontier settler family of three walking together"
+    ],
+    [
+     "sick_frontier_man_coughing_blanket",
+     1.72,
+     "sick frontier man coughing with blanket on shoulders"
+    ],
+    [
+     "frontier_widow_black_mourning_dress",
+     1.72,
+     "frontier widow in black mourning dress"
+    ],
+    [
+     "orphan_boy_oversized_clothes_holding",
+     1.25,
+     "orphan boy in oversized clothes holding bread"
+    ],
+    [
+     "frontier_farmer_plowing_behind_horse",
+     1.8,
+     "frontier farmer plowing behind a horse"
+    ],
+    [
+     "frontier_woman_washing_clothes_tub",
+     1.2,
+     "frontier woman washing clothes in a tub"
+    ],
+    [
+     "wild_west_mail_rider_pony",
+     1.72,
+     "Wild West mail rider of the Pony Express standing"
+    ],
+    [
+     "wild_west_train_engineer_cap",
+     1.72,
+     "Wild West train engineer with cap"
+    ],
+    [
+     "wild_west_town_crowd_five",
+     1.75,
+     "Wild West town crowd of five people watching"
+    ],
+    [
+     "wild_west_undertaker_measuring_tape",
+     1.72,
+     "Wild West undertaker measuring with tape, tall black hat"
+    ]
+   ]
+  },
+  {
+   "id": "west_military_native",
+   "kind": "person",
+   "era": "wildwest",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.78,
+   "items": [
+    [
+     "us_cavalry_trooper_1870s_blue",
+     1.78,
+     "US cavalry trooper 1870s in blue uniform and slouch hat with carbine"
+    ],
+    [
+     "us_cavalry_officer_saber_gauntlets",
+     1.78,
+     "US cavalry officer with saber and gauntlets"
+    ],
+    [
+     "us_cavalry_soldier_foot_firing",
+     1.2,
+     "US cavalry soldier on foot firing a carbine kneeling"
+    ],
+    [
+     "plains_native_american_man_buckskin",
+     1.78,
+     "Plains Native American man in buckskin with bow, respectful accurate depiction"
+    ],
+    [
+     "plains_native_american_chief_feather",
+     1.78,
+     "Plains Native American chief with feather headdress, respectful accurate depiction"
+    ],
+    [
+     "plains_native_american_woman_decorated",
+     1.78,
+     "Plains Native American woman in decorated buckskin dress, respectful accurate depiction"
+    ],
+    [
+     "apache_scout_headband_rifle_respectful",
+     1.78,
+     "Apache scout with headband and rifle, respectful accurate depiction"
+    ],
+    [
+     "native_american_boy_respectful_accurate",
+     1.2,
+     "Native American boy, respectful accurate depiction"
+    ],
+    [
+     "army_scout_fringed_buckskin_jacket",
+     1.78,
+     "army scout in fringed buckskin jacket"
+    ],
+    [
+     "mexican_vaquero_sombrero_lasso",
+     1.78,
+     "Mexican vaquero with sombrero and lasso"
+    ]
+   ]
+  },
+  {
+   "id": "west_mounted",
+   "kind": "animal",
+   "era": "wildwest",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 2.5,
+   "items": [
+    [
+     "cowboy_riding_brown_horse_walk",
+     2.5,
+     "cowboy riding a brown horse at a walk"
+    ],
+    [
+     "outlaw_galloping_black_horse_firing",
+     2.5,
+     "outlaw galloping on a black horse firing a revolver backward"
+    ],
+    [
+     "sheriff_riding_horse_trot",
+     2.5,
+     "sheriff riding a horse at a trot"
+    ],
+    [
+     "us_cavalry_trooper_galloping_horse",
+     2.5,
+     "US cavalry trooper galloping on horse with saber"
+    ],
+    [
+     "native_american_rider_pinto_horse",
+     2.5,
+     "Native American rider on a pinto horse without saddle, respectful accurate depiction"
+    ],
+    [
+     "bounty_hunter_horse_leading_captured",
+     2.5,
+     "bounty hunter on horse leading a captured outlaw on foot by a rope"
+    ]
+   ]
+  },
+  {
+   "id": "west_animals",
+   "kind": "animal",
+   "era": "wildwest",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.4,
+   "items": [
+    [
+     "saddled_brown_horse_standing",
+     1.6,
+     "saddled brown horse standing"
+    ],
+    [
+     "saddled_black_horse_standing",
+     1.6,
+     "saddled black horse standing"
+    ],
+    [
+     "pack_mule_supplies",
+     1.4,
+     "pack mule with supplies"
+    ],
+    [
+     "longhorn_cattle",
+     1.5,
+     "longhorn cattle"
+    ],
+    [
+     "american_bison_buffalo",
+     1.8,
+     "American bison buffalo"
+    ],
+    [
+     "coyote",
+     0.6,
+     "coyote"
+    ],
+    [
+     "rattlesnake_coiled",
+     0.3,
+     "rattlesnake coiled"
+    ],
+    [
+     "vulture_sitting",
+     0.6,
+     "vulture sitting"
+    ],
+    [
+     "skinny_stray_dog",
+     0.6,
+     "skinny stray dog"
+    ],
+    [
+     "hen_chicks",
+     0.3,
+     "hen and chicks"
+    ]
+   ]
+  },
+  {
+   "id": "west_vehicles",
+   "kind": "vehicle",
+   "era": "wildwest",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 2.5,
+   "items": [
+    [
+     "stagecoach_pulled_by_four_horses",
+     2.6,
+     "stagecoach pulled by four horses with driver"
+    ],
+    [
+     "covered_wagon_prairie_schooner_pulled",
+     3.0,
+     "covered wagon prairie schooner pulled by oxen"
+    ],
+    [
+     "chuckwagon",
+     2.5,
+     "chuckwagon"
+    ],
+    [
+     "buckboard_wagon_horse_driver",
+     2.2,
+     "buckboard wagon with horse and driver"
+    ],
+    [
+     "mine_cart_rails",
+     1.2,
+     "mine cart on rails"
+    ],
+    [
+     "horsedrawn_hearse_wagon",
+     2.6,
+     "horse-drawn hearse wagon"
+    ]
+   ]
+  },
+  {
+   "id": "west_trains",
+   "kind": "vehicle",
+   "era": "wildwest",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "1870s_american_steam_locomotive_cowcatcher",
+     4.5,
+     "1870s American steam locomotive with cowcatcher and tall smokestack"
+    ],
+    [
+     "1870s_passenger_railroad_car",
+     4.0,
+     "1870s passenger railroad car"
+    ],
+    [
+     "1870s_mail_express_railroad_car",
+     4.0,
+     "1870s mail and express railroad car with safe"
+    ],
+    [
+     "cattle_railroad_car",
+     4.0,
+     "cattle railroad car"
+    ],
+    [
+     "caboose",
+     4.0,
+     "caboose"
+    ],
+    [
+     "railroad_handcar_two_workers",
+     1.8,
+     "railroad handcar with two workers"
+    ]
+   ]
+  },
+  {
+   "id": "west_guns",
+   "kind": "prop",
+   "era": "wildwest",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.3,
+   "items": [
+    [
+     "colt_single_action_revolver",
+     0.3,
+     "Colt single action revolver"
+    ],
+    [
+     "winchester_lever_action_rifle",
+     1.0,
+     "Winchester lever action rifle"
+    ],
+    [
+     "double_barrel_shotgun",
+     1.1,
+     "double barrel shotgun"
+    ],
+    [
+     "gun_belt_holster_bullets",
+     0.5,
+     "gun belt with holster and bullets"
+    ],
+    [
+     "derringer_pistol",
+     0.12,
+     "derringer pistol"
+    ],
+    [
+     "bowie_knife",
+     0.35,
+     "bowie knife"
+    ],
+    [
+     "box_bullets",
+     0.1,
+     "box of bullets"
+    ],
+    [
+     "dynamite_sticks_bundle_fuse",
+     0.25,
+     "dynamite sticks bundle with fuse"
+    ],
+    [
+     "handcuffs",
+     0.15,
+     "handcuffs"
+    ],
+    [
+     "coiled_lasso_rope",
+     0.4,
+     "coiled lasso rope"
+    ],
+    [
+     "sheriff_star_badge",
+     0.08,
+     "sheriff star badge"
+    ],
+    [
+     "cowboy_hat",
+     0.2,
+     "cowboy hat"
+    ],
+    [
+     "spurs",
+     0.1,
+     "spurs"
+    ],
+    [
+     "saddle",
+     0.6,
+     "saddle"
+    ],
+    [
+     "horse_saddlebags",
+     0.4,
+     "horse saddlebags"
+    ],
+    [
+     "canteen",
+     0.3,
+     "canteen"
+    ],
+    [
+     "bedroll_blanket",
+     0.3,
+     "bedroll blanket"
+    ],
+    [
+     "lantern",
+     0.4,
+     "lantern"
+    ]
+   ]
+  },
+  {
+   "id": "west_props",
+   "kind": "prop",
+   "era": "wildwest",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.5,
+   "items": [
+    [
+     "blank_wanted_poster_nailed_board",
+     0.6,
+     "blank wanted poster nailed to a board without any text"
+    ],
+    [
+     "money_sack_dollar_sign",
+     0.4,
+     "money sack with dollar sign"
+    ],
+    [
+     "stack_dollar_bills",
+     0.1,
+     "stack of dollar bills"
+    ],
+    [
+     "gold_nuggets_pile",
+     0.1,
+     "gold nuggets pile"
+    ],
+    [
+     "whisky_bottle",
+     0.3,
+     "whisky bottle"
+    ],
+    [
+     "tin_cup_coffee",
+     0.12,
+     "tin cup of coffee"
+    ],
+    [
+     "tin_plate_beans",
+     0.05,
+     "tin plate with beans"
+    ],
+    [
+     "hardtack_crackers_beef_jerky",
+     0.08,
+     "hardtack crackers and beef jerky"
+    ],
+    [
+     "cast_iron_pot_campfire",
+     0.8,
+     "cast iron pot on campfire"
+    ],
+    [
+     "bank_safe",
+     1.3,
+     "bank safe"
+    ],
+    [
+     "old_bible",
+     0.2,
+     "old bible"
+    ],
+    [
+     "pocket_watch",
+     0.06,
+     "pocket watch"
+    ],
+    [
+     "playing_cards_poker_chips_table",
+     0.8,
+     "playing cards and poker chips on table"
+    ],
+    [
+     "doctor_bag_tools_bullet_pliers",
+     0.3,
+     "doctor bag with tools and bullet pliers"
+    ],
+    [
+     "bandage_whisky_for_wound",
+     0.3,
+     "bandage and whisky for wound"
+    ],
+    [
+     "wooden_grave_cross",
+     1.0,
+     "wooden grave cross"
+    ],
+    [
+     "noose_rope_hanging",
+     1.5,
+     "noose rope hanging"
+    ],
+    [
+     "wooden_water_trough",
+     0.7,
+     "wooden water trough"
+    ],
+    [
+     "bandage_roll",
+     0.1,
+     ""
+    ],
+    [
+     "medicine_bottle",
+     0.25,
+     ""
+    ]
+   ],
+   "splitNames": [
+    "blank_wanted_poster_nailed_board",
+    "money_sack_dollar_sign",
+    "stack_dollar_bills",
+    "gold_nuggets_pile",
+    "whisky_bottle",
+    "tin_cup_coffee",
+    "tin_plate_beans",
+    "hardtack_crackers_beef_jerky",
+    "cast_iron_pot_campfire",
+    "bank_safe",
+    "old_bible",
+    "pocket_watch",
+    "playing_cards_poker_chips_table",
+    "doctor_bag_tools_bullet_pliers",
+    "bandage_roll",
+    "medicine_bottle",
+    "wooden_grave_cross",
+    "noose_rope_hanging",
+    "wooden_water_trough"
+   ]
+  },
+  {
+   "id": "west_props2",
+   "kind": "prop",
+   "era": "wildwest",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.6,
+   "items": [
+    [
+     "hitching_post",
+     1.0,
+     "hitching post"
+    ],
+    [
+     "wooden_barrel",
+     0.9,
+     "wooden barrel"
+    ],
+    [
+     "hay_bale",
+     0.6,
+     "hay bale"
+    ],
+    [
+     "wagon_wheel",
+     1.2,
+     "wagon wheel"
+    ],
+    [
+     "wooden_crates_stack",
+     1.2,
+     "wooden crates stack"
+    ],
+    [
+     "wooden_bench",
+     0.5,
+     "wooden bench"
+    ],
+    [
+     "rocking_chair",
+     1.0,
+     "rocking chair"
+    ],
+    [
+     "piano_saloon_upright",
+     1.3,
+     "piano saloon upright"
+    ],
+    [
+     "round_saloon_table_chairs",
+     1.0,
+     "round saloon table with chairs"
+    ],
+    [
+     "oil_lamp_table",
+     0.4,
+     "oil lamp on table"
+    ],
+    [
+     "wooden_bucket",
+     0.4,
+     "wooden bucket"
+    ],
+    [
+     "washtub",
+     0.4,
+     "washtub"
+    ],
+    [
+     "wood_pile_axe",
+     0.8,
+     "wood pile and axe"
+    ],
+    [
+     "anvil",
+     0.7,
+     "anvil"
+    ],
+    [
+     "mining_pickaxe_shovel",
+     1.0,
+     "mining pickaxe and shovel"
+    ],
+    [
+     "gold_pan",
+     0.05,
+     "gold pan"
+    ],
+    [
+     "telegraph_pole",
+     7.0,
+     "telegraph pole"
+    ],
+    [
+     "windmill_water_pump",
+     9.0,
+     "windmill water pump"
+    ],
+    [
+     "pickaxe",
+     1.0,
+     ""
+    ],
+    [
+     "mining_shovel",
+     1.0,
+     ""
+    ]
+   ],
+   "splitNames": [
+    "hitching_post",
+    "wooden_barrel",
+    "hay_bale",
+    "wagon_wheel",
+    "wooden_crates_stack",
+    "wooden_bench",
+    "rocking_chair",
+    "piano_saloon_upright",
+    "round_saloon_table_chairs",
+    "oil_lamp_table",
+    "wooden_bucket",
+    "washtub",
+    "wood_pile_axe",
+    "anvil",
+    "pickaxe",
+    "mining_shovel",
+    "gold_pan",
+    "telegraph_pole",
+    "windmill_water_pump"
+   ]
+  },
+  {
+   "id": "west_buildings",
+   "kind": "building",
+   "era": "wildwest",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 7.0,
+   "items": [
+    [
+     "wild_west_saloon_swinging_doors",
+     7.0,
+     "Wild West saloon with swinging doors and balcony, blank sign"
+    ],
+    [
+     "wild_west_general_store_porch",
+     7.0,
+     "Wild West general store with porch, blank sign"
+    ],
+    [
+     "wild_west_bank_building_made",
+     7.0,
+     "Wild West bank building made of brick, blank sign"
+    ],
+    [
+     "wild_west_sheriff_office_jail",
+     7.0,
+     "Wild West sheriff office and jail, blank sign"
+    ],
+    [
+     "wild_west_church_bell_tower",
+     12.0,
+     "Wild West church with bell tower"
+    ],
+    [
+     "wild_west_livery_stable_barn",
+     7.0,
+     "Wild West livery stable and barn"
+    ]
+   ]
+  },
+  {
+   "id": "west_buildings2",
+   "kind": "building",
+   "era": "wildwest",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 6.0,
+   "items": [
+    [
+     "ramshackle_frontier_log_cabin",
+     4.0,
+     "ramshackle frontier log cabin"
+    ],
+    [
+     "sod_house_prairie",
+     3.5,
+     "sod house on the prairie"
+    ],
+    [
+     "frontier_farmhouse_wooden",
+     7.0,
+     "frontier farmhouse wooden"
+    ],
+    [
+     "wild_west_hotel_two_stories",
+     9.0,
+     "Wild West hotel two stories, blank sign"
+    ],
+    [
+     "railroad_water_tower",
+     10.0,
+     "railroad water tower"
+    ],
+    [
+     "wild_west_train_station_depot",
+     6.0,
+     "Wild West train station depot, blank sign"
+    ]
+   ]
+  },
+  {
+   "id": "west_structures",
+   "kind": "structure",
+   "era": "wildwest",
+   "cols": 4,
+   "rows": 2,
+   "heightM": 3.0,
+   "items": [
+    [
+     "wooden_gallows_steps",
+     5.0,
+     "wooden gallows with steps"
+    ],
+    [
+     "wooden_corral_fence_section",
+     1.5,
+     "wooden corral fence section"
+    ],
+    [
+     "mine_entrance_rock_timber_frame",
+     4.0,
+     "mine entrance in rock with timber frame"
+    ],
+    [
+     "outhouse",
+     2.5,
+     "outhouse"
+    ],
+    [
+     "wooden_well_roof",
+     2.5,
+     "wooden well with roof"
+    ],
+    [
+     "canvas_tent_prospector_camp",
+     2.2,
+     "canvas tent of a prospector camp"
+    ],
+    [
+     "boardwalk_porch_section_posts",
+     3.0,
+     "boardwalk porch section with posts"
+    ],
+    [
+     "cemetery_fence_gate",
+     1.5,
+     "cemetery fence with gate"
+    ]
+   ]
+  },
+  {
+   "id": "west_nature",
+   "kind": "nature",
+   "era": "wildwest",
+   "cols": 6,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "saguaro_cactus",
+     5.0,
+     "saguaro cactus"
+    ],
+    [
+     "prickly_pear_cactus",
+     1.0,
+     "prickly pear cactus"
+    ],
+    [
+     "dead_desert_tree",
+     5.0,
+     "dead desert tree"
+    ],
+    [
+     "sagebrush_bush",
+     0.8,
+     "sagebrush bush"
+    ],
+    [
+     "tumbleweed",
+     0.7,
+     "tumbleweed"
+    ],
+    [
+     "red_rock_boulder",
+     2.0,
+     "red rock boulder"
+    ],
+    [
+     "red_rock_pinnacle",
+     15.0,
+     "red rock pinnacle"
+    ],
+    [
+     "cottonwood_tree",
+     12.0,
+     "cottonwood tree"
+    ],
+    [
+     "ponderosa_pine",
+     15.0,
+     "ponderosa pine"
+    ],
+    [
+     "prairie_grass_clump",
+     0.8,
+     "prairie grass clump"
+    ],
+    [
+     "cow_skull_ground",
+     0.3,
+     "cow skull on the ground"
+    ],
+    [
+     "desert_rocks_pile",
+     0.6,
+     "desert rocks pile"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_town_street",
+   "bgs": [
+    [
+     "bg_west_town_street",
+     "wildwest",
+     "Wild West town main street with dirt road, saloon, store and wooden boardwalks, blank signs"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_town_night",
+   "bgs": [
+    [
+     "bg_west_town_night",
+     "wildwest",
+     "Wild West town street at night with lit windows and lanterns, blank signs"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_desert",
+   "bgs": [
+    [
+     "bg_west_desert",
+     "wildwest",
+     "Southwestern desert with saguaro cacti and red mesas under a hot sky"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_canyon",
+   "bgs": [
+    [
+     "bg_west_canyon",
+     "wildwest",
+     "Red rock canyon with a narrow dirt trail"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_monument_valley",
+   "bgs": [
+    [
+     "bg_west_monument_valley",
+     "wildwest",
+     "Monument Valley buttes at sunset"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_prairie",
+   "bgs": [
+    [
+     "bg_west_prairie",
+     "wildwest",
+     "Endless grass prairie with a small log cabin far away"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_camp_night",
+   "bgs": [
+    [
+     "bg_west_camp_night",
+     "wildwest",
+     "Outlaw camp at night in rocky hills under stars with campfire glow"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_saloon_interior",
+   "bgs": [
+    [
+     "bg_west_saloon_interior",
+     "wildwest",
+     "Saloon interior with bar counter, bottles, piano and tables"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_jail_interior",
+   "bgs": [
+    [
+     "bg_west_jail_interior",
+     "wildwest",
+     "Sheriff office interior with jail cells and a desk"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_cabin_interior",
+   "bgs": [
+    [
+     "bg_west_cabin_interior",
+     "wildwest",
+     "Poor frontier log cabin interior with fireplace and simple bed"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_railroad",
+   "bgs": [
+    [
+     "bg_west_railroad",
+     "wildwest",
+     "Railroad tracks across the desert towards mountains"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_river_crossing",
+   "bgs": [
+    [
+     "bg_west_river_crossing",
+     "wildwest",
+     "Shallow river crossing with cottonwood trees and hills"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_mountains_snow",
+   "bgs": [
+    [
+     "bg_west_mountains_snow",
+     "wildwest",
+     "Snowy Rocky Mountain pass with pine forest"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_cemetery",
+   "bgs": [
+    [
+     "bg_west_cemetery",
+     "wildwest",
+     "Boot Hill cemetery on a hill with wooden crosses"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_ranch",
+   "bgs": [
+    [
+     "bg_west_ranch",
+     "wildwest",
+     "Cattle ranch with corral, barn and windmill"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_gold_camp",
+   "bgs": [
+    [
+     "bg_west_gold_camp",
+     "wildwest",
+     "Gold rush mining camp with tents and sluice boxes by a creek"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_town_square_gallows",
+   "bgs": [
+    [
+     "bg_west_town_square_gallows",
+     "wildwest",
+     "Town square with an empty wooden gallows and buildings around, blank signs"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_badlands",
+   "bgs": [
+    [
+     "bg_west_badlands",
+     "wildwest",
+     "Dry badlands with eroded hills and dead trees"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_bank_interior",
+   "bgs": [
+    [
+     "bg_west_bank_interior",
+     "wildwest",
+     "Bank interior with teller counter, bars and a big safe"
+    ]
+   ]
+  },
+  {
+   "id": "bg_west_stagecoach_road",
+   "bgs": [
+    [
+     "bg_west_stagecoach_road",
+     "wildwest",
+     "Dusty stagecoach road through hills with rocks for an ambush"
+    ]
+   ]
+  }
+ ]
+}

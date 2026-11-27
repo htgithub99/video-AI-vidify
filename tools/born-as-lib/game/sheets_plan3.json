@@ -1,0 +1,654 @@
+{
+ "sheets": [
+  {
+   "id": "game_heroes",
+   "kind": "person",
+   "era": "game",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "fantasy_knight_hero_sword_shield",
+     1.75,
+     "fantasy knight hero with sword and shield"
+    ],
+    [
+     "fantasy_wizard_staff_pointed_hat",
+     1.75,
+     "fantasy wizard with staff and pointed hat"
+    ],
+    [
+     "elf_archer_bow",
+     1.75,
+     "elf archer with bow"
+    ],
+    [
+     "rogue_thief_daggers_hood",
+     1.75,
+     "rogue thief with daggers and hood"
+    ],
+    [
+     "cleric_priestess_holy_mace",
+     1.75,
+     "cleric priestess with holy mace"
+    ],
+    [
+     "barbarian_big_axe",
+     1.75,
+     "barbarian with big axe"
+    ],
+    [
+     "paladin_golden_armor",
+     1.75,
+     "paladin in golden armor"
+    ],
+    [
+     "druid_wooden_staff_leaves",
+     1.75,
+     "druid with wooden staff and leaves"
+    ],
+    [
+     "necromancer_dark_robes_skull_staff",
+     1.75,
+     "necromancer in dark robes with skull staff"
+    ],
+    [
+     "bard_lute",
+     1.75,
+     "bard with lute"
+    ]
+   ]
+  },
+  {
+   "id": "game_heroes_act",
+   "kind": "person",
+   "era": "game",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "fantasy_knight_attacking_sword",
+     1.75,
+     "fantasy knight attacking with sword"
+    ],
+    [
+     "wizard_casting_fireball_hands",
+     1.75,
+     "wizard casting a fireball from his hands"
+    ],
+    [
+     "elf_archer_shooting_arrow",
+     1.75,
+     "elf archer shooting an arrow"
+    ],
+    [
+     "rogue_sneaking_crouched",
+     1.2,
+     "rogue sneaking crouched"
+    ],
+    [
+     "barbarian_jumping_axe",
+     1.75,
+     "barbarian jumping with axe"
+    ],
+    [
+     "cleric_healing_glowing_hands",
+     1.75,
+     "cleric healing with glowing hands"
+    ],
+    [
+     "fantasy_hero_running",
+     1.75,
+     "fantasy hero running"
+    ],
+    [
+     "fantasy_hero_defeated_lying",
+     0.6,
+     "fantasy hero defeated lying"
+    ],
+    [
+     "fantasy_hero_raising_sword_victory",
+     1.75,
+     "fantasy hero raising sword in victory"
+    ],
+    [
+     "fantasy_hero_blocking_shield",
+     1.75,
+     "fantasy hero blocking with shield"
+    ]
+   ]
+  },
+  {
+   "id": "game_monsters",
+   "kind": "person",
+   "era": "game",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.6,
+   "items": [
+    [
+     "green_goblin_dagger",
+     1.1,
+     "green goblin with dagger"
+    ],
+    [
+     "orc_warrior_axe",
+     2.0,
+     "orc warrior with axe"
+    ],
+    [
+     "cave_troll_club",
+     3.0,
+     "cave troll with club"
+    ],
+    [
+     "skeleton_warrior_sword",
+     1.6,
+     "skeleton warrior with sword"
+    ],
+    [
+     "zombie_walking",
+     1.6,
+     "zombie walking"
+    ],
+    [
+     "blue_slime_monster",
+     0.6,
+     "blue slime monster"
+    ],
+    [
+     "giant_spider",
+     1.2,
+     "giant spider"
+    ],
+    [
+     "werewolf",
+     2.0,
+     "werewolf"
+    ],
+    [
+     "vampire_cloak",
+     1.6,
+     "vampire in cloak"
+    ],
+    [
+     "ghost_floating",
+     1.6,
+     "ghost floating"
+    ]
+   ]
+  },
+  {
+   "id": "game_big_monsters",
+   "kind": "animal",
+   "era": "game",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 8.0,
+   "items": [
+    [
+     "red_dragon_breathing_fire",
+     10.0,
+     "red dragon breathing fire"
+    ],
+    [
+     "giant_ogre",
+     5.0,
+     "giant ogre"
+    ],
+    [
+     "stone_golem",
+     4.0,
+     "stone golem"
+    ],
+    [
+     "minotaur_axe",
+     3.0,
+     "minotaur with axe"
+    ],
+    [
+     "threeheaded_hydra",
+     8.0,
+     "three-headed hydra"
+    ],
+    [
+     "griffin",
+     3.0,
+     "griffin"
+    ]
+   ]
+  },
+  {
+   "id": "game_scifi_chars",
+   "kind": "person",
+   "era": "game",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.8,
+   "items": [
+    [
+     "space_marine_power_armor",
+     1.8,
+     "space marine in power armor"
+    ],
+    [
+     "astronaut_spacesuit",
+     1.8,
+     "astronaut in spacesuit"
+    ],
+    [
+     "humanoid_robot",
+     2.0,
+     "humanoid robot"
+    ],
+    [
+     "female_android",
+     1.8,
+     "female android"
+    ],
+    [
+     "grey_alien",
+     1.3,
+     "grey alien"
+    ],
+    [
+     "alien_warrior_plasma_rifle",
+     2.2,
+     "alien warrior with plasma rifle"
+    ],
+    [
+     "cyborg_soldier",
+     1.8,
+     "cyborg soldier"
+    ],
+    [
+     "starship_pilot",
+     1.8,
+     "starship pilot"
+    ],
+    [
+     "scifi_scientist_lab_coat",
+     1.8,
+     "sci-fi scientist in lab coat"
+    ],
+    [
+     "mech_suit_pilot_exo_suit",
+     2.5,
+     "mech suit pilot in exo suit"
+    ]
+   ]
+  },
+  {
+   "id": "game_scifi_veh",
+   "kind": "vehicle",
+   "era": "game",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "scifi_space_fighter_ship",
+     4.0,
+     "sci-fi space fighter ship"
+    ],
+    [
+     "space_cruiser_battleship",
+     40.0,
+     "space cruiser battleship"
+    ],
+    [
+     "planetary_rover",
+     2.5,
+     "planetary rover"
+    ],
+    [
+     "twolegged_combat_mech_walker",
+     8.0,
+     "two-legged combat mech walker"
+    ],
+    [
+     "hover_bike_rider",
+     1.8,
+     "hover bike with rider"
+    ],
+    [
+     "flying_saucer_ufo",
+     4.0,
+     "flying saucer UFO"
+    ]
+   ]
+  },
+  {
+   "id": "game_items",
+   "kind": "prop",
+   "era": "game",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.5,
+   "items": [
+    [
+     "treasure_chest_open_gold",
+     0.7,
+     "treasure chest open with gold"
+    ],
+    [
+     "red_health_potion_bottle",
+     0.25,
+     "red health potion bottle"
+    ],
+    [
+     "blue_mana_potion_bottle",
+     0.25,
+     "blue mana potion bottle"
+    ],
+    [
+     "pile_gold_coins",
+     0.3,
+     "pile of gold coins"
+    ],
+    [
+     "large_gemstone",
+     0.2,
+     "large gemstone"
+    ],
+    [
+     "golden_key",
+     0.15,
+     "golden key"
+    ],
+    [
+     "magic_staff_crystal",
+     1.8,
+     "magic staff with crystal"
+    ],
+    [
+     "glowing_magic_sword",
+     1.1,
+     "glowing magic sword"
+    ],
+    [
+     "round_shield_emblem_letters",
+     0.9,
+     "round shield with emblem without letters"
+    ],
+    [
+     "fantasy_bow",
+     1.3,
+     "fantasy bow"
+    ],
+    [
+     "magic_scroll",
+     0.4,
+     "magic scroll"
+    ],
+    [
+     "red_heart_icon",
+     0.3,
+     "red heart icon"
+    ],
+    [
+     "gold_star_icon",
+     0.3,
+     "gold star icon"
+    ],
+    [
+     "round_bomb_fuse",
+     0.4,
+     "round bomb with fuse"
+    ],
+    [
+     "wooden_crate",
+     0.8,
+     "wooden crate"
+    ],
+    [
+     "spellbook",
+     0.3,
+     "spellbook"
+    ],
+    [
+     "glowing_mushroom",
+     0.4,
+     "glowing mushroom"
+    ],
+    [
+     "magic_portal_arch",
+     3.0,
+     "magic portal arch"
+    ]
+   ]
+  },
+  {
+   "id": "game_buildings",
+   "kind": "building",
+   "era": "game",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 12.0,
+   "items": [
+    [
+     "wizard_tower",
+     25.0,
+     "wizard tower"
+    ],
+    [
+     "fantasy_tavern",
+     8.0,
+     "fantasy tavern"
+    ],
+    [
+     "dungeon_entrance_rock",
+     5.0,
+     "dungeon entrance in rock"
+    ],
+    [
+     "ancient_ruined_temple",
+     10.0,
+     "ancient ruined temple"
+    ],
+    [
+     "fairy_tale_cottage",
+     6.0,
+     "fairy tale cottage"
+    ],
+    [
+     "giant_crystal_formation",
+     6.0,
+     "giant crystal formation"
+    ]
+   ]
+  },
+  {
+   "id": "game_nature",
+   "kind": "nature",
+   "era": "game",
+   "cols": 6,
+   "rows": 2,
+   "heightM": 6.0,
+   "items": [
+    [
+     "magic_glowing_tree",
+     10.0,
+     "magic glowing tree"
+    ],
+    [
+     "giant_mushroom",
+     5.0,
+     "giant mushroom"
+    ],
+    [
+     "crystal_cluster",
+     2.0,
+     "crystal cluster"
+    ],
+    [
+     "glowing_flower_plant",
+     1.0,
+     "glowing flower plant"
+    ],
+    [
+     "twisted_dead_tree",
+     8.0,
+     "twisted dead tree"
+    ],
+    [
+     "fantasy_pine_tree",
+     12.0,
+     "fantasy pine tree"
+    ],
+    [
+     "floating_rock_island",
+     6.0,
+     "floating rock island"
+    ],
+    [
+     "lava_rock",
+     1.5,
+     "lava rock"
+    ],
+    [
+     "ice_crystal_rock",
+     2.0,
+     "ice crystal rock"
+    ],
+    [
+     "alien_plant",
+     3.0,
+     "alien plant"
+    ],
+    [
+     "vinecovered_pillar_ruin",
+     4.0,
+     "vine-covered pillar ruin"
+    ],
+    [
+     "cartoon_bush",
+     1.2,
+     "cartoon bush"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_fantasy_forest",
+   "bgs": [
+    [
+     "bg_game_fantasy_forest",
+     "game",
+     "Enchanted fantasy forest with glowing mushrooms and light rays"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_dungeon",
+   "bgs": [
+    [
+     "bg_game_dungeon",
+     "game",
+     "Stone dungeon corridor with torches and chains"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_castle_hall",
+   "bgs": [
+    [
+     "bg_game_castle_hall",
+     "game",
+     "Fantasy castle great hall with banners"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_lava_cave",
+   "bgs": [
+    [
+     "bg_game_lava_cave",
+     "game",
+     "Volcanic lava cave with rivers of lava"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_ice_land",
+   "bgs": [
+    [
+     "bg_game_ice_land",
+     "game",
+     "Frozen ice land with glaciers and aurora"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_space_station",
+   "bgs": [
+    [
+     "bg_game_space_station",
+     "game",
+     "Sci-fi space station corridor interior"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_alien_planet",
+   "bgs": [
+    [
+     "bg_game_alien_planet",
+     "game",
+     "Alien planet surface with two moons and strange rocks"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_scifi_city",
+   "bgs": [
+    [
+     "bg_game_scifi_city",
+     "game",
+     "Futuristic city with flying cars and towers"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_desert_ruins",
+   "bgs": [
+    [
+     "bg_game_desert_ruins",
+     "game",
+     "Fantasy desert with ancient ruins and sand"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_sky_islands",
+   "bgs": [
+    [
+     "bg_game_sky_islands",
+     "game",
+     "Floating sky islands with waterfalls and clouds"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_village",
+   "bgs": [
+    [
+     "bg_game_village",
+     "game",
+     "Cozy fantasy village with cottages and a well"
+    ]
+   ]
+  },
+  {
+   "id": "bg_game_graveyard",
+   "bgs": [
+    [
+     "bg_game_graveyard",
+     "game",
+     "Spooky graveyard at night with full moon"
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,5756 @@
+{
+ "total": 561.356,
+ "series": "SPARTACUS · ROME",
+ "turnT": 18.403,
+ "recapT": 526.83,
+ "beats": [
+  {
+   "t0": 0.0,
+   "kind": "scene",
+   "bg": "bg_rome_colosseum_arena",
+   "cast": [
+    {
+     "sprite": "spartacus_young_thraex",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_arena__gladiator_murmillo",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "SPARTACUS",
+    "sub": "c. 100 - 71 BC",
+    "cast": 0,
+    "t": 1.635
+   },
+   "focusT": 1.635
+  },
+  {
+   "t0": 3.501,
+   "kind": "bust",
+   "bg": "bg_rome_colosseum_arena",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "flash": 3.501,
+   "shake": 3.501
+  },
+  {
+   "t0": 5.09,
+   "kind": "scene",
+   "bg": "bg_sp_kitchen",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_cleaver",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 7.068,
+   "kind": "bust",
+   "bg": "bg_sp_kitchen",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 8.157,
+   "kind": "scene",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_point",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rebel_farm",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 10.93,
+   "kind": "bust",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 10.93,
+   "shake": 10.93
+  },
+  {
+   "t0": 13.004,
+   "kind": "scene",
+   "bg": "bg_sp_appian",
+   "cast": [
+    {
+     "sprite": "rome_legion__legionary_stand",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 14.483,
+   "kind": "bust",
+   "bg": "bg_sp_appian",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "6,000",
+    "sub": "on the road to Rome",
+    "at": null,
+    "t": 14.483
+   },
+   "dark": 0.35
+  },
+  {
+   "t0": 18.403,
+   "kind": "rew",
+   "bg": "bg_sp_appian",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 19.555,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 20.749,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO SWORD",
+    "sub": "",
+    "at": null,
+    "t": 21.024
+   }
+  },
+  {
+   "t0": 21.866,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO CHAINS",
+    "sub": "",
+    "at": null,
+    "t": 22.223
+   }
+  },
+  {
+   "t0": 23.329,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO ARMY",
+    "sub": "",
+    "at": null,
+    "t": 23.615
+   }
+  },
+  {
+   "t0": 24.393,
+   "kind": "scene",
+   "bg": "bg_rome_forum",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 25.348,
+   "kind": "scene",
+   "bg": "bg_rome_forum",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 27.759,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER I",
+    "title": "Thrace"
+   }
+  },
+  {
+   "t0": 29.709,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "c. 100 BC",
+    "sub": "year unknown",
+    "corner": "tl",
+    "t": 29.709
+   },
+   "warm": true
+  },
+  {
+   "t0": 35.102,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "THRACE",
+    "sub": "",
+    "at": null,
+    "t": 36.195
+   }
+  },
+  {
+   "t0": 37.016,
+   "kind": "paper",
+   "bg": "bg_sp_thrace",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "BULGARIA",
+      "size": "h",
+      "t": 38.684
+     },
+     {
+      "text": "GREECE & TURKEY",
+      "size": "n",
+      "t": 40.706
+     }
+    ]
+   }
+  },
+  {
+   "t0": 42.001,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 43.55
+  },
+  {
+   "t0": 44.136,
+   "kind": "paper",
+   "bg": "bg_rome_forum",
+   "cast": [
+    {
+     "sprite": "ancient_props__scroll",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "SPARTACUS",
+      "size": "h",
+      "t": 44.136
+     },
+     {
+      "text": "a Roman record",
+      "size": "n",
+      "t": 46.342
+     }
+    ]
+   }
+  },
+  {
+   "t0": 47.339,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "near_east_more__thracian_warrior_rhomphaia",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    },
+    {
+     "sprite": "ancient_animals__brown_horse_standing_saddle",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 52.246,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "CHILDHOOD",
+    "sub": "unknown",
+    "at": null,
+    "t": 55.098
+   }
+  },
+  {
+   "t0": 58.385,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_young_youth",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 20",
+    "sub": "",
+    "corner": "tl",
+    "t": 58.385
+   }
+  },
+  {
+   "t0": 62.106,
+   "kind": "scene",
+   "bg": "bg_rome_villa_interior",
+   "cast": [
+    {
+     "sprite": "ancient_props__scroll",
+     "slot": "c",
+     "place": "table",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "PLUTARCH",
+    "sub": "ancient writer",
+    "at": null,
+    "t": 62.936
+   }
+  },
+  {
+   "t0": 66.358,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_warrior_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 69.418,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_warrior_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "prophetess_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 71.845,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "prophetess_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "PROPHETESS",
+    "sub": "of Dionysus",
+    "cast": 0,
+    "t": 72.017
+   },
+   "focusT": 72.017
+  },
+  {
+   "t0": 73.17,
+   "kind": "scene",
+   "bg": "bg_sp_cell",
+   "cast": [
+    {
+     "sprite": "spartacus_young_sleep",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35,
+   "cool": true
+  },
+  {
+   "t0": 74.587,
+   "kind": "bust",
+   "bg": "bg_sp_cell",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 74.587,
+   "dark": 0.35
+  },
+  {
+   "t0": 77.572,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "prophetess_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "GREAT POWER",
+    "sub": "",
+    "at": null,
+    "t": 79.588
+   },
+   "dark": 0.2
+  },
+  {
+   "t0": 80.303,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "prophetess",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "A TERRIBLE END",
+    "sub": "",
+    "at": null,
+    "t": 81.055
+   },
+   "dark": 0.35
+  },
+  {
+   "t0": 82.404,
+   "kind": "bust",
+   "bg": "bg_sp_cell",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 84.018,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER II",
+    "title": "The Arena"
+   }
+  },
+  {
+   "t0": 85.968,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "rome_more__column_five_roman_legionaries_marching",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 87.555,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_young_auxiliary",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "AUXILIARY",
+    "sub": "hired soldier",
+    "cast": 0,
+    "t": 90.45
+   }
+  },
+  {
+   "t0": 91.614,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_warrior_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 93.615,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_slave_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 95.236,
+   "kind": "scene",
+   "bg": "bg_rome_street",
+   "cast": [
+    {
+     "sprite": "spartacus_young_chained",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "SLAVE",
+    "sub": "",
+    "at": null,
+    "t": 96.233
+   },
+   "dark": 0.2
+  },
+  {
+   "t0": 97.004,
+   "kind": "bust",
+   "bg": "bg_rome_street",
+   "cast": [
+    {
+     "sprite": "spartacus_slave_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 100.869,
+   "kind": "scene",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_young_thraex",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "CAPUA",
+    "sub": "gladiator schools",
+    "at": null,
+    "t": 101.349
+   }
+  },
+  {
+   "t0": 105.45,
+   "kind": "bust",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "batiatus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "LENTULUS BATIATUS",
+    "sub": "owner",
+    "cast": 0,
+    "t": 107.395
+   }
+  },
+  {
+   "t0": 108.967,
+   "kind": "bust",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "batiatus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 112.706,
+   "kind": "bust",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "THRAEX",
+    "sub": "Thracian fighter",
+    "cast": 0,
+    "t": 113.662
+   }
+  },
+  {
+   "t0": 116.968,
+   "kind": "scene",
+   "bg": "bg_sp_cell",
+   "cast": [
+    {
+     "sprite": "spartacus_young_sit_cell",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 119.057,
+   "kind": "scene",
+   "bg": "bg_sp_kitchen",
+   "cast": [
+    {
+     "sprite": "rome_more__roman_cook_stirring_pot",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_props__bread_loaves",
+     "slot": "cr",
+     "place": "table",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 121.593,
+   "kind": "bust",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "HORDEARII",
+    "sub": "barley men",
+    "at": null,
+    "t": 123.887
+   }
+  },
+  {
+   "t0": 125.119,
+   "kind": "scene",
+   "bg": "bg_rome_colosseum_arena",
+   "cast": [
+    {
+     "sprite": "rome_arena__gladiator_fallen",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 129.154,
+   "kind": "bust",
+   "bg": "bg_sp_cell",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 130.76,
+   "kind": "bust",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "crixus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "~200",
+    "sub": "plotters",
+    "corner": "tl",
+    "t": 130.76
+   },
+   "dark": 0.25
+  },
+  {
+   "t0": 133.856,
+   "kind": "scene",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "batiatus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 135.883,
+   "kind": "bust",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_gladiator_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "shake": 136.588
+  },
+  {
+   "t0": 137.502,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER III",
+    "title": "Breakout"
+   }
+  },
+  {
+   "t0": 139.452,
+   "kind": "scene",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "crixus",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "73 BC",
+    "sub": "Capua",
+    "corner": "tl",
+    "t": 139.452
+   },
+   "dark": 0.2
+  },
+  {
+   "t0": 142.034,
+   "kind": "bust",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 143.964,
+   "kind": "bust",
+   "bg": "bg_sp_kitchen",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "~70",
+    "sub": "gladiators",
+    "corner": "tl",
+    "t": 143.964
+   }
+  },
+  {
+   "t0": 146.338,
+   "kind": "scene",
+   "bg": "bg_sp_kitchen",
+   "cast": [
+    {
+     "sprite": "cleaver",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 147.042
+  },
+  {
+   "t0": 149.741,
+   "kind": "scene",
+   "bg": "bg_rome_street",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_cleaver",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "rome_legion_act__legionary_wounded",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 150.101,
+   "shake": 150.101
+  },
+  {
+   "t0": 151.973,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "weapon_wagon",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 156.017,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 157.796,
+   "kind": "scene",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "crixus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "oenomaus",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "MOUNT VESUVIUS",
+    "sub": "",
+    "at": null,
+    "t": 159.048
+   }
+  },
+  {
+   "t0": 160.056,
+   "kind": "paper",
+   "bg": "bg_sp_vesuvius",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "POMPEII",
+      "size": "h",
+      "t": 163.824
+     },
+     {
+      "text": "buried in 79 AD",
+      "size": "n",
+      "t": 163.546
+     }
+    ]
+   }
+  },
+  {
+   "t0": 164.194,
+   "kind": "bust",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 166.246,
+   "kind": "bust",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "crixus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "CRIXUS",
+    "sub": "Gaul",
+    "cast": 0,
+    "t": 168.806
+   }
+  },
+  {
+   "t0": 169.906,
+   "kind": "bust",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "oenomaus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "OENOMAUS",
+    "sub": "Gaul",
+    "cast": 0,
+    "t": 169.906
+   }
+  },
+  {
+   "t0": 170.874,
+   "kind": "scene",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_speech",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 174.017,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "glaber",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_legion__legionary_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "3,000 MEN",
+    "sub": "",
+    "corner": "tl",
+    "t": 177.754
+   },
+   "label": {
+    "text": "GLABER",
+    "sub": "praetor",
+    "cast": 0,
+    "t": 175.597
+   }
+  },
+  {
+   "t0": 179.358,
+   "kind": "bust",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 181.62,
+   "kind": "bust",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "focusT": 182.797
+  },
+  {
+   "t0": 184.524,
+   "kind": "bust",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 186.182,
+   "kind": "scene",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "vine_ladder",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 189.345,
+   "kind": "bust",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 192.433,
+   "kind": "scene",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_climb",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4,
+   "cool": true
+  },
+  {
+   "t0": 196.296,
+   "kind": "bust",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4,
+   "cool": true
+  },
+  {
+   "t0": 199.505,
+   "kind": "bust",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 199.982,
+   "shake": 199.982,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 201.585,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "rome_legion_act__legionary_wounded",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 204.19,
+   "kind": "bust",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 205.447,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IV",
+    "title": "An Army"
+   }
+  },
+  {
+   "t0": 207.397,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "rebel_farm",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r",
+     "crowd": 3
+    },
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 211.256,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 212.573,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "rebel_shepherd",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_animals__sheep",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 213.599,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 214.609,
+   "kind": "scene",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "rebel_farm",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 5
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "THOUSANDS",
+    "sub": "",
+    "corner": "tl",
+    "t": 214.609
+   }
+  },
+  {
+   "t0": 217.67,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "rome_legion__legate_cape",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_legion__legionary_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "VARINIUS",
+    "sub": "praetor",
+    "cast": 0,
+    "t": 220.35
+   }
+  },
+  {
+   "t0": 222.066,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "COSSINIUS",
+    "sub": "bathing",
+    "at": null,
+    "t": 223.396
+   }
+  },
+  {
+   "t0": 226.995,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "rome_legion_act__legionary_rest",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 229.283,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 232.985
+  },
+  {
+   "t0": 233.305,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 236.02,
+   "kind": "scene",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "ancient_structures__palisade_wall",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.45,
+   "cool": true
+  },
+  {
+   "t0": 239.86,
+   "kind": "scene",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "ancient_props__campfire_pot",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4,
+   "warm": true
+  },
+  {
+   "t0": 241.997,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.45,
+   "cool": true
+  },
+  {
+   "t0": 245.302,
+   "kind": "scene",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_fight",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_legion__legionary_attack",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 245.937,
+   "shake": 245.937,
+   "smoke": true
+  },
+  {
+   "t0": 248.271,
+   "kind": "bust",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "focusT": 250.16
+  },
+  {
+   "t0": 250.929,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "prophetess",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 252.467,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "GREAT POWER",
+    "sub": "",
+    "at": null,
+    "t": 252.467
+   }
+  },
+  {
+   "t0": 253.949,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 255.15,
+   "kind": "scene",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rebel_farm",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 5
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "70,000",
+    "sub": "people",
+    "corner": "tl",
+    "t": 255.15
+   }
+  },
+  {
+   "t0": 259.185,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 262.853,
+   "kind": "scene",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_props__coin_chest",
+     "slot": "cr",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 264.627,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "APPIAN",
+    "sub": "ancient writer",
+    "at": null,
+    "t": 264.627
+   }
+  },
+  {
+   "t0": 269.105,
+   "kind": "scene",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ancient_ships__roman_merchant_ship",
+     "slot": "r",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 272.737,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "IRON & BRONZE",
+    "sub": "",
+    "at": null,
+    "t": 273.136
+   },
+   "warm": true
+  },
+  {
+   "t0": 276.401,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "crixus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 279.491,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 279.491
+  },
+  {
+   "t0": 282.721,
+   "kind": "scene",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_point",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "THE ALPS",
+    "sub": "home",
+    "at": null,
+    "t": 284.777
+   }
+  },
+  {
+   "t0": 286.192,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 288.535,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    },
+    {
+     "sprite": "crixus",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 289.95,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER V",
+    "title": "Crixus"
+   }
+  },
+  {
+   "t0": 291.9,
+   "kind": "scene",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_speech",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "72 BC",
+    "sub": "",
+    "corner": "tl",
+    "t": 291.9
+   }
+  },
+  {
+   "t0": 294.233,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "2 CONSULS",
+    "sub": "2 armies",
+    "corner": "tl",
+    "t": 296.176
+   }
+  },
+  {
+   "t0": 298.551,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "crixus",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "ancient_enemies__gaul_warrior",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "30,000",
+    "sub": "men",
+    "corner": "tl",
+    "t": 298.551
+   }
+  },
+  {
+   "t0": 301.846,
+   "kind": "scene",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "rome_legion__legionary_attack",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 4
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "MOUNT GARGANUS",
+    "sub": "",
+    "at": null,
+    "t": 302.651
+   },
+   "smoke": true
+  },
+  {
+   "t0": 305.526,
+   "kind": "bust",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "flash": 305.953,
+   "dark": 0.4
+  },
+  {
+   "t0": 308.657,
+   "kind": "bust",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 308.953,
+   "shake": 308.953
+  },
+  {
+   "t0": 310.432,
+   "kind": "scene",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_ride",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "rome_legion_act__legionary_surrender",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 312.448,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 316.497,
+   "kind": "scene",
+   "bg": "bg_rome_colosseum_arena",
+   "cast": [
+    {
+     "sprite": "rome_legion__legionary_attack",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_legion_act__legionary_shield_up",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "300",
+    "sub": "prisoners",
+    "corner": "tl",
+    "t": 316.497
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 320.623,
+   "kind": "bust",
+   "bg": "bg_rome_colosseum_arena",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 322.227,
+   "kind": "scene",
+   "bg": "bg_sp_ludus",
+   "cast": [
+    {
+     "sprite": "spartacus_young_thraex",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 324.735,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 329.404,
+   "kind": "scene",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "WHO'S NEXT?",
+    "sub": "comment below",
+    "at": null,
+    "t": 330.745
+   },
+   "warm": true
+  },
+  {
+   "t0": 333.247,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 337.198,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 338.979,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VI",
+    "title": "The Alps"
+   }
+  },
+  {
+   "t0": 340.929,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 344.294,
+   "kind": "scene",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "MUTINA",
+    "sub": "foot of the Alps",
+    "at": null,
+    "t": 345.198
+   }
+  },
+  {
+   "t0": 347.473,
+   "kind": "bust",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "10,000",
+    "sub": "men",
+    "corner": "tl",
+    "t": 347.473
+   }
+  },
+  {
+   "t0": 350.939,
+   "kind": "bust",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 351.227,
+   "shake": 351.227
+  },
+  {
+   "t0": 352.255,
+   "kind": "scene",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 354.261,
+   "kind": "bust",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 356.087,
+   "kind": "bust",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 356.903,
+   "kind": "scene",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    },
+    {
+     "sprite": "rebel_farm",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 358.221,
+   "kind": "bust",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "WHY?",
+    "sub": "",
+    "at": null,
+    "t": 358.221
+   }
+  },
+  {
+   "t0": 360.379,
+   "kind": "bust",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 363.906,
+   "kind": "scene",
+   "bg": "bg_rome_forum",
+   "cast": [
+    {
+     "sprite": "ancient_structures__marble_statue",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 366.716,
+   "kind": "paper",
+   "bg": "bg_rome_villa_interior",
+   "cast": [
+    {
+     "sprite": "ancient_props__scroll",
+     "slot": "c",
+     "place": "table",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "PLUTARCH",
+      "size": "n",
+      "t": 366.952
+     },
+     {
+      "text": "APPIAN",
+      "size": "n",
+      "t": 367.405
+     },
+     {
+      "text": "NO ANSWER",
+      "size": "h",
+      "t": 368.602
+     }
+    ]
+   }
+  },
+  {
+   "t0": 369.246,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VII",
+    "title": "Crassus"
+   }
+  },
+  {
+   "t0": 371.196,
+   "kind": "scene",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_speech",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 373.203,
+   "kind": "bust",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 375.048,
+   "kind": "scene",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "crassus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 376.414,
+   "kind": "bust",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "crassus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "MARCUS CRASSUS",
+    "sub": "richest man in Rome",
+    "cast": 0,
+    "t": 376.414
+   },
+   "focusT": 376.414
+  },
+  {
+   "t0": 380.507,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "crassus",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_more__column_five_roman_legionaries_marching",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 383.564,
+   "kind": "bust",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 387.656,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "crassus",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_legion__legionary_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 4
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "DECIMATION",
+    "sub": "",
+    "at": null,
+    "t": 387.656
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 388.92,
+   "kind": "paper",
+   "bg": "bg_rome_camp",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "1 IN 10",
+      "size": "h",
+      "t": 390.581
+     }
+    ]
+   }
+  },
+  {
+   "t0": 392.587,
+   "kind": "bust",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "shake": 394.849,
+   "dark": 0.4
+  },
+  {
+   "t0": 395.563,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "crassus",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 399.49,
+   "kind": "scene",
+   "bg": "bg_roman_countryside",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_point",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "BRUTTIUM",
+    "sub": "the toe of Italy",
+    "at": null,
+    "t": 401.784
+   }
+  },
+  {
+   "t0": 402.961,
+   "kind": "scene",
+   "bg": "bg_mediterranean_harbor",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "pirate",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "PIRATES",
+    "sub": "Cilician",
+    "cast": 1,
+    "t": 404.73
+   }
+  },
+  {
+   "t0": 405.51,
+   "kind": "bust",
+   "bg": "bg_mediterranean_harbor",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "SICILY",
+    "sub": "",
+    "at": null,
+    "t": 408.002
+   }
+  },
+  {
+   "t0": 408.722,
+   "kind": "scene",
+   "bg": "bg_mediterranean_harbor",
+   "cast": [
+    {
+     "sprite": "ancient_props__coin_chest",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 409.891,
+   "kind": "bust",
+   "bg": "bg_mediterranean_harbor",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 411.518,
+   "kind": "scene",
+   "bg": "bg_mediterranean_harbor",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 413.311,
+   "kind": "bust",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 416.669,
+   "kind": "scene",
+   "bg": "bg_sp_trench",
+   "cast": [
+    {
+     "sprite": "rome_legion_act__legionary_dig",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 4
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "SEA TO SEA",
+    "sub": "",
+    "at": null,
+    "t": 420.217
+   }
+  },
+  {
+   "t0": 421.333,
+   "kind": "bust",
+   "bg": "bg_sp_trench",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 423.216,
+   "kind": "bust",
+   "bg": "bg_sp_trench",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3,
+   "cool": true
+  },
+  {
+   "t0": 424.388,
+   "kind": "scene",
+   "bg": "bg_sp_trench",
+   "cast": [
+    {
+     "sprite": "rebel_farm",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2,
+   "cool": true
+  },
+  {
+   "t0": 425.762,
+   "kind": "bust",
+   "bg": "bg_sp_trench",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4,
+   "cool": true
+  },
+  {
+   "t0": 430.714,
+   "kind": "scene",
+   "bg": "bg_sp_trench",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_point",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "rebel_shepherd",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "1/3 OF THE ARMY",
+    "sub": "",
+    "at": null,
+    "t": 432.578
+   },
+   "dark": 0.35,
+   "cool": true
+  },
+  {
+   "t0": 434.1,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VIII",
+    "title": "The River"
+   }
+  },
+  {
+   "t0": 436.05,
+   "kind": "scene",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "rome_civ__senator_toga_speech",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "71 BC",
+    "sub": "",
+    "corner": "tl",
+    "t": 436.05
+   }
+  },
+  {
+   "t0": 438.656,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "POMPEY",
+    "sub": "back from Spain",
+    "cast": 0,
+    "t": 440.546
+   }
+  },
+  {
+   "t0": 442.366,
+   "kind": "scene",
+   "bg": "bg_mediterranean_harbor",
+   "cast": [
+    {
+     "sprite": "ancient_ships__roman_trireme",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 444.658,
+   "kind": "scene",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "rome_more__column_five_roman_legionaries_marching",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "rome_more__group_six_roman_legionaries_testudo",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 448.18,
+   "kind": "bust",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "flash": 451.403,
+   "dark": 0.35,
+   "smoke": true
+  },
+  {
+   "t0": 452.65,
+   "kind": "bust",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "crassus_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 456.11,
+   "kind": "scene",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "rebel_farm",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "A WARNING",
+    "sub": "",
+    "at": null,
+    "t": 457.131
+   },
+   "dark": 0.4
+  },
+  {
+   "t0": 460.554,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 464.022,
+   "kind": "scene",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "crassus",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "SILARUS RIVER",
+    "sub": "",
+    "at": null,
+    "t": 465.231
+   }
+  },
+  {
+   "t0": 468.196,
+   "kind": "bust",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 471.557,
+   "kind": "bust",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 473.379,
+   "kind": "scene",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "dead_horse",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 473.994,
+   "shake": 473.994,
+   "dark": 0.3
+  },
+  {
+   "t0": 474.929,
+   "kind": "bust",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 477.618,
+   "kind": "scene",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "ancient_animals__white_horse_galloping_rider",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "WIN: MANY HORSES",
+    "sub": "",
+    "at": null,
+    "t": 478.103
+   }
+  },
+  {
+   "t0": 480.639,
+   "kind": "bust",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "LOSE: NO NEED",
+    "sub": "",
+    "at": null,
+    "t": 481.15
+   }
+  },
+  {
+   "t0": 483.18,
+   "kind": "scene",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_fight",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "crassus",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 486.776,
+   "kind": "bust",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 488.485,
+   "kind": "bust",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 488.839,
+   "shake": 488.839
+  },
+  {
+   "t0": 490.875,
+   "kind": "scene",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_fight",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_legion_act__legionary_shield_up",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 2
+    },
+    {
+     "sprite": "rome_legion__legionary_attack",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 493.491,
+   "kind": "bust",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "pull",
+   "keep": true,
+   "flash": 494.281,
+   "dark": 0.4
+  },
+  {
+   "t0": 495.566,
+   "kind": "scene",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "ancient_props2__gladius_sword",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 497.755,
+   "kind": "scene",
+   "bg": "bg_sp_cell",
+   "cast": [
+    {
+     "sprite": "snake",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 499.024,
+   "kind": "scene",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "prophetess",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 501.991,
+   "kind": "black",
+   "bg": "bg_sp_appian",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 502.973,
+   "kind": "bust",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_slave_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "6,000",
+    "sub": "captured",
+    "corner": "tl",
+    "t": 502.973
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 505.497,
+   "kind": "scene",
+   "bg": "bg_sp_appian",
+   "cast": [
+    {
+     "sprite": "rome_legion__legionary_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "APPIAN WAY",
+    "sub": "",
+    "at": null,
+    "t": 507.617
+   },
+   "dark": 0.35
+  },
+  {
+   "t0": 508.65,
+   "kind": "paper",
+   "bg": "bg_sp_appian",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "CAPUA",
+      "size": "n",
+      "t": 508.993
+     },
+     {
+      "text": "ROME",
+      "size": "h",
+      "t": 510.595
+     }
+    ]
+   }
+  },
+  {
+   "t0": 511.113,
+   "kind": "scene",
+   "bg": "bg_rome_camp",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 513.121,
+   "kind": "scene",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "ancient_mounted__roman_cavalry_gallop",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "5,000",
+    "sub": "more",
+    "corner": "tl",
+    "t": 513.121
+   }
+  },
+  {
+   "t0": 516.53,
+   "kind": "scene",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "pompey",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "rome_civ__senator_toga_speech",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 519.408,
+   "kind": "bust",
+   "bg": "bg_rome_senate",
+   "cast": [
+    {
+     "sprite": "spartacus_slave_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 521.639,
+   "kind": "scene",
+   "bg": "bg_rome_forum",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_point",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "REBELLION",
+    "sub": "2,000 years later",
+    "at": null,
+    "t": 525.248
+   },
+   "warm": true
+  },
+  {
+   "t0": 526.83,
+   "kind": "montage",
+   "bg": null,
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "montage": {
+    "bgs": [
+     "bg_sp_thrace",
+     "bg_sp_ludus",
+     "bg_sp_vesuvius",
+     "bg_sp_river"
+    ],
+    "caps": [
+     "THRACE",
+     "CAPUA",
+     "VESUVIUS",
+     "SILARUS"
+    ],
+    "capT": [
+     527.13,
+     527.73,
+     528.33,
+     528.93
+    ]
+   }
+  },
+  {
+   "t0": 528.008,
+   "kind": "bust",
+   "bg": "bg_sp_thrace",
+   "cast": [
+    {
+     "sprite": "spartacus_warrior_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 531.898,
+   "kind": "scene",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_point",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 535.546,
+   "kind": "scene",
+   "bg": "bg_sp_kitchen",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_cleaver",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 537.691,
+   "kind": "scene",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_climb",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 540.654,
+   "kind": "bust",
+   "bg": "bg_ancient_battlefield",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 543.916,
+   "kind": "scene",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 546.584,
+   "kind": "scene",
+   "bg": "bg_sp_river",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_fight",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 549.507,
+   "kind": "bust",
+   "bg": "bg_sp_vesuvius",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "SPARTACUS",
+    "sub": "c. 100 - 71 BC",
+    "cast": 0,
+    "t": 549.507
+   }
+  },
+  {
+   "t0": 550.697,
+   "kind": "bust",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 553.069,
+   "kind": "bust",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "FREEDOM",
+    "sub": "one march away",
+    "at": null,
+    "t": 554.149
+   }
+  },
+  {
+   "t0": 556.149,
+   "kind": "bust",
+   "bg": "bg_sp_camp",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 557.98,
+   "kind": "scene",
+   "bg": "bg_alps_pass",
+   "cast": [
+    {
+     "sprite": "spartacus_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "WHY TURN BACK?",
+    "sub": "comment below",
+    "at": null,
+    "t": 557.98
+   },
+   "endCard": {
+    "text": "WHO SHOULD BE NEXT?",
+    "sub": "Drop a name in the comments",
+    "t": 559.614
+   }
+  }
+ ],
+ "onsets": [
+  0.4,
+  0.59,
+  0.837,
+  1.141,
+  1.445,
+  1.635,
+  2.46,
+  2.703,
+  3.064,
+  3.254,
+  3.501,
+  3.862,
+  4.109,
+  4.47,
+  5.09,
+  5.352,
+  5.662,
+  5.973,
+  6.186,
+  6.447,
+  6.856,
+  7.068,
+  7.477,
+  8.157,
+  8.512,
+  8.934,
+  9.289,
+  9.644,
+  10.065,
+  10.42,
+  10.642,
+  10.93,
+  11.618,
+  12.04,
+  12.262,
+  13.004,
+  13.226,
+  13.499,
+  13.669,
+  13.891,
+  14.483,
+  14.737,
+  15.283,
+  15.478,
+  15.79,
+  16.219,
+  16.531,
+  16.784,
+  17.096,
+  17.291,
+  18.403,
+  18.643,
+  18.994,
+  19.555,
+  19.982,
+  20.118,
+  20.749,
+  21.024,
+  21.866,
+  22.223,
+  23.329,
+  23.615,
+  24.393,
+  24.677,
+  25.348,
+  25.561,
+  26.094,
+  26.435,
+  26.776,
+  27.054,
+  29.709,
+  30.071,
+  30.385,
+  30.599,
+  30.862,
+  31.225,
+  31.808,
+  32.098,
+  32.66,
+  33.059,
+  33.186,
+  33.639,
+  33.984,
+  34.383,
+  35.102,
+  35.603,
+  35.967,
+  36.195,
+  37.016,
+  37.836,
+  38.049,
+  38.44,
+  38.684,
+  39.846,
+  39.998,
+  40.462,
+  40.706,
+  41.243,
+  41.561,
+  42.001,
+  42.168,
+  42.484,
+  42.75,
+  43.017,
+  43.283,
+  43.55,
+  44.136,
+  44.736,
+  44.929,
+  45.355,
+  45.665,
+  45.916,
+  46.342,
+  46.71,
+  47.339,
+  47.645,
+  48.065,
+  48.314,
+  48.849,
+  49.097,
+  49.839,
+  50.156,
+  50.347,
+  50.768,
+  51.188,
+  51.437,
+  52.246,
+  52.481,
+  52.932,
+  53.383,
+  53.618,
+  54.015,
+  54.466,
+  54.809,
+  55.098,
+  55.977,
+  56.279,
+  56.65,
+  57.091,
+  57.323,
+  57.624,
+  58.385,
+  58.935,
+  59.505,
+  59.895,
+  60.695,
+  60.895,
+  61.445,
+  62.106,
+  62.349,
+  62.936,
+  63.636,
+  63.804,
+  64.216,
+  64.516,
+  64.815,
+  64.946,
+  65.302,
+  65.602,
+  65.733,
+  66.358,
+  66.712,
+  66.866,
+  67.286,
+  67.828,
+  68.286,
+  68.64,
+  69.418,
+  69.776,
+  70.006,
+  70.106,
+  70.378,
+  70.608,
+  70.837,
+  71.109,
+  71.339,
+  71.845,
+  72.017,
+  73.17,
+  73.418,
+  74.02,
+  74.148,
+  74.453,
+  74.587,
+  74.949,
+  75.369,
+  75.788,
+  76.094,
+  76.399,
+  76.761,
+  77.009,
+  77.572,
+  77.842,
+  78.175,
+  78.507,
+  78.653,
+  78.985,
+  79.193,
+  79.588,
+  80.303,
+  80.629,
+  80.88,
+  81.055,
+  81.758,
+  82.404,
+  82.988,
+  83.321,
+  85.968,
+  86.366,
+  86.763,
+  87.555,
+  87.862,
+  88.341,
+  88.59,
+  88.84,
+  89.204,
+  89.396,
+  89.817,
+  90.124,
+  90.316,
+  90.45,
+  90.814,
+  91.614,
+  91.946,
+  92.216,
+  93.104,
+  93.158,
+  93.615,
+  94.154,
+  94.383,
+  94.84,
+  95.236,
+  95.545,
+  96.067,
+  96.233,
+  97.004,
+  97.303,
+  97.601,
+  97.844,
+  98.142,
+  98.329,
+  98.627,
+  99.184,
+  99.298,
+  99.596,
+  99.895,
+  100.137,
+  100.324,
+  100.869,
+  101.203,
+  101.349,
+  101.684,
+  102.018,
+  102.415,
+  102.624,
+  103.219,
+  103.548,
+  103.819,
+  104.091,
+  104.739,
+  105.45,
+  105.808,
+  106.233,
+  106.456,
+  106.613,
+  106.903,
+  107.395,
+  108.021,
+  108.967,
+  109.185,
+  109.664,
+  109.947,
+  110.165,
+  110.448,
+  111.137,
+  111.25,
+  111.663,
+  112.273,
+  112.706,
+  112.96,
+  113.331,
+  113.526,
+  113.662,
+  114.366,
+  114.6,
+  114.736,
+  115.166,
+  115.536,
+  115.79,
+  115.927,
+  116.298,
+  116.968,
+  117.232,
+  117.619,
+  118.066,
+  118.269,
+  118.412,
+  119.057,
+  119.284,
+  119.511,
+  119.894,
+  120.383,
+  120.557,
+  120.889,
+  121.593,
+  122.167,
+  122.584,
+  123.001,
+  123.887,
+  124.461,
+  125.119,
+  125.384,
+  125.772,
+  126.099,
+  126.609,
+  126.874,
+  127.079,
+  127.344,
+  127.509,
+  127.855,
+  128.243,
+  129.154,
+  129.366,
+  129.577,
+  129.887,
+  130.76,
+  131.121,
+  131.368,
+  131.843,
+  132.091,
+  132.395,
+  132.585,
+  133.003,
+  133.856,
+  134.311,
+  135.023,
+  135.883,
+  136.118,
+  136.407,
+  136.588,
+  139.452,
+  140.33,
+  140.748,
+  141.231,
+  142.034,
+  142.252,
+  142.571,
+  142.839,
+  143.007,
+  143.174,
+  143.964,
+  144.286,
+  144.711,
+  144.88,
+  145.101,
+  145.373,
+  145.593,
+  146.338,
+  146.654,
+  147.042,
+  147.778,
+  148.138,
+  148.6,
+  148.915,
+  149.741,
+  149.921,
+  150.101,
+  150.364,
+  150.586,
+  150.766,
+  150.946,
+  151.168,
+  151.348,
+  151.973,
+  152.19,
+  152.471,
+  153.063,
+  153.222,
+  153.568,
+  154.044,
+  154.391,
+  154.607,
+  155.279,
+  156.017,
+  156.368,
+  156.963,
+  157.796,
+  158.115,
+  158.582,
+  159.048,
+  160.056,
+  161.876,
+  161.926,
+  162.446,
+  162.742,
+  163.295,
+  163.546,
+  163.824,
+  164.194,
+  164.479,
+  164.961,
+  165.378,
+  166.246,
+  167.116,
+  167.375,
+  167.838,
+  168.806,
+  169.443,
+  169.906,
+  170.874,
+  171.267,
+  171.807,
+  172.053,
+  172.224,
+  172.544,
+  173.157,
+  174.017,
+  174.401,
+  174.786,
+  174.954,
+  175.597,
+  176.032,
+  176.705,
+  177.507,
+  177.754,
+  178.211,
+  178.883,
+  179.358,
+  179.543,
+  180.005,
+  180.301,
+  180.708,
+  180.893,
+  181.62,
+  181.813,
+  182.237,
+  182.488,
+  182.797,
+  183.105,
+  183.414,
+  183.665,
+  184.524,
+  184.83,
+  185.088,
+  185.442,
+  185.652,
+  186.182,
+  186.464,
+  186.746,
+  187.224,
+  187.506,
+  188.049,
+  188.266,
+  188.613,
+  189.345,
+  189.595,
+  189.845,
+  190.455,
+  190.553,
+  190.803,
+  191.169,
+  191.476,
+  191.784,
+  192.433,
+  192.672,
+  193.343,
+  193.546,
+  194.001,
+  194.385,
+  194.696,
+  195.013,
+  195.429,
+  195.669,
+  196.296,
+  196.585,
+  196.819,
+  197.217,
+  197.451,
+  197.686,
+  197.921,
+  198.318,
+  198.552,
+  198.895,
+  199.505,
+  199.743,
+  199.982,
+  200.385,
+  200.569,
+  200.862,
+  201.585,
+  202.194,
+  202.477,
+  202.76,
+  203.043,
+  203.457,
+  204.19,
+  204.668,
+  207.397,
+  207.654,
+  208.089,
+  208.465,
+  208.959,
+  209.157,
+  209.414,
+  209.73,
+  209.987,
+  210.303,
+  210.56,
+  211.256,
+  211.645,
+  212.573,
+  213.599,
+  214.609,
+  215.809,
+  216.039,
+  216.461,
+  216.724,
+  217.67,
+  218.143,
+  218.704,
+  219.442,
+  220.35,
+  221.004,
+  222.066,
+  222.338,
+  222.548,
+  222.82,
+  223.396,
+  224.526,
+  224.576,
+  225.022,
+  225.231,
+  225.378,
+  225.839,
+  226.174,
+  226.447,
+  226.995,
+  227.209,
+  227.68,
+  228.214,
+  228.557,
+  229.283,
+  229.631,
+  231.413,
+  231.463,
+  231.513,
+  231.709,
+  232.123,
+  232.406,
+  232.754,
+  232.935,
+  232.985,
+  233.305,
+  233.829,
+  234.184,
+  234.371,
+  234.671,
+  234.914,
+  235.101,
+  235.4,
+  236.02,
+  236.223,
+  236.488,
+  237.19,
+  237.297,
+  237.561,
+  237.887,
+  238.334,
+  238.843,
+  239.046,
+  239.311,
+  239.86,
+  240.101,
+  240.398,
+  240.639,
+  241.214,
+  241.997,
+  242.278,
+  242.624,
+  243.035,
+  243.381,
+  243.792,
+  244.138,
+  244.354,
+  244.635,
+  245.302,
+  245.652,
+  245.937,
+  246.287,
+  246.9,
+  247.119,
+  247.469,
+  248.271,
+  248.578,
+  248.956,
+  249.546,
+  249.853,
+  250.16,
+  250.929,
+  251.384,
+  251.595,
+  252.467,
+  253.048,
+  253.949,
+  254.21,
+  254.569,
+  255.15,
+  255.396,
+  255.87,
+  256.344,
+  256.59,
+  256.837,
+  257.14,
+  257.443,
+  257.917,
+  258.448,
+  259.185,
+  259.614,
+  259.963,
+  260.392,
+  261.141,
+  261.585,
+  262.029,
+  262.853,
+  263.061,
+  263.268,
+  263.476,
+  263.636,
+  263.891,
+  264.051,
+  264.627,
+  265.367,
+  265.761,
+  266.291,
+  266.867,
+  267.152,
+  267.428,
+  267.831,
+  268.106,
+  268.446,
+  269.105,
+  269.33,
+  269.556,
+  269.989,
+  270.267,
+  270.752,
+  271.03,
+  271.203,
+  271.585,
+  271.862,
+  272.14,
+  272.737,
+  273.136,
+  273.536,
+  273.86,
+  274.757,
+  274.833,
+  275.232,
+  275.631,
+  276.401,
+  276.772,
+  277.229,
+  277.686,
+  277.972,
+  278.343,
+  278.714,
+  279.491,
+  279.969,
+  280.381,
+  280.599,
+  280.946,
+  281.163,
+  281.576,
+  281.858,
+  282.721,
+  282.975,
+  283.288,
+  283.484,
+  283.856,
+  284.191,
+  284.522,
+  284.777,
+  285.09,
+  285.344,
+  285.54,
+  286.192,
+  286.458,
+  286.969,
+  287.357,
+  287.745,
+  287.949,
+  288.535,
+  288.857,
+  289.179,
+  291.9,
+  292.606,
+  293.0,
+  293.457,
+  294.233,
+  294.523,
+  294.881,
+  295.305,
+  295.662,
+  295.886,
+  296.176,
+  296.823,
+  297.136,
+  297.426,
+  297.784,
+  298.551,
+  299.022,
+  299.557,
+  299.835,
+  300.178,
+  300.649,
+  301.248,
+  301.846,
+  302.214,
+  302.651,
+  303.566,
+  303.616,
+  304.029,
+  304.397,
+  304.972,
+  305.526,
+  305.953,
+  306.666,
+  306.717,
+  307.027,
+  307.221,
+  307.473,
+  307.725,
+  307.977,
+  308.287,
+  308.657,
+  308.953,
+  309.316,
+  309.612,
+  310.432,
+  310.784,
+  311.071,
+  311.423,
+  311.709,
+  312.448,
+  312.773,
+  313.248,
+  313.762,
+  314.608,
+  314.71,
+  314.961,
+  315.737,
+  316.497,
+  316.723,
+  317.001,
+  317.331,
+  317.766,
+  318.096,
+  318.635,
+  318.965,
+  319.243,
+  319.573,
+  319.747,
+  319.973,
+  320.623,
+  320.875,
+  321.353,
+  322.227,
+  322.435,
+  323.447,
+  323.629,
+  323.962,
+  324.233,
+  324.735,
+  325.1,
+  325.784,
+  326.116,
+  326.343,
+  326.517,
+  326.797,
+  327.023,
+  327.564,
+  327.765,
+  327.992,
+  328.376,
+  328.603,
+  328.882,
+  329.404,
+  329.627,
+  330.006,
+  330.126,
+  330.298,
+  330.573,
+  330.745,
+  331.34,
+  331.622,
+  331.746,
+  332.028,
+  332.204,
+  332.434,
+  333.247,
+  333.517,
+  333.724,
+  333.994,
+  334.326,
+  334.72,
+  335.047,
+  335.288,
+  335.931,
+  336.388,
+  337.198,
+  337.908,
+  338.127,
+  338.382,
+  340.929,
+  341.224,
+  341.656,
+  342.449,
+  342.564,
+  342.996,
+  343.496,
+  343.723,
+  344.294,
+  344.534,
+  344.774,
+  345.013,
+  345.198,
+  345.804,
+  345.999,
+  346.239,
+  346.534,
+  346.718,
+  346.958,
+  347.473,
+  347.716,
+  348.072,
+  348.597,
+  349.065,
+  349.308,
+  349.608,
+  349.851,
+  350.376,
+  350.939,
+  351.227,
+  351.647,
+  352.255,
+  352.486,
+  353.036,
+  353.267,
+  353.604,
+  354.261,
+  354.777,
+  354.983,
+  355.375,
+  356.087,
+  356.31,
+  356.903,
+  357.157,
+  357.47,
+  358.221,
+  359.038,
+  359.585,
+  360.379,
+  360.687,
+  360.946,
+  361.302,
+  361.61,
+  361.869,
+  362.031,
+  362.339,
+  362.55,
+  362.809,
+  363.117,
+  363.279,
+  363.906,
+  364.221,
+  364.487,
+  364.653,
+  364.918,
+  365.234,
+  365.4,
+  365.765,
+  366.03,
+  366.716,
+  366.952,
+  367.405,
+  367.858,
+  368.257,
+  368.602,
+  371.196,
+  371.582,
+  371.823,
+  372.57,
+  373.203,
+  373.628,
+  373.995,
+  374.246,
+  375.048,
+  375.527,
+  375.81,
+  376.414,
+  376.96,
+  377.655,
+  378.674,
+  378.798,
+  379.418,
+  379.741,
+  379.989,
+  380.507,
+  380.716,
+  381.175,
+  381.447,
+  381.969,
+  382.303,
+  382.575,
+  382.846,
+  383.564,
+  383.845,
+  384.125,
+  384.301,
+  384.529,
+  384.757,
+  384.985,
+  385.266,
+  385.554,
+  385.699,
+  386.085,
+  386.366,
+  386.542,
+  386.77,
+  387.656,
+  388.92,
+  389.242,
+  389.862,
+  390.11,
+  390.581,
+  390.903,
+  391.151,
+  391.696,
+  391.944,
+  392.587,
+  392.919,
+  393.189,
+  393.459,
+  394.04,
+  394.372,
+  394.641,
+  394.849,
+  395.563,
+  395.862,
+  396.16,
+  396.459,
+  396.827,
+  397.401,
+  397.769,
+  398.136,
+  398.504,
+  398.871,
+  399.49,
+  399.808,
+  400.198,
+  401.0,
+  401.075,
+  401.393,
+  401.784,
+  402.101,
+  402.346,
+  402.961,
+  403.201,
+  403.495,
+  403.624,
+  403.919,
+  404.214,
+  404.73,
+  405.51,
+  405.965,
+  406.256,
+  406.547,
+  406.838,
+  407.238,
+  407.474,
+  407.82,
+  408.002,
+  408.722,
+  408.985,
+  409.248,
+  409.891,
+  410.327,
+  410.762,
+  411.518,
+  411.87,
+  412.287,
+  412.639,
+  413.311,
+  413.671,
+  414.234,
+  414.594,
+  415.291,
+  415.786,
+  416.669,
+  416.966,
+  417.263,
+  417.561,
+  417.721,
+  418.224,
+  418.658,
+  419.161,
+  419.458,
+  419.879,
+  420.217,
+  420.515,
+  420.743,
+  421.333,
+  421.611,
+  421.941,
+  422.063,
+  422.341,
+  422.723,
+  423.216,
+  423.615,
+  424.388,
+  424.953,
+  425.762,
+  426.039,
+  426.445,
+  427.412,
+  427.462,
+  427.75,
+  428.092,
+  428.305,
+  428.583,
+  429.052,
+  429.394,
+  429.8,
+  430.077,
+  430.714,
+  430.975,
+  431.235,
+  431.616,
+  432.117,
+  432.438,
+  432.578,
+  432.959,
+  433.159,
+  433.48,
+  436.05,
+  436.851,
+  437.299,
+  437.817,
+  438.656,
+  438.985,
+  439.375,
+  439.642,
+  440.032,
+  440.546,
+  440.998,
+  441.327,
+  441.655,
+  442.366,
+  442.849,
+  443.159,
+  443.526,
+  443.72,
+  443.971,
+  444.658,
+  445.083,
+  445.643,
+  445.934,
+  446.494,
+  446.718,
+  447.076,
+  447.501,
+  448.18,
+  448.521,
+  448.733,
+  449.074,
+  449.415,
+  449.883,
+  450.223,
+  450.56,
+  450.871,
+  451.403,
+  451.807,
+  452.02,
+  452.65,
+  452.883,
+  453.332,
+  453.673,
+  453.906,
+  454.247,
+  454.642,
+  455.036,
+  455.27,
+  455.61,
+  456.11,
+  456.55,
+  456.871,
+  457.131,
+  457.631,
+  457.891,
+  458.272,
+  458.832,
+  459.333,
+  459.593,
+  459.853,
+  460.554,
+  460.773,
+  461.042,
+  461.312,
+  461.53,
+  461.699,
+  461.918,
+  462.187,
+  462.507,
+  462.726,
+  462.995,
+  463.163,
+  463.433,
+  464.022,
+  464.425,
+  464.753,
+  465.231,
+  465.792,
+  466.154,
+  466.557,
+  467.187,
+  467.439,
+  468.196,
+  468.633,
+  468.892,
+  469.476,
+  469.72,
+  469.979,
+  470.356,
+  470.615,
+  470.933,
+  471.557,
+  471.862,
+  472.238,
+  472.614,
+  473.379,
+  473.686,
+  473.994,
+  474.372,
+  474.929,
+  475.579,
+  475.951,
+  476.253,
+  476.624,
+  476.996,
+  477.618,
+  477.829,
+  478.103,
+  478.618,
+  478.962,
+  479.3,
+  479.764,
+  479.975,
+  480.639,
+  480.861,
+  481.15,
+  481.819,
+  481.951,
+  482.373,
+  482.728,
+  483.18,
+  483.554,
+  483.859,
+  484.093,
+  484.327,
+  484.91,
+  485.461,
+  485.975,
+  486.776,
+  486.994,
+  487.211,
+  487.629,
+  487.847,
+  488.485,
+  488.839,
+  489.275,
+  489.629,
+  490.875,
+  491.385,
+  492.087,
+  493.491,
+  493.776,
+  494.061,
+  494.281,
+  494.632,
+  495.566,
+  495.94,
+  496.314,
+  496.547,
+  496.991,
+  497.755,
+  498.198,
+  498.404,
+  499.024,
+  499.532,
+  500.404,
+  500.569,
+  500.757,
+  501.505,
+  501.991,
+  502.285,
+  502.469,
+  502.973,
+  503.227,
+  503.773,
+  504.377,
+  504.631,
+  505.497,
+  506.007,
+  506.638,
+  506.964,
+  507.352,
+  507.617,
+  508.065,
+  508.65,
+  508.993,
+  509.69,
+  509.824,
+  510.102,
+  510.381,
+  510.595,
+  511.113,
+  511.542,
+  512.131,
+  513.121,
+  513.342,
+  513.893,
+  514.246,
+  514.864,
+  515.217,
+  515.503,
+  515.79,
+  516.53,
+  516.755,
+  516.927,
+  517.256,
+  517.481,
+  517.861,
+  518.137,
+  518.31,
+  518.638,
+  518.863,
+  519.408,
+  519.97,
+  520.398,
+  521.027,
+  521.639,
+  521.902,
+  522.469,
+  522.854,
+  523.329,
+  523.608,
+  523.932,
+  524.134,
+  524.519,
+  524.66,
+  524.984,
+  525.248,
+  526.83,
+  527.178,
+  528.008,
+  528.216,
+  528.838,
+  529.118,
+  529.264,
+  529.845,
+  530.177,
+  530.322,
+  530.654,
+  531.111,
+  531.898,
+  532.102,
+  532.368,
+  532.888,
+  533.271,
+  533.536,
+  533.924,
+  534.19,
+  534.578,
+  534.904,
+  535.546,
+  535.766,
+  536.087,
+  536.307,
+  536.577,
+  537.0,
+  537.691,
+  538.006,
+  538.467,
+  538.855,
+  539.024,
+  539.63,
+  539.873,
+  540.654,
+  540.97,
+  541.359,
+  541.675,
+  542.356,
+  542.672,
+  542.988,
+  543.916,
+  544.172,
+  544.547,
+  544.804,
+  545.286,
+  545.459,
+  545.716,
+  546.031,
+  546.584,
+  546.892,
+  547.199,
+  547.507,
+  547.744,
+  548.184,
+  548.603,
+  548.84,
+  549.507,
+  550.697,
+  551.073,
+  551.296,
+  551.775,
+  552.151,
+  552.373,
+  553.069,
+  553.295,
+  553.589,
+  554.149,
+  554.616,
+  554.842,
+  555.136,
+  555.566,
+  556.149,
+  556.457,
+  556.858,
+  557.351,
+  557.98,
+  558.177,
+  558.328,
+  558.525,
+  558.812,
+  559.281,
+  559.614
+ ]
+}

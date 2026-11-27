@@ -1,0 +1,994 @@
+{
+ "sheets": [
+  {
+   "id": "vn_ancient_people",
+   "kind": "person",
+   "era": "vietnam",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.65,
+   "items": [
+    [
+     "vietnamese_hng_king_vn_lang",
+     1.65,
+     "Vietnamese Hùng king of Văn Lang with feather crown and bronze age clothes"
+    ],
+    [
+     "vn_lang_noble_lord_feather",
+     1.65,
+     "Văn Lang noble lord with feather headdress"
+    ],
+    [
+     "vn_lang_warrior_bronze_axe",
+     1.65,
+     "Văn Lang warrior with bronze axe and feather headdress"
+    ],
+    [
+     "vn_lang_woman_bronze_age",
+     1.65,
+     "Văn Lang woman in bronze age skirt and top"
+    ],
+    [
+     "u_lc_crossbowman_big_wooden",
+     1.65,
+     "Âu Lạc crossbowman with big wooden crossbow"
+    ],
+    [
+     "vietnamese_female_general_trng_sisters",
+     1.65,
+     "Vietnamese female general of the Trưng sisters era in armor with sword"
+    ],
+    [
+     "han_chinese_soldier_northern_occupation",
+     1.65,
+     "Han Chinese soldier of the northern occupation"
+    ],
+    [
+     "ancient_vietnamese_farmer_hoe",
+     1.65,
+     "ancient Vietnamese farmer with hoe"
+    ],
+    [
+     "ancient_vietnamese_fisherman_net",
+     1.65,
+     "ancient Vietnamese fisherman with net"
+    ],
+    [
+     "ancient_vietnamese_child",
+     1.2,
+     "ancient Vietnamese child"
+    ]
+   ]
+  },
+  {
+   "id": "vn_ly_tran",
+   "kind": "person",
+   "era": "vietnam",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.65,
+   "items": [
+    [
+     "trn_dynasty_vietnamese_soldier_spear",
+     1.65,
+     "Trần dynasty Vietnamese soldier with spear and round shield"
+    ],
+    [
+     "trn_dynasty_vietnamese_general_armor",
+     1.65,
+     "Trần dynasty Vietnamese general in armor"
+    ],
+    [
+     "l_dynasty_vietnamese_king_yellow",
+     1.65,
+     "Lý dynasty Vietnamese king in yellow robe"
+    ],
+    [
+     "vietnamese_buddhist_monk_brown_robe",
+     1.65,
+     "Vietnamese Buddhist monk in brown robe"
+    ],
+    [
+     "yuan_mongol_invader_soldier",
+     1.65,
+     "Yuan Mongol invader soldier"
+    ],
+    [
+     "trn_dynasty_vietnamese_navy_soldier",
+     1.65,
+     "Trần dynasty Vietnamese navy soldier with spear"
+    ],
+    [
+     "vietnamese_mandarin_civil_official_robe",
+     1.65,
+     "Vietnamese mandarin civil official in robe and hat"
+    ],
+    [
+     "vietnamese_archer",
+     1.65,
+     "Vietnamese archer"
+    ],
+    [
+     "vietnamese_peasant_woman_o_t",
+     1.65,
+     "Vietnamese peasant woman in áo tứ thân with headscarf"
+    ],
+    [
+     "vietnamese_confucian_scholar",
+     1.65,
+     "Vietnamese Confucian scholar"
+    ]
+   ]
+  },
+  {
+   "id": "vn_le_tayson",
+   "kind": "person",
+   "era": "vietnam",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.65,
+   "items": [
+    [
+     "l_dynasty_vietnamese_soldier",
+     1.65,
+     "Lê dynasty Vietnamese soldier"
+    ],
+    [
+     "ming_chinese_soldier",
+     1.65,
+     "Ming Chinese soldier"
+    ],
+    [
+     "ty_sn_soldier_red_black",
+     1.65,
+     "Tây Sơn soldier in red and black with spear"
+    ],
+    [
+     "ty_sn_general_armor_sword",
+     1.65,
+     "Tây Sơn general in armor with sword"
+    ],
+    [
+     "l_dynasty_vietnamese_official",
+     1.65,
+     "Lê dynasty Vietnamese official"
+    ],
+    [
+     "vietnamese_peasant_man_sharpened_bamboo",
+     1.65,
+     "Vietnamese peasant man with sharpened bamboo spear"
+    ],
+    [
+     "vietnamese_peasant_woman_conical_hat",
+     1.65,
+     "Vietnamese peasant woman with conical hat"
+    ],
+    [
+     "vietnamese_village_elder_beard_khn",
+     1.65,
+     "Vietnamese village elder with beard and khăn xếp"
+    ],
+    [
+     "vietnamese_buffalo_boy_child_straw",
+     1.2,
+     "Vietnamese buffalo boy child with straw hat"
+    ],
+    [
+     "vietnamese_female_soldier_ty_sn",
+     1.65,
+     "Vietnamese female soldier of Tây Sơn with sword"
+    ]
+   ]
+  },
+  {
+   "id": "vn_nguyen",
+   "kind": "person",
+   "era": "vietnam",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.65,
+   "items": [
+    [
+     "nguyn_dynasty_vietnamese_emperor_yellow",
+     1.65,
+     "Nguyễn dynasty Vietnamese emperor in yellow dragon robe"
+    ],
+    [
+     "nguyn_dynasty_mandarin_blue_robe",
+     1.65,
+     "Nguyễn dynasty mandarin in blue robe with hat"
+    ],
+    [
+     "nguyn_dynasty_imperial_guard_spear",
+     1.65,
+     "Nguyễn dynasty imperial guard with spear"
+    ],
+    [
+     "vietnamese_court_lady_o_nht",
+     1.65,
+     "Vietnamese court lady in áo nhật bình"
+    ],
+    [
+     "vietnamese_scholar_exam_candidate_scroll",
+     1.65,
+     "Vietnamese scholar exam candidate with scroll"
+    ],
+    [
+     "nguyn_dynasty_soldier_musket",
+     1.65,
+     "Nguyễn dynasty soldier with musket"
+    ],
+    [
+     "vietnamese_eunuch_official",
+     1.65,
+     "Vietnamese eunuch official"
+    ],
+    [
+     "vietnamese_merchant",
+     1.65,
+     "Vietnamese merchant"
+    ],
+    [
+     "vietnamese_woman_o_di_walking",
+     1.65,
+     "Vietnamese woman in áo dài walking"
+    ],
+    [
+     "vietnamese_man_o_khn_ng",
+     1.65,
+     "Vietnamese man in áo the and khăn đóng"
+    ]
+   ]
+  },
+  {
+   "id": "vn_colonial",
+   "kind": "person",
+   "era": "vietnam",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "french_colonial_officer_white_uniform",
+     1.7,
+     "French colonial officer in white uniform and pith helmet"
+    ],
+    [
+     "french_foreign_legion_soldier",
+     1.7,
+     "French Foreign Legion soldier"
+    ],
+    [
+     "vietnamese_colonial_soldier_lnh_kh",
+     1.7,
+     "Vietnamese colonial soldier lính khố đỏ"
+    ],
+    [
+     "rickshaw_puller_pulling_rickshaw",
+     1.7,
+     "rickshaw puller pulling a rickshaw"
+    ],
+    [
+     "vietnamese_woman_1930s_o_di",
+     1.7,
+     "Vietnamese woman in 1930s áo dài"
+    ],
+    [
+     "vietnamese_revolutionary_khaki_pith_helmet",
+     1.7,
+     "Vietnamese revolutionary in khaki with pith helmet"
+    ],
+    [
+     "vietnamese_rubber_plantation_worker",
+     1.7,
+     "Vietnamese rubber plantation worker"
+    ],
+    [
+     "vietnamese_landlord_black_o_di",
+     1.7,
+     "Vietnamese landlord in black áo dài with fan"
+    ],
+    [
+     "french_lady_1920s_dress_parasol",
+     1.7,
+     "French lady in 1920s dress with parasol"
+    ],
+    [
+     "vietnamese_street_vendor_woman_shoulder",
+     1.7,
+     "Vietnamese street vendor woman with shoulder pole"
+    ]
+   ]
+  },
+  {
+   "id": "vn_war",
+   "kind": "person",
+   "era": "vietnam",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "vit_minh_soldier_pith_helmet",
+     1.7,
+     "Việt Minh soldier with pith helmet and rifle 1950s"
+    ],
+    [
+     "vietnamese_peoples_army_soldier_green",
+     1.7,
+     "Vietnamese People's Army soldier with green pith helmet and AK-47"
+    ],
+    [
+     "viet_cong_guerrilla_black_clothes",
+     1.7,
+     "Viet Cong guerrilla in black clothes with checkered scarf and rifle"
+    ],
+    [
+     "vietnamese_female_guerrilla_rifle_conical",
+     1.7,
+     "Vietnamese female guerrilla with rifle and conical hat"
+    ],
+    [
+     "south_vietnamese_arvn_soldier_m1",
+     1.7,
+     "South Vietnamese ARVN soldier with M1 helmet"
+    ],
+    [
+     "american_vietnam_war_soldier_m16",
+     1.7,
+     "American Vietnam War soldier with M16 and helmet"
+    ],
+    [
+     "french_paratrooper_1954_beret",
+     1.7,
+     "French paratrooper 1954 with beret"
+    ],
+    [
+     "vietnamese_porter_carrying_supplies_shoulder",
+     1.7,
+     "Vietnamese porter carrying supplies on a shoulder pole"
+    ],
+    [
+     "vietnamese_militia_woman_rifle_black",
+     1.7,
+     "Vietnamese militia woman with rifle in black clothes"
+    ],
+    [
+     "vietnamese_peoples_army_officer_map",
+     1.7,
+     "Vietnamese People's Army officer with map"
+    ]
+   ]
+  },
+  {
+   "id": "vn_war_act",
+   "kind": "person",
+   "era": "vietnam",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "vietnamese_peoples_army_soldier_charging",
+     1.7,
+     "Vietnamese People's Army soldier charging with AK-47"
+    ],
+    [
+     "vietnamese_peoples_army_soldier_kneeling",
+     1.2,
+     "Vietnamese People's Army soldier kneeling and firing"
+    ],
+    [
+     "vietnamese_guerrilla_lying_prone_aiming",
+     0.5,
+     "Vietnamese guerrilla lying prone aiming"
+    ],
+    [
+     "vietnamese_porter_pushing_heavily_loaded",
+     1.8,
+     "Vietnamese porter pushing a heavily loaded bicycle"
+    ],
+    [
+     "group_three_vietnamese_soldiers_pulling",
+     1.7,
+     "group of three Vietnamese soldiers pulling an artillery gun with ropes"
+    ],
+    [
+     "vietnamese_guerrilla_digging_tunnel",
+     1.2,
+     "Vietnamese guerrilla digging a tunnel"
+    ],
+    [
+     "wounded_vietnamese_soldier_lying",
+     0.6,
+     "wounded Vietnamese soldier lying"
+    ],
+    [
+     "american_soldier_crossing_river_holding",
+     1.7,
+     "American soldier crossing a river holding rifle above head"
+    ],
+    [
+     "american_soldier_firing_m60_machine",
+     1.7,
+     "American soldier firing M60 machine gun"
+    ],
+    [
+     "vietnamese_soldier_field_radio",
+     1.7,
+     "Vietnamese soldier with field radio"
+    ]
+   ]
+  },
+  {
+   "id": "vn_animals",
+   "kind": "animal",
+   "era": "vietnam",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.2,
+   "items": [
+    [
+     "vietnamese_water_buffalo",
+     1.5,
+     "Vietnamese water buffalo"
+    ],
+    [
+     "vietnamese_war_elephant_rider_howdah",
+     3.2,
+     "Vietnamese war elephant with rider and howdah"
+    ],
+    [
+     "vietnamese_small_horse",
+     1.4,
+     "Vietnamese small horse"
+    ],
+    [
+     "pig",
+     0.7,
+     "pig"
+    ],
+    [
+     "rooster",
+     0.5,
+     "rooster"
+    ],
+    [
+     "duck",
+     0.4,
+     "duck"
+    ],
+    [
+     "dog",
+     0.6,
+     "dog"
+    ],
+    [
+     "tiger",
+     1.0,
+     "tiger"
+    ],
+    [
+     "crane_bird_standing",
+     1.2,
+     "crane bird standing"
+    ],
+    [
+     "water_buffalo_boy_riding_back",
+     2.0,
+     "water buffalo with a boy riding on its back"
+    ]
+   ]
+  },
+  {
+   "id": "vn_vehicles",
+   "kind": "vehicle",
+   "era": "vietnam",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 2.0,
+   "items": [
+    [
+     "vietnamese_bamboo_raft_boatman",
+     1.8,
+     "Vietnamese bamboo raft with boatman"
+    ],
+    [
+     "vietnamese_sampan_wooden_boat_rower",
+     2.0,
+     "Vietnamese sampan wooden boat with rower"
+    ],
+    [
+     "vietnamese_war_junk_ship_trn",
+     8.0,
+     "Vietnamese war junk ship of the Trần dynasty"
+    ],
+    [
+     "round_basket_boat_thng_chai",
+     1.6,
+     "round basket boat thúng chai with fisherman"
+    ],
+    [
+     "vietnamese_ox_cart",
+     2.0,
+     "Vietnamese ox cart"
+    ],
+    [
+     "vietnamese_cyclo_pedicab",
+     1.8,
+     "Vietnamese cyclo pedicab"
+    ]
+   ]
+  },
+  {
+   "id": "vn_war_veh",
+   "kind": "vehicle",
+   "era": "vietnam",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 3.0,
+   "items": [
+    [
+     "uh1_huey_helicopter_flying",
+     4.0,
+     "UH-1 Huey helicopter flying"
+    ],
+    [
+     "m113_armored_personnel_carrier",
+     3.0,
+     "M113 armored personnel carrier"
+    ],
+    [
+     "t54_tank",
+     3.0,
+     "T-54 tank"
+    ],
+    [
+     "zil_truck_carrying_supplies",
+     3.0,
+     "ZIL truck carrying supplies"
+    ],
+    [
+     "jeep_machine_gun",
+     3.0,
+     "Jeep with machine gun"
+    ],
+    [
+     "antiaircraft_gun_37mm",
+     2.5,
+     "anti-aircraft gun 37mm"
+    ]
+   ]
+  },
+  {
+   "id": "vn_war_air",
+   "kind": "aircraft",
+   "era": "vietnam",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "b52_bomber_flying",
+     12.0,
+     "B-52 bomber flying"
+    ],
+    [
+     "f4_phantom_fighter_flying",
+     4.0,
+     "F-4 Phantom fighter flying"
+    ],
+    [
+     "mig21_fighter_flying",
+     4.0,
+     "MiG-21 fighter flying"
+    ],
+    [
+     "c47_transport_plane_flying",
+     4.0,
+     "C-47 transport plane flying"
+    ],
+    [
+     "ch47_chinook_helicopter_flying",
+     4.0,
+     "CH-47 Chinook helicopter flying"
+    ],
+    [
+     "french_bearcat_fighter_flying",
+     4.0,
+     "French Bearcat fighter flying"
+    ]
+   ]
+  },
+  {
+   "id": "vn_props",
+   "kind": "prop",
+   "era": "vietnam",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.5,
+   "items": [
+    [
+     "ng_sn_bronze_drum",
+     0.6,
+     "Đông Sơn bronze drum"
+    ],
+    [
+     "large_vietnamese_crossbow_n",
+     1.5,
+     "large Vietnamese crossbow nỏ"
+    ],
+    [
+     "vietnamese_conical_hat_nn_l",
+     0.15,
+     "Vietnamese conical hat nón lá"
+    ],
+    [
+     "shoulder_pole_two_baskets_quang",
+     1.6,
+     "shoulder pole with two baskets quang gánh"
+    ],
+    [
+     "rice_sacks",
+     0.8,
+     "rice sacks"
+    ],
+    [
+     "large_clay_water_jar_chum",
+     0.9,
+     "large clay water jar chum"
+    ],
+    [
+     "wooden_family_altar_incense",
+     1.2,
+     "wooden family altar with incense"
+    ],
+    [
+     "woven_bamboo_basket",
+     0.4,
+     "woven bamboo basket"
+    ],
+    [
+     "betel_nut_tray",
+     0.1,
+     "betel nut tray"
+    ],
+    [
+     "vietnamese_red_lantern",
+     0.5,
+     "Vietnamese red lantern"
+    ],
+    [
+     "bamboo_fish_trap",
+     0.7,
+     "bamboo fish trap"
+    ],
+    [
+     "wooden_rice_mortar_pestle",
+     1.2,
+     "wooden rice mortar and pestle"
+    ],
+    [
+     "vietnamese_sword",
+     0.9,
+     "Vietnamese sword"
+    ],
+    [
+     "vietnamese_spear",
+     2.2,
+     "Vietnamese spear"
+    ],
+    [
+     "red_banner_pole_letters",
+     3.0,
+     "red banner on pole without letters"
+    ],
+    [
+     "vietnamese_war_drum",
+     1.2,
+     "Vietnamese war drum"
+    ],
+    [
+     "brass_gong",
+     1.0,
+     "brass gong"
+    ],
+    [
+     "wooden_boat_paddle",
+     1.5,
+     "wooden boat paddle"
+    ]
+   ]
+  },
+  {
+   "id": "vn_structures",
+   "kind": "structure",
+   "era": "vietnam",
+   "cols": 4,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "bamboo_hedge_ly_tre",
+     6.0,
+     "bamboo hedge lũy tre"
+    ],
+    [
+     "village_well_stone_rim",
+     1.2,
+     "village well with stone rim"
+    ],
+    [
+     "vietnamese_village_gate_cng_lng",
+     5.0,
+     "Vietnamese village gate cổng làng"
+    ],
+    [
+     "small_vietnamese_shrine_miu",
+     2.5,
+     "small Vietnamese shrine miếu"
+    ],
+    [
+     "vietnamese_stilt_house_nh_sn",
+     6.0,
+     "Vietnamese stilt house nhà sàn"
+    ],
+    [
+     "haystack",
+     2.5,
+     "haystack"
+    ],
+    [
+     "bamboo_bridge",
+     2.0,
+     "bamboo bridge"
+    ],
+    [
+     "banyan_tree_small_shrine_base",
+     12.0,
+     "banyan tree with a small shrine at its base"
+    ]
+   ]
+  },
+  {
+   "id": "vn_buildings",
+   "kind": "building",
+   "era": "vietnam",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 8.0,
+   "items": [
+    [
+     "vietnamese_communal_house_nh_lng",
+     8.0,
+     "Vietnamese communal house đình làng with curved roof"
+    ],
+    [
+     "vietnamese_pagoda_tiered_roof",
+     12.0,
+     "Vietnamese pagoda with tiered roof"
+    ],
+    [
+     "vietnamese_thatched_mud_house",
+     4.0,
+     "Vietnamese thatched mud house"
+    ],
+    [
+     "vietnamese_tileroof_wooden_house",
+     5.0,
+     "Vietnamese tile-roof wooden house"
+    ],
+    [
+     "vietnamese_citadel_gate_like_ng",
+     15.0,
+     "Vietnamese citadel gate like Ngọ Môn"
+    ],
+    [
+     "french_colonial_villa_vietnam",
+     10.0,
+     "French colonial villa in Vietnam"
+    ]
+   ]
+  },
+  {
+   "id": "vn_nature",
+   "kind": "nature",
+   "era": "vietnam",
+   "cols": 6,
+   "rows": 2,
+   "heightM": 6.0,
+   "items": [
+    [
+     "bamboo_clump",
+     10.0,
+     "bamboo clump"
+    ],
+    [
+     "banyan_tree",
+     14.0,
+     "banyan tree"
+    ],
+    [
+     "areca_palm_tree",
+     12.0,
+     "areca palm tree"
+    ],
+    [
+     "coconut_palm",
+     12.0,
+     "coconut palm"
+    ],
+    [
+     "banana_tree",
+     4.0,
+     "banana tree"
+    ],
+    [
+     "lotus_plants",
+     1.0,
+     "lotus plants"
+    ],
+    [
+     "rice_paddy_patch",
+     0.8,
+     "rice paddy patch"
+    ],
+    [
+     "mangrove_tree",
+     5.0,
+     "mangrove tree"
+    ],
+    [
+     "limestone_karst_rock",
+     15.0,
+     "limestone karst rock"
+    ],
+    [
+     "sugarcane",
+     2.5,
+     "sugarcane"
+    ],
+    [
+     "royal_poinciana_flame_tree_red",
+     10.0,
+     "royal poinciana flame tree with red flowers"
+    ],
+    [
+     "water_hyacinth",
+     0.4,
+     "water hyacinth"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_rice_village",
+   "bgs": [
+    [
+     "bg_vn_rice_village",
+     "vietnam",
+     "Vietnamese rice paddy fields with a village, bamboo hedge and mountains far away"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_dinh_courtyard",
+   "bgs": [
+    [
+     "bg_vn_dinh_courtyard",
+     "vietnam",
+     "Courtyard of a Vietnamese communal house đình with banyan tree"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_hung_temple",
+   "bgs": [
+    [
+     "bg_vn_hung_temple",
+     "vietnam",
+     "Ancient Vietnamese mountains and forest with a temple, Hùng kings era"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_bach_dang",
+   "bgs": [
+    [
+     "bg_vn_bach_dang",
+     "vietnam",
+     "Bạch Đằng river at low tide with sharpened wooden stakes in the water"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_halong",
+   "bgs": [
+    [
+     "bg_vn_halong",
+     "vietnam",
+     "Hạ Long bay with limestone karst islands"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_hue_citadel",
+   "bgs": [
+    [
+     "bg_vn_hue_citadel",
+     "vietnam",
+     "Huế imperial citadel with gate, moat and flag tower"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_hanoi_1930",
+   "bgs": [
+    [
+     "bg_vn_hanoi_1930",
+     "vietnam",
+     "Hà Nội French quarter street in the 1930s with trees and colonial houses"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_dienbienphu",
+   "bgs": [
+    [
+     "bg_vn_dienbienphu",
+     "vietnam",
+     "Điện Biên Phủ valley with hills, trenches and an airstrip"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_truong_son",
+   "bgs": [
+    [
+     "bg_vn_truong_son",
+     "vietnam",
+     "Trường Sơn mountain jungle trail with dense trees"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_mekong",
+   "bgs": [
+    [
+     "bg_vn_mekong",
+     "vietnam",
+     "Mekong delta canal with coconut palms and wooden houses"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_saigon_1960",
+   "bgs": [
+    [
+     "bg_vn_saigon_1960",
+     "vietnam",
+     "Sài Gòn street in the 1960s with shops and trees"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_highlands",
+   "bgs": [
+    [
+     "bg_vn_highlands",
+     "vietnam",
+     "Central highlands village with communal stilt house and hills"
+    ]
+   ]
+  },
+  {
+   "id": "bg_vn_ancient_citadel",
+   "bgs": [
+    [
+     "bg_vn_ancient_citadel",
+     "vietnam",
+     "Ancient Cổ Loa spiral earthen citadel walls"
+    ]
+   ]
+  }
+ ]
+}

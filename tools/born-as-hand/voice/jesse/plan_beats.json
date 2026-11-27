@@ -1,0 +1,6774 @@
+{
+ "total": 651.789,
+ "series": "JESSE JAMES · WILD WEST",
+ "turnT": 15.77,
+ "recapT": 609.566,
+ "beats": [
+  {
+   "t0": 0.0,
+   "kind": "scene",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "jesse_young_guerrilla_ride",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "auto_261125_09cb9f_10__bloody_bill_anderson_mounted",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "JESSE JAMES",
+    "sub": "1847 - 1882",
+    "cast": 0,
+    "t": 1.642
+   },
+   "focusT": 1.642,
+   "smoke": true
+  },
+  {
+   "t0": 3.438,
+   "kind": "bust",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 16",
+    "sub": "",
+    "corner": "tl",
+    "t": 4.107
+   }
+  },
+  {
+   "t0": 4.808,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_town__wild_west_banker_suit_pocket",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 5.806,
+   "shake": 5.806
+  },
+  {
+   "t0": 6.471,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__derailed_express_car_tilted",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "jesse_adult_walk",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 7.198,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "16 YEARS",
+    "sub": "1866 - 1882",
+    "corner": "tl",
+    "t": 7.198
+   }
+  },
+  {
+   "t0": 8.433,
+   "kind": "paper",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__old_missouri_newspaper",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "JESSE JAMES",
+      "size": "h",
+      "t": 8.746
+     },
+     {
+      "text": "A HERO?",
+      "size": "l",
+      "t": 10.489
+     }
+    ]
+   }
+  },
+  {
+   "t0": 11.122,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_reach",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 13.207,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "focusT": 14.566,
+   "dark": 0.35
+  },
+  {
+   "t0": 15.77,
+   "kind": "rew",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 16.921,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 18.115,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO GUNS",
+    "sub": "",
+    "at": null,
+    "t": 18.455
+   }
+  },
+  {
+   "t0": 19.319,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO HORSE",
+    "sub": "",
+    "at": null,
+    "t": 19.615
+   }
+  },
+  {
+   "t0": 20.496,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO PRICE ON YOUR HEAD",
+    "sub": "",
+    "at": null,
+    "t": 20.665
+   }
+  },
+  {
+   "t0": 22.017,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 26.15,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER I",
+    "title": "The Preacher's Son"
+   }
+  },
+  {
+   "t0": 28.1,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "zerelda_young",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "SEPT 5, 1847",
+    "sub": "Clay County, Missouri",
+    "corner": "tl",
+    "t": 28.1
+   },
+   "warm": true
+  },
+  {
+   "t0": 30.795,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "JESSE WOODSON JAMES",
+    "sub": "born 1847",
+    "cast": 0,
+    "t": 31.667
+   },
+   "focusT": 31.667
+  },
+  {
+   "t0": 33.431,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_young_boy_run",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "CLAY COUNTY",
+    "sub": "Missouri",
+    "at": null,
+    "t": 34.385
+   }
+  },
+  {
+   "t0": 36.566,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "robert_preacher_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "ROBERT JAMES",
+    "sub": "Baptist preacher",
+    "cast": 0,
+    "t": 37.436
+   }
+  },
+  {
+   "t0": 39.711,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_buildings__wild_west_church_bell_tower",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "robert_preacher",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 41.371,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "A COLLEGE",
+    "sub": "William Jewell, 1849",
+    "at": null,
+    "t": 42.364
+   }
+  },
+  {
+   "t0": 43.136,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "west_props__old_bible",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 43.136
+  },
+  {
+   "t0": 45.753,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "zerelda_young_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "ZERELDA",
+    "sub": "your mother",
+    "cast": 0,
+    "t": 47.463
+   },
+   "focusT": 47.463
+  },
+  {
+   "t0": 50.942,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "west_frontier__ragged_frontier_boy_barefoot",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    },
+    {
+     "sprite": "jesse_young_boy",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "FRANK",
+    "sub": "4 years older",
+    "cast": 0,
+    "t": 51.978
+   }
+  },
+  {
+   "t0": 55.336,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 58.513,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_young_boy",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 59.97,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "west_frontier2__frontier_farmer_plowing_behind_horse",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "HEMP & TOBACCO",
+    "sub": "",
+    "at": null,
+    "t": 61.045
+   }
+  },
+  {
+   "t0": 62.574,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "SLAVE-OWNING FARM",
+    "sub": "6 enslaved people",
+    "at": null,
+    "t": 64.364
+   },
+   "dark": 0.25
+  },
+  {
+   "t0": 66.019,
+   "kind": "scene",
+   "bg": "bg_west_gold_camp",
+   "cast": [
+    {
+     "sprite": "robert_preacher",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1850",
+    "sub": "Jesse is 3",
+    "corner": "tl",
+    "t": 66.019
+   },
+   "plate": {
+    "text": "CALIFORNIA",
+    "sub": "Gold Rush",
+    "at": null,
+    "t": 68.974
+   }
+  },
+  {
+   "t0": 70.604,
+   "kind": "bust",
+   "bg": "bg_west_gold_camp",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 72.759,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 74.685,
+   "kind": "scene",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "west_props__wooden_grave_cross",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3,
+   "cool": true
+  },
+  {
+   "t0": 76.677,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 80.614,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "reuben_samuel",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    },
+    {
+     "sprite": "zerelda_young",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "REUBEN SAMUEL",
+    "sub": "stepfather, doctor",
+    "cast": 0,
+    "t": 83.374
+   }
+  },
+  {
+   "t0": 86.622,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 88.985,
+   "kind": "scene",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "west_frontier2__frontier_farmer_plowing_behind_horse",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "MISSOURI",
+    "sub": "a border state",
+    "at": null,
+    "t": 89.267
+   }
+  },
+  {
+   "t0": 91.452,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_frontier2__wild_west_town_crowd_five",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_military_native__us_cavalry_trooper_1870s_blue",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 95.067,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1861",
+    "sub": "Civil War",
+    "corner": "tl",
+    "t": 95.067
+   },
+   "shake": 97.7,
+   "smoke": true
+  },
+  {
+   "t0": 99.739,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER II",
+    "title": "Bushwhacker"
+   }
+  },
+  {
+   "t0": 101.689,
+   "kind": "scene",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "frank_teen",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "FRANK",
+    "sub": "Confederate",
+    "cast": 0,
+    "t": 101.689
+   }
+  },
+  {
+   "t0": 104.079,
+   "kind": "bust",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "QUANTRILL'S RAIDERS",
+    "sub": "",
+    "at": null,
+    "t": 105.702
+   }
+  },
+  {
+   "t0": 107.363,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_farm_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 14",
+    "sub": "1861",
+    "corner": "tl",
+    "t": 107.363
+   }
+  },
+  {
+   "t0": 110.148,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_young_teen_hoe",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 112.757,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_farm_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "MAY 1863",
+    "sub": "",
+    "corner": "tl",
+    "t": 112.757
+   }
+  },
+  {
+   "t0": 117.801,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "union_militia",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    },
+    {
+     "sprite": "zerelda_young",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 119.65,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_farm_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "focusT": 120.532
+  },
+  {
+   "t0": 121.476,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "union_militia",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 122.112,
+   "dark": 0.35
+  },
+  {
+   "t0": 123.615,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_farm_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "shake": 124.11,
+   "dark": 0.45
+  },
+  {
+   "t0": 129.613,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "reuben_samuel",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 131.907,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_farm_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 133.854,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_young_teen_kneel",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "flash": 134.344,
+   "shake": 134.344,
+   "dark": 0.3
+  },
+  {
+   "t0": 135.154,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_farm_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 15",
+    "sub": "",
+    "corner": "tl",
+    "t": 135.154
+   }
+  },
+  {
+   "t0": 136.605,
+   "kind": "scene",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "jesse_young_guerrilla_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1864",
+    "sub": "Age 16",
+    "corner": "tl",
+    "t": 136.605
+   }
+  },
+  {
+   "t0": 142.62,
+   "kind": "scene",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__bloody_bill_anderson_mounted",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    },
+    {
+     "sprite": "jesse_young_guerrilla",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "BLOODY BILL",
+    "sub": "Anderson",
+    "cast": 0,
+    "t": 144.723
+   },
+   "focusT": 144.723
+  },
+  {
+   "t0": 146.391,
+   "kind": "scene",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__bloody_bill_anderson_mounted",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 148.076,
+   "kind": "bust",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 149.076,
+   "shake": 149.076
+  },
+  {
+   "t0": 151.138,
+   "kind": "scene",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "jesse_young_guerrilla",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 152.499,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "west_trains__1870s_american_steam_locomotive_cowcatcher",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "SEPT 27, 1864",
+    "sub": "",
+    "corner": "tl",
+    "t": 152.499
+   }
+  },
+  {
+   "t0": 155.71,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "CENTRALIA",
+    "sub": "Missouri",
+    "at": null,
+    "t": 155.71
+   }
+  },
+  {
+   "t0": 157.265,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__bloody_bill_anderson_mounted",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    },
+    {
+     "sprite": "west_trains__1870s_american_steam_locomotive_cowcatcher",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 159.604,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 162.814,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "west_outlaws_act__wild_west_outlaw_raising_hands",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 164.072,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 167.223,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__bloody_bill_anderson_mounted",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "flash": 167.616,
+   "shake": 167.616,
+   "dark": 0.45,
+   "smoke": true
+  },
+  {
+   "t0": 168.41,
+   "kind": "scene",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "west_mounted__us_cavalry_trooper_galloping_horse",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 172.267,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.4,
+   "smoke": true
+  },
+  {
+   "t0": 175.016,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "frank_teen_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 177.86,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 17",
+    "sub": "",
+    "corner": "tl",
+    "t": 177.86
+   }
+  },
+  {
+   "t0": 179.24,
+   "kind": "scene",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__bloody_bill_anderson_mounted",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "flash": 181.37,
+   "dark": 0.35
+  },
+  {
+   "t0": 183.013,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "SPRING 1865",
+    "sub": "war ends",
+    "corner": "tl",
+    "t": 183.013
+   }
+  },
+  {
+   "t0": 187.115,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 189.131,
+   "kind": "scene",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_young_wounded",
+     "slot": "cl",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "west_military_native__us_cavalry_soldier_foot_firing",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 190.255,
+   "shake": 190.255
+  },
+  {
+   "t0": 192.215,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "HIS STORY",
+    "sub": "historians doubt it",
+    "at": null,
+    "t": 193.915
+   }
+  },
+  {
+   "t0": 196.429,
+   "kind": "scene",
+   "bg": "bg_west_cabin_interior",
+   "cast": [
+    {
+     "sprite": "jesse_young_wounded",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 198.847,
+   "kind": "bust",
+   "bg": "bg_west_cabin_interior",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 201.824,
+   "kind": "bust",
+   "bg": "bg_west_cabin_interior",
+   "cast": [
+    {
+     "sprite": "zee_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "ZEE",
+    "sub": "Zerelda Mimms, cousin",
+    "cast": 0,
+    "t": 203.016
+   },
+   "focusT": 203.016,
+   "warm": true
+  },
+  {
+   "t0": 206.203,
+   "kind": "bust",
+   "bg": "bg_west_cabin_interior",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 207.271,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER III",
+    "title": "Outlaw"
+   }
+  },
+  {
+   "t0": 209.221,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1865",
+    "sub": "Age 18",
+    "corner": "tl",
+    "t": 209.221
+   }
+  },
+  {
+   "t0": 211.163,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 212.786,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO VOTE",
+    "sub": "no preaching, no law",
+    "at": null,
+    "t": 215.174
+   }
+  },
+  {
+   "t0": 219.442,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "west_town__wild_west_banker_suit_pocket",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_props__bank_safe",
+     "slot": "cr",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 222.059,
+   "kind": "scene",
+   "bg": "bg_snowy_liberty_bank_street",
+   "cast": [
+    {
+     "sprite": "west_frontier2__wild_west_town_crowd_five",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "FEB 1866",
+    "sub": "",
+    "corner": "tl",
+    "t": 222.059
+   },
+   "cool": true
+  },
+  {
+   "t0": 224.72,
+   "kind": "bust",
+   "bg": "bg_snowy_liberty_bank_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "LIBERTY",
+    "sub": "Missouri",
+    "at": null,
+    "t": 224.72
+   },
+   "cool": true
+  },
+  {
+   "t0": 229.023,
+   "kind": "scene",
+   "bg": "bg_snowy_liberty_bank_street",
+   "cast": [
+    {
+     "sprite": "west_outlaws__wild_west_outlaw_counting_stolen",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 233.31,
+   "kind": "bust",
+   "bg": "bg_snowy_liberty_bank_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 235.595,
+   "kind": "bust",
+   "bg": "bg_snowy_liberty_bank_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 237.584,
+   "kind": "bust",
+   "bg": "bg_west_cabin_interior",
+   "cast": [
+    {
+     "sprite": "jesse_bush_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 239.967,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 242.609,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "auto_261125_09cb9f_10__frank_james_duster",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "DEC 1869",
+    "sub": "Gallatin, Missouri",
+    "corner": "tl",
+    "t": 242.609
+   }
+  },
+  {
+   "t0": 246.4,
+   "kind": "bust",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 248.017,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "west_town__wild_west_banker_suit_pocket",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 248.944
+  },
+  {
+   "t0": 249.709,
+   "kind": "bust",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 252.737,
+   "kind": "bust",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "JOHN SHEETS",
+    "sub": "wrong man",
+    "at": null,
+    "t": 252.991
+   }
+  },
+  {
+   "t0": 253.794,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_town__wild_west_banker_suit_pocket",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 254.068,
+   "shake": 254.068,
+   "dark": 0.3
+  },
+  {
+   "t0": 255.525,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "shake": 257.029
+  },
+  {
+   "t0": 259.793,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_animals__saddled_black_horse_standing",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 261.6,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 264.178,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_animals__saddled_black_horse_standing",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 264.902
+  },
+  {
+   "t0": 265.881,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 269.06,
+   "kind": "paper",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__old_missouri_newspaper",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "WANTED",
+      "size": "h",
+      "t": 269.59
+     },
+     {
+      "text": "JESSE JAMES",
+      "size": "l",
+      "t": 270.596
+     }
+    ]
+   }
+  },
+  {
+   "t0": 271.483,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "edwards_editor",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "JOHN NEWMAN EDWARDS",
+    "sub": "Kansas City Times",
+    "cast": 0,
+    "t": 274.605
+   },
+   "focusT": 274.605
+  },
+  {
+   "t0": 276.35,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 278.286,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "ROBIN HOOD?",
+    "sub": "",
+    "at": null,
+    "t": 278.881
+   },
+   "warm": true
+  },
+  {
+   "t0": 279.796,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "west_props__money_sack_dollar_sign",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 281.348,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "west_frontier2__frontier_settler_family_three_walking",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 282.86,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 284.109,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO EVIDENCE",
+    "sub": "he gave to the poor",
+    "at": null,
+    "t": 284.839
+   }
+  },
+  {
+   "t0": 288.077,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_frontier2__wild_west_town_crowd_five",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 290.017,
+   "kind": "scene",
+   "bg": "bg_west_cabin_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "auto_261125_09cb9f_10__old_missouri_newspaper",
+     "slot": "cr",
+     "place": "table",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 292.871,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "west_outlaws__wild_west_outlaw_bandana_over",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JULY 1873",
+    "sub": "Adair, Iowa",
+    "corner": "tl",
+    "t": 292.871
+   }
+  },
+  {
+   "t0": 296.591,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "ADAIR",
+    "sub": "Iowa",
+    "at": null,
+    "t": 298.223
+   }
+  },
+  {
+   "t0": 298.883,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "west_trains__1870s_american_steam_locomotive_cowcatcher",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 301.113,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 301.832,
+   "shake": 301.832,
+   "smoke": true
+  },
+  {
+   "t0": 302.809,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__derailed_express_car_tilted",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 305.179,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 307.525,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__derailed_express_car_tilted",
+     "slot": "cl",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "FIRST TRAIN ROBBERIES",
+    "sub": "in the American West",
+    "at": null,
+    "t": 308.385
+   }
+  },
+  {
+   "t0": 310.952,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 312.98,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 314.756,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "zee",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1874",
+    "sub": "Age 26",
+    "corner": "tl",
+    "t": 314.756
+   },
+   "warm": true
+  },
+  {
+   "t0": 318.001,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 321.096,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IV",
+    "title": "The Bomb"
+   }
+  },
+  {
+   "t0": 323.046,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 325.431,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "PINKERTON AGENCY",
+    "sub": "",
+    "at": null,
+    "t": 326.509
+   }
+  },
+  {
+   "t0": 328.475,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_law__pinkerton_detective_bowler_hat_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 330.877,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "zerelda_old",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "reuben_samuel",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JAN 1875",
+    "sub": "night",
+    "corner": "tl",
+    "t": 330.877
+   },
+   "dark": 0.45,
+   "cool": true
+  },
+  {
+   "t0": 334.268,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4,
+   "cool": true
+  },
+  {
+   "t0": 337.258,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "west_law__pinkerton_detective_bowler_hat_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4,
+   "cool": true
+  },
+  {
+   "t0": 339.475,
+   "kind": "scene",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "auto_261125_09cb9f_10__frank_james_duster",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 340.79,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4,
+   "cool": true
+  },
+  {
+   "t0": 342.966,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "west_law__pinkerton_detective_bowler_hat_suit",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 343.348,
+   "shake": 343.348,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 344.737,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "archie",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "ARCHIE",
+    "sub": "age 8",
+    "cast": 0,
+    "t": 345.687
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 347.991,
+   "kind": "scene",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "west_props__wooden_grave_cross",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.45
+  },
+  {
+   "t0": 349.58,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 352.106,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "west_town__wild_west_town_doctor_black",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "zerelda_old",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 353.717,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 357.44,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "zerelda_old",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 358.833
+  },
+  {
+   "t0": 359.501,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_frontier2__wild_west_town_crowd_five",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_law__pinkerton_detective_bowler_hat_suit",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 361.756,
+   "kind": "scene",
+   "bg": "bg_wooden_courtroom_interior",
+   "cast": [
+    {
+     "sprite": "west_law__wild_west_judge_black_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "AMNESTY BILL",
+    "sub": "1875",
+    "at": null,
+    "t": 363.263
+   }
+  },
+  {
+   "t0": 364.851,
+   "kind": "bust",
+   "bg": "bg_wooden_courtroom_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "FAILED",
+    "sub": "",
+    "at": null,
+    "t": 364.851
+   }
+  },
+  {
+   "t0": 365.739,
+   "kind": "bust",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 370.409,
+   "kind": "scene",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "WHO'S NEXT?",
+    "sub": "comment below",
+    "at": null,
+    "t": 371.75
+   },
+   "warm": true
+  },
+  {
+   "t0": 374.252,
+   "kind": "bust",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 378.203,
+   "kind": "scene",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_adult_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 380.265,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER V",
+    "title": "Northfield"
+   }
+  },
+  {
+   "t0": 382.215,
+   "kind": "scene",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "west_mounted__outlaw_galloping_black_horse_firing",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "SEPT 7, 1876",
+    "sub": "",
+    "corner": "tl",
+    "t": 382.215
+   }
+  },
+  {
+   "t0": 385.174,
+   "kind": "bust",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NORTHFIELD",
+    "sub": "Minnesota",
+    "at": null,
+    "t": 385.174
+   }
+  },
+  {
+   "t0": 387.151,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 388.636,
+   "kind": "bust",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 390.747,
+   "kind": "bust",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "YOU",
+    "sub": "",
+    "cast": 0,
+    "t": 390.747
+   }
+  },
+  {
+   "t0": 391.562,
+   "kind": "scene",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__frank_james_duster",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "FRANK",
+    "sub": "",
+    "cast": 0,
+    "t": 391.562
+   }
+  },
+  {
+   "t0": 392.415,
+   "kind": "scene",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "west_outlaws__wild_west_outlaw_standing_winchester",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "THE YOUNGERS",
+    "sub": "Cole, Jim, Bob",
+    "at": null,
+    "t": 392.787
+   }
+  },
+  {
+   "t0": 394.144,
+   "kind": "bust",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 395.365,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "west_outlaws__wild_west_outlaw_bandana_over",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 3
+    },
+    {
+     "sprite": "heywood",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "FIRST NATIONAL BANK",
+    "sub": "",
+    "at": null,
+    "t": 396.946
+   }
+  },
+  {
+   "t0": 398.411,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "heywood",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "JOSEPH HEYWOOD",
+    "sub": "cashier",
+    "cast": 0,
+    "t": 399.561
+   }
+  },
+  {
+   "t0": 403.219,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "west_props__bank_safe",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 403.219
+  },
+  {
+   "t0": 406.971,
+   "kind": "bust",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "flash": 407.277,
+   "shake": 407.277,
+   "dark": 0.4
+  },
+  {
+   "t0": 409.013,
+   "kind": "bust",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 411.491,
+   "kind": "scene",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "west_town__wild_west_shopkeeper_apron_sleeve",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "townsman_rifle",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 413.402,
+   "kind": "bust",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 414.37,
+   "shake": 414.37
+  },
+  {
+   "t0": 416.1,
+   "kind": "scene",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "west_outlaws_act__wild_west_outlaw_lying_dead",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.35,
+   "smoke": true
+  },
+  {
+   "t0": 419.295,
+   "kind": "bust",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 420.724,
+   "smoke": true
+  },
+  {
+   "t0": 422.739,
+   "kind": "scene",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_ride",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 425.432,
+   "kind": "scene",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "west_mounted__us_cavalry_trooper_galloping_horse",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r",
+     "crowd": 4
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "2 WEEKS",
+    "sub": "manhunt",
+    "corner": "tl",
+    "t": 425.432
+   }
+  },
+  {
+   "t0": 428.768,
+   "kind": "scene",
+   "bg": "bg_mn_swamp",
+   "cast": [
+    {
+     "sprite": "west_outlaws_act__wounded_wild_west_outlaw_sitting",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "MADELIA SWAMP",
+    "sub": "",
+    "at": null,
+    "t": 430.68
+   }
+  },
+  {
+   "t0": 431.366,
+   "kind": "bust",
+   "bg": "bg_mn_swamp",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 435.043,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 439.392,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_young_boy_run",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "west_frontier__ragged_frontier_boy_barefoot",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 443.384,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 445.856,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VI",
+    "title": "Mister Howard"
+   }
+  },
+  {
+   "t0": 447.806,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "jesse_adult_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 449.082,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "TENNESSEE",
+    "sub": "1876 - 1879",
+    "at": null,
+    "t": 449.082
+   }
+  },
+  {
+   "t0": 451.578,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "J.D. HOWARD",
+    "sub": "alias",
+    "cast": 0,
+    "t": 452.633
+   }
+  },
+  {
+   "t0": 453.6,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "jesse_adult_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 455.128,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "west_frontier2__frontier_farmer_plowing_behind_horse",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 456.473,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 459.214,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "zee",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 463.078,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 464.975,
+   "kind": "scene",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_outlaws__young_ragged_wild_west_outlaw",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1879",
+    "sub": "new gang",
+    "corner": "tl",
+    "t": 464.975
+   },
+   "warm": true
+  },
+  {
+   "t0": 468.61,
+   "kind": "bust",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 472.4,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "west_trains__1870s_american_steam_locomotive_cowcatcher",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    },
+    {
+     "sprite": "jesse_adult_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "GLENDALE",
+    "sub": "1879",
+    "at": null,
+    "t": 472.4
+   },
+   "smoke": true
+  },
+  {
+   "t0": 475.345,
+   "kind": "bust",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1881",
+    "sub": "Winston, Missouri",
+    "corner": "tl",
+    "t": 475.345
+   }
+  },
+  {
+   "t0": 479.229,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "west_outlaws_act__wild_west_outlaw_lying_dead",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "flash": 480.063,
+   "dark": 0.4
+  },
+  {
+   "t0": 481.086,
+   "kind": "scene",
+   "bg": "bg_wyoming_governor_office",
+   "cast": [
+    {
+     "sprite": "crittenden",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "GOV. CRITTENDEN",
+    "sub": "Missouri",
+    "cast": 0,
+    "t": 482.196
+   }
+  },
+  {
+   "t0": 484.575,
+   "kind": "paper",
+   "bg": "bg_wyoming_governor_office",
+   "cast": [
+    {
+     "sprite": "west_props__blank_wanted_poster_nailed_board",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "REWARD",
+      "size": "h",
+      "t": 484.575
+     },
+     {
+      "text": "$5,000 EACH",
+      "size": "l",
+      "t": 484.968
+     }
+    ],
+    "stamp": {
+     "text": "DEAD OR ALIVE",
+     "t": 488.001
+    }
+   }
+  },
+  {
+   "t0": 488.407,
+   "kind": "bust",
+   "bg": "bg_wyoming_governor_office",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 493.58,
+   "kind": "bust",
+   "bg": "bg_wyoming_governor_office",
+   "cast": [
+    {
+     "sprite": "bob_ford_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "BOB FORD",
+    "sub": "age 20",
+    "cast": 0,
+    "t": 494.358
+   }
+  },
+  {
+   "t0": 496.369,
+   "kind": "scene",
+   "bg": "bg_west_cabin_interior",
+   "cast": [
+    {
+     "sprite": "bob_ford",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "auto_261125_09cb9f_10__old_missouri_newspaper",
+     "slot": "cr",
+     "place": "table",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 498.195,
+   "kind": "bust",
+   "bg": "bg_west_cabin_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 499.386,
+   "dark": 0.3
+  },
+  {
+   "t0": 500.157,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "zee",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_frontier__frontier_girl_plain_dress_bonnet",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1882",
+    "sub": "Saint Joseph, Missouri",
+    "corner": "tl",
+    "t": 500.157
+   }
+  },
+  {
+   "t0": 503.296,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_buildings__wild_west_church_bell_tower",
+     "slot": "cl",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 505.257,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "THOMAS HOWARD",
+    "sub": "alias, age 34",
+    "cast": 0,
+    "t": 506.681
+   }
+  },
+  {
+   "t0": 507.408,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 509.669,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "APRIL 3, 1882",
+    "sub": "morning",
+    "corner": "tl",
+    "t": 509.669
+   },
+   "warm": true
+  },
+  {
+   "t0": 511.683,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "zee",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 514.832,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "focusT": 515.931
+  },
+  {
+   "t0": 516.8,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "west_guns__gun_belt_holster_bullets",
+     "slot": "c",
+     "place": "table",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 519.097,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 519.999
+  },
+  {
+   "t0": 523.375,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 525.53,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "bob_ford_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 527.181,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "sampler",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 529.268
+  },
+  {
+   "t0": 531.403,
+   "kind": "paper",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "sampler",
+     "slot": "c",
+     "place": "wall",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "IN GOD WE TRUST",
+      "size": "h",
+      "t": 531.649
+     }
+    ]
+   }
+  },
+  {
+   "t0": 533.003,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "robert_preacher",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 535.408,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 536.801,
+   "dark": 0.35
+  },
+  {
+   "t0": 537.761,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "bob_ford_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "flash": 538.161,
+   "shake": 538.161,
+   "dark": 0.4
+  },
+  {
+   "t0": 540.316,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__wooden_parlor_chair_toppled",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 541.329,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 34",
+    "sub": "",
+    "corner": "tl",
+    "t": 541.329
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 543.292,
+   "kind": "black",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 544.397,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VII",
+    "title": "After"
+   }
+  },
+  {
+   "t0": 546.347,
+   "kind": "bust",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 549.319,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "west_props__money_sack_dollar_sign",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 551.095,
+   "kind": "scene",
+   "bg": "bg_wooden_courtroom_interior",
+   "cast": [
+    {
+     "sprite": "charley_ford",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_law__wild_west_judge_black_suit",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "THE FORD BROTHERS",
+    "sub": "charged with murder",
+    "at": null,
+    "t": 552.478
+   }
+  },
+  {
+   "t0": 556.286,
+   "kind": "bust",
+   "bg": "bg_wooden_courtroom_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "SENTENCED TO HANG",
+    "sub": "",
+    "corner": "tl",
+    "t": 557.641
+   },
+   "dark": 0.25
+  },
+  {
+   "t0": 558.29,
+   "kind": "scene",
+   "bg": "bg_wyoming_governor_office",
+   "cast": [
+    {
+     "sprite": "crittenden",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "PARDONED",
+    "sub": "same day",
+    "at": null,
+    "t": 559.788
+   }
+  },
+  {
+   "t0": 560.748,
+   "kind": "scene",
+   "bg": "bg_stage_1880",
+   "cast": [
+    {
+     "sprite": "bob_ford",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "charley_ford",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 563.384,
+   "kind": "bust",
+   "bg": "bg_stage_1880",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 567.441,
+   "kind": "scene",
+   "bg": "bg_stage_1880",
+   "cast": [
+    {
+     "sprite": "west_frontier2__wild_west_town_crowd_five",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 569.717,
+   "kind": "scene",
+   "bg": "bg_tombstone_pool_hall_night",
+   "cast": [
+    {
+     "sprite": "west_outlaws_act__wild_west_outlaw_lying_dead",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "1892",
+    "sub": "Creede, Colorado",
+    "corner": "tl",
+    "t": 569.717
+   },
+   "plate": {
+    "text": "BOB FORD",
+    "sub": "shot dead",
+    "at": null,
+    "t": 571.047
+   },
+   "flash": 571.501,
+   "dark": 0.35
+  },
+  {
+   "t0": 574.029,
+   "kind": "scene",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__frank_james_duster",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 574.914,
+   "kind": "bust",
+   "bg": "bg_wyoming_governor_office",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "OCT 1882",
+    "sub": "",
+    "corner": "tl",
+    "t": 574.914
+   }
+  },
+  {
+   "t0": 578.706,
+   "kind": "scene",
+   "bg": "bg_wyoming_governor_office",
+   "cast": [
+    {
+     "sprite": "west_guns__colt_single_action_revolver",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "focusT": 579.673
+  },
+  {
+   "t0": 580.36,
+   "kind": "scene",
+   "bg": "bg_wooden_courtroom_interior",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__frank_james_duster",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_law__wild_west_judge_black_suit",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NOT GUILTY",
+    "sub": "",
+    "at": null,
+    "t": 580.826
+   }
+  },
+  {
+   "t0": 582.628,
+   "kind": "scene",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__frank_james_duster",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1915",
+    "sub": "Frank dies at 72",
+    "corner": "tl",
+    "t": 582.628
+   }
+  },
+  {
+   "t0": 585.189,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 588.282,
+   "kind": "scene",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "zerelda_old",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "gravestone",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 590.978,
+   "kind": "bust",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "TRAITOR & COWARD",
+    "sub": "on his gravestone",
+    "at": null,
+    "t": 592.441
+   }
+  },
+  {
+   "t0": 594.086,
+   "kind": "scene",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "west_frontier2__wild_west_town_crowd_five",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 597.144,
+   "kind": "scene",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "gravestone",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 601.442,
+   "kind": "scene",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "west_frontier2__wild_west_undertaker_measuring_tape",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "gravestone",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1995",
+    "sub": "exhumation",
+    "corner": "tl",
+    "t": 601.442
+   }
+  },
+  {
+   "t0": 604.782,
+   "kind": "paper",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "dna_vial",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "DNA TEST",
+      "size": "h",
+      "t": 606.096
+     },
+     {
+      "text": "1995",
+      "size": "n",
+      "t": 605.249
+     }
+    ],
+    "stamp": {
+     "text": "MATCH",
+     "t": 607.615
+    }
+   }
+  },
+  {
+   "t0": 609.566,
+   "kind": "montage",
+   "bg": null,
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "montage": {
+    "bgs": [
+     "bg_jj_farm",
+     "bg_missouri_forest_trail",
+     "bg_west_railroad",
+     "bg_northfield"
+    ],
+    "caps": [
+     "1847",
+     "1864",
+     "1873",
+     "1876"
+    ],
+    "capT": [
+     609.866,
+     610.466,
+     611.066,
+     611.666
+    ]
+   }
+  },
+  {
+   "t0": 610.743,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 614.886,
+   "kind": "scene",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "jesse_adult_aim",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 618.346,
+   "kind": "scene",
+   "bg": "bg_missouri_forest_trail",
+   "cast": [
+    {
+     "sprite": "jesse_young_guerrilla_ride",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "auto_261125_09cb9f_10__bloody_bill_anderson_mounted",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 620.229,
+   "kind": "scene",
+   "bg": "bg_west_bank_interior",
+   "cast": [
+    {
+     "sprite": "jesse_adult_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_town__wild_west_banker_suit_pocket",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 621.89,
+   "kind": "scene",
+   "bg": "bg_west_railroad",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__derailed_express_car_tilted",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 624.181,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_adult_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 626.516,
+   "kind": "scene",
+   "bg": "bg_northfield",
+   "cast": [
+    {
+     "sprite": "jesse_adult_ride",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 628.31,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_reach",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 633.219,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "jesse_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 635.767,
+   "kind": "bust",
+   "bg": "bg_jj_farm",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "JESSE WOODSON JAMES",
+    "sub": "1847 - 1882",
+    "cast": 0,
+    "t": 635.767
+   }
+  },
+  {
+   "t0": 637.653,
+   "kind": "paper",
+   "bg": "bg_west_town_street",
+   "cast": [
+    {
+     "sprite": "auto_261125_09cb9f_10__old_missouri_newspaper",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "ROBIN HOOD",
+      "size": "h",
+      "t": 639.003
+     },
+     {
+      "text": "OR ROBBER?",
+      "size": "l",
+      "t": 644.268
+     }
+    ]
+   }
+  },
+  {
+   "t0": 644.967,
+   "kind": "bust",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "jesse_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "close",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 646.798,
+   "kind": "scene",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "jesse_adult_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "medium",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "REBEL OR ROBBER?",
+    "sub": "comment below",
+    "at": null,
+    "t": 648.332
+   },
+   "warm": true,
+   "endCard": {
+    "text": "WHO SHOULD BE NEXT?",
+    "sub": "Drop a name in the comments",
+    "t": 649.739
+   }
+  }
+ ],
+ "onsets": [
+  0.4,
+  0.591,
+  0.839,
+  1.145,
+  1.451,
+  1.642,
+  2.005,
+  2.56,
+  2.827,
+  3.132,
+  3.438,
+  3.916,
+  4.107,
+  4.808,
+  5.141,
+  5.536,
+  5.806,
+  6.201,
+  6.471,
+  6.928,
+  7.198,
+  7.718,
+  8.433,
+  8.746,
+  9.412,
+  9.784,
+  10.097,
+  10.352,
+  10.489,
+  11.122,
+  11.332,
+  11.543,
+  11.753,
+  11.964,
+  12.368,
+  12.676,
+  13.207,
+  13.547,
+  14.014,
+  14.227,
+  14.566,
+  15.77,
+  16.01,
+  16.361,
+  16.921,
+  17.348,
+  17.484,
+  18.115,
+  18.455,
+  19.319,
+  19.615,
+  20.496,
+  20.665,
+  20.986,
+  21.156,
+  21.426,
+  22.017,
+  22.279,
+  22.541,
+  22.802,
+  23.124,
+  23.507,
+  24.089,
+  24.294,
+  24.744,
+  25.072,
+  25.584,
+  28.1,
+  28.757,
+  29.23,
+  29.789,
+  30.795,
+  31.3,
+  31.667,
+  32.102,
+  32.676,
+  33.431,
+  33.572,
+  33.893,
+  34.215,
+  34.265,
+  34.385,
+  34.707,
+  34.831,
+  36.566,
+  36.914,
+  37.436,
+  38.126,
+  38.226,
+  38.378,
+  38.922,
+  39.711,
+  39.934,
+  40.426,
+  41.371,
+  41.552,
+  41.895,
+  42.238,
+  42.364,
+  43.136,
+  43.727,
+  44.384,
+  44.52,
+  45.18,
+  45.753,
+  46.191,
+  47.463,
+  48.553,
+  48.603,
+  49.223,
+  49.573,
+  49.931,
+  50.533,
+  50.583,
+  50.942,
+  51.346,
+  51.978,
+  52.778,
+  53.11,
+  53.379,
+  54.128,
+  54.344,
+  54.738,
+  55.336,
+  56.152,
+  56.706,
+  57.266,
+  57.598,
+  58.513,
+  59.071,
+  59.39,
+  59.97,
+  60.261,
+  60.619,
+  61.045,
+  61.403,
+  61.694,
+  62.574,
+  62.921,
+  63.349,
+  63.936,
+  64.364,
+  65.112,
+  66.019,
+  66.322,
+  66.739,
+  67.209,
+  67.457,
+  67.874,
+  68.235,
+  68.538,
+  68.727,
+  68.974,
+  69.618,
+  69.921,
+  70.604,
+  70.782,
+  71.067,
+  71.245,
+  71.637,
+  71.815,
+  72.047,
+  72.759,
+  73.01,
+  73.487,
+  73.964,
+  74.685,
+  74.837,
+  75.249,
+  75.662,
+  75.944,
+  76.677,
+  76.989,
+  77.419,
+  77.906,
+  78.597,
+  78.928,
+  79.508,
+  79.901,
+  80.614,
+  80.977,
+  81.272,
+  81.839,
+  81.998,
+  82.429,
+  82.996,
+  83.374,
+  83.934,
+  84.814,
+  85.015,
+  85.397,
+  85.719,
+  85.98,
+  86.622,
+  86.845,
+  87.12,
+  87.291,
+  87.463,
+  87.686,
+  88.064,
+  88.339,
+  88.985,
+  89.267,
+  89.874,
+  90.091,
+  90.243,
+  90.72,
+  91.452,
+  91.74,
+  92.027,
+  92.584,
+  92.872,
+  93.641,
+  93.946,
+  94.251,
+  94.442,
+  95.067,
+  95.346,
+  95.56,
+  96.16,
+  97.267,
+  97.317,
+  97.7,
+  97.978,
+  98.385,
+  98.6,
+  98.943,
+  99.35,
+  101.689,
+  102.067,
+  102.445,
+  102.704,
+  103.44,
+  104.079,
+  104.381,
+  104.57,
+  104.928,
+  105.23,
+  105.702,
+  106.401,
+  107.363,
+  107.83,
+  108.743,
+  109.014,
+  109.41,
+  109.619,
+  110.148,
+  110.345,
+  110.602,
+  110.918,
+  111.234,
+  111.49,
+  111.806,
+  112.063,
+  112.757,
+  113.507,
+  114.069,
+  115.114,
+  115.542,
+  116.106,
+  116.466,
+  116.827,
+  117.12,
+  117.801,
+  118.267,
+  118.734,
+  118.976,
+  119.65,
+  119.944,
+  120.238,
+  120.532,
+  121.476,
+  121.758,
+  121.988,
+  122.112,
+  122.394,
+  122.782,
+  123.012,
+  123.615,
+  123.837,
+  124.11,
+  124.383,
+  124.604,
+  124.877,
+  124.997,
+  125.589,
+  125.931,
+  126.274,
+  126.552,
+  126.83,
+  127.493,
+  127.813,
+  128.133,
+  128.453,
+  128.713,
+  128.913,
+  129.613,
+  129.951,
+  130.912,
+  131.907,
+  132.16,
+  132.412,
+  132.665,
+  132.87,
+  133.028,
+  133.233,
+  133.854,
+  134.074,
+  134.344,
+  134.615,
+  135.154,
+  135.683,
+  136.605,
+  136.76,
+  137.114,
+  137.645,
+  138.076,
+  138.694,
+  138.916,
+  139.188,
+  139.41,
+  140.091,
+  140.633,
+  141.364,
+  141.92,
+  142.62,
+  142.947,
+  143.212,
+  143.539,
+  143.865,
+  144.008,
+  144.274,
+  144.723,
+  145.172,
+  145.499,
+  146.391,
+  146.641,
+  146.949,
+  147.314,
+  147.449,
+  148.076,
+  148.394,
+  149.026,
+  149.076,
+  149.505,
+  149.823,
+  150.081,
+  150.28,
+  150.538,
+  151.138,
+  151.494,
+  152.499,
+  153.173,
+  154.089,
+  154.707,
+  155.71,
+  156.359,
+  157.265,
+  157.714,
+  158.162,
+  158.428,
+  158.754,
+  158.897,
+  159.604,
+  159.793,
+  160.152,
+  160.397,
+  160.756,
+  161.285,
+  161.644,
+  161.946,
+  162.135,
+  162.814,
+  164.072,
+  164.295,
+  164.878,
+  165.153,
+  165.427,
+  165.97,
+  166.227,
+  166.485,
+  166.743,
+  167.223,
+  167.399,
+  167.616,
+  167.873,
+  168.41,
+  168.796,
+  169.48,
+  169.718,
+  170.165,
+  170.49,
+  170.754,
+  171.141,
+  171.405,
+  172.267,
+  172.531,
+  172.796,
+  172.911,
+  173.325,
+  173.49,
+  173.804,
+  174.267,
+  174.481,
+  175.016,
+  175.498,
+  175.748,
+  175.999,
+  176.249,
+  176.615,
+  176.866,
+  177.174,
+  177.86,
+  178.3,
+  179.24,
+  179.394,
+  179.812,
+  180.4,
+  180.799,
+  181.151,
+  181.37,
+  181.854,
+  182.074,
+  182.294,
+  183.013,
+  185.743,
+  185.793,
+  185.843,
+  185.893,
+  185.943,
+  186.379,
+  186.745,
+  186.796,
+  186.846,
+  187.115,
+  187.391,
+  187.73,
+  187.942,
+  188.154,
+  189.131,
+  189.37,
+  189.499,
+  189.849,
+  190.255,
+  190.66,
+  190.9,
+  191.36,
+  191.6,
+  192.215,
+  192.459,
+  193.055,
+  193.525,
+  193.915,
+  194.631,
+  194.93,
+  195.566,
+  195.921,
+  196.429,
+  196.985,
+  197.389,
+  197.68,
+  198.236,
+  198.847,
+  199.047,
+  199.386,
+  199.586,
+  199.925,
+  200.125,
+  200.691,
+  201.033,
+  201.824,
+  202.221,
+  202.71,
+  203.016,
+  203.779,
+  204.497,
+  205.028,
+  205.389,
+  205.636,
+  206.203,
+  206.728,
+  209.221,
+  209.627,
+  210.032,
+  210.344,
+  211.163,
+  211.597,
+  211.95,
+  212.786,
+  213.01,
+  213.896,
+  214.258,
+  214.749,
+  215.174,
+  215.721,
+  216.016,
+  216.366,
+  217.092,
+  217.411,
+  217.789,
+  218.107,
+  218.426,
+  218.625,
+  219.442,
+  219.673,
+  219.905,
+  220.243,
+  220.635,
+  220.813,
+  221.045,
+  221.276,
+  221.508,
+  222.059,
+  223.049,
+  223.724,
+  224.72,
+  225.24,
+  226.142,
+  226.293,
+  226.637,
+  226.981,
+  227.132,
+  227.476,
+  227.691,
+  228.1,
+  229.023,
+  229.327,
+  229.574,
+  229.763,
+  230.01,
+  230.371,
+  230.845,
+  231.149,
+  231.738,
+  231.927,
+  232.516,
+  233.31,
+  233.49,
+  233.671,
+  234.255,
+  234.802,
+  235.595,
+  235.892,
+  236.133,
+  236.374,
+  236.671,
+  236.967,
+  237.584,
+  237.813,
+  237.999,
+  238.315,
+  238.587,
+  238.73,
+  238.916,
+  239.145,
+  239.375,
+  239.967,
+  240.21,
+  240.566,
+  240.922,
+  241.357,
+  241.786,
+  241.973,
+  242.609,
+  243.339,
+  243.931,
+  244.912,
+  245.496,
+  246.4,
+  246.648,
+  246.953,
+  247.258,
+  247.392,
+  248.017,
+  248.249,
+  248.534,
+  248.712,
+  248.944,
+  249.709,
+  249.929,
+  250.149,
+  250.47,
+  250.741,
+  250.961,
+  251.181,
+  251.401,
+  251.773,
+  252.146,
+  252.737,
+  252.991,
+  253.794,
+  254.068,
+  254.468,
+  254.741,
+  255.525,
+  256.315,
+  256.586,
+  257.029,
+  257.76,
+  258.021,
+  258.282,
+  258.69,
+  258.853,
+  259.065,
+  259.793,
+  260.127,
+  260.506,
+  260.749,
+  260.946,
+  261.6,
+  261.829,
+  262.217,
+  262.394,
+  262.623,
+  262.905,
+  263.082,
+  263.523,
+  264.178,
+  264.387,
+  264.596,
+  264.902,
+  265.208,
+  265.881,
+  266.139,
+  266.457,
+  266.834,
+  267.211,
+  267.469,
+  267.727,
+  268.283,
+  268.482,
+  269.06,
+  269.298,
+  269.59,
+  269.883,
+  270.066,
+  270.248,
+  270.596,
+  271.483,
+  271.746,
+  272.008,
+  272.817,
+  273.2,
+  273.722,
+  274.016,
+  274.378,
+  274.605,
+  274.967,
+  275.465,
+  276.35,
+  276.498,
+  276.824,
+  277.106,
+  277.299,
+  277.536,
+  277.639,
+  278.286,
+  278.405,
+  278.881,
+  279.204,
+  279.796,
+  280.366,
+  280.663,
+  281.348,
+  281.778,
+  281.973,
+  282.227,
+  282.86,
+  283.239,
+  283.462,
+  284.109,
+  284.63,
+  284.839,
+  285.422,
+  285.693,
+  286.027,
+  286.36,
+  286.944,
+  287.152,
+  287.423,
+  288.077,
+  288.406,
+  288.735,
+  289.216,
+  290.017,
+  290.171,
+  290.37,
+  290.662,
+  291.046,
+  291.43,
+  291.583,
+  291.783,
+  292.121,
+  292.871,
+  293.651,
+  294.163,
+  295.295,
+  295.825,
+  296.591,
+  296.93,
+  297.269,
+  297.672,
+  298.075,
+  298.223,
+  298.883,
+  299.022,
+  299.4,
+  299.778,
+  300.216,
+  300.475,
+  301.113,
+  301.38,
+  301.832,
+  302.16,
+  302.809,
+  303.276,
+  304.283,
+  305.179,
+  305.485,
+  305.791,
+  306.098,
+  306.404,
+  307.525,
+  307.789,
+  308.004,
+  308.17,
+  308.385,
+  308.699,
+  309.013,
+  309.525,
+  309.69,
+  309.905,
+  310.368,
+  310.952,
+  311.183,
+  311.575,
+  311.806,
+  312.09,
+  312.268,
+  312.98,
+  313.608,
+  313.808,
+  314.756,
+  315.0,
+  315.682,
+  316.656,
+  316.937,
+  317.4,
+  318.001,
+  318.343,
+  319.135,
+  319.375,
+  319.615,
+  319.855,
+  320.206,
+  320.501,
+  323.046,
+  323.348,
+  324.067,
+  324.438,
+  324.74,
+  325.431,
+  325.627,
+  325.941,
+  326.254,
+  326.509,
+  327.116,
+  327.724,
+  328.475,
+  328.751,
+  329.091,
+  329.813,
+  330.026,
+  330.877,
+  331.767,
+  332.336,
+  333.451,
+  334.268,
+  334.831,
+  335.067,
+  335.576,
+  335.867,
+  336.375,
+  337.258,
+  337.522,
+  337.835,
+  338.049,
+  338.264,
+  338.577,
+  338.791,
+  339.475,
+  339.845,
+  340.79,
+  341.029,
+  341.314,
+  341.419,
+  341.748,
+  342.122,
+  342.317,
+  342.966,
+  343.348,
+  344.737,
+  345.034,
+  345.443,
+  345.687,
+  346.317,
+  346.503,
+  346.856,
+  347.208,
+  347.991,
+  348.199,
+  348.532,
+  348.865,
+  349.58,
+  349.882,
+  350.409,
+  350.767,
+  351.012,
+  351.201,
+  352.106,
+  352.635,
+  352.911,
+  353.122,
+  353.717,
+  354.171,
+  354.431,
+  355.108,
+  355.989,
+  356.425,
+  356.624,
+  357.44,
+  357.788,
+  358.136,
+  358.485,
+  358.833,
+  359.501,
+  359.716,
+  360.179,
+  360.493,
+  360.659,
+  360.874,
+  361.756,
+  362.371,
+  362.807,
+  363.124,
+  363.263,
+  363.58,
+  363.778,
+  364.274,
+  364.851,
+  365.739,
+  366.104,
+  366.789,
+  367.121,
+  367.348,
+  367.522,
+  367.802,
+  368.028,
+  368.569,
+  368.77,
+  368.997,
+  369.381,
+  369.608,
+  369.887,
+  370.409,
+  370.632,
+  371.011,
+  371.131,
+  371.303,
+  371.578,
+  371.75,
+  372.345,
+  372.627,
+  372.751,
+  373.033,
+  373.209,
+  373.439,
+  374.252,
+  374.522,
+  374.729,
+  374.999,
+  375.331,
+  375.725,
+  376.052,
+  376.293,
+  376.936,
+  377.393,
+  378.203,
+  379.083,
+  379.226,
+  379.485,
+  379.822,
+  382.215,
+  382.908,
+  383.475,
+  384.097,
+  385.174,
+  386.094,
+  387.151,
+  387.487,
+  387.902,
+  388.636,
+  389.061,
+  389.353,
+  389.711,
+  390.069,
+  390.747,
+  391.562,
+  392.415,
+  392.787,
+  393.276,
+  394.144,
+  394.388,
+  394.745,
+  395.365,
+  395.71,
+  395.892,
+  396.128,
+  396.419,
+  396.71,
+  396.946,
+  397.291,
+  397.8,
+  398.411,
+  398.732,
+  399.561,
+  399.997,
+  401.101,
+  401.252,
+  401.572,
+  401.967,
+  402.287,
+  402.46,
+  402.849,
+  403.219,
+  403.409,
+  404.203,
+  404.495,
+  404.854,
+  405.079,
+  405.733,
+  405.945,
+  406.237,
+  406.971,
+  407.277,
+  407.583,
+  407.889,
+  408.138,
+  408.444,
+  409.013,
+  409.993,
+  410.082,
+  410.446,
+  411.014,
+  411.491,
+  412.276,
+  412.615,
+  413.402,
+  413.521,
+  413.946,
+  414.37,
+  414.693,
+  414.965,
+  415.084,
+  415.406,
+  416.1,
+  416.279,
+  417.02,
+  417.105,
+  417.283,
+  417.569,
+  417.801,
+  418.033,
+  418.319,
+  418.498,
+  418.73,
+  419.295,
+  419.639,
+  420.38,
+  420.724,
+  421.068,
+  421.571,
+  421.915,
+  422.739,
+  423.033,
+  423.395,
+  423.689,
+  424.05,
+  424.548,
+  425.432,
+  425.716,
+  426.0,
+  426.284,
+  426.902,
+  427.412,
+  427.631,
+  427.915,
+  428.264,
+  428.768,
+  429.019,
+  429.56,
+  429.811,
+  430.352,
+  430.545,
+  430.68,
+  431.366,
+  432.281,
+  432.621,
+  432.961,
+  433.174,
+  433.898,
+  435.043,
+  435.425,
+  435.735,
+  436.045,
+  436.355,
+  437.057,
+  437.872,
+  438.359,
+  439.392,
+  440.206,
+  441.022,
+  441.576,
+  442.136,
+  442.468,
+  443.384,
+  443.725,
+  444.294,
+  444.648,
+  444.989,
+  445.394,
+  447.806,
+  448.161,
+  449.082,
+  450.036,
+  450.274,
+  450.715,
+  451.578,
+  451.985,
+  452.281,
+  452.633,
+  453.04,
+  453.6,
+  453.908,
+  454.287,
+  455.128,
+  455.588,
+  456.473,
+  456.729,
+  456.985,
+  457.241,
+  457.556,
+  457.693,
+  457.949,
+  458.205,
+  458.343,
+  459.214,
+  459.503,
+  459.926,
+  459.976,
+  460.436,
+  460.925,
+  462.137,
+  463.078,
+  463.406,
+  463.672,
+  464.061,
+  464.388,
+  464.975,
+  465.561,
+  466.655,
+  466.968,
+  467.425,
+  467.593,
+  467.905,
+  468.61,
+  468.852,
+  469.094,
+  469.336,
+  470.288,
+  470.565,
+  470.843,
+  471.248,
+  471.525,
+  471.802,
+  472.4,
+  473.022,
+  473.964,
+  474.119,
+  474.539,
+  475.345,
+  476.525,
+  476.753,
+  477.318,
+  477.927,
+  478.485,
+  479.229,
+  479.383,
+  480.063,
+  480.414,
+  481.086,
+  481.342,
+  481.598,
+  482.196,
+  482.606,
+  483.276,
+  483.649,
+  483.787,
+  484.575,
+  484.968,
+  485.656,
+  486.27,
+  487.425,
+  487.475,
+  487.682,
+  488.001,
+  488.407,
+  488.771,
+  488.998,
+  489.431,
+  489.59,
+  490.159,
+  491.047,
+  491.304,
+  491.639,
+  492.359,
+  492.848,
+  493.58,
+  494.092,
+  494.358,
+  494.945,
+  495.264,
+  495.509,
+  496.369,
+  496.531,
+  496.79,
+  496.952,
+  497.357,
+  497.664,
+  498.195,
+  498.462,
+  498.667,
+  499.057,
+  499.386,
+  500.157,
+  500.674,
+  501.568,
+  501.956,
+  502.405,
+  503.296,
+  503.443,
+  503.843,
+  504.243,
+  504.453,
+  504.601,
+  505.257,
+  505.497,
+  505.793,
+  506.089,
+  506.274,
+  506.681,
+  507.408,
+  507.655,
+  507.96,
+  508.493,
+  508.797,
+  509.102,
+  509.669,
+  510.069,
+  510.789,
+  511.683,
+  511.938,
+  512.135,
+  512.331,
+  512.587,
+  513.398,
+  513.741,
+  513.891,
+  514.233,
+  514.832,
+  515.078,
+  515.381,
+  515.628,
+  515.931,
+  516.177,
+  516.8,
+  517.006,
+  517.306,
+  517.559,
+  517.765,
+  518.255,
+  518.413,
+  518.619,
+  519.097,
+  519.346,
+  519.548,
+  519.89,
+  519.999,
+  520.388,
+  520.544,
+  520.746,
+  521.315,
+  521.681,
+  522.435,
+  523.375,
+  523.604,
+  523.887,
+  524.169,
+  524.292,
+  524.627,
+  524.804,
+  525.033,
+  525.53,
+  525.793,
+  526.056,
+  526.22,
+  526.385,
+  526.598,
+  527.181,
+  527.479,
+  527.721,
+  527.964,
+  528.43,
+  528.616,
+  528.747,
+  529.268,
+  530.055,
+  530.525,
+  531.403,
+  531.649,
+  531.969,
+  532.215,
+  533.003,
+  533.46,
+  533.721,
+  534.4,
+  534.618,
+  535.408,
+  535.705,
+  536.07,
+  536.504,
+  536.801,
+  537.761,
+  538.161,
+  538.973,
+  539.16,
+  539.39,
+  539.534,
+  539.765,
+  540.316,
+  540.627,
+  541.329,
+  541.74,
+  542.375,
+  542.729,
+  543.292,
+  546.347,
+  546.672,
+  547.072,
+  547.473,
+  547.723,
+  548.123,
+  548.298,
+  549.319,
+  549.558,
+  550.012,
+  550.322,
+  551.095,
+  551.584,
+  552.305,
+  552.478,
+  552.9,
+  553.189,
+  553.745,
+  554.1,
+  554.727,
+  555.075,
+  555.488,
+  556.286,
+  556.799,
+  557.436,
+  557.641,
+  558.29,
+  558.493,
+  558.696,
+  558.945,
+  559.148,
+  559.351,
+  559.788,
+  560.178,
+  560.748,
+  561.174,
+  561.52,
+  562.026,
+  562.292,
+  562.558,
+  563.384,
+  563.756,
+  564.127,
+  564.634,
+  564.88,
+  565.134,
+  565.388,
+  565.701,
+  566.073,
+  566.327,
+  566.758,
+  567.441,
+  567.997,
+  568.419,
+  569.041,
+  569.717,
+  570.017,
+  570.455,
+  571.047,
+  571.27,
+  571.501,
+  571.87,
+  572.24,
+  572.47,
+  572.632,
+  573.278,
+  574.029,
+  574.258,
+  574.914,
+  575.136,
+  575.513,
+  575.838,
+  576.111,
+  576.514,
+  576.646,
+  576.971,
+  577.245,
+  577.467,
+  578.049,
+  578.706,
+  578.873,
+  579.19,
+  579.457,
+  579.673,
+  580.36,
+  580.826,
+  581.291,
+  581.503,
+  582.032,
+  582.628,
+  582.825,
+  583.198,
+  583.454,
+  584.181,
+  584.495,
+  585.189,
+  585.379,
+  585.74,
+  586.329,
+  586.747,
+  586.994,
+  587.241,
+  587.658,
+  588.282,
+  588.586,
+  589.004,
+  589.308,
+  589.441,
+  589.802,
+  589.992,
+  590.297,
+  590.978,
+  591.176,
+  591.551,
+  591.868,
+  592.303,
+  592.441,
+  592.935,
+  593.192,
+  593.331,
+  594.086,
+  594.373,
+  594.66,
+  594.815,
+  595.367,
+  595.896,
+  596.327,
+  597.144,
+  597.515,
+  597.71,
+  598.081,
+  598.335,
+  598.53,
+  598.843,
+  599.534,
+  599.942,
+  600.221,
+  600.629,
+  600.843,
+  601.442,
+  601.655,
+  602.25,
+  602.992,
+  603.706,
+  603.983,
+  604.259,
+  604.782,
+  605.249,
+  605.716,
+  606.096,
+  606.795,
+  607.14,
+  607.615,
+  608.284,
+  609.566,
+  609.914,
+  610.743,
+  610.953,
+  611.553,
+  611.852,
+  611.999,
+  612.713,
+  612.986,
+  613.196,
+  613.343,
+  613.742,
+  614.331,
+  614.886,
+  615.079,
+  615.329,
+  615.866,
+  616.204,
+  616.455,
+  616.763,
+  617.187,
+  617.437,
+  617.63,
+  618.346,
+  618.591,
+  618.892,
+  619.194,
+  619.608,
+  620.229,
+  620.616,
+  621.004,
+  621.89,
+  622.146,
+  622.402,
+  622.54,
+  622.915,
+  623.171,
+  623.427,
+  624.181,
+  624.391,
+  624.649,
+  624.907,
+  625.261,
+  625.664,
+  625.826,
+  625.939,
+  626.516,
+  626.782,
+  627.294,
+  628.31,
+  628.586,
+  628.862,
+  629.138,
+  629.732,
+  629.944,
+  630.092,
+  630.73,
+  631.08,
+  631.228,
+  631.962,
+  633.219,
+  633.575,
+  633.932,
+  634.155,
+  634.311,
+  634.6,
+  634.89,
+  635.767,
+  636.239,
+  636.861,
+  637.653,
+  638.06,
+  638.356,
+  638.763,
+  639.003,
+  639.675,
+  639.917,
+  640.159,
+  640.457,
+  640.922,
+  641.164,
+  641.518,
+  641.816,
+  642.489,
+  642.726,
+  643.034,
+  643.343,
+  643.722,
+  644.03,
+  644.268,
+  644.967,
+  645.275,
+  645.676,
+  646.169,
+  646.798,
+  647.142,
+  647.644,
+  648.147,
+  648.332,
+  648.898,
+  649.131,
+  649.554,
+  649.739
+ ]
+}

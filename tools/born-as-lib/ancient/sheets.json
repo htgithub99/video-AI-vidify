@@ -1,0 +1,903 @@
+{
+ "sheets": [
+  {
+   "id": "rome_legion",
+   "era": "rome",
+   "kind": "person",
+   "cols": 5,
+   "rows": 2,
+   "items": [
+    [
+     "legionary_march",
+     1.75,
+     "Roman legionary in lorica segmentata and helmet marching with red rectangular scutum and pilum"
+    ],
+    [
+     "legionary_stand",
+     1.75,
+     "Roman legionary standing with scutum and pilum"
+    ],
+    [
+     "legionary_attack",
+     1.75,
+     "Roman legionary stabbing with gladius behind his scutum"
+    ],
+    [
+     "legionary_throw_pilum",
+     1.75,
+     "Roman legionary throwing a pilum"
+    ],
+    [
+     "centurion_stand",
+     1.8,
+     "Roman centurion with transverse red crest helmet, chain mail and vine stick"
+    ],
+    [
+     "signifer_stand",
+     1.8,
+     "Roman signifer with bearskin over helmet holding a standard with discs"
+    ],
+    [
+     "aquilifer_stand",
+     1.8,
+     "Roman aquilifer holding the golden eagle standard"
+    ],
+    [
+     "legate_cape",
+     1.8,
+     "Roman general in muscle cuirass and long red cloak standing"
+    ],
+    [
+     "praetorian_stand",
+     1.75,
+     "Roman praetorian guard with oval shield and plumed helmet"
+    ],
+    [
+     "roman_archer",
+     1.75,
+     "Roman auxiliary archer with bow"
+    ]
+   ]
+  },
+  {
+   "id": "rome_legion_act",
+   "era": "rome",
+   "kind": "person",
+   "cols": 5,
+   "rows": 2,
+   "items": [
+    [
+     "legionary_charge",
+     1.75,
+     "Roman legionary charging with gladius raised"
+    ],
+    [
+     "legionary_shield_up",
+     1.75,
+     "Roman legionary crouching with scutum raised above his head"
+    ],
+    [
+     "legionary_wounded",
+     0.6,
+     "wounded Roman legionary lying on the ground"
+    ],
+    [
+     "legionary_rest",
+     1.0,
+     "Roman legionary sitting and resting"
+    ],
+    [
+     "legionary_dig",
+     1.75,
+     "Roman legionary digging with a pickaxe dolabra"
+    ],
+    [
+     "legionary_carry_pack",
+     1.75,
+     "Roman legionary marching with furca pack pole on shoulder"
+    ],
+    [
+     "cornicen_horn",
+     1.75,
+     "Roman cornicen blowing a large curved cornu horn"
+    ],
+    [
+     "roman_medic",
+     1.75,
+     "Roman army medic with bandages kneeling"
+    ],
+    [
+     "legionary_surrender",
+     1.75,
+     "Roman legionary on knees dropping his sword"
+    ],
+    [
+     "general_pointing",
+     1.8,
+     "Roman general in red cloak pointing forward"
+    ]
+   ]
+  },
+  {
+   "id": "rome_civ",
+   "era": "rome",
+   "kind": "person",
+   "cols": 5,
+   "rows": 2,
+   "items": [
+    [
+     "senator_toga_stand",
+     1.75,
+     "Roman senator in white toga with purple stripe standing"
+    ],
+    [
+     "senator_toga_speech",
+     1.75,
+     "Roman senator in toga giving a speech with raised arm"
+    ],
+    [
+     "emperor_laurel",
+     1.8,
+     "Roman emperor in purple toga and laurel wreath standing"
+    ],
+    [
+     "patrician_woman",
+     1.65,
+     "Roman noble woman in long stola and palla with styled hair"
+    ],
+    [
+     "plebeian_man_walk",
+     1.7,
+     "Roman plebeian man in short brown tunic walking"
+    ],
+    [
+     "plebeian_woman_basket",
+     1.6,
+     "Roman common woman carrying a basket"
+    ],
+    [
+     "slave_carry_amphora",
+     1.7,
+     "Roman servant carrying an amphora on his shoulder"
+    ],
+    [
+     "merchant_stand",
+     1.7,
+     "Roman merchant with coin purse standing"
+    ],
+    [
+     "roman_child",
+     1.2,
+     "Roman child in short tunic"
+    ],
+    [
+     "vestal_priestess",
+     1.65,
+     "Roman vestal priestess in white robes and veil"
+    ]
+   ]
+  },
+  {
+   "id": "rome_arena",
+   "era": "rome",
+   "kind": "person",
+   "cols": 5,
+   "rows": 2,
+   "items": [
+    [
+     "gladiator_murmillo",
+     1.75,
+     "gladiator murmillo with fish-crest helmet, big shield and sword"
+    ],
+    [
+     "gladiator_retiarius",
+     1.75,
+     "gladiator retiarius with net and trident"
+    ],
+    [
+     "gladiator_thraex",
+     1.75,
+     "gladiator thraex with griffin-crest helmet, small shield and curved sword"
+    ],
+    [
+     "gladiator_fallen",
+     0.6,
+     "defeated gladiator lying on the sand"
+    ],
+    [
+     "charioteer",
+     1.7,
+     "Roman charioteer in team-colored tunic with whip"
+    ],
+    [
+     "lanista_trainer",
+     1.75,
+     "gladiator trainer holding a stick"
+    ],
+    [
+     "arena_lion",
+     1.2,
+     "lion walking"
+    ],
+    [
+     "war_elephant",
+     3.2,
+     "Carthaginian war elephant with a small tower and rider"
+    ],
+    [
+     "roman_horse_saddled",
+     1.6,
+     "Roman cavalry horse with saddle cloth, no rider"
+    ],
+    [
+     "ox_pair",
+     1.6,
+     "two oxen yoked together"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_enemies",
+   "era": "ancient",
+   "kind": "person",
+   "cols": 5,
+   "rows": 2,
+   "items": [
+    [
+     "gaul_warrior",
+     1.8,
+     "Gallic warrior with long mustache, oval shield and long sword"
+    ],
+    [
+     "gaul_chieftain",
+     1.85,
+     "Gallic chieftain with winged helmet, torc and cloak"
+    ],
+    [
+     "germanic_warrior",
+     1.8,
+     "Germanic tribesman with spear, fur cloak and round shield"
+    ],
+    [
+     "carthaginian_soldier",
+     1.75,
+     "Carthaginian soldier with linen armor and round shield"
+    ],
+    [
+     "hannibal_general",
+     1.8,
+     "Carthaginian general in bronze armor and cloak"
+    ],
+    [
+     "greek_hoplite",
+     1.75,
+     "Greek hoplite with Corinthian helmet, round aspis shield and spear"
+    ],
+    [
+     "spartan_warrior",
+     1.75,
+     "Spartan warrior with red cloak and lambda shield"
+    ],
+    [
+     "macedonian_phalangite",
+     1.75,
+     "Macedonian phalangite with very long sarissa pike"
+    ],
+    [
+     "persian_immortal",
+     1.75,
+     "Persian immortal soldier with wicker shield and spear"
+    ],
+    [
+     "egyptian_soldier",
+     1.7,
+     "ancient Egyptian soldier with khopesh sword and shield"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_civ",
+   "era": "ancient",
+   "kind": "person",
+   "cols": 5,
+   "rows": 2,
+   "items": [
+    [
+     "pharaoh",
+     1.8,
+     "Egyptian pharaoh with nemes headdress and crook"
+    ],
+    [
+     "egyptian_priest",
+     1.75,
+     "Egyptian priest with shaved head and leopard skin"
+    ],
+    [
+     "egyptian_worker",
+     1.7,
+     "Egyptian worker carrying a stone block"
+    ],
+    [
+     "egyptian_woman",
+     1.6,
+     "Egyptian noble woman in white linen dress and wig"
+    ],
+    [
+     "greek_philosopher",
+     1.75,
+     "Greek philosopher with beard in himation holding a scroll"
+    ],
+    [
+     "persian_king",
+     1.8,
+     "Persian king with tall crown and long beard"
+    ],
+    [
+     "qin_soldier",
+     1.75,
+     "ancient Chinese Qin dynasty soldier in lamellar armor with ji halberd"
+    ],
+    [
+     "qin_general",
+     1.8,
+     "ancient Chinese Qin dynasty general with tall headdress and armor"
+    ],
+    [
+     "chinese_scholar",
+     1.75,
+     "ancient Chinese scholar in hanfu robe with bamboo scroll"
+    ],
+    [
+     "farmer_ancient",
+     1.7,
+     "ancient farmer with hoe in simple tunic"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_mounted",
+   "era": "ancient",
+   "kind": "animal",
+   "cols": 3,
+   "rows": 2,
+   "items": [
+    [
+     "roman_cavalry_walk",
+     2.5,
+     "Roman cavalryman on horse at a walk with spear and oval shield"
+    ],
+    [
+     "roman_cavalry_gallop",
+     2.5,
+     "Roman cavalryman on galloping horse with sword"
+    ],
+    [
+     "gaul_cavalry_gallop",
+     2.5,
+     "Gallic horseman galloping with spear"
+    ],
+    [
+     "numidian_rider",
+     2.4,
+     "Numidian light horseman on small horse without saddle throwing javelin"
+    ],
+    [
+     "persian_horse_archer",
+     2.5,
+     "Persian horse archer shooting a bow"
+    ],
+    [
+     "camel_rider",
+     2.8,
+     "desert rider on a camel"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_vehicles",
+   "era": "ancient",
+   "kind": "vehicle",
+   "cols": 3,
+   "rows": 2,
+   "items": [
+    [
+     "quadriga_race",
+     1.8,
+     "Roman racing chariot pulled by four horses with charioteer"
+    ],
+    [
+     "war_chariot_egypt",
+     1.8,
+     "Egyptian war chariot with two horses, driver and archer"
+    ],
+    [
+     "ox_cart",
+     2.0,
+     "wooden cart pulled by an ox, loaded with sacks"
+    ],
+    [
+     "roman_wagon_covered",
+     2.5,
+     "Roman covered supply wagon pulled by two mules"
+    ],
+    [
+     "litter_carried",
+     2.0,
+     "Roman curtained litter carried by four bearers"
+    ],
+    [
+     "handcart",
+     1.0,
+     "small wooden handcart"
+    ],
+    [
+     "roman_wagons_pair",
+     2.5,
+     "two covered wagons stacked, cut one out before use"
+    ],
+    [
+     "ox_cart_b",
+     2.0,
+     "second ox cart"
+    ]
+   ],
+   "splitNames": [
+    "quadriga_race",
+    "war_chariot_egypt",
+    "ox_cart",
+    "roman_wagons_pair",
+    "ox_cart_b",
+    "litter_carried",
+    "handcart"
+   ]
+  },
+  {
+   "id": "ancient_ships",
+   "era": "ancient",
+   "kind": "ship",
+   "cols": 2,
+   "rows": 2,
+   "items": [
+    [
+     "roman_trireme",
+     8.0,
+     "Roman trireme warship with oars, square sail and ram"
+    ],
+    [
+     "roman_merchant_ship",
+     8.0,
+     "Roman merchant ship with round hull and sail"
+    ],
+    [
+     "greek_trireme",
+     8.0,
+     "Greek trireme with painted eye on the bow"
+    ],
+    [
+     "egyptian_reed_boat",
+     3.0,
+     "ancient Egyptian boat on the Nile with sail"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_siege",
+   "era": "ancient",
+   "kind": "weapon",
+   "cols": 3,
+   "rows": 2,
+   "items": [
+    [
+     "ballista",
+     2.0,
+     "Roman ballista siege weapon"
+    ],
+    [
+     "onager",
+     2.5,
+     "Roman onager catapult"
+    ],
+    [
+     "scorpio",
+     1.5,
+     "Roman scorpio bolt thrower on tripod"
+    ],
+    [
+     "siege_tower",
+     12.0,
+     "wooden Roman siege tower with wheels"
+    ],
+    [
+     "battering_ram",
+     3.0,
+     "covered battering ram testudo on wheels"
+    ],
+    [
+     "trebuchet_like_catapult",
+     5.0,
+     "large wooden catapult"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_props",
+   "era": "ancient",
+   "kind": "prop",
+   "cols": 6,
+   "rows": 3,
+   "items": [
+    [
+     "amphora",
+     0.9,
+     "clay amphora"
+    ],
+    [
+     "amphora_row",
+     0.9,
+     "row of three amphorae leaning together"
+    ],
+    [
+     "wine_krater",
+     0.6,
+     "decorated Greek krater vase"
+    ],
+    [
+     "scroll",
+     0.3,
+     "rolled papyrus scroll"
+    ],
+    [
+     "wax_tablet",
+     0.2,
+     "Roman wax tablet with stylus"
+    ],
+    [
+     "coin_chest",
+     0.5,
+     "wooden chest full of gold coins"
+    ],
+    [
+     "brazier_fire",
+     1.0,
+     "bronze brazier with fire"
+    ],
+    [
+     "wall_torch",
+     0.6,
+     "burning torch"
+    ],
+    [
+     "scutum_shield",
+     1.1,
+     "Roman red scutum shield standing"
+    ],
+    [
+     "weapon_rack",
+     1.8,
+     "wooden rack with spears and swords"
+    ],
+    [
+     "legion_eagle_standard",
+     2.5,
+     "Roman golden eagle standard on a pole"
+    ],
+    [
+     "vexillum_banner",
+     2.5,
+     "Roman red vexillum banner on a pole without letters"
+    ],
+    [
+     "grain_sacks",
+     0.8,
+     "pile of grain sacks"
+    ],
+    [
+     "wicker_basket_fruit",
+     0.4,
+     "wicker basket of grapes and fruit"
+    ],
+    [
+     "bread_loaves",
+     0.2,
+     "round Roman bread loaves"
+    ],
+    [
+     "marble_bust",
+     0.8,
+     "marble bust of a Roman man on a pedestal"
+    ],
+    [
+     "campfire_pot",
+     0.8,
+     "campfire with a hanging bronze pot"
+    ],
+    [
+     "wooden_stool",
+     0.5,
+     "folding Roman camp stool"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_structures",
+   "era": "ancient",
+   "kind": "structure",
+   "cols": 4,
+   "rows": 2,
+   "items": [
+    [
+     "legion_tent",
+     2.5,
+     "Roman leather contubernium tent"
+    ],
+    [
+     "commander_tent",
+     3.5,
+     "large Roman commander praetorium tent"
+    ],
+    [
+     "palisade_wall",
+     3.0,
+     "wooden palisade wall section with sharpened stakes"
+    ],
+    [
+     "watchtower_wood",
+     7.0,
+     "Roman wooden watchtower"
+    ],
+    [
+     "market_stall",
+     2.5,
+     "Roman market stall with awning and goods"
+    ],
+    [
+     "stone_well",
+     1.2,
+     "stone well"
+    ],
+    [
+     "marble_column",
+     6.0,
+     "single white marble Corinthian column"
+    ],
+    [
+     "marble_statue",
+     3.0,
+     "marble statue of a Roman emperor on a pedestal"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_buildings",
+   "era": "ancient",
+   "kind": "building",
+   "cols": 3,
+   "rows": 2,
+   "items": [
+    [
+     "roman_temple",
+     15.0,
+     "Roman temple with columns and pediment"
+    ],
+    [
+     "roman_villa",
+     7.0,
+     "Roman villa with red tile roof and courtyard walls"
+    ],
+    [
+     "roman_insula",
+     15.0,
+     "Roman insula apartment block with shops below"
+    ],
+    [
+     "triumphal_arch",
+     15.0,
+     "Roman triumphal arch"
+    ],
+    [
+     "aqueduct_section",
+     20.0,
+     "section of a Roman stone aqueduct with arches"
+    ],
+    [
+     "city_gate_wall",
+     12.0,
+     "Roman city wall with gate and towers"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_buildings2",
+   "era": "ancient",
+   "kind": "building",
+   "cols": 3,
+   "rows": 2,
+   "items": [
+    [
+     "greek_temple",
+     14.0,
+     "Greek temple like the Parthenon"
+    ],
+    [
+     "egyptian_pyramid",
+     40.0,
+     "Egyptian pyramid"
+    ],
+    [
+     "egyptian_temple_gate",
+     18.0,
+     "Egyptian temple pylon gate with obelisk"
+    ],
+    [
+     "gaul_roundhouse",
+     6.0,
+     "Celtic Gallic roundhouse with thatched roof"
+    ],
+    [
+     "persian_palace",
+     15.0,
+     "Persian palace with tall columns"
+    ],
+    [
+     "mud_brick_house",
+     4.0,
+     "small ancient mud brick house"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_nature",
+   "era": "ancient",
+   "kind": "nature",
+   "cols": 6,
+   "rows": 2,
+   "items": [
+    [
+     "cypress",
+     12.0,
+     "tall Italian cypress tree"
+    ],
+    [
+     "olive_tree",
+     5.0,
+     "gnarled olive tree"
+    ],
+    [
+     "umbrella_pine",
+     12.0,
+     "Mediterranean umbrella pine"
+    ],
+    [
+     "oak_tree",
+     12.0,
+     "big oak tree"
+    ],
+    [
+     "date_palm",
+     10.0,
+     "date palm tree"
+    ],
+    [
+     "papyrus_reeds",
+     2.0,
+     "papyrus reeds clump"
+    ],
+    [
+     "grape_vine",
+     1.8,
+     "grape vine on wooden trellis"
+    ],
+    [
+     "mediterranean_bush",
+     1.2,
+     "mediterranean shrub"
+    ],
+    [
+     "fern_bush",
+     1.0,
+     "forest fern bush"
+    ],
+    [
+     "boulder",
+     1.5,
+     "large boulder"
+    ],
+    [
+     "rock_pile",
+     0.8,
+     "pile of stones"
+    ],
+    [
+     "broken_column",
+     1.5,
+     "broken marble column ruin"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ancient",
+   "bgs": [
+    [
+     "bg_rome_forum",
+     "rome",
+     "Roman Forum in daytime: temples, columns, statues, stone pavement"
+    ],
+    [
+     "bg_rome_colosseum_arena",
+     "rome",
+     "Inside the Colosseum: sandy arena floor and tiers of empty stands"
+    ],
+    [
+     "bg_rome_street",
+     "rome",
+     "Ancient Roman street with insulae, shops, stepping stones"
+    ],
+    [
+     "bg_rome_senate",
+     "rome",
+     "Interior of the Roman Senate curia with tiered marble benches"
+    ],
+    [
+     "bg_rome_villa_interior",
+     "rome",
+     "Roman villa atrium interior with impluvium pool, frescoes and columns"
+    ],
+    [
+     "bg_rome_circus",
+     "rome",
+     "Circus Maximus race track with central spina and obelisk, empty stands"
+    ],
+    [
+     "bg_rome_camp",
+     "rome",
+     "Roman legion fortified camp with rows of leather tents and palisade"
+    ],
+    [
+     "bg_ancient_battlefield",
+     "ancient",
+     "Wide open grassy plain for an ancient battle with hills far away"
+    ],
+    [
+     "bg_gaul_forest",
+     "ancient",
+     "Dense Gallic oak forest with misty clearing"
+    ],
+    [
+     "bg_alps_pass",
+     "ancient",
+     "Snowy Alps mountain pass with narrow rocky path"
+    ],
+    [
+     "bg_mediterranean_harbor",
+     "ancient",
+     "Ancient Mediterranean harbor with stone docks, lighthouse and blue sea, no ships"
+    ],
+    [
+     "bg_egypt_pyramids",
+     "ancient",
+     "Egyptian desert with pyramids and the Nile river"
+    ],
+    [
+     "bg_greek_acropolis",
+     "ancient",
+     "Greek city hill with temple on top and olive trees"
+    ],
+    [
+     "bg_carthage_city",
+     "ancient",
+     "Carthage city with circular harbor and walls by the sea"
+    ],
+    [
+     "bg_qin_palace",
+     "ancient",
+     "Ancient Chinese Qin palace courtyard with red pillars and stone stairs"
+    ],
+    [
+     "bg_ancient_village",
+     "ancient",
+     "Ancient countryside village with mud houses, fields and a dirt road"
+    ]
+   ]
+  }
+ ]
+}

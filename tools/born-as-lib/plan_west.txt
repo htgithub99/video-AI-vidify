@@ -1,0 +1,223 @@
+LIB wildwest
+SHEET west_outlaws person wildwest 5x2 1.78
+Wild West outlaw in duster coat and cowboy hat walking with revolver holstered
+Wild West outlaw with bandana over his face holding a revolver
+Wild West outlaw standing with Winchester rifle on shoulder
+young ragged Wild West outlaw in torn clothes and battered hat
+Wild West gang leader in black coat and black hat
+Wild West outlaw drawing a revolver from the holster
+Wild West outlaw aiming a revolver with both hands
+Wild West outlaw counting stolen money
+Mexican bandit with sombrero and bandolier
+female Wild West outlaw in riding skirt with revolver
+SHEET west_outlaws_act person wildwest 5x2 1.78
+Wild West outlaw running away looking back
+Wild West outlaw crouching behind cover firing a revolver @1.2
+Wild West outlaw lying prone aiming a rifle @0.5
+wounded Wild West outlaw sitting holding his bleeding side @1.0
+Wild West outlaw with hands tied behind his back walking
+Wild West outlaw lying dead on the ground face up @0.5
+Wild West outlaw sleeping on the ground under a blanket @0.5
+Wild West outlaw sitting by a campfire eating from a tin plate @1.0
+Wild West outlaw raising hands in surrender
+Wild West outlaw shot in the back falling forward
+SHEET west_law person wildwest 5x2 1.8
+Wild West sheriff with star badge and revolver standing
+Wild West sheriff walking with hand near holster
+Wild West deputy with shotgun
+US Marshal in long coat with badge and rifle
+Wild West bounty hunter in poncho with rifle
+Wild West sheriff aiming a revolver
+Wild West Texas Ranger with rifle
+Wild West judge in black suit with gavel
+Wild West hangman executioner in plain clothes holding a rope
+Pinkerton detective in bowler hat and suit
+SHEET west_town person wildwest 5x2 1.72
+Wild West saloon keeper with apron and mustache
+Wild West saloon girl in ruffled dress
+Wild West shopkeeper with apron and sleeve garters
+Wild West banker in suit with pocket watch
+Wild West blacksmith with hammer
+Wild West preacher in black with bible
+Wild West town doctor with black bag and spectacles
+Wild West newspaper editor with visor
+Wild West stagecoach driver with whip
+Wild West bartender polishing a glass
+SHEET west_frontier person wildwest 5x2 1.7
+poor frontier farmer in patched overalls and straw hat
+frontier mother in long faded dress and bonnet
+ragged frontier boy barefoot @1.25
+frontier girl in plain dress and bonnet @1.2
+frontier baby wrapped in a blanket being held by mother
+gold prospector miner with pickaxe and pan
+cattle cowboy with lasso and chaps
+old frontier man with long gray beard and cane
+Chinese railroad worker with straw hat and hammer
+African American cowboy with rope and hat
+SHEET west_frontier2 person wildwest 5x2 1.72
+frontier settler family of three walking together @1.75
+sick frontier man coughing with blanket on shoulders
+frontier widow in black mourning dress
+orphan boy in oversized clothes holding bread @1.25
+frontier farmer plowing behind a horse @1.8
+frontier woman washing clothes in a tub @1.2
+Wild West mail rider of the Pony Express standing
+Wild West train engineer with cap
+Wild West town crowd of five people watching @1.75
+Wild West undertaker measuring with tape, tall black hat
+SHEET west_military_native person wildwest 5x2 1.78
+US cavalry trooper 1870s in blue uniform and slouch hat with carbine
+US cavalry officer with saber and gauntlets
+US cavalry soldier on foot firing a carbine kneeling @1.2
+Plains Native American man in buckskin with bow, respectful accurate depiction
+Plains Native American chief with feather headdress, respectful accurate depiction
+Plains Native American woman in decorated buckskin dress, respectful accurate depiction
+Apache scout with headband and rifle, respectful accurate depiction
+Native American boy, respectful accurate depiction @1.2
+army scout in fringed buckskin jacket
+Mexican vaquero with sombrero and lasso
+SHEET west_mounted animal wildwest 3x2 2.5
+cowboy riding a brown horse at a walk
+outlaw galloping on a black horse firing a revolver backward
+sheriff riding a horse at a trot
+US cavalry trooper galloping on horse with saber
+Native American rider on a pinto horse without saddle, respectful accurate depiction
+bounty hunter on horse leading a captured outlaw on foot by a rope @2.5
+SHEET west_animals animal wildwest 5x2 1.4
+saddled brown horse standing @1.6
+saddled black horse standing @1.6
+pack mule with supplies @1.4
+longhorn cattle @1.5
+American bison buffalo @1.8
+coyote @0.6
+rattlesnake coiled @0.3
+vulture sitting @0.6
+skinny stray dog @0.6
+hen and chicks @0.3
+SHEET west_vehicles vehicle wildwest 3x2 2.5
+stagecoach pulled by four horses with driver @2.6
+covered wagon prairie schooner pulled by oxen @3
+chuckwagon @2.5
+buckboard wagon with horse and driver @2.2
+mine cart on rails @1.2
+horse-drawn hearse wagon @2.6
+SHEET west_trains vehicle wildwest 3x2 4
+1870s American steam locomotive with cowcatcher and tall smokestack @4.5
+1870s passenger railroad car @4
+1870s mail and express railroad car with safe @4
+cattle railroad car @4
+caboose @4
+railroad handcar with two workers @1.8
+SHEET west_guns prop wildwest 6x3 0.3
+Colt single action revolver @0.3
+Winchester lever action rifle @1.0
+double barrel shotgun @1.1
+gun belt with holster and bullets @0.5
+derringer pistol @0.12
+bowie knife @0.35
+box of bullets @0.1
+dynamite sticks bundle with fuse @0.25
+handcuffs @0.15
+coiled lasso rope @0.4
+sheriff star badge @0.08
+cowboy hat @0.2
+spurs @0.1
+saddle @0.6
+horse saddlebags @0.4
+canteen @0.3
+bedroll blanket @0.3
+lantern @0.4
+SHEET west_props prop wildwest 6x3 0.5
+blank wanted poster nailed to a board without any text @0.6
+money sack with dollar sign @0.4
+stack of dollar bills @0.1
+gold nuggets pile @0.1
+whisky bottle @0.3
+tin cup of coffee @0.12
+tin plate with beans @0.05
+hardtack crackers and beef jerky @0.08
+cast iron pot on campfire @0.8
+bank safe @1.3
+old bible @0.2
+pocket watch @0.06
+playing cards and poker chips on table @0.8
+doctor bag with tools and bullet pliers @0.3
+bandage and whisky for wound @0.3
+wooden grave cross @1.0
+noose rope hanging @1.5
+wooden water trough @0.7
+SHEET west_props2 prop wildwest 6x3 0.6
+hitching post @1.0
+wooden barrel @0.9
+hay bale @0.6
+wagon wheel @1.2
+wooden crates stack @1.2
+wooden bench @0.5
+rocking chair @1.0
+piano saloon upright @1.3
+round saloon table with chairs @1.0
+oil lamp on table @0.4
+wooden bucket @0.4
+washtub @0.4
+wood pile and axe @0.8
+anvil @0.7
+mining pickaxe and shovel @1.0
+gold pan @0.05
+telegraph pole @7
+windmill water pump @9
+SHEET west_buildings building wildwest 3x2 7
+Wild West saloon with swinging doors and balcony, blank sign
+Wild West general store with porch, blank sign
+Wild West bank building made of brick, blank sign
+Wild West sheriff office and jail, blank sign
+Wild West church with bell tower @12
+Wild West livery stable and barn
+SHEET west_buildings2 building wildwest 3x2 6
+ramshackle frontier log cabin @4
+sod house on the prairie @3.5
+frontier farmhouse wooden @7
+Wild West hotel two stories, blank sign @9
+railroad water tower @10
+Wild West train station depot, blank sign
+SHEET west_structures structure wildwest 4x2 3
+wooden gallows with steps @5
+wooden corral fence section @1.5
+mine entrance in rock with timber frame @4
+outhouse @2.5
+wooden well with roof @2.5
+canvas tent of a prospector camp @2.2
+boardwalk porch section with posts @3
+cemetery fence with gate @1.5
+SHEET west_nature nature wildwest 6x2 4
+saguaro cactus @5
+prickly pear cactus @1.0
+dead desert tree @5
+sagebrush bush @0.8
+tumbleweed @0.7
+red rock boulder @2
+red rock pinnacle @15
+cottonwood tree @12
+ponderosa pine @15
+prairie grass clump @0.8
+cow skull on the ground @0.3
+desert rocks pile @0.6
+BG bg_west_town_street wildwest: Wild West town main street with dirt road, saloon, store and wooden boardwalks, blank signs
+BG bg_west_town_night wildwest: Wild West town street at night with lit windows and lanterns, blank signs
+BG bg_west_desert wildwest: Southwestern desert with saguaro cacti and red mesas under a hot sky
+BG bg_west_canyon wildwest: Red rock canyon with a narrow dirt trail
+BG bg_west_monument_valley wildwest: Monument Valley buttes at sunset
+BG bg_west_prairie wildwest: Endless grass prairie with a small log cabin far away
+BG bg_west_camp_night wildwest: Outlaw camp at night in rocky hills under stars with campfire glow
+BG bg_west_saloon_interior wildwest: Saloon interior with bar counter, bottles, piano and tables
+BG bg_west_jail_interior wildwest: Sheriff office interior with jail cells and a desk
+BG bg_west_cabin_interior wildwest: Poor frontier log cabin interior with fireplace and simple bed
+BG bg_west_railroad wildwest: Railroad tracks across the desert towards mountains
+BG bg_west_river_crossing wildwest: Shallow river crossing with cottonwood trees and hills
+BG bg_west_mountains_snow wildwest: Snowy Rocky Mountain pass with pine forest
+BG bg_west_cemetery wildwest: Boot Hill cemetery on a hill with wooden crosses
+BG bg_west_ranch wildwest: Cattle ranch with corral, barn and windmill
+BG bg_west_gold_camp wildwest: Gold rush mining camp with tents and sluice boxes by a creek
+BG bg_west_town_square_gallows wildwest: Town square with an empty wooden gallows and buildings around, blank signs
+BG bg_west_badlands wildwest: Dry badlands with eroded hills and dead trees
+BG bg_west_bank_interior wildwest: Bank interior with teller counter, bars and a big safe
+BG bg_west_stagecoach_road wildwest: Dusty stagecoach road through hills with rocks for an ambush

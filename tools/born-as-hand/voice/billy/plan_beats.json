@@ -1,0 +1,6458 @@
+{
+ "total": 554.45,
+ "series": "BILLY THE KID · WILD WEST",
+ "turnT": 15.021,
+ "recapT": 476.82700000000006,
+ "beats": [
+  {
+   "t0": 0.0,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_teen_scared",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "BILLY THE KID",
+    "sub": "1859 - 1881",
+    "cast": 0,
+    "t": 1.595
+   }
+  },
+  {
+   "t0": 4.563,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_teen_climb",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 7.312,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "regulators",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 10.692,
+   "kind": "scene",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "garrett",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 12.862,
+   "kind": "scene",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "garrett",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 15.021,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 16.172,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO GUN",
+    "sub": "no horse",
+    "at": null,
+    "t": 16.735
+   }
+  },
+  {
+   "t0": 17.367,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 19.447,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 22.246,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 24.216,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER I",
+    "title": "New York"
+   }
+  },
+  {
+   "t0": 26.166,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1859",
+    "sub": "New York City",
+    "corner": "tl",
+    "t": 26.166
+   }
+  },
+  {
+   "t0": 28.968,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "HENRY McCARTY",
+    "sub": "your real name",
+    "cast": 0,
+    "t": 30.073
+   }
+  },
+  {
+   "t0": 31.671,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "CATHERINE",
+    "sub": "your mother",
+    "cast": 0,
+    "t": 32.571
+   }
+  },
+  {
+   "t0": 34.985,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 36.235,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 37.996,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 39.819,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 41.658,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 43.494,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "joseph",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 46.238,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 48.972,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 50.942,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 53.189,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 55.159,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "REMEMBER",
+    "sub": "her laugh",
+    "at": null,
+    "t": 55.159
+   },
+   "warm": true
+  },
+  {
+   "t0": 56.556,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "billy_boy_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 59.287,
+   "kind": "paper",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.25,
+   "paper": {
+    "lines": [
+     {
+      "text": "TUBERCULOSIS",
+      "size": "h",
+      "t": 59.287
+     }
+    ]
+   }
+  },
+  {
+   "t0": 60.723,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "billy_boy_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 63.402,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 64.65,
+   "kind": "scene",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "billy_boy_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 68.368,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 70.865,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER II",
+    "title": "Silver City"
+   }
+  },
+  {
+   "t0": 72.815,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "catherine_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 74.27,
+   "kind": "bust",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 76.283,
+   "kind": "scene",
+   "bg": "bg_west_prairie",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 79.064,
+   "kind": "scene",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "antrim",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "SANTA FE",
+    "sub": "New Mexico",
+    "at": null,
+    "t": 79.243
+   },
+   "label": {
+    "text": "WILLIAM ANTRIM",
+    "sub": "stepfather",
+    "cast": 1,
+    "t": 81.719
+   },
+   "warm": true
+  },
+  {
+   "t0": 82.743,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 13",
+    "sub": "",
+    "corner": "tl",
+    "t": 82.743
+   },
+   "warm": true
+  },
+  {
+   "t0": 83.987,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 85.902,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "antrim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "billy_boy_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "SILVER CITY",
+    "sub": "",
+    "at": null,
+    "t": 87.266
+   }
+  },
+  {
+   "t0": 88.396,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 91.692,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "west_outlaws__wild_west_outlaw_standing_winchester",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_town__wild_west_saloon_keeper_apron",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 93.815,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 94.98,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_boy_read",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 96.89,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 98.341,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_boy_sing",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 100.578,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 102.374,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 103.86,
+   "kind": "scene",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "billy_boy_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "SEPT 1874",
+    "sub": "",
+    "corner": "tl",
+    "t": 103.86
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 108.2,
+   "kind": "bust",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 14",
+    "sub": "",
+    "corner": "tl",
+    "t": 108.2
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 109.58,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "antrim_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 111.753,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 113.638,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER III",
+    "title": "The Chimney"
+   }
+  },
+  {
+   "t0": 115.588,
+   "kind": "scene",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_scared",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 117.778,
+   "kind": "bust",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 119.664,
+   "kind": "bust",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 123.872,
+   "kind": "scene",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_scared",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 126.2,
+   "kind": "scene",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_scared",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "sheriff",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 127.976,
+   "kind": "bust",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 130.472,
+   "kind": "bust",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 132.554,
+   "kind": "scene",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_scared",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "sheriff",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 15",
+    "sub": "",
+    "corner": "tl",
+    "t": 132.554
+   }
+  },
+  {
+   "t0": 135.02,
+   "kind": "bust",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 137.205,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_teen_run",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 138.801,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "1ST STORY",
+    "sub": "Silver City Herald",
+    "at": null,
+    "t": 140.922
+   }
+  },
+  {
+   "t0": 143.36,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "newspaper",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 145.073,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 146.6,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IV",
+    "title": "Arizona"
+   }
+  },
+  {
+   "t0": 148.55,
+   "kind": "scene",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 150.312,
+   "kind": "bust",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 151.933,
+   "kind": "bust",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 153.694,
+   "kind": "scene",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 155.558,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 158.57,
+   "kind": "scene",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 161.002,
+   "kind": "bust",
+   "bg": "bg_west_camp_night",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 162.792,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "\"KID\"",
+    "sub": "",
+    "at": null,
+    "t": 165.13
+   }
+  },
+  {
+   "t0": 165.621,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_frontier__cattle_cowboy_lasso_chaps",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 167.265,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 170.036,
+   "kind": "scene",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "cahill",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AUG 1877",
+    "sub": "Camp Grant",
+    "corner": "tl",
+    "t": 170.036
+   }
+  },
+  {
+   "t0": 172.186,
+   "kind": "bust",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 173.974,
+   "kind": "scene",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "cahill",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "FRANK CAHILL",
+    "sub": "blacksmith",
+    "cast": 1,
+    "t": 174.115
+   }
+  },
+  {
+   "t0": 177.811,
+   "kind": "bust",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 179.384,
+   "kind": "scene",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "cahill",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 181.544,
+   "kind": "bust",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 182.771,
+   "kind": "scene",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "cahill",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 184.037,
+   "kind": "bust",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 184.037
+  },
+  {
+   "t0": 185.73,
+   "kind": "bust",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 185.73
+  },
+  {
+   "t0": 186.942,
+   "kind": "scene",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 189.23,
+   "kind": "bust",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 17",
+    "sub": "",
+    "corner": "tl",
+    "t": 189.23
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 190.609,
+   "kind": "scene",
+   "bg": "bg_west_saloon_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 192.605,
+   "kind": "scene",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 193.876,
+   "kind": "bust",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 195.874,
+   "kind": "paper",
+   "bg": "bg_west_desert",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "WILLIAM H. BONNEY",
+      "size": "h",
+      "t": 195.874
+     }
+    ]
+   }
+  },
+  {
+   "t0": 197.684,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER V",
+    "title": "Lincoln County"
+   }
+  },
+  {
+   "t0": 199.634,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "LINCOLN COUNTY",
+    "sub": "New Mexico",
+    "at": null,
+    "t": 200.644
+   }
+  },
+  {
+   "t0": 201.802,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 203.71,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "sheriff",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_law__wild_west_deputy_shotgun",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 206.048,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "MURPHY & DOLAN",
+    "sub": "the House",
+    "at": null,
+    "t": 206.048
+   }
+  },
+  {
+   "t0": 208.711,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "sheriff",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_law__wild_west_deputy_shotgun",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 210.392,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 211.506,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "sheriff",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_law__wild_west_deputy_shotgun",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 213.735,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 215.088,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "tunstall",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 217.49,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "tunstall_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "JOHN TUNSTALL",
+    "sub": "English rancher",
+    "cast": 0,
+    "t": 217.49
+   },
+   "warm": true
+  },
+  {
+   "t0": 218.82,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "tunstall",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 220.1,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 221.551,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "tunstall",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 222.666,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "tunstall",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 225.208,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 226.794,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "tunstall_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 228.971,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 230.74,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "tunstall",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 232.806,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 235.022,
+   "kind": "scene",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "tunstall",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 237.236,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 239.695,
+   "kind": "bust",
+   "bg": "bg_west_ranch",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "tunstall_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 242.24,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VI",
+    "title": "The Regulators"
+   }
+  },
+  {
+   "t0": 244.19,
+   "kind": "scene",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "tunstall",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_mounted__sheriff_riding_horse_trot",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "FEB 18, 1878",
+    "sub": "",
+    "corner": "tl",
+    "t": 244.19
+   }
+  },
+  {
+   "t0": 246.921,
+   "kind": "bust",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 250.65,
+   "kind": "scene",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "west_mounted__sheriff_riding_horse_trot",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 250.65,
+   "dark": 0.3
+  },
+  {
+   "t0": 252.502,
+   "kind": "bust",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 254.296,
+   "kind": "scene",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 256.409,
+   "kind": "bust",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "bubble": {
+    "text": "Treated me like I was freeborn.",
+    "cast": 0,
+    "t": 256.409
+   },
+   "dark": 0.2
+  },
+  {
+   "t0": 261.149,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "regulators",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "billy_kid2_rifle",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 263.201,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "THE REGULATORS",
+    "sub": "",
+    "at": null,
+    "t": 263.532
+   }
+  },
+  {
+   "t0": 264.716,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 266.626,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "regulators",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_law__wild_west_sheriff_star_badge",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "APRIL 1, 1878",
+    "sub": "",
+    "corner": "tl",
+    "t": 266.626
+   },
+   "label": {
+    "text": "SHERIFF BRADY",
+    "sub": "",
+    "cast": 1,
+    "t": 269.179
+   },
+   "flash": 266.626
+  },
+  {
+   "t0": 271.661,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "regulators",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_law__wild_west_sheriff_star_badge",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 271.661
+  },
+  {
+   "t0": 272.967,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 272.967
+  },
+  {
+   "t0": 274.602,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "letter",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 276.983,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VII",
+    "title": "The Burning House"
+   }
+  },
+  {
+   "t0": 278.933,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JULY 1878",
+    "sub": "Lincoln",
+    "corner": "tl",
+    "t": 278.933
+   },
+   "smoke": true
+  },
+  {
+   "t0": 281.083,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "burning_house",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 282.516,
+   "kind": "paper",
+   "bg": "bg_bk_lincoln",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "5 DAYS",
+      "size": "h",
+      "t": 282.516
+     }
+    ]
+   }
+  },
+  {
+   "t0": 284.545,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 287.956,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "burning_house",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 290.44,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true,
+   "smoke": true
+  },
+  {
+   "t0": 293.157,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "burning_house",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true,
+   "smoke": true
+  },
+  {
+   "t0": 296.248,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 298.741,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_draw",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 301.195,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 303.107,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 304.274,
+   "kind": "scene",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 306.216,
+   "kind": "bust",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 307.903,
+   "kind": "bust",
+   "bg": "bg_bk_road",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 310.158,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VIII",
+    "title": "The Deal"
+   }
+  },
+  {
+   "t0": 312.108,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 313.823,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 316.823,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 319.769,
+   "kind": "scene",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "wallace",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1879",
+    "sub": "",
+    "corner": "tl",
+    "t": 319.769
+   }
+  },
+  {
+   "t0": 321.449,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 323.384,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "wallace_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "label": {
+    "text": "LEW WALLACE",
+    "sub": "governor",
+    "cast": 0,
+    "t": 323.384
+   }
+  },
+  {
+   "t0": 324.747,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 327.207,
+   "kind": "scene",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "wallace",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "BEN-HUR",
+    "sub": "his novel",
+    "at": null,
+    "t": 328.012
+   }
+  },
+  {
+   "t0": 328.799,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 330.202,
+   "kind": "scene",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "letter",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 331.644,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 333.991,
+   "kind": "scene",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "letter",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 335.323,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "wallace_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 336.874,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 338.071,
+   "kind": "scene",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 339.711,
+   "kind": "bust",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 341.018,
+   "kind": "bust",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 342.048,
+   "kind": "paper",
+   "bg": "bg_west_jail_interior",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "PARDON",
+      "size": "h",
+      "t": 342.048
+     }
+    ],
+    "stamp": {
+     "text": "NEVER",
+     "t": 342.294
+    }
+   }
+  },
+  {
+   "t0": 343.55,
+   "kind": "bust",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 345.445,
+   "kind": "scene",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 346.231,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IX",
+    "title": "Pat Garrett"
+   }
+  },
+  {
+   "t0": 348.181,
+   "kind": "scene",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_town__wild_west_saloon_girl_ruffled",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "FORT SUMNER",
+    "sub": "",
+    "at": null,
+    "t": 348.181
+   },
+   "warm": true
+  },
+  {
+   "t0": 349.553,
+   "kind": "bust",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 351.832,
+   "kind": "bust",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 353.329,
+   "kind": "scene",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_town__wild_west_saloon_girl_ruffled",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 355.398,
+   "kind": "bust",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 357.424,
+   "kind": "scene",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_town__wild_west_saloon_girl_ruffled",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 359.215,
+   "kind": "scene",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "west_town__wild_west_saloon_girl_ruffled",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "PAULITA MAXWELL",
+    "sub": "",
+    "cast": 1,
+    "t": 359.215
+   },
+   "warm": true
+  },
+  {
+   "t0": 360.636,
+   "kind": "bust",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 363.059,
+   "kind": "bust",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "garrett_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 365.481,
+   "kind": "bust",
+   "bg": "bg_bk_dance",
+   "cast": [
+    {
+     "sprite": "garrett_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "label": {
+    "text": "PAT GARRETT",
+    "sub": "bartender",
+    "cast": 0,
+    "t": 365.481
+   }
+  },
+  {
+   "t0": 366.696,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "garrett",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 369.128,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 370.193,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "garrett",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 371.419,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 372.327,
+   "kind": "scene",
+   "bg": "bg_bk_snow",
+   "cast": [
+    {
+     "sprite": "stone_hut",
+     "slot": "cl",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "west_mounted__sheriff_riding_horse_trot",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "DEC 1880",
+    "sub": "Stinking Springs",
+    "corner": "tl",
+    "t": 372.327
+   },
+   "cool": true
+  },
+  {
+   "t0": 375.751,
+   "kind": "bust",
+   "bg": "bg_bk_snow",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 377.445,
+   "kind": "scene",
+   "bg": "bg_bk_snow",
+   "cast": [
+    {
+     "sprite": "garrett",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "stone_hut",
+     "slot": "cr",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 380.614,
+   "kind": "bust",
+   "bg": "bg_bk_snow",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 383.234,
+   "kind": "scene",
+   "bg": "bg_bk_snow",
+   "cast": [
+    {
+     "sprite": "west_outlaws_act__wild_west_outlaw_hands_tied",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 384.815,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER X",
+    "title": "Hanging Day"
+   }
+  },
+  {
+   "t0": 386.765,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "APRIL 1881",
+    "sub": "",
+    "corner": "tl",
+    "t": 386.765
+   }
+  },
+  {
+   "t0": 388.97,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 390.79,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 393.149,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 394.544,
+   "kind": "paper",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "HANGING",
+      "size": "h",
+      "t": 394.544
+     },
+     {
+      "text": "MAY 13, 1881",
+      "size": "l",
+      "t": 394.544
+     }
+    ]
+   }
+  },
+  {
+   "t0": 395.838,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 398.015,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 399.328,
+   "kind": "scene",
+   "bg": "bg_wooden_courtroom_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "olinger",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 400.962,
+   "kind": "bust",
+   "bg": "bg_wooden_courtroom_interior",
+   "cast": [
+    {
+     "sprite": "olinger_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "BOB OLINGER",
+    "sub": "deputy",
+    "cast": 0,
+    "t": 401.852
+   }
+  },
+  {
+   "t0": 405.993,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 407.271,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 409.615,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 411.578,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 413.388,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 415.174,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "flash": 415.174
+  },
+  {
+   "t0": 417.104,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "olinger",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 419.278,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "olinger",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 421.231,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "olinger_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 422.992,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "flash": 422.992
+  },
+  {
+   "t0": 424.194,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 426.115,
+   "kind": "bust",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 427.427,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 430.318,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 433.083,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 434.592,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 435.978,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 436.89,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER XI",
+    "title": "Fort Sumner"
+   }
+  },
+  {
+   "t0": 438.84,
+   "kind": "scene",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 441.121,
+   "kind": "bust",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 442.438,
+   "kind": "bust",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 444.289,
+   "kind": "scene",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_ride",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 445.866,
+   "kind": "bust",
+   "bg": "bg_west_desert",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 448.044,
+   "kind": "scene",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_socks",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JULY 14, 1881",
+    "sub": "Midnight",
+    "corner": "tl",
+    "t": 448.044
+   },
+   "dark": 0.35
+  },
+  {
+   "t0": 450.707,
+   "kind": "bust",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 452.07,
+   "kind": "bust",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 455.045,
+   "kind": "scene",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_socks",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 457.515,
+   "kind": "bust",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 459.303,
+   "kind": "scene",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_socks",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 461.646,
+   "kind": "bust",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 464.358,
+   "kind": "bust",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "bubble": {
+    "text": "¿Quién es?",
+    "cast": 0,
+    "t": 464.358
+   },
+   "dark": 0.4
+  },
+  {
+   "t0": 466.272,
+   "kind": "bust",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "garrett_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 467.172,
+   "kind": "bust",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 467.172,
+   "dark": 0.4
+  },
+  {
+   "t0": 468.584,
+   "kind": "scene",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "garrett",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 468.584,
+   "dark": 0.4
+  },
+  {
+   "t0": 469.712,
+   "kind": "scene",
+   "bg": "bg_west_cemetery",
+   "cast": [
+    {
+     "sprite": "grave",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 471.171,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER XII",
+    "title": "The Legend"
+   }
+  },
+  {
+   "t0": 473.121,
+   "kind": "scene",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "garrett",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 475.007,
+   "kind": "bust",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 476.604,
+   "kind": "paper",
+   "bg": "bg_bk_santafe",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "21 MEN?",
+      "size": "h",
+      "t": 477.939
+     }
+    ]
+   }
+  },
+  {
+   "t0": 479.222,
+   "kind": "scene",
+   "bg": "bg_bk_santafe",
+   "cast": [
+    {
+     "sprite": "garrett",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 481.442,
+   "kind": "paper",
+   "bg": "bg_bk_santafe",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "REAL: 8 - 9",
+      "size": "h",
+      "t": 481.701
+     }
+    ]
+   }
+  },
+  {
+   "t0": 484.427,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "newspaper",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 486.813,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 489.296,
+   "kind": "scene",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "newspaper",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 492.658,
+   "kind": "bust",
+   "bg": "bg_bk_silver",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 494.271,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 496.015,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 498.735,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "catherine",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 500.509,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 501.935,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "tintype",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 505.76,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 506.901,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "tintype",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 509.182,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 511.32,
+   "kind": "scene",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "tintype",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "$5,000,000",
+    "sub": "",
+    "at": null,
+    "t": 512.414
+   }
+  },
+  {
+   "t0": 514.047,
+   "kind": "bust",
+   "bg": "bg_st_joseph_parlor_interior",
+   "cast": [
+    {
+     "sprite": "billy_kid2_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 517.468,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 518.991,
+   "kind": "bust",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 521.295,
+   "kind": "scene",
+   "bg": "bg_ny_slum_street_1860s",
+   "cast": [
+    {
+     "sprite": "billy_boy_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 523.568,
+   "kind": "scene",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_climb",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 525.321,
+   "kind": "bust",
+   "bg": "bg_west_jail_interior",
+   "cast": [
+    {
+     "sprite": "billy_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 527.614,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "regulators",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 529.962,
+   "kind": "scene",
+   "bg": "bg_lincoln_courthouse_balcony_dusk",
+   "cast": [
+    {
+     "sprite": "billy_kid2_chains",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 533.303,
+   "kind": "scene",
+   "bg": "bg_bk_maxwell",
+   "cast": [
+    {
+     "sprite": "billy_kid2_socks",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 538.22,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 542.035,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 544.091,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 545.811,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 548.61,
+   "kind": "scene",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "THE REAL VILLAIN?",
+    "sub": "comment below",
+    "at": null,
+    "t": 549.319
+   },
+   "endCard": {
+    "text": "WHO SHOULD BE NEXT?",
+    "sub": "Drop a name in the comments",
+    "t": 549.319
+   }
+  },
+  {
+   "t0": 550.441,
+   "kind": "bust",
+   "bg": "bg_bk_lincoln",
+   "cast": [
+    {
+     "sprite": "billy_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  }
+ ],
+ "onsets": [
+  0.4,
+  0.584,
+  0.823,
+  1.117,
+  1.411,
+  1.595,
+  1.945,
+  2.184,
+  2.63,
+  2.876,
+  3.06,
+  3.244,
+  3.648,
+  3.832,
+  4.563,
+  4.829,
+  5.145,
+  5.511,
+  5.777,
+  6.043,
+  6.459,
+  6.576,
+  7.312,
+  7.63,
+  8.008,
+  8.385,
+  8.524,
+  8.783,
+  9.101,
+  9.24,
+  9.558,
+  9.935,
+  10.692,
+  10.884,
+  11.077,
+  11.269,
+  11.461,
+  11.831,
+  12.113,
+  12.305,
+  12.862,
+  13.024,
+  13.283,
+  13.444,
+  13.606,
+  13.865,
+  15.021,
+  15.261,
+  15.612,
+  16.172,
+  16.599,
+  16.735,
+  17.367,
+  17.706,
+  18.267,
+  18.545,
+  19.447,
+  19.677,
+  20.044,
+  20.549,
+  20.916,
+  21.283,
+  22.246,
+  22.445,
+  22.69,
+  22.89,
+  23.089,
+  23.426,
+  23.671,
+  26.166,
+  26.497,
+  27.076,
+  27.726,
+  27.991,
+  28.321,
+  28.968,
+  29.607,
+  30.073,
+  30.625,
+  31.671,
+  32.016,
+  32.571,
+  33.301,
+  33.465,
+  33.68,
+  34.089,
+  34.985,
+  35.376,
+  36.235,
+  36.688,
+  37.079,
+  37.347,
+  37.996,
+  38.442,
+  38.677,
+  39.053,
+  39.819,
+  40.25,
+  40.476,
+  40.839,
+  41.658,
+  41.901,
+  42.201,
+  42.388,
+  42.576,
+  42.819,
+  43.494,
+  44.183,
+  44.834,
+  45.293,
+  46.238,
+  46.51,
+  46.884,
+  47.309,
+  47.683,
+  48.057,
+  48.431,
+  48.972,
+  49.302,
+  49.755,
+  50.209,
+  50.353,
+  50.942,
+  51.316,
+  51.982,
+  52.296,
+  53.189,
+  53.516,
+  53.739,
+  54.014,
+  54.34,
+  54.564,
+  55.159,
+  55.661,
+  55.895,
+  56.556,
+  56.848,
+  57.086,
+  57.378,
+  57.506,
+  57.853,
+  58.145,
+  58.492,
+  58.675,
+  59.287,
+  60.723,
+  61.121,
+  61.887,
+  62.193,
+  62.546,
+  63.402,
+  63.866,
+  64.65,
+  64.848,
+  65.164,
+  65.598,
+  65.973,
+  66.645,
+  66.902,
+  67.159,
+  67.475,
+  67.731,
+  68.368,
+  68.586,
+  68.804,
+  69.123,
+  69.341,
+  69.609,
+  69.978,
+  70.196,
+  72.815,
+  73.047,
+  73.348,
+  73.579,
+  74.27,
+  75.31,
+  76.283,
+  77.563,
+  77.858,
+  78.263,
+  79.064,
+  79.243,
+  79.582,
+  80.034,
+  80.183,
+  80.576,
+  81.023,
+  81.148,
+  81.38,
+  81.719,
+  82.166,
+  82.743,
+  83.15,
+  83.987,
+  84.26,
+  84.722,
+  85.121,
+  85.902,
+  86.179,
+  86.648,
+  87.053,
+  87.266,
+  87.735,
+  88.396,
+  88.609,
+  89.277,
+  89.626,
+  90.606,
+  91.692,
+  91.952,
+  92.273,
+  92.594,
+  92.794,
+  93.175,
+  93.815,
+  94.237,
+  94.98,
+  95.238,
+  95.556,
+  95.814,
+  96.192,
+  96.89,
+  97.196,
+  97.574,
+  98.341,
+  98.638,
+  99.003,
+  99.231,
+  99.391,
+  99.893,
+  100.578,
+  101.098,
+  101.316,
+  101.685,
+  102.374,
+  102.601,
+  103.119,
+  103.86,
+  104.5,
+  104.591,
+  105.299,
+  105.939,
+  106.84,
+  107.177,
+  107.68,
+  108.2,
+  108.667,
+  109.58,
+  109.917,
+  110.633,
+  111.096,
+  111.753,
+  112.061,
+  112.581,
+  113.031,
+  115.588,
+  115.849,
+  116.171,
+  116.372,
+  116.513,
+  117.076,
+  117.778,
+  117.984,
+  118.237,
+  118.585,
+  118.79,
+  119.043,
+  119.664,
+  119.99,
+  120.193,
+  120.58,
+  120.845,
+  121.231,
+  121.496,
+  121.822,
+  122.27,
+  122.595,
+  123.043,
+  123.872,
+  124.384,
+  124.712,
+  124.856,
+  125.368,
+  126.2,
+  126.449,
+  126.928,
+  127.407,
+  127.976,
+  128.162,
+  128.515,
+  128.757,
+  128.943,
+  129.073,
+  129.371,
+  129.557,
+  129.91,
+  130.472,
+  130.776,
+  131.532,
+  131.837,
+  132.554,
+  133.073,
+  133.663,
+  133.969,
+  135.02,
+  135.227,
+  135.497,
+  135.89,
+  136.097,
+  136.367,
+  137.205,
+  137.53,
+  138.081,
+  138.801,
+  139.071,
+  139.404,
+  140.051,
+  140.132,
+  140.59,
+  140.922,
+  141.566,
+  142.023,
+  142.169,
+  142.564,
+  142.958,
+  143.36,
+  143.657,
+  144.091,
+  144.387,
+  145.073,
+  145.253,
+  145.596,
+  145.777,
+  146.011,
+  148.55,
+  148.857,
+  149.165,
+  149.401,
+  150.312,
+  150.576,
+  150.901,
+  151.105,
+  151.933,
+  152.186,
+  152.556,
+  152.751,
+  153.062,
+  153.694,
+  153.936,
+  154.289,
+  154.476,
+  154.829,
+  155.558,
+  155.87,
+  156.183,
+  156.567,
+  157.024,
+  157.264,
+  157.721,
+  158.57,
+  158.901,
+  159.384,
+  159.868,
+  160.198,
+  161.002,
+  161.25,
+  161.498,
+  161.861,
+  162.109,
+  162.792,
+  163.213,
+  163.732,
+  163.846,
+  164.095,
+  164.574,
+  164.881,
+  165.13,
+  165.621,
+  165.959,
+  166.374,
+  167.265,
+  167.48,
+  167.944,
+  168.109,
+  168.374,
+  168.689,
+  168.954,
+  169.07,
+  169.285,
+  169.451,
+  170.036,
+  170.483,
+  171.052,
+  172.186,
+  172.325,
+  172.762,
+  173.079,
+  173.337,
+  173.974,
+  174.115,
+  174.378,
+  175.065,
+  175.449,
+  175.833,
+  176.278,
+  176.662,
+  177.228,
+  177.811,
+  178.027,
+  178.437,
+  178.718,
+  179.384,
+  179.596,
+  180.061,
+  180.336,
+  180.547,
+  180.822,
+  181.544,
+  181.729,
+  182.026,
+  182.211,
+  182.771,
+  182.996,
+  183.424,
+  184.037,
+  184.252,
+  184.566,
+  184.781,
+  185.046,
+  185.73,
+  186.13,
+  186.942,
+  187.483,
+  187.877,
+  188.196,
+  188.59,
+  189.23,
+  189.67,
+  190.609,
+  190.892,
+  191.175,
+  191.654,
+  191.806,
+  192.605,
+  192.88,
+  193.154,
+  193.876,
+  194.196,
+  194.515,
+  194.835,
+  194.975,
+  195.235,
+  195.874,
+  196.573,
+  196.623,
+  199.634,
+  199.927,
+  200.644,
+  201.097,
+  201.802,
+  202.054,
+  202.399,
+  202.651,
+  202.902,
+  203.71,
+  204.022,
+  204.262,
+  204.863,
+  205.103,
+  205.415,
+  206.048,
+  206.698,
+  207.208,
+  207.51,
+  207.95,
+  208.711,
+  209.068,
+  209.358,
+  209.648,
+  210.392,
+  210.748,
+  211.506,
+  211.833,
+  212.234,
+  212.636,
+  213.735,
+  213.998,
+  214.262,
+  215.088,
+  215.418,
+  215.562,
+  215.954,
+  216.654,
+  217.49,
+  217.857,
+  218.82,
+  219.127,
+  220.1,
+  220.306,
+  220.697,
+  220.841,
+  221.551,
+  222.666,
+  223.294,
+  223.721,
+  224.012,
+  224.237,
+  224.394,
+  225.208,
+  225.394,
+  225.748,
+  225.99,
+  226.121,
+  226.794,
+  226.977,
+  227.804,
+  227.861,
+  228.28,
+  228.971,
+  229.15,
+  229.543,
+  229.776,
+  230.062,
+  230.187,
+  230.74,
+  231.172,
+  231.427,
+  231.741,
+  232.055,
+  232.806,
+  233.063,
+  233.201,
+  233.458,
+  234.016,
+  234.389,
+  235.022,
+  235.446,
+  236.212,
+  236.515,
+  237.236,
+  237.506,
+  237.838,
+  238.233,
+  238.44,
+  238.773,
+  238.918,
+  239.695,
+  240.018,
+  240.137,
+  240.511,
+  240.834,
+  241.004,
+  241.276,
+  241.498,
+  241.719,
+  244.19,
+  244.709,
+  245.34,
+  245.86,
+  246.921,
+  247.066,
+  247.706,
+  248.099,
+  248.615,
+  249.194,
+  249.4,
+  249.545,
+  249.999,
+  250.65,
+  250.932,
+  251.266,
+  251.495,
+  251.672,
+  251.9,
+  252.502,
+  252.722,
+  252.942,
+  253.112,
+  253.383,
+  253.501,
+  254.296,
+  254.531,
+  255.093,
+  255.274,
+  255.51,
+  255.799,
+  256.409,
+  256.611,
+  256.873,
+  257.136,
+  257.459,
+  257.721,
+  257.983,
+  258.306,
+  258.811,
+  259.013,
+  259.336,
+  259.477,
+  259.739,
+  260.304,
+  260.567,
+  261.149,
+  261.75,
+  262.192,
+  262.474,
+  262.598,
+  263.201,
+  263.532,
+  264.716,
+  265.024,
+  265.404,
+  265.713,
+  266.626,
+  266.83,
+  267.218,
+  267.936,
+  268.036,
+  268.73,
+  269.179,
+  269.689,
+  270.199,
+  270.587,
+  270.791,
+  271.057,
+  271.661,
+  272.196,
+  272.967,
+  273.399,
+  273.831,
+  274.086,
+  274.602,
+  274.925,
+  275.248,
+  275.45,
+  275.652,
+  275.915,
+  276.42,
+  278.933,
+  279.282,
+  279.892,
+  281.083,
+  281.309,
+  281.587,
+  281.761,
+  282.516,
+  282.907,
+  283.297,
+  283.542,
+  284.545,
+  284.798,
+  285.05,
+  285.303,
+  285.964,
+  286.217,
+  286.703,
+  287.131,
+  287.267,
+  287.956,
+  288.243,
+  288.662,
+  289.016,
+  289.501,
+  290.44,
+  290.812,
+  291.185,
+  291.487,
+  291.79,
+  292.232,
+  292.465,
+  293.157,
+  293.543,
+  293.783,
+  294.387,
+  294.591,
+  295.121,
+  295.507,
+  296.248,
+  296.44,
+  296.988,
+  297.147,
+  297.397,
+  297.647,
+  297.897,
+  298.204,
+  298.741,
+  299.086,
+  299.366,
+  299.891,
+  300.146,
+  300.427,
+  301.195,
+  301.499,
+  301.874,
+  302.248,
+  302.482,
+  303.107,
+  303.389,
+  303.737,
+  304.274,
+  304.68,
+  305.085,
+  305.397,
+  306.216,
+  306.672,
+  307.127,
+  307.903,
+  308.237,
+  308.803,
+  309.292,
+  312.108,
+  312.303,
+  312.498,
+  312.648,
+  312.843,
+  313.038,
+  313.823,
+  314.002,
+  314.234,
+  314.52,
+  314.806,
+  315.145,
+  315.431,
+  315.663,
+  315.922,
+  316.823,
+  317.151,
+  317.923,
+  317.973,
+  318.173,
+  318.563,
+  318.83,
+  319.342,
+  319.769,
+  320.355,
+  321.449,
+  321.604,
+  321.891,
+  322.511,
+  323.384,
+  323.741,
+  324.747,
+  325.021,
+  325.449,
+  325.569,
+  325.894,
+  326.066,
+  326.288,
+  326.614,
+  327.207,
+  327.546,
+  328.012,
+  328.799,
+  328.989,
+  329.268,
+  329.458,
+  329.56,
+  330.202,
+  330.467,
+  330.854,
+  330.997,
+  331.644,
+  332.113,
+  332.647,
+  333.052,
+  333.202,
+  333.991,
+  334.241,
+  334.451,
+  334.622,
+  334.714,
+  335.323,
+  335.548,
+  335.826,
+  336.051,
+  336.225,
+  336.874,
+  337.148,
+  338.071,
+  338.294,
+  338.517,
+  338.791,
+  339.168,
+  339.711,
+  340.049,
+  341.018,
+  341.21,
+  341.403,
+  342.048,
+  342.294,
+  342.762,
+  343.55,
+  343.752,
+  344.015,
+  344.338,
+  344.6,
+  344.802,
+  345.445,
+  348.181,
+  348.624,
+  349.553,
+  349.849,
+  350.282,
+  350.783,
+  351.01,
+  351.832,
+  352.1,
+  352.493,
+  353.329,
+  353.603,
+  354.003,
+  354.467,
+  354.804,
+  355.398,
+  355.65,
+  355.96,
+  356.445,
+  357.424,
+  357.73,
+  357.978,
+  358.455,
+  358.589,
+  359.215,
+  359.766,
+  360.636,
+  360.912,
+  361.443,
+  361.783,
+  362.123,
+  362.399,
+  363.059,
+  363.324,
+  363.528,
+  363.855,
+  364.059,
+  364.202,
+  364.528,
+  365.481,
+  365.787,
+  366.696,
+  367.052,
+  367.608,
+  367.963,
+  368.253,
+  369.128,
+  369.415,
+  370.193,
+  370.455,
+  370.837,
+  371.419,
+  371.768,
+  372.327,
+  372.991,
+  373.654,
+  374.207,
+  374.855,
+  375.751,
+  376.111,
+  376.337,
+  376.629,
+  377.445,
+  378.089,
+  378.36,
+  378.942,
+  379.087,
+  379.482,
+  379.753,
+  379.961,
+  380.614,
+  380.921,
+  381.285,
+  381.592,
+  382.013,
+  382.492,
+  383.234,
+  383.612,
+  386.765,
+  387.224,
+  387.901,
+  388.97,
+  389.208,
+  389.829,
+  390.012,
+  390.79,
+  391.05,
+  391.43,
+  392.05,
+  392.309,
+  392.509,
+  393.149,
+  393.418,
+  393.749,
+  393.955,
+  394.544,
+  394.813,
+  395.838,
+  396.245,
+  396.652,
+  396.983,
+  398.015,
+  398.325,
+  399.328,
+  399.562,
+  400.066,
+  400.408,
+  400.962,
+  401.265,
+  401.498,
+  401.852,
+  402.165,
+  403.122,
+  403.378,
+  403.611,
+  403.984,
+  404.288,
+  404.871,
+  405.104,
+  405.477,
+  405.993,
+  406.301,
+  407.271,
+  407.494,
+  407.871,
+  408.197,
+  408.42,
+  408.592,
+  408.815,
+  409.615,
+  410.194,
+  410.494,
+  410.795,
+  410.957,
+  411.578,
+  412.185,
+  412.709,
+  413.388,
+  413.698,
+  413.812,
+  414.17,
+  414.382,
+  414.545,
+  415.174,
+  415.501,
+  415.979,
+  416.306,
+  417.104,
+  417.453,
+  417.998,
+  418.413,
+  419.278,
+  419.656,
+  419.828,
+  420.052,
+  420.533,
+  421.231,
+  421.575,
+  421.855,
+  422.134,
+  422.992,
+  423.387,
+  424.194,
+  424.479,
+  424.71,
+  424.941,
+  425.119,
+  425.35,
+  426.115,
+  426.425,
+  427.427,
+  427.755,
+  428.082,
+  428.561,
+  428.965,
+  429.368,
+  430.318,
+  430.69,
+  430.885,
+  431.298,
+  431.502,
+  431.874,
+  432.187,
+  432.441,
+  433.083,
+  433.364,
+  433.71,
+  433.862,
+  434.592,
+  434.831,
+  435.07,
+  435.363,
+  435.978,
+  438.84,
+  439.33,
+  439.663,
+  439.891,
+  440.066,
+  440.241,
+  440.417,
+  441.121,
+  441.526,
+  442.438,
+  442.667,
+  442.843,
+  443.124,
+  443.3,
+  443.581,
+  444.289,
+  444.589,
+  444.777,
+  445.077,
+  445.866,
+  446.247,
+  446.485,
+  446.652,
+  447.056,
+  447.426,
+  448.044,
+  448.388,
+  449.334,
+  449.829,
+  450.707,
+  452.07,
+  452.329,
+  452.649,
+  452.968,
+  453.288,
+  453.906,
+  454.226,
+  455.045,
+  455.523,
+  456.287,
+  457.515,
+  457.666,
+  458.076,
+  458.292,
+  458.638,
+  459.303,
+  459.524,
+  459.796,
+  459.966,
+  460.187,
+  460.459,
+  460.731,
+  460.952,
+  461.646,
+  461.999,
+  462.353,
+  462.543,
+  463.059,
+  463.331,
+  463.684,
+  464.358,
+  464.849,
+  465.155,
+  465.554,
+  466.272,
+  466.5,
+  466.676,
+  467.172,
+  467.496,
+  467.758,
+  468.584,
+  468.913,
+  469.712,
+  470.193,
+  473.121,
+  473.505,
+  473.842,
+  473.95,
+  474.195,
+  474.487,
+  475.007,
+  475.359,
+  475.711,
+  475.932,
+  476.604,
+  476.823,
+  477.173,
+  477.458,
+  477.939,
+  478.618,
+  479.222,
+  479.627,
+  480.032,
+  480.624,
+  481.442,
+  481.701,
+  482.019,
+  482.456,
+  482.655,
+  483.212,
+  483.59,
+  483.789,
+  484.427,
+  485.166,
+  485.514,
+  485.797,
+  485.949,
+  486.813,
+  487.198,
+  487.726,
+  488.111,
+  488.424,
+  488.592,
+  489.296,
+  490.156,
+  490.226,
+  490.514,
+  490.87,
+  491.092,
+  491.713,
+  492.268,
+  492.658,
+  492.981,
+  493.244,
+  493.628,
+  494.271,
+  494.709,
+  494.959,
+  495.397,
+  496.015,
+  496.212,
+  496.547,
+  496.744,
+  496.987,
+  497.185,
+  497.428,
+  497.625,
+  497.823,
+  497.975,
+  498.218,
+  498.735,
+  498.971,
+  499.426,
+  499.662,
+  499.899,
+  500.509,
+  500.877,
+  501.108,
+  501.935,
+  502.151,
+  502.627,
+  503.035,
+  503.123,
+  503.405,
+  503.816,
+  504.227,
+  504.443,
+  504.659,
+  504.811,
+  505.157,
+  505.76,
+  506.041,
+  506.901,
+  507.067,
+  507.383,
+  507.499,
+  507.815,
+  508.031,
+  508.446,
+  509.182,
+  509.533,
+  510.08,
+  510.365,
+  510.716,
+  511.32,
+  511.638,
+  512.016,
+  512.215,
+  512.414,
+  512.732,
+  513.23,
+  514.047,
+  514.352,
+  514.658,
+  514.963,
+  515.128,
+  515.433,
+  515.95,
+  517.468,
+  517.656,
+  518.07,
+  518.371,
+  518.991,
+  519.427,
+  519.745,
+  519.943,
+  520.082,
+  520.34,
+  520.657,
+  521.295,
+  521.537,
+  521.835,
+  522.132,
+  522.542,
+  522.728,
+  523.568,
+  523.771,
+  524.113,
+  524.503,
+  524.612,
+  525.321,
+  525.606,
+  525.957,
+  526.11,
+  526.526,
+  526.745,
+  527.614,
+  527.901,
+  528.253,
+  528.606,
+  528.893,
+  529.962,
+  530.219,
+  530.653,
+  530.791,
+  531.285,
+  531.66,
+  531.917,
+  532.055,
+  532.667,
+  533.303,
+  533.639,
+  533.975,
+  534.31,
+  534.569,
+  534.904,
+  535.623,
+  535.729,
+  536.142,
+  536.833,
+  537.146,
+  537.404,
+  537.585,
+  538.22,
+  538.708,
+  539.52,
+  540.078,
+  540.78,
+  541.2,
+  541.534,
+  542.035,
+  542.45,
+  542.752,
+  543.167,
+  543.582,
+  544.091,
+  544.394,
+  544.64,
+  544.772,
+  545.075,
+  545.811,
+  546.002,
+  546.135,
+  546.44,
+  546.688,
+  546.879,
+  547.013,
+  547.261,
+  547.737,
+  548.043,
+  548.61,
+  548.918,
+  549.319,
+  549.812,
+  550.441,
+  550.679,
+  550.917,
+  551.155,
+  551.448,
+  551.906,
+  552.089,
+  552.547
+ ]
+}

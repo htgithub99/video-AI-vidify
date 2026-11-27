@@ -1,0 +1,902 @@
+LIB ww
+SHEET ww1_more_act person ww1 5x2 1.75
+WW1 soldier crawling under barbed wire @0.5
+WW1 soldier carrying a wounded comrade on his shoulders
+WW1 soldier with a flamethrower
+WW1 soldier sitting writing a letter @1.0
+WW1 soldier eating from a tin while sitting @1.0
+WW1 sentry looking through a trench periscope
+WW1 soldier climbing a wooden ladder
+WW1 bugler blowing a bugle
+WW1 soldier sleeping on the ground @0.5
+WW1 soldier running bent forward with rifle
+SHEET ww2_us_more person ww2 5x2 1.75
+American WW2 soldier firing a bazooka from the shoulder
+American WW2 soldier with flamethrower
+American WW2 sniper lying prone with scoped rifle @0.5
+American WW2 machine gunner lying prone with BAR @0.5
+American WW2 soldier running crouched
+American WW2 soldier sweeping a mine detector
+American WW2 soldier saluting
+American WW2 soldier sitting smoking a cigarette @1.0
+American WW2 soldier carrying two ammo boxes
+American WW2 soldier wading through water up to the waist
+SHEET ww2_de_act person ww2 5x2 1.75
+German WW2 soldier charging with rifle, no swastika
+German WW2 soldier kneeling and firing rifle @1.2
+German WW2 soldier throwing a stick grenade
+German WW2 machine gunner lying prone with MG42 @0.5
+German WW2 soldier aiming a panzerfaust
+German WW2 officer pointing forward
+German WW2 soldier walking with hands raised in surrender
+wounded German WW2 soldier lying on the ground @0.6
+German WW2 soldier in winter white camouflage with rifle
+German WW2 soldier sitting exhausted @1.0
+SHEET ww2_su_act person ww2 5x2 1.75
+Soviet WW2 soldier charging with PPSh shouting
+Soviet WW2 soldier kneeling and firing a Mosin rifle @1.2
+Soviet WW2 soldier throwing a grenade
+Soviet WW2 machine gunner lying with a DP machine gun @0.5
+Soviet WW2 soldier with anti-tank rifle lying @0.5
+Soviet WW2 officer with pistol waving men forward
+Soviet WW2 soldier walking in snow with greatcoat and ushanka
+Soviet WW2 female medic carrying a bag
+wounded Soviet WW2 soldier lying on the ground @0.6
+Soviet WW2 soldier waving a red flag without symbols
+SHEET ww2_jp_act person ww2 5x2 1.75
+Japanese WW2 soldier charging with bayonet shouting
+Japanese WW2 soldier kneeling and firing rifle @1.2
+Japanese WW2 officer charging with katana raised
+Japanese WW2 machine gunner lying prone @0.5
+Japanese WW2 soldier throwing a grenade
+Japanese WW2 soldier hiding in jungle camouflage with leaves
+Japanese WW2 navy pilot in flight helmet standing
+Japanese WW2 soldier walking with hands raised in surrender
+wounded Japanese WW2 soldier lying on the ground @0.6
+Japanese WW2 soldier standing at attention
+SHEET ww_civ_more person ww 5x2 1.7
+old man with a cane 1940s
+old woman in shawl 1940s
+mother walking holding a child's hand 1940s
+crying child in 1940s clothes @1.2
+woman waving a handkerchief goodbye 1940s
+farmer with pitchfork 1910s-1940s
+priest in black cassock
+doctor in white coat with stethoscope 1940s
+policeman in 1940s uniform
+newspaper boy shouting holding a newspaper without readable text @1.3
+SHEET ww_more_tanks vehicle ww2 3x2 2.7
+Soviet KV-1 heavy tank
+Soviet IS-2 heavy tank
+German Panther tank
+British Churchill tank
+American M3 Stuart light tank
+German StuG III assault gun
+SHEET ww_more_ships ship ww 3x2 20
+Japanese WW2 battleship
+WW2 heavy cruiser
+WW2 PT torpedo boat @3
+WW2 Liberty cargo ship
+WW2 LST tank landing ship
+WW2 warship sinking and tilted with smoke. Do not write any captions, labels or names anywhere in the image
+SHEET ww_props2 prop ww 6x3 0.4
+military field ration tin
+paper letter envelope without writing @0.05
+military medal on ribbon @0.1
+binoculars @0.15
+pistol @0.15
+submachine gun @0.2
+machine gun ammo belt @0.1
+round anti-tank landmine @0.15
+wooden ladder @3
+shovel @1.0
+metal bucket
+canteen water bottle @0.25
+wooden table @0.8
+stack of newspapers without readable text @0.3
+suitcase @0.5
+camp bonfire @0.8
+broken wooden cart wheel @1.0
+pile of rubble bricks @0.6
+BG bg_ww_stalingrad ww2: Stalingrad ruins in winter with snow on rubble and broken factory walls
+BG bg_ww_berlin_1945 ww2: Berlin 1945 ruined street with burnt buildings and smoke
+BG bg_ww_burma_jungle ww2: Burma jungle river with dense trees and muddy bank
+BG bg_ww_arctic_sea ww2: Arctic sea with ice floes and grey sky
+BG bg_ww_iwo_jima ww2: Black volcanic sand beach with a volcano mountain behind
+BG bg_ww_forest_bunker ww2: European pine forest with a log bunker and foxholes in snow
+
+LIB ancient
+SHEET greek_more person ancient 5x2 1.75
+Greek hoplite charging with spear and shield
+Greek archer shooting a bow
+Greek peltast throwing a javelin
+Athenian citizen in himation walking
+Greek woman in chiton carrying a water jug
+Greek Olympic runner athlete running, wearing a short white tunic
+Greek discus thrower athlete, wearing a short white tunic
+Macedonian king in gold armor and cloak standing
+Greek rower sailor pulling an oar @1.2
+Greek priestess with laurel wreath
+SHEET egypt_more person ancient 5x2 1.7
+Egyptian archer shooting a bow
+Egyptian scribe sitting cross-legged with papyrus @1.0
+Egyptian workers pulling a rope as a group of three
+Egyptian queen with vulture crown
+Egyptian farmer cutting wheat with a sickle
+Egyptian fisherman with net
+Egyptian musician woman playing a harp
+Egyptian vizier with staff
+Egyptian child with side lock @1.2
+Egyptian guard with spear standing
+SHEET near_east_more person ancient 5x2 1.75
+Persian archer shooting
+Assyrian soldier with pointed helmet and spear
+Babylonian king with curled beard and tall hat
+Hun warrior on foot with bow
+Celtic druid in white robe with staff
+Germanic chieftain with fur and axe
+Iberian warrior with falcata sword
+Thracian warrior with rhomphaia
+Scythian warrior with bow and pointed cap
+Phoenician merchant in robes
+SHEET rome_more person rome 5x2 1.75
+group of six Roman legionaries in testudo shield formation @2.0
+column of five Roman legionaries marching in a row
+Roman surveyor with groma tool
+Roman soldiers building a wall from stones as a group of two
+Roman slave in chains walking
+Roman cook stirring a pot
+Roman blacksmith hammering at an anvil
+Roman scribe writing on a tablet sitting @1.0
+Roman fisherman carrying a net
+Roman legionary standing guard at attention
+SHEET china_ancient person ancient 5x2 1.75
+Han dynasty crossbowman aiming a crossbow
+Han dynasty general in armor with sword
+ancient Chinese emperor in black and red robe with mianguan crown
+ancient Chinese empress in long robes
+ancient Chinese peasant woman carrying a basket
+ancient Chinese archer shooting
+ancient Chinese merchant with abacus
+ancient Chinese spearman with shield
+ancient Chinese court official holding a hu tablet
+ancient Chinese laborer carrying earth with a shoulder pole
+SHEET ancient_animals animal ancient 5x2 1.5
+brown horse standing without saddle @1.6
+white horse galloping without rider @1.6
+donkey @1.2
+goat @0.8
+sheep @0.8
+cow @1.4
+hunting dog @0.6
+eagle flying @0.5
+crocodile @0.6
+wolf @0.8
+SHEET ancient_props2 prop ancient 6x3 0.5
+painted clay pottery jar
+clay oil lamp @0.1
+chariot wheel @1.0
+ship anchor @1.2
+coil of rope @0.3
+bow and quiver of arrows @1.2
+gladius sword @0.7
+long spear @2.2
+Greek Corinthian helmet @0.3
+Roman legionary helmet @0.3
+laurel wreath @0.2
+lyre @0.6
+blank papyrus sheet @0.3
+golden throne @1.5
+Roman banquet couch with cushions @0.8
+low table with food and wine @0.5
+bronze cauldron @0.6
+wooden cage @1.5
+SHEET ancient_buildings3 building ancient 3x2 15
+Roman bathhouse with domes
+Colosseum exterior @45
+Pharos lighthouse of Alexandria @100
+section of the ancient Chinese Great Wall with watchtower
+Mesopotamian ziggurat @30
+Greek open-air theater @15
+BG bg_thermopylae ancient: Narrow coastal mountain pass with cliffs on one side and sea on the other
+BG bg_babylon_gate ancient: Babylon city with blue Ishtar gate and walls
+BG bg_nile_village ancient: Nile riverbank village with mud houses, reeds and palm trees
+BG bg_great_wall ancient: Ancient Chinese Great Wall winding over green mountains
+BG bg_persepolis ancient: Persian palace terrace of Persepolis with tall columns in the desert
+BG bg_roman_countryside rome: Roman countryside farmland with a villa, cypress trees and hills
+
+LIB medieval
+SHEET med_soldiers person medieval 5x2 1.75
+medieval knight in full plate armor walking with sword
+medieval knight standing with sword point down and shield
+man-at-arms with halberd
+English longbowman with longbow
+crossbowman with crossbow
+medieval spearman with kite shield
+Templar knight with white surcoat and red cross
+Viking warrior with round shield and axe
+Saracen warrior with scimitar and turban helmet
+Mongol warrior on foot with bow
+SHEET med_act person medieval 5x2 1.75
+medieval knight charging with sword raised
+longbowman drawing a bow to shoot
+medieval soldier blocking with a shield
+wounded medieval soldier lying on the ground @0.6
+knight kneeling being knighted @1.2
+two knights dueling with swords as one pair @1.8
+medieval soldier carrying a banner without symbols
+medieval soldier walking with sword on shoulder
+medieval soldier on knees surrendering @1.2
+Viking warrior charging with axe raised
+SHEET med_civ person medieval 5x2 1.7
+medieval king with crown and royal robe
+medieval queen with crown and gown
+medieval princess in long dress
+medieval monk in brown robe
+medieval bishop with mitre and staff
+medieval peasant man with hoe
+medieval peasant woman with basket
+medieval blacksmith with hammer and apron
+medieval merchant with purse
+court jester
+SHEET med_civ2 person medieval 5x2 1.7
+medieval bard playing a lute
+medieval town guard with spear
+medieval peasant child @1.2
+old peasant woman with a cane
+medieval nun
+medieval alchemist holding a flask
+miller carrying a flour sack
+shepherd with crook
+medieval baker with bread
+medieval executioner hood-free axeman with black clothes
+SHEET med_mounted animal medieval 3x2 2.6
+knight on armored horse walking
+knight on horse charging with lance
+Mongol horse archer shooting while galloping
+Saracen rider on horse with scimitar
+king riding a white horse
+Viking chieftain on horse
+SHEET med_animals animal medieval 5x2 1.0
+warhorse with caparison without rider @1.7
+plow horse @1.6
+pig @0.7
+chicken @0.4
+goose @0.5
+cow @1.4
+sheep @0.8
+wolf @0.8
+falcon @0.3
+bear @1.3
+SHEET med_vehicles vehicle medieval 3x2 3
+medieval trebuchet @9
+medieval siege tower @12
+medieval battering ram with roof
+horse-drawn wooden cart with driver @2.2
+hay wagon pulled by an ox @2.5
+royal horse-drawn carriage @2.6
+SHEET med_ships ship medieval 2x2 10
+Viking longship with striped sail and shields
+medieval cog ship with one sail
+Mediterranean galley with oars
+carrack sailing ship with three masts @20
+SHEET med_props prop medieval 6x3 0.5
+medieval sword @1.0
+kite shield @1.0
+heater shield with blank design @0.9
+knight helmet great helm @0.35
+battle axe @0.9
+mace @0.7
+longbow and arrows @1.8
+crossbow @0.9
+war banner on pole without symbols @3
+treasure chest with gold @0.6
+wooden barrel @0.9
+stack of firewood @0.6
+iron cauldron on fire @0.8
+anvil @0.7
+royal crown @0.2
+goblet @0.2
+candle holder with candles @0.4
+book with blank cover @0.3
+SHEET med_structures structure medieval 4x2 4
+castle gate with portcullis @10
+round stone tower @15
+wooden palisade with gate
+knight tournament pavilion tent
+medieval market stall
+stone well @1.2
+wooden pillory @2
+windmill @12
+SHEET med_buildings building medieval 3x2 12
+stone castle with towers @30
+gothic cathedral @40
+half-timbered town house
+peasant hut with thatched roof @5
+medieval tavern with hanging sign without letters
+watermill with wheel @8
+SHEET med_nature nature medieval 6x2 8
+big oak tree @14
+birch tree @12
+spruce tree @14
+willow tree @10
+apple tree @5
+dead tree @8
+hedge bush @1.2
+wild flowers bush @0.6
+haystack @2
+tree stump @0.6
+mossy boulder @1.5
+fallen log @0.6
+BG bg_castle_courtyard medieval: Castle courtyard with stone walls, towers and wooden stairs
+BG bg_throne_room medieval: Medieval throne room with banners, pillars and a throne
+BG bg_med_village medieval: Medieval village street with timber houses and muddy road
+BG bg_tavern_interior medieval: Medieval tavern interior with tables, fireplace and barrels
+BG bg_med_battlefield medieval: Open field battlefield with a castle on a hill far away
+BG bg_forest_road medieval: Forest road through old oaks in daylight
+BG bg_monastery medieval: Monastery cloister with arches and garden
+BG bg_siege_walls medieval: Castle walls and towers seen from outside with a moat
+BG bg_viking_fjord medieval: Norwegian fjord with Viking village and longhouses
+BG bg_jerusalem_walls medieval: Desert city walls of Jerusalem in the Crusades era
+
+LIB eastasia
+SHEET samurai person eastasia 5x2 1.7
+samurai in full armor walking with katana at waist
+samurai drawing katana
+samurai attacking with katana
+samurai archer with long yumi bow
+samurai with naginata
+ashigaru foot soldier with yari spear and jingasa hat
+ashigaru with arquebus matchlock gun
+ninja in black crouching @1.2
+ronin in kimono with straw hat
+samurai general daimyo with war fan
+SHEET japan_civ person eastasia 5x2 1.65
+Japanese shogun in court robes
+Japanese noble lady in layered kimono
+Japanese geisha with umbrella
+Japanese peasant farmer with straw hat
+Japanese merchant
+Buddhist monk with shaved head
+Japanese fisherman
+Japanese child in kimono @1.2
+Japanese tea master kneeling @1.0
+Japanese craftsman carpenter
+SHEET china_imperial person eastasia 5x2 1.75
+Tang dynasty soldier with armor and spear
+Song dynasty archer
+Ming dynasty soldier with musket
+Ming dynasty general in armor
+Qing dynasty bannerman soldier with queue hairstyle
+Chinese emperor in yellow dragon robe
+Chinese mandarin official in robe with rank badge
+Chinese court lady in hanfu
+Chinese eunuch official
+Chinese imperial guard with halberd
+SHEET china_civ person eastasia 5x2 1.7
+Chinese peasant with straw hat and hoe
+Chinese peasant woman with basket
+Chinese scholar with fan
+Chinese merchant with goods
+Chinese martial artist in kung fu stance
+Chinese old man with long beard and cane
+Chinese child @1.2
+Chinese street vendor with shoulder pole baskets
+Chinese doctor with medicine box
+Chinese monk with staff
+SHEET mongol_korea person eastasia 5x2 1.75
+Mongol warrior with fur hat and bow
+Mongol khan in robe and fur hat
+Mongol woman in deel
+Korean Joseon soldier with wide hat and spear
+Korean Joseon general in armor
+Korean Joseon scholar in gat hat
+Korean woman in hanbok
+Korean king in red robe
+Korean peasant
+Japanese pirate wokou with sword
+SHEET ea_mounted animal eastasia 3x2 2.5
+samurai on horse with bow
+Mongol horse archer galloping
+Chinese cavalry general on horse with spear
+Korean cavalryman on horse
+Mongol rider on horse walking
+Bactrian camel with packs @2.3
+SHEET ea_vehicles vehicle eastasia 3x2 3
+Chinese junk ship with batten sails @15
+Japanese atakebune war ship @12
+Korean turtle ship @10
+palanquin carried by four bearers @2
+Chinese ox cart @2
+Japanese fishing boat @3
+SHEET ea_props prop eastasia 6x3 0.5
+katana in sheath @1.0
+samurai helmet kabuto @0.4
+samurai armor on stand @1.6
+paper lantern red @0.5
+Chinese porcelain vase @0.6
+tea set on tray @0.2
+folding fan @0.3
+bamboo scroll @0.4
+Chinese war drum on stand @1.5
+gong @1.5
+incense burner @0.6
+bonsai tree in pot @0.5
+rice straw bales @0.8
+bamboo basket @0.4
+writing brush and ink stone @0.1
+Chinese sword jian @0.9
+war banner sashimono blank @1.5
+wooden bucket @0.4
+SHEET ea_buildings building eastasia 3x2 15
+Japanese castle tenshu @30
+Japanese wooden temple
+Chinese pagoda @30
+Chinese palace hall with yellow roof
+Chinese paifang gate @8
+Korean hanok house @6
+SHEET ea_structures structure eastasia 4x2 4
+Japanese torii gate @6
+Chinese stone lion statue @1.5
+arched stone bridge @4
+wooden fence @1.5
+tea house @5
+rice paddy terrace patch @1.0
+stone lantern @1.5
+village well @1.2
+SHEET ea_nature nature eastasia 6x2 8
+bamboo grove @10
+cherry blossom tree @7
+Japanese pine tree @8
+red maple tree @8
+weeping willow @10
+plum blossom tree @5
+lotus plants @1.0
+reed grass @1.5
+rocky outcrop @3
+mountain pine on rock @6
+moss garden rock @1.0
+gingko tree @12
+BG bg_japan_castle eastasia: Japanese castle on stone walls with cherry blossoms
+BG bg_japan_village eastasia: Japanese village with thatched houses and rice fields
+BG bg_japan_temple_courtyard eastasia: Japanese temple courtyard with torii and stone lanterns
+BG bg_china_palace eastasia: Chinese imperial palace courtyard like the Forbidden City
+BG bg_china_market eastasia: Ancient Chinese market street with shops and lanterns
+BG bg_china_mountains eastasia: Chinese misty mountains with pine trees and river
+BG bg_mongol_steppe eastasia: Mongolian steppe with yurts and grassland
+BG bg_korea_village eastasia: Korean Joseon village with hanok houses
+BG bg_ea_battlefield eastasia: Open field with hills for an Asian battle, banners far away
+BG bg_ea_sea_coast eastasia: Rocky East Asian sea coast with waves
+
+LIB vietnam
+SHEET vn_ancient_people person vietnam 5x2 1.65
+Vietnamese Hùng king of Văn Lang with feather crown and bronze age clothes
+Văn Lang noble lord with feather headdress
+Văn Lang warrior with bronze axe and feather headdress
+Văn Lang woman in bronze age skirt and top
+Âu Lạc crossbowman with big wooden crossbow
+Vietnamese female general of the Trưng sisters era in armor with sword
+Han Chinese soldier of the northern occupation
+ancient Vietnamese farmer with hoe
+ancient Vietnamese fisherman with net
+ancient Vietnamese child @1.2
+SHEET vn_ly_tran person vietnam 5x2 1.65
+Trần dynasty Vietnamese soldier with spear and round shield
+Trần dynasty Vietnamese general in armor
+Lý dynasty Vietnamese king in yellow robe
+Vietnamese Buddhist monk in brown robe
+Yuan Mongol invader soldier
+Trần dynasty Vietnamese navy soldier with spear
+Vietnamese mandarin civil official in robe and hat
+Vietnamese archer
+Vietnamese peasant woman in áo tứ thân with headscarf
+Vietnamese Confucian scholar
+SHEET vn_le_tayson person vietnam 5x2 1.65
+Lê dynasty Vietnamese soldier
+Ming Chinese soldier
+Tây Sơn soldier in red and black with spear
+Tây Sơn general in armor with sword
+Lê dynasty Vietnamese official
+Vietnamese peasant man with sharpened bamboo spear
+Vietnamese peasant woman with conical hat
+Vietnamese village elder with beard and khăn xếp
+Vietnamese buffalo boy child with straw hat @1.2
+Vietnamese female soldier of Tây Sơn with sword
+SHEET vn_nguyen person vietnam 5x2 1.65
+Nguyễn dynasty Vietnamese emperor in yellow dragon robe
+Nguyễn dynasty mandarin in blue robe with hat
+Nguyễn dynasty imperial guard with spear
+Vietnamese court lady in áo nhật bình
+Vietnamese scholar exam candidate with scroll
+Nguyễn dynasty soldier with musket
+Vietnamese eunuch official
+Vietnamese merchant
+Vietnamese woman in áo dài walking
+Vietnamese man in áo the and khăn đóng
+SHEET vn_colonial person vietnam 5x2 1.7
+French colonial officer in white uniform and pith helmet
+French Foreign Legion soldier
+Vietnamese colonial soldier lính khố đỏ
+rickshaw puller pulling a rickshaw @1.7
+Vietnamese woman in 1930s áo dài
+Vietnamese revolutionary in khaki with pith helmet
+Vietnamese rubber plantation worker
+Vietnamese landlord in black áo dài with fan
+French lady in 1920s dress with parasol
+Vietnamese street vendor woman with shoulder pole
+SHEET vn_war person vietnam 5x2 1.7
+Việt Minh soldier with pith helmet and rifle 1950s
+Vietnamese People's Army soldier with green pith helmet and AK-47
+Viet Cong guerrilla in black clothes with checkered scarf and rifle
+Vietnamese female guerrilla with rifle and conical hat
+South Vietnamese ARVN soldier with M1 helmet
+American Vietnam War soldier with M16 and helmet
+French paratrooper 1954 with beret
+Vietnamese porter carrying supplies on a shoulder pole
+Vietnamese militia woman with rifle in black clothes
+Vietnamese People's Army officer with map
+SHEET vn_war_act person vietnam 5x2 1.7
+Vietnamese People's Army soldier charging with AK-47
+Vietnamese People's Army soldier kneeling and firing @1.2
+Vietnamese guerrilla lying prone aiming @0.5
+Vietnamese porter pushing a heavily loaded bicycle @1.8
+group of three Vietnamese soldiers pulling an artillery gun with ropes @1.7
+Vietnamese guerrilla digging a tunnel @1.2
+wounded Vietnamese soldier lying @0.6
+American soldier crossing a river holding rifle above head
+American soldier firing M60 machine gun
+Vietnamese soldier with field radio
+SHEET vn_animals animal vietnam 5x2 1.2
+Vietnamese water buffalo @1.5
+Vietnamese war elephant with rider and howdah @3.2
+Vietnamese small horse @1.4
+pig @0.7
+rooster @0.5
+duck @0.4
+dog @0.6
+tiger @1.0
+crane bird standing @1.2
+water buffalo with a boy riding on its back @2.0
+SHEET vn_vehicles vehicle vietnam 3x2 2
+Vietnamese bamboo raft with boatman @1.8
+Vietnamese sampan wooden boat with rower @2
+Vietnamese war junk ship of the Trần dynasty @8
+round basket boat thúng chai with fisherman @1.6
+Vietnamese ox cart @2
+Vietnamese cyclo pedicab @1.8
+SHEET vn_war_veh vehicle vietnam 3x2 3
+UH-1 Huey helicopter flying @4
+M113 armored personnel carrier
+T-54 tank
+ZIL truck carrying supplies
+Jeep with machine gun
+anti-aircraft gun 37mm @2.5
+SHEET vn_war_air aircraft vietnam 3x2 4
+B-52 bomber flying @12
+F-4 Phantom fighter flying
+MiG-21 fighter flying
+C-47 transport plane flying
+CH-47 Chinook helicopter flying
+French Bearcat fighter flying
+SHEET vn_props prop vietnam 6x3 0.5
+Đông Sơn bronze drum @0.6
+large Vietnamese crossbow nỏ @1.5
+Vietnamese conical hat nón lá @0.15
+shoulder pole with two baskets quang gánh @1.6
+rice sacks @0.8
+large clay water jar chum @0.9
+wooden family altar with incense @1.2
+woven bamboo basket @0.4
+betel nut tray @0.1
+Vietnamese red lantern @0.5
+bamboo fish trap @0.7
+wooden rice mortar and pestle @1.2
+Vietnamese sword @0.9
+Vietnamese spear @2.2
+red banner on pole without letters @3
+Vietnamese war drum @1.2
+brass gong @1.0
+wooden boat paddle @1.5
+SHEET vn_structures structure vietnam 4x2 4
+bamboo hedge lũy tre @6
+village well with stone rim @1.2
+Vietnamese village gate cổng làng @5
+small Vietnamese shrine miếu @2.5
+Vietnamese stilt house nhà sàn @6
+haystack @2.5
+bamboo bridge @2
+banyan tree with a small shrine at its base @12
+SHEET vn_buildings building vietnam 3x2 8
+Vietnamese communal house đình làng with curved roof
+Vietnamese pagoda with tiered roof @12
+Vietnamese thatched mud house @4
+Vietnamese tile-roof wooden house @5
+Vietnamese citadel gate like Ngọ Môn @15
+French colonial villa in Vietnam @10
+SHEET vn_nature nature vietnam 6x2 6
+bamboo clump @10
+banyan tree @14
+areca palm tree @12
+coconut palm @12
+banana tree @4
+lotus plants @1.0
+rice paddy patch @0.8
+mangrove tree @5
+limestone karst rock @15
+sugarcane @2.5
+royal poinciana flame tree with red flowers @10
+water hyacinth @0.4
+BG bg_vn_rice_village vietnam: Vietnamese rice paddy fields with a village, bamboo hedge and mountains far away
+BG bg_vn_dinh_courtyard vietnam: Courtyard of a Vietnamese communal house đình with banyan tree
+BG bg_vn_hung_temple vietnam: Ancient Vietnamese mountains and forest with a temple, Hùng kings era
+BG bg_vn_bach_dang vietnam: Bạch Đằng river at low tide with sharpened wooden stakes in the water
+BG bg_vn_halong vietnam: Hạ Long bay with limestone karst islands
+BG bg_vn_hue_citadel vietnam: Huế imperial citadel with gate, moat and flag tower
+BG bg_vn_hanoi_1930 vietnam: Hà Nội French quarter street in the 1930s with trees and colonial houses
+BG bg_vn_dienbienphu vietnam: Điện Biên Phủ valley with hills, trenches and an airstrip
+BG bg_vn_truong_son vietnam: Trường Sơn mountain jungle trail with dense trees
+BG bg_vn_mekong vietnam: Mekong delta canal with coconut palms and wooden houses
+BG bg_vn_saigon_1960 vietnam: Sài Gòn street in the 1960s with shops and trees
+BG bg_vn_highlands vietnam: Central highlands village with communal stilt house and hills
+BG bg_vn_ancient_citadel vietnam: Ancient Cổ Loa spiral earthen citadel walls
+
+LIB modern
+SHEET mod_military person modern 5x2 1.75
+modern US soldier with rifle and plate carrier
+modern Russian soldier with rifle
+modern NATO soldier standing
+special forces operator with night vision on helmet
+sniper in ghillie suit @1.6
+female modern soldier
+fighter pilot in G-suit and helmet
+modern tank crewman
+modern combat medic with bag
+modern military officer in dress uniform
+SHEET mod_military_act person modern 5x2 1.75
+modern soldier running with rifle
+modern soldier kneeling and aiming @1.2
+modern soldier lying prone aiming @0.5
+modern soldier throwing a grenade
+modern soldier firing a rocket launcher
+modern soldier operating a drone controller
+modern soldier talking on radio
+wounded modern soldier lying @0.6
+modern soldier carrying a wounded comrade
+modern soldier saluting
+SHEET mod_civ person modern 5x2 1.7
+businessman in suit with briefcase walking
+businesswoman in suit with tablet
+doctor in white coat
+nurse in scrubs
+police officer
+firefighter in gear
+teacher with book
+student with backpack @1.6
+construction worker with hard hat
+chef in white uniform
+SHEET mod_civ2 person modern 5x2 1.7
+old man with cane modern
+old woman with shopping bag
+young woman walking with phone
+young man in hoodie
+boy with soccer ball @1.3
+girl with backpack @1.25
+scientist in lab coat with clipboard
+TV reporter with microphone
+farmer in modern clothes
+athlete running
+SHEET mod_civ3 person modern 5x2 1.7
+politician speaking at a podium @1.8
+news anchor sitting at a desk @1.3
+office worker sitting at a computer @1.3
+crowd of four protesters with blank signs @1.8
+family of three walking
+delivery rider standing with helmet
+tourist with camera
+elderly couple
+hacker in hoodie with laptop sitting @1.2
+pilot captain in airline uniform
+SHEET mod_veh vehicle modern 3x2 1.6
+modern sedan car
+SUV
+pickup truck @1.8
+city bus @3.2
+scooter motorbike with rider @1.6
+bicycle with rider @1.7
+SHEET mod_veh2 vehicle modern 3x2 2.5
+police car @1.6
+ambulance van
+fire truck @3.2
+taxi @1.6
+delivery van
+semi truck @4
+SHEET mod_mil_veh vehicle modern 3x2 2.6
+M1 Abrams tank
+T-90 tank
+Humvee @1.9
+MRAP armored vehicle @2.7
+BMP infantry fighting vehicle
+rocket launcher truck @3.2
+SHEET mod_air aircraft modern 3x2 4
+F-22 stealth fighter flying
+Su-27 fighter flying
+Apache attack helicopter flying
+Black Hawk helicopter flying
+passenger airliner flying @12
+military drone flying @2
+SHEET mod_ships ship modern 2x2 30
+modern aircraft carrier @60
+modern destroyer
+container ship @40
+speedboat @2
+SHEET mod_props prop modern 6x3 0.5
+laptop @0.25
+smartphone @0.15
+flat screen TV @0.7
+office chair @1.1
+office desk with computer @1.2
+coffee cup @0.12
+backpack @0.5
+traffic cone @0.7
+trash bin @1.0
+street lamp @5
+park bench @0.8
+fire hydrant @0.8
+vending machine @1.8
+briefcase @0.4
+stack of money @0.15
+cardboard box @0.5
+shopping cart @1.0
+microphone on stand @1.6
+SHEET mod_structures structure modern 4x2 4
+bus stop shelter @2.6
+cell phone tower @25
+blank billboard @8
+gas station pump @1.8
+security guard booth @2.6
+chain-link fence @2
+playground slide @2.5
+street food stall @2.3
+SHEET mod_buildings building modern 3x2 20
+glass skyscraper @120
+apartment block @30
+suburban house @7
+corner shop @6
+hospital building @20
+factory with chimneys @20
+SHEET mod_nature nature modern 6x2 6
+city street tree @7
+palm tree @10
+hedge bush @1.2
+flower bed @0.5
+lawn grass patch @0.2
+pine tree @12
+leafless winter tree @8
+potted plant @1.0
+rock @1.0
+cactus @2
+tall grass @1.0
+autumn tree @8
+BG bg_mod_city_day modern: Modern city street in daytime with shops and skyscrapers
+BG bg_mod_city_night modern: Modern city at night with lit windows and neon lights
+BG bg_mod_office modern: Modern office interior with desks and computers
+BG bg_mod_living_room modern: Modern living room with sofa, TV and window
+BG bg_mod_classroom modern: School classroom with desks and blackboard
+BG bg_mod_hospital modern: Hospital room with bed and medical equipment
+BG bg_mod_highway modern: Highway through countryside with mountains
+BG bg_mod_suburb modern: Suburban street with houses and lawns
+BG bg_mod_desert_base modern: Desert military base with sandbags, containers and tents
+BG bg_mod_newsroom modern: TV news studio with screens
+BG bg_mod_airport modern: Airport terminal with big windows and planes outside
+BG bg_mod_ruined_city modern: Modern city ruined by war with damaged apartment blocks
+
+LIB game
+SHEET game_heroes person game 5x2 1.75
+fantasy knight hero with sword and shield
+fantasy wizard with staff and pointed hat
+elf archer with bow
+rogue thief with daggers and hood
+cleric priestess with holy mace
+barbarian with big axe
+paladin in golden armor
+druid with wooden staff and leaves
+necromancer in dark robes with skull staff
+bard with lute
+SHEET game_heroes_act person game 5x2 1.75
+fantasy knight attacking with sword
+wizard casting a fireball from his hands
+elf archer shooting an arrow
+rogue sneaking crouched @1.2
+barbarian jumping with axe
+cleric healing with glowing hands
+fantasy hero running
+fantasy hero defeated lying @0.6
+fantasy hero raising sword in victory
+fantasy hero blocking with shield
+SHEET game_monsters person game 5x2 1.6
+green goblin with dagger @1.1
+orc warrior with axe @2.0
+cave troll with club @3.0
+skeleton warrior with sword
+zombie walking
+blue slime monster @0.6
+giant spider @1.2
+werewolf @2.0
+vampire in cloak
+ghost floating
+SHEET game_big_monsters animal game 3x2 8
+red dragon breathing fire @10
+giant ogre @5
+stone golem @4
+minotaur with axe @3
+three-headed hydra @8
+griffin @3
+SHEET game_scifi_chars person game 5x2 1.8
+space marine in power armor
+astronaut in spacesuit
+humanoid robot @2.0
+female android
+grey alien @1.3
+alien warrior with plasma rifle @2.2
+cyborg soldier
+starship pilot
+sci-fi scientist in lab coat
+mech suit pilot in exo suit @2.5
+SHEET game_scifi_veh vehicle game 3x2 4
+sci-fi space fighter ship @4
+space cruiser battleship @40
+planetary rover @2.5
+two-legged combat mech walker @8
+hover bike with rider @1.8
+flying saucer UFO @4
+SHEET game_items prop game 6x3 0.5
+treasure chest open with gold @0.7
+red health potion bottle @0.25
+blue mana potion bottle @0.25
+pile of gold coins @0.3
+large gemstone @0.2
+golden key @0.15
+magic staff with crystal @1.8
+glowing magic sword @1.1
+round shield with emblem without letters @0.9
+fantasy bow @1.3
+magic scroll @0.4
+red heart icon @0.3
+gold star icon @0.3
+round bomb with fuse @0.4
+wooden crate @0.8
+spellbook @0.3
+glowing mushroom @0.4
+magic portal arch @3
+SHEET game_buildings building game 3x2 12
+wizard tower @25
+fantasy tavern @8
+dungeon entrance in rock @5
+ancient ruined temple @10
+fairy tale cottage @6
+giant crystal formation @6
+SHEET game_nature nature game 6x2 6
+magic glowing tree @10
+giant mushroom @5
+crystal cluster @2
+glowing flower plant @1.0
+twisted dead tree @8
+fantasy pine tree @12
+floating rock island @6
+lava rock @1.5
+ice crystal rock @2
+alien plant @3
+vine-covered pillar ruin @4
+cartoon bush @1.2
+BG bg_game_fantasy_forest game: Enchanted fantasy forest with glowing mushrooms and light rays
+BG bg_game_dungeon game: Stone dungeon corridor with torches and chains
+BG bg_game_castle_hall game: Fantasy castle great hall with banners
+BG bg_game_lava_cave game: Volcanic lava cave with rivers of lava
+BG bg_game_ice_land game: Frozen ice land with glaciers and aurora
+BG bg_game_space_station game: Sci-fi space station corridor interior
+BG bg_game_alien_planet game: Alien planet surface with two moons and strange rocks
+BG bg_game_scifi_city game: Futuristic city with flying cars and towers
+BG bg_game_desert_ruins game: Fantasy desert with ancient ruins and sand
+BG bg_game_sky_islands game: Floating sky islands with waterfalls and clouds
+BG bg_game_village game: Cozy fantasy village with cottages and a well
+BG bg_game_graveyard game: Spooky graveyard at night with full moon

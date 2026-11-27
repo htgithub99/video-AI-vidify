@@ -1,0 +1,6518 @@
+{
+ "total": 584.606,
+ "series": "AUDIE MURPHY · WW2",
+ "turnT": 17.032,
+ "recapT": 502.76115999999996,
+ "beats": [
+  {
+   "t0": 0.0,
+   "kind": "scene",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_teen_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "AUDIE MURPHY",
+    "sub": "1925 - 1971",
+    "cast": 0,
+    "t": 1.704
+   }
+  },
+  {
+   "t0": 5.637,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_tank__tiger1",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "6 TANKS",
+    "sub": "",
+    "at": null,
+    "t": 9.133
+   },
+   "smoke": true
+  },
+  {
+   "t0": 10.086,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_cowboy",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "camera",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 12.842,
+   "kind": "scene",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_lie",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 14.37,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 17.032,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 18.183,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO RIFLE",
+    "sub": "",
+    "at": null,
+    "t": 18.746
+   },
+   "warm": true
+  },
+  {
+   "t0": 19.377,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO MEDALS",
+    "sub": "no movies",
+    "at": null,
+    "t": 20.835
+   },
+   "warm": true
+  },
+  {
+   "t0": 22.848,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 26.528,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER I",
+    "title": "The Sharecropper's Boy"
+   }
+  },
+  {
+   "t0": 28.478,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "mother",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "father",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "JUNE 20, 1925",
+    "sub": "",
+    "corner": "tl",
+    "t": 28.478
+   }
+  },
+  {
+   "t0": 31.355,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "mother",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "father",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "KINGSTON",
+    "sub": "Texas",
+    "at": null,
+    "t": 31.355
+   }
+  },
+  {
+   "t0": 32.863,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "mother",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "father",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 36.357,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "mother",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "father",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 38.609,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "mother",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "father",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 40.943,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "kids",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mother",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "12 CHILDREN",
+    "sub": "",
+    "at": null,
+    "t": 42.038
+   },
+   "warm": true
+  },
+  {
+   "t0": 43.14,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "kids",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mother",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 45.156,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "kids",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mother",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 47.168,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "kids",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mother",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 49.135,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "kids",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mother",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 51.147,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "kids",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mother",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 52.488,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "kids",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mother",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 54.496,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "kids",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mother",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 57.04,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 59.93,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 61.59,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 63.444,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 65.466,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 67.002,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_kid_aim",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 68.92,
+   "kind": "bust",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 71.548,
+   "kind": "paper",
+   "bg": "bg_ww_country_road",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "1 BULLET",
+      "size": "h",
+      "t": 71.548
+     },
+     {
+      "text": "= 1 DINNER",
+      "size": "l",
+      "t": 72.941
+     }
+    ]
+   }
+  },
+  {
+   "t0": 73.703,
+   "kind": "bust",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 75.226,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_kid_aim",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 78.037,
+   "kind": "bust",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 80.303,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_kid_aim",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 83.399,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 84.647,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 86.623,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 89.848,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 92.062,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 93.449,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 11",
+    "sub": "",
+    "corner": "tl",
+    "t": 93.449
+   }
+  },
+  {
+   "t0": 94.647,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 96.922,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "cotton_sack",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "$1 A DAY",
+    "sub": "",
+    "corner": "tl",
+    "t": 98.139
+   }
+  },
+  {
+   "t0": 99.179,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 101.024,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "cotton_sack",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 102.38,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 104.137,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 108.035,
+   "kind": "bust",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 16",
+    "sub": "",
+    "corner": "tl",
+    "t": 108.035
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 109.465,
+   "kind": "bust",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 111.75,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kids",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 113.38,
+   "kind": "bust",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 115.693,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kids",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 118.384,
+   "kind": "bust",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 121.743,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kids",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 123.083,
+   "kind": "bust",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 125.654,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER II",
+    "title": "Too Young, Too Small"
+   }
+  },
+  {
+   "t0": 127.604,
+   "kind": "scene",
+   "bg": "bg_ww_harbor",
+   "cast": [
+    {
+     "sprite": "ww_civ_more__newspaper_boy_shouting_holding_newspaper",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "DEC 7, 1941",
+    "sub": "Pearl Harbor",
+    "corner": "tl",
+    "t": 127.604
+   },
+   "smoke": true
+  },
+  {
+   "t0": 130.484,
+   "kind": "bust",
+   "bg": "bg_ww_harbor",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 131.658,
+   "kind": "scene",
+   "bg": "bg_ww_harbor",
+   "cast": [
+    {
+     "sprite": "ww_civ_more__newspaper_boy_shouting_holding_newspaper",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 133.763,
+   "kind": "bust",
+   "bg": "bg_ww_harbor",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 134.937,
+   "kind": "scene",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_teen_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "recruiter",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 136.339,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 138.505,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "recruiter_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 140.549,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 142.379,
+   "kind": "scene",
+   "bg": "bg_au_shack",
+   "cast": [
+    {
+     "sprite": "sister",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "CORINNE",
+    "sub": "older sister",
+    "cast": 0,
+    "t": 142.823
+   },
+   "warm": true
+  },
+  {
+   "t0": 145.072,
+   "kind": "paper",
+   "bg": "bg_au_shack",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "BORN 1924",
+      "size": "h",
+      "t": 145.072
+     }
+    ],
+    "stamp": {
+     "text": "FAKE",
+     "t": 146.636
+    }
+   }
+  },
+  {
+   "t0": 147.382,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JUNE 1942",
+    "sub": "",
+    "corner": "tl",
+    "t": 147.382
+   }
+  },
+  {
+   "t0": 149.656,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_teen_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "recruiter_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 151.826,
+   "kind": "paper",
+   "bg": "bg_au_recruit",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "5 FT 5 IN",
+      "size": "h",
+      "t": 151.826
+     }
+    ]
+   }
+  },
+  {
+   "t0": 153.944,
+   "kind": "paper",
+   "bg": "bg_au_recruit",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "112 LBS",
+      "size": "h",
+      "t": 154.115
+     }
+    ]
+   }
+  },
+  {
+   "t0": 156.441,
+   "kind": "scene",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 159.562,
+   "kind": "bust",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 161.838,
+   "kind": "bust",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 164.025,
+   "kind": "scene",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww_more_people__ww2_us_general_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 165.4,
+   "kind": "bust",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 167.767,
+   "kind": "scene",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 170.119,
+   "kind": "bust",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 172.733,
+   "kind": "scene",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 175.727,
+   "kind": "bust",
+   "bg": "bg_ww2_desert",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 176.813,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER III",
+    "title": "Sicily"
+   }
+  },
+  {
+   "t0": 178.763,
+   "kind": "scene",
+   "bg": "bg_ww_mountain_village",
+   "cast": [
+    {
+     "sprite": "audie_gi_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "JULY 1943",
+    "sub": "Sicily",
+    "corner": "tl",
+    "t": 178.763
+   }
+  },
+  {
+   "t0": 181.888,
+   "kind": "bust",
+   "bg": "bg_ww_mountain_village",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "3RD INFANTRY",
+    "sub": "Division",
+    "at": null,
+    "t": 181.888
+   }
+  },
+  {
+   "t0": 183.661,
+   "kind": "bust",
+   "bg": "bg_ww_mountain_village",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 185.799,
+   "kind": "scene",
+   "bg": "bg_ww_mountain_village",
+   "cast": [
+    {
+     "sprite": "audie_gi_aim",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 185.799
+  },
+  {
+   "t0": 190.685,
+   "kind": "bust",
+   "bg": "bg_ww_mountain_village",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "flash": 190.685
+  },
+  {
+   "t0": 192.385,
+   "kind": "scene",
+   "bg": "bg_ww_mountain_village",
+   "cast": [
+    {
+     "sprite": "audie_gi_aim",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 192.385
+  },
+  {
+   "t0": 193.801,
+   "kind": "bust",
+   "bg": "bg_ww_mountain_village",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 193.801
+  },
+  {
+   "t0": 195.543,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 197.103,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 198.902,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 201.559,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 203.387,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 205.156,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_charging_rifle",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 209.287,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 212.09,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_charging_rifle",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 216.268,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 218.307,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 220.018,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_charging_rifle",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 222.03,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 223.197,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IV",
+    "title": "Anzio"
+   }
+  },
+  {
+   "t0": 225.147,
+   "kind": "scene",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JAN 1944",
+    "sub": "Anzio",
+    "corner": "tl",
+    "t": 225.147
+   },
+   "smoke": true
+  },
+  {
+   "t0": 228.476,
+   "kind": "bust",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 231.3,
+   "kind": "bust",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 233.063,
+   "kind": "scene",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 235.401,
+   "kind": "bust",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 237.379,
+   "kind": "scene",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 238.751,
+   "kind": "bust",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 240.215,
+   "kind": "scene",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_gi_throw",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_tank__panzer4",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 243.377,
+   "kind": "bust",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 245.415,
+   "kind": "bust",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 246.609,
+   "kind": "scene",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 247.949,
+   "kind": "bust",
+   "bg": "bg_au_anzio",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 249.968,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_us_more__american_ww2_soldier_saluting",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 252.945,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 254.572,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 256.083,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_us_more__american_ww2_soldier_saluting",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 258.169,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 260.012,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_us_more__american_ww2_soldier_saluting",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 262.106,
+   "kind": "bust",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 263.366,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER V",
+    "title": "Southern France"
+   }
+  },
+  {
+   "t0": 265.316,
+   "kind": "scene",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "tipton",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AUG 15, 1944",
+    "sub": "Southern France",
+    "corner": "tl",
+    "t": 265.316
+   }
+  },
+  {
+   "t0": 267.891,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 269.295,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "tipton_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "label": {
+    "text": "LATTIE TIPTON",
+    "sub": "best friend",
+    "cast": 0,
+    "t": 270.555
+   }
+  },
+  {
+   "t0": 273.759,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 275.709,
+   "kind": "scene",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_walking_hands",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 276.8,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 278.14,
+   "kind": "scene",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_run",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 280.132,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 282.273,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 284.191,
+   "kind": "scene",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_run",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 287.442,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 290.167,
+   "kind": "scene",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 292.569,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "DISTINGUISHED",
+    "sub": "Service Cross",
+    "at": null,
+    "t": 293.634
+   }
+  },
+  {
+   "t0": 295.552,
+   "kind": "scene",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww_more_people__ww2_us_general_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 297.302,
+   "kind": "bust",
+   "bg": "bg_au_hill",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 299.046,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VI",
+    "title": "Holtzwihr"
+   }
+  },
+  {
+   "t0": 300.996,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JAN 26, 1945",
+    "sub": "",
+    "corner": "tl",
+    "t": 300.996
+   },
+   "cool": true
+  },
+  {
+   "t0": 304.212,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "HOLTZWIHR",
+    "sub": "France",
+    "at": null,
+    "t": 304.212
+   },
+   "cool": true
+  },
+  {
+   "t0": 305.841,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 307.004,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 308.926,
+   "kind": "paper",
+   "bg": "bg_ww2_snow",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "128 MEN",
+      "size": "h",
+      "t": 308.926
+     },
+     {
+      "text": "→ 19",
+      "size": "n",
+      "t": 311.749
+     }
+    ]
+   }
+  },
+  {
+   "t0": 312.293,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 314.008,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "ww2_tank__tiger1",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    },
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_winter_white",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 317.336,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "ww2_tank__tiger1",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    },
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_winter_white",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "250 INFANTRY",
+    "sub": "",
+    "at": null,
+    "t": 318.626
+   },
+   "smoke": true
+  },
+  {
+   "t0": 320.962,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 320.962,
+   "smoke": true
+  },
+  {
+   "t0": 323.187,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "ww2_tank__sherman",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 323.187,
+   "smoke": true
+  },
+  {
+   "t0": 324.758,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 327.08,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_us_more__american_ww2_soldier_running_crouched",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 328.091,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 331.003,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_sgt_phone",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_tank__sherman",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 332.929,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 333.991,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_gi_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_winter_white",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 336.915,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 340.612,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 342.266,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_gi_aim",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_winter_white",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 343.853,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_gi_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 345.507,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_sgt_phone",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 349.426,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 350.697,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "bubble": {
+    "text": "Hold the phone!",
+    "cast": 0,
+    "t": 350.697
+   },
+   "smoke": true
+  },
+  {
+   "t0": 352.64,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_sgt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 354.966,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "ww2_de_act__german_ww2_soldier_winter_white",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 356.899,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 359.395,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_limp",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 361.241,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 362.983,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_limp",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 365.447,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 368.086,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 371.457,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 375.27,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VII",
+    "title": "The Medal"
+   }
+  },
+  {
+   "t0": 377.22,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_lt_salute",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww_more_people__ww2_us_general_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JUNE 1945",
+    "sub": "",
+    "corner": "tl",
+    "t": 377.22
+   }
+  },
+  {
+   "t0": 379.339,
+   "kind": "bust",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 381.683,
+   "kind": "bust",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 383.956,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "medal",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 387.552,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "medal",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "MEDAL OF HONOR",
+    "sub": "",
+    "at": null,
+    "t": 388.177
+   }
+  },
+  {
+   "t0": 389.65,
+   "kind": "bust",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 390.9,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "medal",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 392.778,
+   "kind": "bust",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 394.585,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "medal",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 396.805,
+   "kind": "scene",
+   "bg": "bg_home_front",
+   "cast": [
+    {
+     "sprite": "magazine",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "LIFE",
+    "sub": "July 16, 1945",
+    "at": null,
+    "t": 396.805
+   }
+  },
+  {
+   "t0": 399.286,
+   "kind": "bust",
+   "bg": "bg_home_front",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 401.295,
+   "kind": "scene",
+   "bg": "bg_home_front",
+   "cast": [
+    {
+     "sprite": "magazine",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 404.582,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 406.297,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 409.571,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 412.712,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VIII",
+    "title": "Hollywood"
+   }
+  },
+  {
+   "t0": 414.662,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "HOLLYWOOD",
+    "sub": "",
+    "at": null,
+    "t": 414.662
+   }
+  },
+  {
+   "t0": 417.716,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 419.511,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 421.086,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 422.251,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 424.286,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 426.029,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 429.606,
+   "kind": "paper",
+   "bg": "bg_au_hollywood",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "TO HELL AND BACK",
+      "size": "h",
+      "t": 429.606
+     }
+    ]
+   }
+  },
+  {
+   "t0": 431.442,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "camera",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 432.934,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 433.919,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "camera",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 436.896,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 438.211,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_cowboy",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 440.673,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 442.17,
+   "kind": "scene",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "wife",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 444.072,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 445.758,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "wife_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 447.352,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_star_cowboy",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kids",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 448.806,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 450.571,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 452.47,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_star_cowboy",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kids",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 456.141,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 457.936,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_star_cowboy",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kids",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 459.416,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_star_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 460.701,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IX",
+    "title": "The War Inside"
+   }
+  },
+  {
+   "t0": 462.651,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 465.037,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 467.975,
+   "kind": "scene",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_lie",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 469.584,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 471.602,
+   "kind": "paper",
+   "bg": "bg_au_bedroom",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.35,
+   "paper": {
+    "lines": [
+     {
+      "text": "PTSD",
+      "size": "n",
+      "t": 473.806
+     }
+    ]
+   }
+  },
+  {
+   "t0": 474.261,
+   "kind": "scene",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_lie",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 476.94,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "reporter",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 479.191,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 481.075,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 484.339,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "reporter",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 487.257,
+   "kind": "bust",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 490.345,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "reporter",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 491.577,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 493.263,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 495.57,
+   "kind": "scene",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 499.583,
+   "kind": "bust",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 501.549,
+   "kind": "scene",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.25
+  },
+  {
+   "t0": 503.146,
+   "kind": "scene",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 505.819,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 507.848,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 510.442,
+   "kind": "scene",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_star_suit",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 513.288,
+   "kind": "bust",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 516.07,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER X",
+    "title": "Brush Mountain"
+   }
+  },
+  {
+   "t0": 518.02,
+   "kind": "scene",
+   "bg": "bg_au_fog",
+   "cast": [
+    {
+     "sprite": "plane",
+     "slot": "c",
+     "place": "sky",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "MAY 28, 1971",
+    "sub": "",
+    "corner": "tl",
+    "t": 518.02
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 521.13,
+   "kind": "bust",
+   "bg": "bg_au_fog",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 523.02,
+   "kind": "scene",
+   "bg": "bg_au_fog",
+   "cast": [
+    {
+     "sprite": "plane",
+     "slot": "c",
+     "place": "sky",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 524.97,
+   "kind": "bust",
+   "bg": "bg_au_fog",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 526.899,
+   "kind": "scene",
+   "bg": "bg_au_fog",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.5
+  },
+  {
+   "t0": 528.845,
+   "kind": "bust",
+   "bg": "bg_au_fog",
+   "cast": [
+    {
+     "sprite": "audie_star_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "AGE 45",
+    "sub": "",
+    "corner": "tl",
+    "t": 528.845
+   },
+   "dark": 0.5
+  },
+  {
+   "t0": 531.939,
+   "kind": "scene",
+   "bg": "bg_au_arlington",
+   "cast": [
+    {
+     "sprite": "gravestone",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "ARLINGTON",
+    "sub": "",
+    "at": null,
+    "t": 533.211
+   }
+  },
+  {
+   "t0": 534.248,
+   "kind": "bust",
+   "bg": "bg_au_arlington",
+   "cast": [
+    {
+     "sprite": "audie_star_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 536.845,
+   "kind": "scene",
+   "bg": "bg_au_arlington",
+   "cast": [
+    {
+     "sprite": "gravestone",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 538.207,
+   "kind": "bust",
+   "bg": "bg_au_arlington",
+   "cast": [
+    {
+     "sprite": "audie_star_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 539.726,
+   "kind": "scene",
+   "bg": "bg_au_arlington",
+   "cast": [
+    {
+     "sprite": "gravestone",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 541.57,
+   "kind": "bust",
+   "bg": "bg_au_arlington",
+   "cast": [
+    {
+     "sprite": "audie_star_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 546.49,
+   "kind": "scene",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 548.014,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 550.232,
+   "kind": "bust",
+   "bg": "bg_au_cotton",
+   "cast": [
+    {
+     "sprite": "audie_kid_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 553.186,
+   "kind": "scene",
+   "bg": "bg_au_recruit",
+   "cast": [
+    {
+     "sprite": "audie_teen_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 555.513,
+   "kind": "scene",
+   "bg": "bg_ww2_ruins",
+   "cast": [
+    {
+     "sprite": "audie_gi_aim",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 558.872,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_sgt_phone",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "ww2_tank__sherman",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 561.317,
+   "kind": "scene",
+   "bg": "bg_ww_country_road",
+   "cast": [
+    {
+     "sprite": "medal",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 564.064,
+   "kind": "scene",
+   "bg": "bg_au_hollywood",
+   "cast": [
+    {
+     "sprite": "audie_star_cowboy",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 566.236,
+   "kind": "scene",
+   "bg": "bg_au_bedroom",
+   "cast": [
+    {
+     "sprite": "audie_star_lie",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 570.496,
+   "kind": "bust",
+   "bg": "bg_au_arlington",
+   "cast": [
+    {
+     "sprite": "audie_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 572.081,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 574.38,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 576.729,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 579.429,
+   "kind": "scene",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "WOULD YOU?",
+    "sub": "comment below",
+    "at": null,
+    "t": 580.138
+   },
+   "endCard": {
+    "text": "WHO SHOULD BE NEXT?",
+    "sub": "Drop a name in the comments",
+    "t": 580.138
+   }
+  },
+  {
+   "t0": 581.259,
+   "kind": "bust",
+   "bg": "bg_ww2_snow",
+   "cast": [
+    {
+     "sprite": "audie_lt_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  }
+ ],
+ "onsets": [
+  0.4,
+  0.601,
+  0.862,
+  1.183,
+  1.504,
+  1.704,
+  2.086,
+  2.72,
+  3.005,
+  3.266,
+  3.647,
+  3.968,
+  4.229,
+  4.43,
+  4.691,
+  5.012,
+  5.152,
+  5.637,
+  5.987,
+  6.402,
+  6.817,
+  7.166,
+  7.319,
+  7.865,
+  8.215,
+  8.499,
+  8.849,
+  9.133,
+  9.417,
+  10.086,
+  10.353,
+  10.87,
+  11.187,
+  11.404,
+  11.621,
+  11.788,
+  12.055,
+  12.842,
+  13.084,
+  13.325,
+  13.567,
+  13.809,
+  14.37,
+  14.564,
+  14.932,
+  15.242,
+  15.495,
+  15.863,
+  17.032,
+  17.272,
+  17.623,
+  18.183,
+  18.61,
+  18.746,
+  19.377,
+  19.727,
+  20.577,
+  20.835,
+  21.737,
+  22.021,
+  22.848,
+  23.201,
+  23.356,
+  23.643,
+  23.997,
+  24.284,
+  24.77,
+  25.388,
+  25.676,
+  28.478,
+  28.853,
+  29.688,
+  30.291,
+  31.355,
+  32.063,
+  32.863,
+  33.262,
+  33.552,
+  33.734,
+  33.86,
+  34.205,
+  34.386,
+  34.894,
+  35.293,
+  35.692,
+  36.357,
+  36.682,
+  37.13,
+  37.333,
+  37.476,
+  38.609,
+  38.819,
+  39.217,
+  39.553,
+  39.951,
+  40.35,
+  40.943,
+  41.287,
+  41.491,
+  41.882,
+  42.038,
+  42.382,
+  43.14,
+  43.657,
+  44.05,
+  44.505,
+  45.156,
+  45.692,
+  46.312,
+  47.168,
+  47.564,
+  48.023,
+  48.231,
+  49.135,
+  49.407,
+  49.804,
+  50.201,
+  50.41,
+  50.556,
+  51.147,
+  51.82,
+  52.488,
+  52.874,
+  53.332,
+  53.718,
+  54.496,
+  54.785,
+  55.237,
+  55.744,
+  55.924,
+  56.214,
+  57.04,
+  57.251,
+  58.05,
+  58.156,
+  58.556,
+  58.893,
+  59.293,
+  59.504,
+  59.93,
+  60.161,
+  60.461,
+  60.9,
+  61.59,
+  62.13,
+  62.755,
+  63.444,
+  63.789,
+  64.069,
+  64.801,
+  65.466,
+  65.739,
+  65.948,
+  66.284,
+  67.002,
+  67.237,
+  67.543,
+  67.989,
+  68.224,
+  68.92,
+  69.69,
+  70.64,
+  71.548,
+  71.989,
+  72.5,
+  72.941,
+  73.703,
+  73.91,
+  74.18,
+  74.574,
+  75.226,
+  75.462,
+  75.753,
+  75.881,
+  76.499,
+  76.844,
+  77.135,
+  77.372,
+  78.037,
+  78.398,
+  79.017,
+  79.375,
+  80.303,
+  80.48,
+  80.71,
+  81.263,
+  81.411,
+  81.8,
+  82.241,
+  82.418,
+  82.595,
+  82.825,
+  83.399,
+  83.99,
+  84.647,
+  85.091,
+  85.597,
+  85.98,
+  86.623,
+  86.903,
+  87.182,
+  87.527,
+  87.677,
+  88.151,
+  88.624,
+  89.033,
+  89.248,
+  89.848,
+  90.2,
+  90.553,
+  91.037,
+  91.456,
+  92.062,
+  92.284,
+  92.64,
+  93.449,
+  93.888,
+  94.647,
+  94.882,
+  95.172,
+  95.57,
+  95.914,
+  96.258,
+  96.922,
+  97.145,
+  97.419,
+  97.796,
+  98.019,
+  98.139,
+  98.516,
+  98.636,
+  99.179,
+  99.399,
+  99.67,
+  99.84,
+  99.959,
+  100.382,
+  101.024,
+  101.212,
+  101.344,
+  101.589,
+  102.38,
+  102.574,
+  102.71,
+  103.079,
+  103.506,
+  104.137,
+  104.797,
+  104.941,
+  105.677,
+  106.467,
+  106.861,
+  107.44,
+  108.035,
+  108.554,
+  109.465,
+  109.687,
+  110.114,
+  110.388,
+  110.559,
+  110.73,
+  110.901,
+  111.75,
+  111.99,
+  112.23,
+  112.58,
+  112.875,
+  113.38,
+  113.586,
+  113.981,
+  114.424,
+  114.914,
+  115.167,
+  115.693,
+  115.903,
+  116.112,
+  116.467,
+  116.725,
+  117.08,
+  117.242,
+  117.548,
+  117.806,
+  118.384,
+  118.608,
+  118.833,
+  119.213,
+  119.437,
+  119.714,
+  120.093,
+  120.318,
+  120.646,
+  120.87,
+  121.198,
+  121.743,
+  122.094,
+  122.397,
+  122.604,
+  123.083,
+  123.28,
+  123.613,
+  123.855,
+  124.052,
+  124.34,
+  124.582,
+  124.733,
+  124.975,
+  127.604,
+  128.261,
+  128.924,
+  129.544,
+  130.484,
+  130.88,
+  131.658,
+  131.879,
+  132.202,
+  132.627,
+  132.95,
+  133.12,
+  133.763,
+  134.022,
+  134.28,
+  134.937,
+  135.172,
+  135.568,
+  136.339,
+  136.732,
+  137.489,
+  137.883,
+  138.505,
+  138.8,
+  139.707,
+  140.002,
+  140.549,
+  140.906,
+  141.345,
+  141.785,
+  142.379,
+  142.55,
+  142.823,
+  143.198,
+  143.523,
+  143.796,
+  144.12,
+  145.072,
+  145.408,
+  145.822,
+  146.442,
+  146.636,
+  147.382,
+  147.816,
+  148.576,
+  149.656,
+  150.05,
+  150.535,
+  151.111,
+  151.826,
+  152.426,
+  153.025,
+  153.944,
+  154.115,
+  154.727,
+  155.045,
+  155.583,
+  156.441,
+  156.616,
+  156.949,
+  157.681,
+  157.787,
+  158.068,
+  158.295,
+  158.47,
+  158.698,
+  159.03,
+  159.562,
+  159.825,
+  160.285,
+  160.499,
+  160.663,
+  160.926,
+  161.14,
+  161.255,
+  161.838,
+  162.532,
+  164.025,
+  164.25,
+  164.527,
+  164.752,
+  165.4,
+  165.741,
+  166.082,
+  166.359,
+  166.572,
+  166.977,
+  167.767,
+  168.607,
+  169.065,
+  170.119,
+  170.383,
+  170.769,
+  170.972,
+  171.236,
+  171.561,
+  171.825,
+  172.088,
+  172.733,
+  173.033,
+  173.471,
+  173.909,
+  174.208,
+  174.439,
+  174.669,
+  174.969,
+  175.727,
+  176.079,
+  178.763,
+  179.212,
+  179.997,
+  180.943,
+  181.888,
+  182.256,
+  182.799,
+  183.661,
+  184.149,
+  184.791,
+  184.935,
+  185.799,
+  185.998,
+  186.317,
+  186.696,
+  187.339,
+  187.496,
+  187.995,
+  188.553,
+  188.812,
+  189.012,
+  189.331,
+  189.65,
+  189.849,
+  190.685,
+  190.979,
+  191.341,
+  191.703,
+  192.385,
+  192.85,
+  193.066,
+  193.801,
+  194.186,
+  194.749,
+  195.543,
+  196.027,
+  197.103,
+  197.369,
+  197.585,
+  198.1,
+  198.266,
+  198.902,
+  199.672,
+  200.482,
+  201.559,
+  201.839,
+  202.183,
+  202.722,
+  203.387,
+  203.681,
+  204.044,
+  204.474,
+  205.156,
+  205.523,
+  206.536,
+  206.891,
+  207.258,
+  207.487,
+  207.855,
+  208.291,
+  208.52,
+  208.819,
+  209.287,
+  209.583,
+  209.879,
+  210.176,
+  210.745,
+  211.041,
+  211.406,
+  212.09,
+  212.306,
+  212.586,
+  213.189,
+  213.64,
+  213.899,
+  214.115,
+  214.395,
+  214.611,
+  215.085,
+  215.494,
+  216.268,
+  216.511,
+  216.81,
+  217.108,
+  217.407,
+  218.307,
+  218.542,
+  218.831,
+  219.12,
+  219.409,
+  220.018,
+  220.214,
+  220.501,
+  220.743,
+  220.985,
+  221.227,
+  221.332,
+  222.03,
+  222.463,
+  225.147,
+  225.877,
+  226.695,
+  227.547,
+  228.476,
+  228.692,
+  229.007,
+  229.172,
+  229.637,
+  229.803,
+  229.968,
+  230.084,
+  230.549,
+  230.715,
+  231.3,
+  231.864,
+  232.225,
+  232.382,
+  233.063,
+  233.403,
+  233.87,
+  234.274,
+  234.741,
+  235.401,
+  235.88,
+  236.359,
+  237.379,
+  237.669,
+  237.96,
+  238.141,
+  238.751,
+  239.084,
+  239.354,
+  239.562,
+  240.215,
+  240.472,
+  241.125,
+  241.242,
+  241.618,
+  241.874,
+  242.308,
+  242.447,
+  242.881,
+  243.377,
+  243.646,
+  243.977,
+  244.122,
+  244.639,
+  245.415,
+  245.716,
+  246.609,
+  246.929,
+  247.031,
+  247.439,
+  247.949,
+  248.218,
+  248.674,
+  249.068,
+  249.968,
+  250.199,
+  250.748,
+  250.924,
+  251.432,
+  252.01,
+  252.449,
+  252.945,
+  253.211,
+  253.599,
+  253.925,
+  254.572,
+  254.876,
+  255.249,
+  256.083,
+  256.54,
+  256.935,
+  257.329,
+  258.169,
+  258.394,
+  258.619,
+  258.74,
+  258.965,
+  259.242,
+  259.415,
+  260.012,
+  260.263,
+  260.514,
+  260.765,
+  260.969,
+  261.22,
+  261.377,
+  261.581,
+  262.106,
+  262.586,
+  265.316,
+  265.759,
+  265.976,
+  266.743,
+  267.891,
+  268.498,
+  269.295,
+  269.633,
+  269.971,
+  270.555,
+  270.961,
+  271.675,
+  271.952,
+  272.417,
+  272.565,
+  273.03,
+  273.759,
+  274.217,
+  274.62,
+  274.748,
+  275.096,
+  275.709,
+  276.003,
+  276.131,
+  276.8,
+  277.14,
+  277.544,
+  278.14,
+  278.822,
+  279.042,
+  279.328,
+  280.132,
+  280.417,
+  280.9,
+  281.185,
+  281.536,
+  282.273,
+  282.619,
+  283.125,
+  284.191,
+  284.448,
+  284.765,
+  284.904,
+  285.34,
+  285.835,
+  286.092,
+  286.29,
+  286.548,
+  286.805,
+  287.442,
+  287.805,
+  288.168,
+  288.582,
+  288.852,
+  289.215,
+  289.441,
+  290.167,
+  290.505,
+  291.078,
+  291.338,
+  291.833,
+  292.569,
+  292.863,
+  293.157,
+  293.395,
+  293.634,
+  294.424,
+  294.883,
+  295.552,
+  295.873,
+  296.341,
+  296.735,
+  297.302,
+  297.528,
+  297.807,
+  298.085,
+  298.468,
+  300.996,
+  301.594,
+  302.596,
+  303.208,
+  304.212,
+  305.032,
+  305.841,
+  306.262,
+  307.004,
+  307.364,
+  307.478,
+  307.838,
+  308.394,
+  308.926,
+  309.201,
+  309.632,
+  310.062,
+  310.337,
+  310.458,
+  310.888,
+  311.112,
+  311.749,
+  312.293,
+  312.978,
+  313.296,
+  314.008,
+  314.349,
+  314.627,
+  315.096,
+  315.501,
+  315.843,
+  316.12,
+  316.333,
+  316.611,
+  317.336,
+  317.871,
+  318.626,
+  318.759,
+  319.366,
+  319.682,
+  320.144,
+  320.962,
+  321.293,
+  321.625,
+  322.266,
+  322.598,
+  323.187,
+  323.403,
+  323.878,
+  324.093,
+  324.758,
+  324.982,
+  325.258,
+  325.535,
+  325.759,
+  326.035,
+  326.208,
+  326.432,
+  327.08,
+  327.31,
+  327.487,
+  328.091,
+  328.418,
+  328.683,
+  329.071,
+  329.398,
+  329.663,
+  330.173,
+  331.003,
+  331.434,
+  331.555,
+  331.987,
+  332.211,
+  332.384,
+  332.929,
+  333.177,
+  333.481,
+  333.991,
+  334.291,
+  334.521,
+  335.381,
+  335.435,
+  335.803,
+  336.172,
+  336.472,
+  336.915,
+  337.175,
+  337.495,
+  337.874,
+  338.374,
+  338.754,
+  339.074,
+  339.393,
+  339.593,
+  339.853,
+  340.612,
+  340.973,
+  341.501,
+  342.266,
+  342.386,
+  342.763,
+  343.037,
+  343.311,
+  343.853,
+  344.214,
+  344.742,
+  345.507,
+  345.917,
+  346.104,
+  346.346,
+  346.807,
+  347.22,
+  347.798,
+  348.096,
+  348.395,
+  348.637,
+  349.426,
+  349.629,
+  349.925,
+  350.128,
+  350.697,
+  351.048,
+  351.333,
+  351.75,
+  352.035,
+  352.64,
+  352.857,
+  353.125,
+  353.342,
+  353.559,
+  353.827,
+  353.994,
+  354.211,
+  354.378,
+  354.966,
+  355.265,
+  355.841,
+  356.21,
+  356.899,
+  357.247,
+  357.53,
+  357.879,
+  358.227,
+  358.444,
+  358.793,
+  359.395,
+  359.855,
+  360.377,
+  360.586,
+  361.241,
+  361.581,
+  361.857,
+  362.069,
+  362.983,
+  363.265,
+  363.676,
+  363.958,
+  364.434,
+  364.846,
+  365.447,
+  365.755,
+  366.062,
+  366.441,
+  366.748,
+  368.086,
+  368.736,
+  369.069,
+  369.374,
+  369.679,
+  369.87,
+  370.175,
+  370.48,
+  370.671,
+  370.976,
+  371.457,
+  371.694,
+  371.93,
+  372.112,
+  372.349,
+  372.586,
+  372.877,
+  373.168,
+  373.405,
+  373.805,
+  374.097,
+  374.388,
+  374.679,
+  377.22,
+  377.604,
+  378.275,
+  379.339,
+  379.652,
+  379.965,
+  380.206,
+  380.736,
+  380.977,
+  381.683,
+  382.108,
+  382.418,
+  382.901,
+  383.269,
+  383.956,
+  384.401,
+  384.664,
+  385.048,
+  385.614,
+  385.999,
+  386.262,
+  386.646,
+  387.03,
+  387.552,
+  387.864,
+  388.177,
+  388.633,
+  388.873,
+  389.65,
+  390.059,
+  390.9,
+  391.73,
+  392.094,
+  392.778,
+  393.207,
+  393.406,
+  393.698,
+  394.585,
+  394.875,
+  395.164,
+  395.562,
+  395.906,
+  396.141,
+  396.805,
+  397.106,
+  397.632,
+  397.932,
+  398.177,
+  398.365,
+  398.609,
+  399.286,
+  399.515,
+  399.744,
+  400.025,
+  400.254,
+  400.641,
+  401.295,
+  401.554,
+  401.872,
+  402.489,
+  403.047,
+  403.545,
+  403.744,
+  404.003,
+  404.582,
+  404.777,
+  404.972,
+  405.122,
+  405.317,
+  405.512,
+  406.297,
+  406.508,
+  406.846,
+  407.247,
+  407.584,
+  407.859,
+  408.307,
+  408.589,
+  409.571,
+  409.864,
+  410.551,
+  410.601,
+  410.776,
+  411.124,
+  411.307,
+  411.49,
+  411.784,
+  412.077,
+  412.26,
+  414.662,
+  415.05,
+  415.498,
+  415.825,
+  416.151,
+  416.478,
+  416.682,
+  417.008,
+  417.716,
+  417.882,
+  418.296,
+  418.512,
+  418.678,
+  419.511,
+  419.792,
+  420.138,
+  420.355,
+  421.086,
+  421.308,
+  422.251,
+  422.526,
+  422.929,
+  423.14,
+  423.288,
+  423.564,
+  424.286,
+  424.697,
+  425.108,
+  426.029,
+  426.215,
+  426.736,
+  427.559,
+  427.734,
+  428.032,
+  428.162,
+  428.516,
+  428.869,
+  429.167,
+  429.606,
+  429.882,
+  430.323,
+  430.681,
+  431.442,
+  431.705,
+  431.967,
+  432.351,
+  432.934,
+  433.31,
+  433.919,
+  434.223,
+  434.469,
+  434.944,
+  435.19,
+  435.779,
+  436.025,
+  436.329,
+  436.896,
+  437.236,
+  438.211,
+  438.492,
+  438.839,
+  439.185,
+  439.531,
+  439.943,
+  440.673,
+  441.191,
+  442.17,
+  442.573,
+  443.163,
+  444.072,
+  444.378,
+  444.755,
+  445.061,
+  445.758,
+  446.233,
+  446.558,
+  447.352,
+  447.659,
+  447.966,
+  448.806,
+  449.167,
+  449.529,
+  449.723,
+  450.571,
+  450.818,
+  451.066,
+  451.37,
+  451.674,
+  452.47,
+  452.674,
+  452.926,
+  453.131,
+  453.382,
+  453.728,
+  454.169,
+  454.373,
+  454.766,
+  454.971,
+  455.128,
+  455.333,
+  456.141,
+  456.517,
+  456.98,
+  457.936,
+  458.187,
+  458.555,
+  459.416,
+  459.595,
+  459.989,
+  460.222,
+  462.651,
+  462.953,
+  463.463,
+  463.835,
+  464.346,
+  465.037,
+  465.255,
+  465.574,
+  465.842,
+  465.96,
+  466.329,
+  466.698,
+  467.017,
+  467.285,
+  467.975,
+  468.25,
+  468.715,
+  469.053,
+  469.584,
+  470.386,
+  470.834,
+  471.602,
+  472.882,
+  473.017,
+  473.502,
+  473.806,
+  474.261,
+  474.595,
+  476.231,
+  476.281,
+  476.331,
+  476.457,
+  476.57,
+  476.62,
+  476.94,
+  477.181,
+  477.495,
+  477.954,
+  478.268,
+  479.191,
+  479.419,
+  479.701,
+  480.245,
+  480.579,
+  481.075,
+  481.307,
+  481.539,
+  481.771,
+  482.377,
+  482.556,
+  482.841,
+  483.341,
+  483.733,
+  484.339,
+  484.67,
+  485.077,
+  485.659,
+  485.941,
+  486.349,
+  487.257,
+  487.42,
+  487.722,
+  488.094,
+  488.606,
+  488.908,
+  489.211,
+  489.723,
+  490.345,
+  490.873,
+  491.577,
+  491.918,
+  492.196,
+  492.601,
+  493.263,
+  494.223,
+  494.637,
+  495.57,
+  495.823,
+  496.134,
+  496.445,
+  496.581,
+  497.067,
+  497.261,
+  497.864,
+  498.525,
+  498.777,
+  499.583,
+  500.04,
+  500.333,
+  500.625,
+  500.808,
+  500.991,
+  501.549,
+  501.757,
+  502.06,
+  502.315,
+  502.571,
+  503.146,
+  503.429,
+  503.778,
+  504.061,
+  504.475,
+  505.085,
+  505.819,
+  506.183,
+  506.8,
+  506.996,
+  507.848,
+  508.159,
+  508.614,
+  509.188,
+  509.727,
+  510.442,
+  510.731,
+  510.911,
+  511.2,
+  511.434,
+  511.939,
+  512.12,
+  512.516,
+  513.288,
+  513.511,
+  513.836,
+  514.11,
+  514.486,
+  514.709,
+  514.983,
+  515.205,
+  515.428,
+  515.599,
+  518.02,
+  518.335,
+  519.33,
+  519.997,
+  521.13,
+  521.459,
+  521.608,
+  521.713,
+  521.997,
+  522.416,
+  523.02,
+  524.02,
+  524.97,
+  525.233,
+  525.446,
+  525.955,
+  526.119,
+  526.899,
+  527.121,
+  527.446,
+  527.72,
+  528.045,
+  528.845,
+  529.438,
+  530.575,
+  530.976,
+  531.939,
+  532.309,
+  532.679,
+  532.98,
+  533.211,
+  534.248,
+  534.573,
+  534.96,
+  535.224,
+  535.366,
+  535.753,
+  536.139,
+  536.845,
+  537.067,
+  537.392,
+  537.614,
+  538.207,
+  538.492,
+  538.949,
+  539.726,
+  540.023,
+  540.321,
+  540.841,
+  541.57,
+  541.892,
+  542.49,
+  542.643,
+  542.905,
+  543.106,
+  543.367,
+  543.689,
+  544.191,
+  544.633,
+  544.834,
+  545.096,
+  546.49,
+  546.678,
+  547.092,
+  547.393,
+  548.014,
+  548.463,
+  548.79,
+  548.994,
+  549.137,
+  549.586,
+  550.232,
+  550.466,
+  550.809,
+  550.99,
+  551.332,
+  551.783,
+  552.234,
+  552.523,
+  553.186,
+  553.447,
+  553.708,
+  554.029,
+  554.29,
+  554.611,
+  554.872,
+  555.513,
+  555.848,
+  556.337,
+  556.595,
+  557.173,
+  557.657,
+  557.991,
+  558.872,
+  559.16,
+  559.58,
+  559.934,
+  560.089,
+  560.643,
+  561.317,
+  561.569,
+  561.822,
+  562.074,
+  562.443,
+  562.637,
+  563.006,
+  563.2,
+  564.064,
+  564.31,
+  564.612,
+  565.141,
+  565.33,
+  566.236,
+  566.506,
+  566.775,
+  567.169,
+  567.314,
+  567.584,
+  568.04,
+  568.372,
+  568.704,
+  569.098,
+  569.367,
+  569.637,
+  569.907,
+  570.496,
+  570.918,
+  571.273,
+  572.081,
+  572.5,
+  572.804,
+  573.165,
+  573.641,
+  574.38,
+  574.62,
+  574.804,
+  575.044,
+  575.505,
+  575.745,
+  575.93,
+  576.169,
+  576.729,
+  576.893,
+  577.156,
+  577.271,
+  577.484,
+  577.697,
+  578.009,
+  578.222,
+  578.386,
+  578.649,
+  579.429,
+  579.737,
+  580.138,
+  580.631,
+  581.259,
+  581.549,
+  581.747,
+  581.992,
+  582.373,
+  582.617,
+  582.861
+ ]
+}

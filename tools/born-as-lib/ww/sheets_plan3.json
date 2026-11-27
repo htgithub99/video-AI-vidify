@@ -1,0 +1,604 @@
+{
+ "sheets": [
+  {
+   "id": "ww1_more_act",
+   "kind": "person",
+   "era": "ww1",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "ww1_soldier_crawling_under_barbed",
+     0.5,
+     "WW1 soldier crawling under barbed wire"
+    ],
+    [
+     "ww1_soldier_carrying_wounded_comrade",
+     1.75,
+     "WW1 soldier carrying a wounded comrade on his shoulders"
+    ],
+    [
+     "ww1_soldier_flamethrower",
+     1.75,
+     "WW1 soldier with a flamethrower"
+    ],
+    [
+     "ww1_soldier_sitting_writing_letter",
+     1.0,
+     "WW1 soldier sitting writing a letter"
+    ],
+    [
+     "ww1_soldier_eating_tin_while",
+     1.0,
+     "WW1 soldier eating from a tin while sitting"
+    ],
+    [
+     "ww1_sentry_looking_through_trench",
+     1.75,
+     "WW1 sentry looking through a trench periscope"
+    ],
+    [
+     "ww1_soldier_climbing_wooden_ladder",
+     1.75,
+     "WW1 soldier climbing a wooden ladder"
+    ],
+    [
+     "ww1_bugler_blowing_bugle",
+     1.75,
+     "WW1 bugler blowing a bugle"
+    ],
+    [
+     "ww1_soldier_sleeping_ground",
+     0.5,
+     "WW1 soldier sleeping on the ground"
+    ],
+    [
+     "ww1_soldier_running_bent_forward",
+     1.75,
+     "WW1 soldier running bent forward with rifle"
+    ]
+   ]
+  },
+  {
+   "id": "ww2_us_more",
+   "kind": "person",
+   "era": "ww2",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "american_ww2_soldier_firing_bazooka",
+     1.75,
+     "American WW2 soldier firing a bazooka from the shoulder"
+    ],
+    [
+     "american_ww2_soldier_flamethrower",
+     1.75,
+     "American WW2 soldier with flamethrower"
+    ],
+    [
+     "american_ww2_sniper_lying_prone",
+     0.5,
+     "American WW2 sniper lying prone with scoped rifle"
+    ],
+    [
+     "american_ww2_machine_gunner_lying",
+     0.5,
+     "American WW2 machine gunner lying prone with BAR"
+    ],
+    [
+     "american_ww2_soldier_running_crouched",
+     1.75,
+     "American WW2 soldier running crouched"
+    ],
+    [
+     "american_ww2_soldier_sweeping_mine",
+     1.75,
+     "American WW2 soldier sweeping a mine detector"
+    ],
+    [
+     "american_ww2_soldier_saluting",
+     1.75,
+     "American WW2 soldier saluting"
+    ],
+    [
+     "american_ww2_soldier_sitting_smoking",
+     1.0,
+     "American WW2 soldier sitting smoking a cigarette"
+    ],
+    [
+     "american_ww2_soldier_carrying_two",
+     1.75,
+     "American WW2 soldier carrying two ammo boxes"
+    ],
+    [
+     "american_ww2_soldier_wading_through",
+     1.75,
+     "American WW2 soldier wading through water up to the waist"
+    ]
+   ]
+  },
+  {
+   "id": "ww2_de_act",
+   "kind": "person",
+   "era": "ww2",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "german_ww2_soldier_charging_rifle",
+     1.75,
+     "German WW2 soldier charging with rifle, no swastika"
+    ],
+    [
+     "german_ww2_soldier_kneeling_firing",
+     1.2,
+     "German WW2 soldier kneeling and firing rifle"
+    ],
+    [
+     "german_ww2_soldier_throwing_stick",
+     1.75,
+     "German WW2 soldier throwing a stick grenade"
+    ],
+    [
+     "german_ww2_machine_gunner_lying",
+     0.5,
+     "German WW2 machine gunner lying prone with MG42"
+    ],
+    [
+     "german_ww2_soldier_aiming_panzerfaust",
+     1.75,
+     "German WW2 soldier aiming a panzerfaust"
+    ],
+    [
+     "german_ww2_officer_pointing_forward",
+     1.75,
+     "German WW2 officer pointing forward"
+    ],
+    [
+     "german_ww2_soldier_walking_hands",
+     1.75,
+     "German WW2 soldier walking with hands raised in surrender"
+    ],
+    [
+     "wounded_german_ww2_soldier_lying",
+     0.6,
+     "wounded German WW2 soldier lying on the ground"
+    ],
+    [
+     "german_ww2_soldier_winter_white",
+     1.75,
+     "German WW2 soldier in winter white camouflage with rifle"
+    ],
+    [
+     "german_ww2_soldier_sitting_exhausted",
+     1.0,
+     "German WW2 soldier sitting exhausted"
+    ]
+   ]
+  },
+  {
+   "id": "ww2_su_act",
+   "kind": "person",
+   "era": "ww2",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "soviet_ww2_soldier_charging_ppsh",
+     1.75,
+     "Soviet WW2 soldier charging with PPSh shouting"
+    ],
+    [
+     "soviet_ww2_soldier_kneeling_firing",
+     1.2,
+     "Soviet WW2 soldier kneeling and firing a Mosin rifle"
+    ],
+    [
+     "soviet_ww2_soldier_throwing_grenade",
+     1.75,
+     "Soviet WW2 soldier throwing a grenade"
+    ],
+    [
+     "soviet_ww2_machine_gunner_lying",
+     0.5,
+     "Soviet WW2 machine gunner lying with a DP machine gun"
+    ],
+    [
+     "soviet_ww2_soldier_antitank_rifle",
+     0.5,
+     "Soviet WW2 soldier with anti-tank rifle lying"
+    ],
+    [
+     "soviet_ww2_officer_pistol_waving",
+     1.75,
+     "Soviet WW2 officer with pistol waving men forward"
+    ],
+    [
+     "soviet_ww2_soldier_walking_snow",
+     1.75,
+     "Soviet WW2 soldier walking in snow with greatcoat and ushanka"
+    ],
+    [
+     "soviet_ww2_female_medic_carrying",
+     1.75,
+     "Soviet WW2 female medic carrying a bag"
+    ],
+    [
+     "wounded_soviet_ww2_soldier_lying",
+     0.6,
+     "wounded Soviet WW2 soldier lying on the ground"
+    ],
+    [
+     "soviet_ww2_soldier_waving_red",
+     1.75,
+     "Soviet WW2 soldier waving a red flag without symbols"
+    ]
+   ]
+  },
+  {
+   "id": "ww2_jp_act",
+   "kind": "person",
+   "era": "ww2",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "japanese_ww2_soldier_charging_bayonet",
+     1.75,
+     "Japanese WW2 soldier charging with bayonet shouting"
+    ],
+    [
+     "japanese_ww2_soldier_kneeling_firing",
+     1.2,
+     "Japanese WW2 soldier kneeling and firing rifle"
+    ],
+    [
+     "japanese_ww2_officer_charging_katana",
+     1.75,
+     "Japanese WW2 officer charging with katana raised"
+    ],
+    [
+     "japanese_ww2_machine_gunner_lying",
+     0.5,
+     "Japanese WW2 machine gunner lying prone"
+    ],
+    [
+     "japanese_ww2_soldier_throwing_grenade",
+     1.75,
+     "Japanese WW2 soldier throwing a grenade"
+    ],
+    [
+     "japanese_ww2_soldier_hiding_jungle",
+     1.75,
+     "Japanese WW2 soldier hiding in jungle camouflage with leaves"
+    ],
+    [
+     "japanese_ww2_navy_pilot_flight",
+     1.75,
+     "Japanese WW2 navy pilot in flight helmet standing"
+    ],
+    [
+     "japanese_ww2_soldier_walking_hands",
+     1.75,
+     "Japanese WW2 soldier walking with hands raised in surrender"
+    ],
+    [
+     "wounded_japanese_ww2_soldier_lying",
+     0.6,
+     "wounded Japanese WW2 soldier lying on the ground"
+    ],
+    [
+     "japanese_ww2_soldier_standing_attention",
+     1.75,
+     "Japanese WW2 soldier standing at attention"
+    ]
+   ]
+  },
+  {
+   "id": "ww_civ_more",
+   "kind": "person",
+   "era": "ww",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "old_man_cane_1940s",
+     1.7,
+     "old man with a cane 1940s"
+    ],
+    [
+     "old_woman_shawl_1940s",
+     1.7,
+     "old woman in shawl 1940s"
+    ],
+    [
+     "mother_walking_holding_childs_hand",
+     1.7,
+     "mother walking holding a child's hand 1940s"
+    ],
+    [
+     "crying_child_1940s_clothes",
+     1.2,
+     "crying child in 1940s clothes"
+    ],
+    [
+     "woman_waving_handkerchief_goodbye_1940s",
+     1.7,
+     "woman waving a handkerchief goodbye 1940s"
+    ],
+    [
+     "farmer_pitchfork_1910s1940s",
+     1.7,
+     "farmer with pitchfork 1910s-1940s"
+    ],
+    [
+     "priest_black_cassock",
+     1.7,
+     "priest in black cassock"
+    ],
+    [
+     "doctor_white_coat_stethoscope_1940s",
+     1.7,
+     "doctor in white coat with stethoscope 1940s"
+    ],
+    [
+     "policeman_1940s_uniform",
+     1.7,
+     "policeman in 1940s uniform"
+    ],
+    [
+     "newspaper_boy_shouting_holding_newspaper",
+     1.3,
+     "newspaper boy shouting holding a newspaper without readable text"
+    ]
+   ]
+  },
+  {
+   "id": "ww_more_tanks",
+   "kind": "vehicle",
+   "era": "ww2",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 2.7,
+   "items": [
+    [
+     "soviet_kv1_heavy_tank",
+     2.7,
+     "Soviet KV-1 heavy tank"
+    ],
+    [
+     "soviet_is2_heavy_tank",
+     2.7,
+     "Soviet IS-2 heavy tank"
+    ],
+    [
+     "german_panther_tank",
+     2.7,
+     "German Panther tank"
+    ],
+    [
+     "british_churchill_tank",
+     2.7,
+     "British Churchill tank"
+    ],
+    [
+     "american_m3_stuart_light_tank",
+     2.7,
+     "American M3 Stuart light tank"
+    ],
+    [
+     "german_stug_iii_assault_gun",
+     2.7,
+     "German StuG III assault gun"
+    ]
+   ]
+  },
+  {
+   "id": "ww_more_ships",
+   "kind": "ship",
+   "era": "ww",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 20.0,
+   "items": [
+    [
+     "japanese_ww2_battleship",
+     20.0,
+     "Japanese WW2 battleship"
+    ],
+    [
+     "ww2_heavy_cruiser",
+     20.0,
+     "WW2 heavy cruiser"
+    ],
+    [
+     "ww2_pt_torpedo_boat",
+     3.0,
+     "WW2 PT torpedo boat"
+    ],
+    [
+     "ww2_liberty_cargo_ship",
+     20.0,
+     "WW2 Liberty cargo ship"
+    ],
+    [
+     "ww2_lst_tank_landing_ship",
+     20.0,
+     "WW2 LST tank landing ship"
+    ],
+    [
+     "ww2_warship_sinking_tilted_smoke",
+     20.0,
+     "WW2 warship sinking and tilted with smoke. Do not write any captions, labels or names anywhere in the image"
+    ]
+   ]
+  },
+  {
+   "id": "ww_props2",
+   "kind": "prop",
+   "era": "ww",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.4,
+   "items": [
+    [
+     "military_field_ration_tin",
+     0.4,
+     "military field ration tin"
+    ],
+    [
+     "paper_letter_envelope_writing",
+     0.05,
+     "paper letter envelope without writing"
+    ],
+    [
+     "military_medal_ribbon",
+     0.1,
+     "military medal on ribbon"
+    ],
+    [
+     "binoculars",
+     0.15,
+     "binoculars"
+    ],
+    [
+     "pistol",
+     0.15,
+     "pistol"
+    ],
+    [
+     "submachine_gun",
+     0.2,
+     "submachine gun"
+    ],
+    [
+     "machine_gun_ammo_belt",
+     0.1,
+     "machine gun ammo belt"
+    ],
+    [
+     "round_antitank_landmine",
+     0.15,
+     "round anti-tank landmine"
+    ],
+    [
+     "wooden_ladder",
+     3.0,
+     "wooden ladder"
+    ],
+    [
+     "shovel",
+     1.0,
+     "shovel"
+    ],
+    [
+     "metal_bucket",
+     0.4,
+     "metal bucket"
+    ],
+    [
+     "canteen_water_bottle",
+     0.25,
+     "canteen water bottle"
+    ],
+    [
+     "wooden_table",
+     0.8,
+     "wooden table"
+    ],
+    [
+     "stack_newspapers_readable_text",
+     0.3,
+     "stack of newspapers without readable text"
+    ],
+    [
+     "suitcase",
+     0.5,
+     "suitcase"
+    ],
+    [
+     "camp_bonfire",
+     0.8,
+     "camp bonfire"
+    ],
+    [
+     "broken_wooden_cart_wheel",
+     1.0,
+     "broken wooden cart wheel"
+    ],
+    [
+     "pile_rubble_bricks",
+     0.6,
+     "pile of rubble bricks"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ww_stalingrad",
+   "bgs": [
+    [
+     "bg_ww_stalingrad",
+     "ww2",
+     "Stalingrad ruins in winter with snow on rubble and broken factory walls"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ww_berlin_1945",
+   "bgs": [
+    [
+     "bg_ww_berlin_1945",
+     "ww2",
+     "Berlin 1945 ruined street with burnt buildings and smoke"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ww_burma_jungle",
+   "bgs": [
+    [
+     "bg_ww_burma_jungle",
+     "ww2",
+     "Burma jungle river with dense trees and muddy bank"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ww_arctic_sea",
+   "bgs": [
+    [
+     "bg_ww_arctic_sea",
+     "ww2",
+     "Arctic sea with ice floes and grey sky"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ww_iwo_jima",
+   "bgs": [
+    [
+     "bg_ww_iwo_jima",
+     "ww2",
+     "Black volcanic sand beach with a volcano mountain behind"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ww_forest_bunker",
+   "bgs": [
+    [
+     "bg_ww_forest_bunker",
+     "ww2",
+     "European pine forest with a log bunker and foxholes in snow"
+    ]
+   ]
+  }
+ ]
+}

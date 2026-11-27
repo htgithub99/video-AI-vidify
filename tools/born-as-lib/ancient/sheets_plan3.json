@@ -1,0 +1,564 @@
+{
+ "sheets": [
+  {
+   "id": "greek_more",
+   "kind": "person",
+   "era": "ancient",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "greek_hoplite_charging_spear_shield",
+     1.75,
+     "Greek hoplite charging with spear and shield"
+    ],
+    [
+     "greek_archer_shooting_bow",
+     1.75,
+     "Greek archer shooting a bow"
+    ],
+    [
+     "greek_peltast_throwing_javelin",
+     1.75,
+     "Greek peltast throwing a javelin"
+    ],
+    [
+     "athenian_citizen_himation_walking",
+     1.75,
+     "Athenian citizen in himation walking"
+    ],
+    [
+     "greek_woman_chiton_carrying_water",
+     1.75,
+     "Greek woman in chiton carrying a water jug"
+    ],
+    [
+     "greek_olympic_runner_athlete_running",
+     1.75,
+     "Greek Olympic runner athlete running, wearing a short white tunic"
+    ],
+    [
+     "greek_discus_thrower_athlete_wearing",
+     1.75,
+     "Greek discus thrower athlete, wearing a short white tunic"
+    ],
+    [
+     "macedonian_king_gold_armor_cloak",
+     1.75,
+     "Macedonian king in gold armor and cloak standing"
+    ],
+    [
+     "greek_rower_sailor_pulling_oar",
+     1.2,
+     "Greek rower sailor pulling an oar"
+    ],
+    [
+     "greek_priestess_laurel_wreath",
+     1.75,
+     "Greek priestess with laurel wreath"
+    ]
+   ]
+  },
+  {
+   "id": "egypt_more",
+   "kind": "person",
+   "era": "ancient",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "egyptian_archer_shooting_bow",
+     1.7,
+     "Egyptian archer shooting a bow"
+    ],
+    [
+     "egyptian_scribe_sitting_crosslegged_papyrus",
+     1.0,
+     "Egyptian scribe sitting cross-legged with papyrus"
+    ],
+    [
+     "egyptian_workers_pulling_rope_group",
+     1.7,
+     "Egyptian workers pulling a rope as a group of three"
+    ],
+    [
+     "egyptian_queen_vulture_crown",
+     1.7,
+     "Egyptian queen with vulture crown"
+    ],
+    [
+     "egyptian_farmer_cutting_wheat_sickle",
+     1.7,
+     "Egyptian farmer cutting wheat with a sickle"
+    ],
+    [
+     "egyptian_fisherman_net",
+     1.7,
+     "Egyptian fisherman with net"
+    ],
+    [
+     "egyptian_musician_woman_playing_harp",
+     1.7,
+     "Egyptian musician woman playing a harp"
+    ],
+    [
+     "egyptian_vizier_staff",
+     1.7,
+     "Egyptian vizier with staff"
+    ],
+    [
+     "egyptian_child_side_lock",
+     1.2,
+     "Egyptian child with side lock"
+    ],
+    [
+     "egyptian_guard_spear_standing",
+     1.7,
+     "Egyptian guard with spear standing"
+    ]
+   ]
+  },
+  {
+   "id": "near_east_more",
+   "kind": "person",
+   "era": "ancient",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "persian_archer_shooting",
+     1.75,
+     "Persian archer shooting"
+    ],
+    [
+     "assyrian_soldier_pointed_helmet_spear",
+     1.75,
+     "Assyrian soldier with pointed helmet and spear"
+    ],
+    [
+     "babylonian_king_curled_beard_tall",
+     1.75,
+     "Babylonian king with curled beard and tall hat"
+    ],
+    [
+     "hun_warrior_foot_bow",
+     1.75,
+     "Hun warrior on foot with bow"
+    ],
+    [
+     "celtic_druid_white_robe_staff",
+     1.75,
+     "Celtic druid in white robe with staff"
+    ],
+    [
+     "germanic_chieftain_fur_axe",
+     1.75,
+     "Germanic chieftain with fur and axe"
+    ],
+    [
+     "iberian_warrior_falcata_sword",
+     1.75,
+     "Iberian warrior with falcata sword"
+    ],
+    [
+     "thracian_warrior_rhomphaia",
+     1.75,
+     "Thracian warrior with rhomphaia"
+    ],
+    [
+     "scythian_warrior_bow_pointed_cap",
+     1.75,
+     "Scythian warrior with bow and pointed cap"
+    ],
+    [
+     "phoenician_merchant_robes",
+     1.75,
+     "Phoenician merchant in robes"
+    ]
+   ]
+  },
+  {
+   "id": "rome_more",
+   "kind": "person",
+   "era": "rome",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "group_six_roman_legionaries_testudo",
+     2.0,
+     "group of six Roman legionaries in testudo shield formation"
+    ],
+    [
+     "column_five_roman_legionaries_marching",
+     1.75,
+     "column of five Roman legionaries marching in a row"
+    ],
+    [
+     "roman_surveyor_groma_tool",
+     1.75,
+     "Roman surveyor with groma tool"
+    ],
+    [
+     "roman_soldiers_building_wall_stones",
+     1.75,
+     "Roman soldiers building a wall from stones as a group of two"
+    ],
+    [
+     "roman_slave_chains_walking",
+     1.75,
+     "Roman slave in chains walking"
+    ],
+    [
+     "roman_cook_stirring_pot",
+     1.75,
+     "Roman cook stirring a pot"
+    ],
+    [
+     "roman_blacksmith_hammering_anvil",
+     1.75,
+     "Roman blacksmith hammering at an anvil"
+    ],
+    [
+     "roman_scribe_writing_tablet_sitting",
+     1.0,
+     "Roman scribe writing on a tablet sitting"
+    ],
+    [
+     "roman_fisherman_carrying_net",
+     1.75,
+     "Roman fisherman carrying a net"
+    ],
+    [
+     "roman_legionary_standing_guard_attention",
+     1.75,
+     "Roman legionary standing guard at attention"
+    ]
+   ]
+  },
+  {
+   "id": "china_ancient",
+   "kind": "person",
+   "era": "ancient",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "han_dynasty_crossbowman_aiming_crossbow",
+     1.75,
+     "Han dynasty crossbowman aiming a crossbow"
+    ],
+    [
+     "han_dynasty_general_armor_sword",
+     1.75,
+     "Han dynasty general in armor with sword"
+    ],
+    [
+     "ancient_chinese_emperor_black_red",
+     1.75,
+     "ancient Chinese emperor in black and red robe with mianguan crown"
+    ],
+    [
+     "ancient_chinese_empress_long_robes",
+     1.75,
+     "ancient Chinese empress in long robes"
+    ],
+    [
+     "ancient_chinese_peasant_woman_carrying",
+     1.75,
+     "ancient Chinese peasant woman carrying a basket"
+    ],
+    [
+     "ancient_chinese_archer_shooting",
+     1.75,
+     "ancient Chinese archer shooting"
+    ],
+    [
+     "ancient_chinese_merchant_abacus",
+     1.75,
+     "ancient Chinese merchant with abacus"
+    ],
+    [
+     "ancient_chinese_spearman_shield",
+     1.75,
+     "ancient Chinese spearman with shield"
+    ],
+    [
+     "ancient_chinese_court_official_holding",
+     1.75,
+     "ancient Chinese court official holding a hu tablet"
+    ],
+    [
+     "ancient_chinese_laborer_carrying_earth",
+     1.75,
+     "ancient Chinese laborer carrying earth with a shoulder pole"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_animals",
+   "kind": "animal",
+   "era": "ancient",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.5,
+   "items": [
+    [
+     "brown_horse_standing_saddle",
+     1.6,
+     "brown horse standing without saddle"
+    ],
+    [
+     "white_horse_galloping_rider",
+     1.6,
+     "white horse galloping without rider"
+    ],
+    [
+     "donkey",
+     1.2,
+     "donkey"
+    ],
+    [
+     "goat",
+     0.8,
+     "goat"
+    ],
+    [
+     "sheep",
+     0.8,
+     "sheep"
+    ],
+    [
+     "cow",
+     1.4,
+     "cow"
+    ],
+    [
+     "hunting_dog",
+     0.6,
+     "hunting dog"
+    ],
+    [
+     "eagle_flying",
+     0.5,
+     "eagle flying"
+    ],
+    [
+     "crocodile",
+     0.6,
+     "crocodile"
+    ],
+    [
+     "wolf",
+     0.8,
+     "wolf"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_props2",
+   "kind": "prop",
+   "era": "ancient",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.5,
+   "items": [
+    [
+     "painted_clay_pottery_jar",
+     0.5,
+     "painted clay pottery jar"
+    ],
+    [
+     "clay_oil_lamp",
+     0.1,
+     "clay oil lamp"
+    ],
+    [
+     "chariot_wheel",
+     1.0,
+     "chariot wheel"
+    ],
+    [
+     "ship_anchor",
+     1.2,
+     "ship anchor"
+    ],
+    [
+     "coil_rope",
+     0.3,
+     "coil of rope"
+    ],
+    [
+     "bow_quiver_arrows",
+     1.2,
+     "bow and quiver of arrows"
+    ],
+    [
+     "gladius_sword",
+     0.7,
+     "gladius sword"
+    ],
+    [
+     "long_spear",
+     2.2,
+     "long spear"
+    ],
+    [
+     "greek_corinthian_helmet",
+     0.3,
+     "Greek Corinthian helmet"
+    ],
+    [
+     "roman_legionary_helmet",
+     0.3,
+     "Roman legionary helmet"
+    ],
+    [
+     "laurel_wreath",
+     0.2,
+     "laurel wreath"
+    ],
+    [
+     "lyre",
+     0.6,
+     "lyre"
+    ],
+    [
+     "blank_papyrus_sheet",
+     0.3,
+     "blank papyrus sheet"
+    ],
+    [
+     "golden_throne",
+     1.5,
+     "golden throne"
+    ],
+    [
+     "roman_banquet_couch_cushions",
+     0.8,
+     "Roman banquet couch with cushions"
+    ],
+    [
+     "low_table_food_wine",
+     0.5,
+     "low table with food and wine"
+    ],
+    [
+     "bronze_cauldron",
+     0.6,
+     "bronze cauldron"
+    ],
+    [
+     "wooden_cage",
+     1.5,
+     "wooden cage"
+    ]
+   ]
+  },
+  {
+   "id": "ancient_buildings3",
+   "kind": "building",
+   "era": "ancient",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 15.0,
+   "items": [
+    [
+     "roman_bathhouse_domes",
+     15.0,
+     "Roman bathhouse with domes"
+    ],
+    [
+     "colosseum_exterior",
+     45.0,
+     "Colosseum exterior"
+    ],
+    [
+     "pharos_lighthouse_alexandria",
+     100.0,
+     "Pharos lighthouse of Alexandria"
+    ],
+    [
+     "section_ancient_chinese_great_wall",
+     15.0,
+     "section of the ancient Chinese Great Wall with watchtower"
+    ],
+    [
+     "mesopotamian_ziggurat",
+     30.0,
+     "Mesopotamian ziggurat"
+    ],
+    [
+     "greek_openair_theater",
+     15.0,
+     "Greek open-air theater"
+    ]
+   ]
+  },
+  {
+   "id": "bg_thermopylae",
+   "bgs": [
+    [
+     "bg_thermopylae",
+     "ancient",
+     "Narrow coastal mountain pass with cliffs on one side and sea on the other"
+    ]
+   ]
+  },
+  {
+   "id": "bg_babylon_gate",
+   "bgs": [
+    [
+     "bg_babylon_gate",
+     "ancient",
+     "Babylon city with blue Ishtar gate and walls"
+    ]
+   ]
+  },
+  {
+   "id": "bg_nile_village",
+   "bgs": [
+    [
+     "bg_nile_village",
+     "ancient",
+     "Nile riverbank village with mud houses, reeds and palm trees"
+    ]
+   ]
+  },
+  {
+   "id": "bg_great_wall",
+   "bgs": [
+    [
+     "bg_great_wall",
+     "ancient",
+     "Ancient Chinese Great Wall winding over green mountains"
+    ]
+   ]
+  },
+  {
+   "id": "bg_persepolis",
+   "bgs": [
+    [
+     "bg_persepolis",
+     "ancient",
+     "Persian palace terrace of Persepolis with tall columns in the desert"
+    ]
+   ]
+  },
+  {
+   "id": "bg_roman_countryside",
+   "bgs": [
+    [
+     "bg_roman_countryside",
+     "rome",
+     "Roman countryside farmland with a villa, cypress trees and hills"
+    ]
+   ]
+  }
+ ]
+}

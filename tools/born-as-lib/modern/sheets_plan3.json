@@ -1,0 +1,874 @@
+{
+ "sheets": [
+  {
+   "id": "mod_military",
+   "kind": "person",
+   "era": "modern",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "modern_us_soldier_rifle_plate",
+     1.75,
+     "modern US soldier with rifle and plate carrier"
+    ],
+    [
+     "modern_russian_soldier_rifle",
+     1.75,
+     "modern Russian soldier with rifle"
+    ],
+    [
+     "modern_nato_soldier_standing",
+     1.75,
+     "modern NATO soldier standing"
+    ],
+    [
+     "special_forces_operator_night_vision",
+     1.75,
+     "special forces operator with night vision on helmet"
+    ],
+    [
+     "sniper_ghillie_suit",
+     1.6,
+     "sniper in ghillie suit"
+    ],
+    [
+     "female_modern_soldier",
+     1.75,
+     "female modern soldier"
+    ],
+    [
+     "fighter_pilot_gsuit_helmet",
+     1.75,
+     "fighter pilot in G-suit and helmet"
+    ],
+    [
+     "modern_tank_crewman",
+     1.75,
+     "modern tank crewman"
+    ],
+    [
+     "modern_combat_medic_bag",
+     1.75,
+     "modern combat medic with bag"
+    ],
+    [
+     "modern_military_officer_dress_uniform",
+     1.75,
+     "modern military officer in dress uniform"
+    ]
+   ]
+  },
+  {
+   "id": "mod_military_act",
+   "kind": "person",
+   "era": "modern",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "modern_soldier_running_rifle",
+     1.75,
+     "modern soldier running with rifle"
+    ],
+    [
+     "modern_soldier_kneeling_aiming",
+     1.2,
+     "modern soldier kneeling and aiming"
+    ],
+    [
+     "modern_soldier_lying_prone_aiming",
+     0.5,
+     "modern soldier lying prone aiming"
+    ],
+    [
+     "modern_soldier_throwing_grenade",
+     1.75,
+     "modern soldier throwing a grenade"
+    ],
+    [
+     "modern_soldier_firing_rocket_launcher",
+     1.75,
+     "modern soldier firing a rocket launcher"
+    ],
+    [
+     "modern_soldier_operating_drone_controller",
+     1.75,
+     "modern soldier operating a drone controller"
+    ],
+    [
+     "modern_soldier_talking_radio",
+     1.75,
+     "modern soldier talking on radio"
+    ],
+    [
+     "wounded_modern_soldier_lying",
+     0.6,
+     "wounded modern soldier lying"
+    ],
+    [
+     "modern_soldier_carrying_wounded_comrade",
+     1.75,
+     "modern soldier carrying a wounded comrade"
+    ],
+    [
+     "modern_soldier_saluting",
+     1.75,
+     "modern soldier saluting"
+    ]
+   ]
+  },
+  {
+   "id": "mod_civ",
+   "kind": "person",
+   "era": "modern",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "businessman_suit_briefcase_walking",
+     1.7,
+     "businessman in suit with briefcase walking"
+    ],
+    [
+     "businesswoman_suit_tablet",
+     1.7,
+     "businesswoman in suit with tablet"
+    ],
+    [
+     "doctor_white_coat",
+     1.7,
+     "doctor in white coat"
+    ],
+    [
+     "nurse_scrubs",
+     1.7,
+     "nurse in scrubs"
+    ],
+    [
+     "police_officer",
+     1.7,
+     "police officer"
+    ],
+    [
+     "firefighter_gear",
+     1.7,
+     "firefighter in gear"
+    ],
+    [
+     "teacher_book",
+     1.7,
+     "teacher with book"
+    ],
+    [
+     "student_backpack",
+     1.6,
+     "student with backpack"
+    ],
+    [
+     "construction_worker_hard_hat",
+     1.7,
+     "construction worker with hard hat"
+    ],
+    [
+     "chef_white_uniform",
+     1.7,
+     "chef in white uniform"
+    ]
+   ]
+  },
+  {
+   "id": "mod_civ2",
+   "kind": "person",
+   "era": "modern",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "old_man_cane_modern",
+     1.7,
+     "old man with cane modern"
+    ],
+    [
+     "old_woman_shopping_bag",
+     1.7,
+     "old woman with shopping bag"
+    ],
+    [
+     "young_woman_walking_phone",
+     1.7,
+     "young woman walking with phone"
+    ],
+    [
+     "young_man_hoodie",
+     1.7,
+     "young man in hoodie"
+    ],
+    [
+     "boy_soccer_ball",
+     1.3,
+     "boy with soccer ball"
+    ],
+    [
+     "girl_backpack",
+     1.25,
+     "girl with backpack"
+    ],
+    [
+     "scientist_lab_coat_clipboard",
+     1.7,
+     "scientist in lab coat with clipboard"
+    ],
+    [
+     "tv_reporter_microphone",
+     1.7,
+     "TV reporter with microphone"
+    ],
+    [
+     "farmer_modern_clothes",
+     1.7,
+     "farmer in modern clothes"
+    ],
+    [
+     "athlete_running",
+     1.7,
+     "athlete running"
+    ]
+   ]
+  },
+  {
+   "id": "mod_civ3",
+   "kind": "person",
+   "era": "modern",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "politician_speaking_podium",
+     1.8,
+     "politician speaking at a podium"
+    ],
+    [
+     "news_anchor_sitting_desk",
+     1.3,
+     "news anchor sitting at a desk"
+    ],
+    [
+     "office_worker_sitting_computer",
+     1.3,
+     "office worker sitting at a computer"
+    ],
+    [
+     "crowd_four_protesters_blank_signs",
+     1.8,
+     "crowd of four protesters with blank signs"
+    ],
+    [
+     "family_three_walking",
+     1.7,
+     "family of three walking"
+    ],
+    [
+     "delivery_rider_standing_helmet",
+     1.7,
+     "delivery rider standing with helmet"
+    ],
+    [
+     "tourist_camera",
+     1.7,
+     "tourist with camera"
+    ],
+    [
+     "elderly_couple",
+     1.7,
+     "elderly couple"
+    ],
+    [
+     "hacker_hoodie_laptop_sitting",
+     1.2,
+     "hacker in hoodie with laptop sitting"
+    ],
+    [
+     "pilot_captain_airline_uniform",
+     1.7,
+     "pilot captain in airline uniform"
+    ]
+   ]
+  },
+  {
+   "id": "mod_veh",
+   "kind": "vehicle",
+   "era": "modern",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 1.6,
+   "items": [
+    [
+     "modern_sedan_car",
+     1.6,
+     "modern sedan car"
+    ],
+    [
+     "suv",
+     1.6,
+     "SUV"
+    ],
+    [
+     "pickup_truck",
+     1.8,
+     "pickup truck"
+    ],
+    [
+     "city_bus",
+     3.2,
+     "city bus"
+    ],
+    [
+     "scooter_motorbike_rider",
+     1.6,
+     "scooter motorbike with rider"
+    ],
+    [
+     "bicycle_rider",
+     1.7,
+     "bicycle with rider"
+    ]
+   ]
+  },
+  {
+   "id": "mod_veh2",
+   "kind": "vehicle",
+   "era": "modern",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 2.5,
+   "items": [
+    [
+     "police_car",
+     1.6,
+     "police car"
+    ],
+    [
+     "ambulance_van",
+     2.5,
+     "ambulance van"
+    ],
+    [
+     "fire_truck",
+     3.2,
+     "fire truck"
+    ],
+    [
+     "taxi",
+     1.6,
+     "taxi"
+    ],
+    [
+     "delivery_van",
+     2.5,
+     "delivery van"
+    ],
+    [
+     "semi_truck",
+     4.0,
+     "semi truck"
+    ]
+   ]
+  },
+  {
+   "id": "mod_mil_veh",
+   "kind": "vehicle",
+   "era": "modern",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 2.6,
+   "items": [
+    [
+     "m1_abrams_tank",
+     2.6,
+     "M1 Abrams tank"
+    ],
+    [
+     "t90_tank",
+     2.6,
+     "T-90 tank"
+    ],
+    [
+     "humvee",
+     1.9,
+     "Humvee"
+    ],
+    [
+     "mrap_armored_vehicle",
+     2.7,
+     "MRAP armored vehicle"
+    ],
+    [
+     "bmp_infantry_fighting_vehicle",
+     2.6,
+     "BMP infantry fighting vehicle"
+    ],
+    [
+     "rocket_launcher_truck",
+     3.2,
+     "rocket launcher truck"
+    ]
+   ]
+  },
+  {
+   "id": "mod_air",
+   "kind": "aircraft",
+   "era": "modern",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "f22_stealth_fighter_flying",
+     4.0,
+     "F-22 stealth fighter flying"
+    ],
+    [
+     "su27_fighter_flying",
+     4.0,
+     "Su-27 fighter flying"
+    ],
+    [
+     "apache_attack_helicopter_flying",
+     4.0,
+     "Apache attack helicopter flying"
+    ],
+    [
+     "black_hawk_helicopter_flying",
+     4.0,
+     "Black Hawk helicopter flying"
+    ],
+    [
+     "passenger_airliner_flying",
+     12.0,
+     "passenger airliner flying"
+    ],
+    [
+     "military_drone_flying",
+     2.0,
+     "military drone flying"
+    ]
+   ]
+  },
+  {
+   "id": "mod_ships",
+   "kind": "ship",
+   "era": "modern",
+   "cols": 2,
+   "rows": 2,
+   "heightM": 30.0,
+   "items": [
+    [
+     "modern_aircraft_carrier",
+     60.0,
+     "modern aircraft carrier"
+    ],
+    [
+     "modern_destroyer",
+     30.0,
+     "modern destroyer"
+    ],
+    [
+     "container_ship",
+     40.0,
+     "container ship"
+    ],
+    [
+     "speedboat",
+     2.0,
+     "speedboat"
+    ]
+   ]
+  },
+  {
+   "id": "mod_props",
+   "kind": "prop",
+   "era": "modern",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.5,
+   "items": [
+    [
+     "laptop",
+     0.25,
+     "laptop"
+    ],
+    [
+     "smartphone",
+     0.15,
+     "smartphone"
+    ],
+    [
+     "flat_screen_tv",
+     0.7,
+     "flat screen TV"
+    ],
+    [
+     "office_chair",
+     1.1,
+     "office chair"
+    ],
+    [
+     "office_desk_computer",
+     1.2,
+     "office desk with computer"
+    ],
+    [
+     "coffee_cup",
+     0.12,
+     "coffee cup"
+    ],
+    [
+     "backpack",
+     0.5,
+     "backpack"
+    ],
+    [
+     "traffic_cone",
+     0.7,
+     "traffic cone"
+    ],
+    [
+     "trash_bin",
+     1.0,
+     "trash bin"
+    ],
+    [
+     "street_lamp",
+     5.0,
+     "street lamp"
+    ],
+    [
+     "park_bench",
+     0.8,
+     "park bench"
+    ],
+    [
+     "fire_hydrant",
+     0.8,
+     "fire hydrant"
+    ],
+    [
+     "vending_machine",
+     1.8,
+     "vending machine"
+    ],
+    [
+     "briefcase",
+     0.4,
+     "briefcase"
+    ],
+    [
+     "stack_money",
+     0.15,
+     "stack of money"
+    ],
+    [
+     "cardboard_box",
+     0.5,
+     "cardboard box"
+    ],
+    [
+     "shopping_cart",
+     1.0,
+     "shopping cart"
+    ],
+    [
+     "microphone_stand",
+     1.6,
+     "microphone on stand"
+    ]
+   ]
+  },
+  {
+   "id": "mod_structures",
+   "kind": "structure",
+   "era": "modern",
+   "cols": 4,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "bus_stop_shelter",
+     2.6,
+     "bus stop shelter"
+    ],
+    [
+     "cell_phone_tower",
+     25.0,
+     "cell phone tower"
+    ],
+    [
+     "blank_billboard",
+     8.0,
+     "blank billboard"
+    ],
+    [
+     "gas_station_pump",
+     1.8,
+     "gas station pump"
+    ],
+    [
+     "security_guard_booth",
+     2.6,
+     "security guard booth"
+    ],
+    [
+     "chainlink_fence",
+     2.0,
+     "chain-link fence"
+    ],
+    [
+     "playground_slide",
+     2.5,
+     "playground slide"
+    ],
+    [
+     "street_food_stall",
+     2.3,
+     "street food stall"
+    ]
+   ]
+  },
+  {
+   "id": "mod_buildings",
+   "kind": "building",
+   "era": "modern",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 20.0,
+   "items": [
+    [
+     "glass_skyscraper",
+     120.0,
+     "glass skyscraper"
+    ],
+    [
+     "apartment_block",
+     30.0,
+     "apartment block"
+    ],
+    [
+     "suburban_house",
+     7.0,
+     "suburban house"
+    ],
+    [
+     "corner_shop",
+     6.0,
+     "corner shop"
+    ],
+    [
+     "hospital_building",
+     20.0,
+     "hospital building"
+    ],
+    [
+     "factory_chimneys",
+     20.0,
+     "factory with chimneys"
+    ]
+   ]
+  },
+  {
+   "id": "mod_nature",
+   "kind": "nature",
+   "era": "modern",
+   "cols": 6,
+   "rows": 2,
+   "heightM": 6.0,
+   "items": [
+    [
+     "city_street_tree",
+     7.0,
+     "city street tree"
+    ],
+    [
+     "palm_tree",
+     10.0,
+     "palm tree"
+    ],
+    [
+     "hedge_bush",
+     1.2,
+     "hedge bush"
+    ],
+    [
+     "flower_bed",
+     0.5,
+     "flower bed"
+    ],
+    [
+     "lawn_grass_patch",
+     0.2,
+     "lawn grass patch"
+    ],
+    [
+     "pine_tree",
+     12.0,
+     "pine tree"
+    ],
+    [
+     "leafless_winter_tree",
+     8.0,
+     "leafless winter tree"
+    ],
+    [
+     "potted_plant",
+     1.0,
+     "potted plant"
+    ],
+    [
+     "rock",
+     1.0,
+     "rock"
+    ],
+    [
+     "cactus",
+     2.0,
+     "cactus"
+    ],
+    [
+     "tall_grass",
+     1.0,
+     "tall grass"
+    ],
+    [
+     "autumn_tree",
+     8.0,
+     "autumn tree"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_city_day",
+   "bgs": [
+    [
+     "bg_mod_city_day",
+     "modern",
+     "Modern city street in daytime with shops and skyscrapers"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_city_night",
+   "bgs": [
+    [
+     "bg_mod_city_night",
+     "modern",
+     "Modern city at night with lit windows and neon lights"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_office",
+   "bgs": [
+    [
+     "bg_mod_office",
+     "modern",
+     "Modern office interior with desks and computers"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_living_room",
+   "bgs": [
+    [
+     "bg_mod_living_room",
+     "modern",
+     "Modern living room with sofa, TV and window"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_classroom",
+   "bgs": [
+    [
+     "bg_mod_classroom",
+     "modern",
+     "School classroom with desks and blackboard"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_hospital",
+   "bgs": [
+    [
+     "bg_mod_hospital",
+     "modern",
+     "Hospital room with bed and medical equipment"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_highway",
+   "bgs": [
+    [
+     "bg_mod_highway",
+     "modern",
+     "Highway through countryside with mountains"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_suburb",
+   "bgs": [
+    [
+     "bg_mod_suburb",
+     "modern",
+     "Suburban street with houses and lawns"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_desert_base",
+   "bgs": [
+    [
+     "bg_mod_desert_base",
+     "modern",
+     "Desert military base with sandbags, containers and tents"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_newsroom",
+   "bgs": [
+    [
+     "bg_mod_newsroom",
+     "modern",
+     "TV news studio with screens"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_airport",
+   "bgs": [
+    [
+     "bg_mod_airport",
+     "modern",
+     "Airport terminal with big windows and planes outside"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mod_ruined_city",
+   "bgs": [
+    [
+     "bg_mod_ruined_city",
+     "modern",
+     "Modern city ruined by war with damaged apartment blocks"
+    ]
+   ]
+  }
+ ]
+}

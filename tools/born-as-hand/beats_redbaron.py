@@ -1,0 +1,256 @@
+from beats_lib import B, C, ALIAS
+
+ALIAS.update({
+    "camel": "ww1_air__sopwith_camel",
+    "spad": "ww1_air__spad13",
+    "dr1_lib": "ww1_air__fokker_dr1",
+    "balloon": "ww1_air__observation_balloon",
+    "cav_gallop": "ww_animals__cavalry_horse_rider_gallop",
+    "cav_walk": "ww_animals__cavalry_horse_rider_walk",
+    "de_soldier": "ww1_inf__de_pickelhaube_stand",
+    "de_walk": "ww1_inf__de_soldier_walk",
+    "de_officer": "ww1_inf__de_officer_binoculars",
+    "uk_soldier": "ww1_inf__uk_soldier_stand",
+    "uk_officer": "ww1_inf__uk_officer_stand",
+    "fr_poilu": "ww1_inf__fr_poilu_stand",
+    "ru_soldier": "ww1_inf__ru_soldier_stand",
+    "mg_nest": "set_pieces__sandbag_mg_nest",
+    "wire": "props__barbed_wire_coil",
+    "crate": "props__crate_stack",
+    "kitchen_pot": "props__field_kitchen_pot",
+    "letter_sit": "ww1_more_act__ww1_soldier_sitting_writing_letter",
+    "letter": "ww_props2__paper_letter_envelope_writing",
+    "medal_ribbon": "ww_props2__military_medal_ribbon",
+    "loco": "ww_more_veh__steam_locomotive",
+    "nurse": "civ_1910_40__nurse_stand",
+    "doctor": "ww_civ_more__doctor_white_coat_stethoscope_1940s",
+    "boy": "civ_1910_40__boy_stand",
+    "girl": "civ_1910_40__girl_stand",
+    "woman": "civ_1910_40__woman_1910_stand",
+    "newsboy": "ww_civ_more__newspaper_boy_shouting_holding_newspaper",
+    "priest": "ww_civ_more__priest_black_cassock",
+    "bugler": "ww1_more_act__ww1_bugler_blowing_bugle",
+    "charge": "ww1_act__soldier_charge",
+    "tent": "set_pieces__army_tent",
+    "truck": "ww1_veh__supply_truck",
+    "tree_dead": "nature__tree_shattered",
+    "crater": "nature__crater",
+    "deer": "west_animals__longhorn_cattle",
+})
+ALIAS.pop("deer")
+
+A = "richthofen_adult_"
+Y = "richthofen_young_"
+
+B(1, None, "bg_ww_sky_clouds", [C("dr1_red", "cl", "r", "sky"), C("camel", "r", "l", "sky", mv="l")], f="wide", label=("MANFRED", "von Richthofen · 1892-1918", 0, "If"), smoke=True)
+B(1, "eighty", "bg_ww_sky_clouds", [C("camel", "c", "l", "sky")], f="medium", tag=("80 KILLS", "", "eighty"), flash="eighty", smoke=True)
+B(2, None, "bg_mr_airfield", [C("albatros_red", "c", "r")], f="medium", cam="push", focus="red")
+B(2, "everyone", "bg_ww_sky_clouds", [C("albatros_red", "c", "r", "sky", mv="r")], f="wide")
+B(3, None, "bg_ww_sky_clouds", [C("fe2b", "cr", "l", "sky")], f="medium", flash="bullet", shake="bullet")
+B(3, "skull", "bg_ww_field_hospital", [C(A + "bandage", "c", "r")], f="close", dark=0.3)
+B(4, None, "bg_mr_sky_low", [C("dr1_red", "c", "r", "sky", mv="r")], f="wide")
+B(5, None, "bg_ww1_trench", [C("aus_gunner", "cl", "r"), C("roy_brown", "cr", "l")], f="medium", plate=("WHO FIRED?", "", None, "Nobody"))
+B(6, None, "bg_mr_sky_low", [], kind="rew", f="wide", cam="pull", dark=0.4)
+B(7, None, "bg_mr_bedroom", [C("richthofen_baby", "c")], f="close", warm=True)
+B(8, None, "bg_mr_bedroom", [C("richthofen_baby", "c")], f="medium", cool=True)
+B(9, None, "bg_mr_bedroom", [C("richthofen_baby", "c")], f="close", plate=("NO MEDALS", "", None, "medals"))
+B(10, None, "bg_mr_bedroom", [C("richthofen_baby", "c")], f="close", warm=True)
+B(11, None, "bg_mr_bedroom", [C("richthofen_baby", "c")], f="wide", plate=("NO AIRPLANES", "until 1903", None, "airplanes"))
+
+B(13, None, "bg_mr_bedroom", [C("mother", "c", "r")], f="wide", tag=("MAY 2, 1892", "Prussia"), warm=True)
+B(14, None, "bg_mr_bedroom", [C("richthofen_baby", "c")], f="close", label=("MANFRED", "Freiherr von Richthofen", 0, "Manfred"), focus="Manfred", warm=True)
+B(15, None, "bg_mr_cadet", [C("woman", "cl", "r"), C("boy", "cr", "l")], f="wide", plate=("BRESLAU", "Kingdom of Prussia", None, "Breslau"))
+B(16, None, "bg_mr_cadet", [C("woman", "cl", "r"), C("boy", "cr", "l")], f="wide", cam="pull", plate=("WROCLAW", "Poland today", None, "Wroclaw"))
+B(17, None, "bg_mr_bedroom", [C("father", "cl", "r"), C("mother", "cr", "l")], f="medium", label=("FATHER", "cavalry officer", 0, "father"))
+B(18, None, "bg_mr_bedroom", [C("girl", "cl", "r"), C(Y + "boy_antlers", "cr", "l")], f="medium", label=("ILSE", "older sister", 0, "Ilse"))
+B(19, None, "bg_mr_bedroom", [C(Y + "boy_antlers", "cl", "r"), C("boy", "cr", "l")], f="medium", plate=("LOTHAR & BOLKO", "little brothers", None, "Lothar"))
+B(20, None, "bg_ww_country_road", [C(Y + "boy_hunt", "c", "r")], f="wide")
+B(21, None, "bg_ww_country_road", [C(Y + "boy_hunt", "c", "r")], f="close", focus="Hunting")
+B(22, None, "bg_ww_country_road", [C(Y + "boy_hunt", "cl", "r")], f="medium", flash="shoot")
+B(23, None, "bg_mr_bedroom", [C(Y + "boy_antlers", "cl", "r"), C("antlers", "cr", place="wall")], f="medium", warm=True)
+B(24, None, "bg_mr_bedroom", [C("antlers", "c", place="wall")], f="close", focus=True, warm=True)
+B(25, None, "bg_mr_cadet", [C(Y + "cadet", "c", "r")], f="wide", tag=("AGE 11", "cadet school"))
+B(26, None, "bg_mr_cadet", [C(Y + "cadet", "c", "r")], f="close", dark=0.2)
+B(27, None, "bg_mr_cadet", [C(Y + "cadet", "cl", "r"), C("de_officer", "cr", "l")], f="medium")
+B(28, None, "bg_mr_cadet", [C(Y + "cadet", "c", "r")], f="medium")
+B(29, None, "bg_ww_country_road", [C(Y + "uhlan_ride", "c", "r", mv="r")], f="wide")
+B(30, None, "bg_ww_country_road", [C(Y + "uhlan", "c", "r")], f="medium", tag=("AGE 19", "1911"), label=("1ST UHLANS", "cavalry", 0, "Uhlans"))
+B(31, None, "bg_ww_country_road", [C(Y + "uhlan_ride", "cl", "r", mv="r"), C("cav_walk", "cr", "r", mv="r", crowd=2)], f="wide")
+B(32, None, "bg_ww_country_road", [C(Y + "uhlan", "c", "r")], f="close", warm=True)
+B(33, None, "bg_ww_country_road", [C(Y + "uhlan", "c", "r")], f="wide", cam="pull")
+
+B(34, None, "bg_ww_train_station", [C(Y + "uhlan", "cl", "r"), C("de_soldier", "cr", "l", crowd=2)], f="wide", tag=("AUGUST 1914", "war"))
+B(35, None, "bg_ww_train_station", [C("loco", "c", "l")], f="wide", shake="War", smoke=True)
+B(36, None, "bg_ww_steppe", [C(Y + "uhlan_ride", "c", "r", mv="r")], f="wide", plate=("RUSSIA", "then France", None, "Russia"))
+B(37, None, "bg_ww_steppe", [C(Y + "uhlan", "c", "r")], f="close", tag=("AGE 22", ""))
+B(38, None, "bg_ww_country_road", [C(Y + "uhlan_ride", "cl", "r"), C("cav_gallop", "cr", "l", crowd=2)], f="wide", flash="ambush", shake="ambush")
+B(39, None, "bg_ww_country_road", [C(Y + "uhlan_ride", "c", "l", mv="l")], f="wide", smoke=True)
+B(41, None, "bg_ww1_nomansland", [C("cav_gallop", "c", "r")], f="wide", cam="pull", dark=0.25)
+B(42, None, "bg_ww1_trench", [C("mg_nest", "cl"), C("wire", "cr")], f="wide", smoke=True)
+B(43, None, "bg_ww1_nomansland", [C(Y + "uhlan", "c", "r")], f="medium", cam="pull", dark=0.2)
+B(44, None, "bg_ww_country_road", [C(Y + "supply", "c", "r"), C("crate", "cr")], f="medium", label=("SUPPLY OFFICER", "", 0, "supply"))
+B(45, None, "bg_ww_country_road", [C(Y + "supply", "cl", "r"), C("de_soldier", "cr", "l", crowd=2)], f="medium")
+B(46, None, "bg_ww_country_road", [C("letter", "c")], f="close")
+B(47, None, "bg_ww_country_road", [C("letter", "c")], kind="paper", paper=[("CHEESE AND EGGS?", "h", "cheese")], stamp=("NO!", "didn't"))
+B(48, None, "bg_ww_country_road", [C(Y + "supply", "c", "r")], f="medium")
+B(49, None, "bg_ww_sky_clouds", [C("albatros_two", "c", "r", "sky", mv="r")], f="wide", focus="Airplanes")
+B(50, None, "bg_mr_airfield", [C(Y + "observer", "c", "r")], f="medium", tag=("MAY 1915", "air service"))
+B(51, None, "bg_mr_airfield", [C(Y + "observer", "cl", "r"), C("albatros_two", "cr", "l")], f="wide", label=("OBSERVER", "back seat", 0, "observer"))
+B(52, None, "bg_ww_sky_clouds", [C("albatros_two", "c", "r", "sky", mv="r")], f="medium")
+B(53, None, "bg_ww_train_station", [C(Y + "observer", "cl", "r"), C("boelcke", "cr", "l")], f="medium", tag=("OCTOBER 1915", "a train"), label=("OSWALD BOELCKE", "ace", 1, "Oswald"))
+B(54, None, "bg_ww_train_station", [C("boelcke", "c", "l")], f="close", focus="aces")
+B(55, None, "bg_ww_train_station", [C(Y + "observer", "cl", "r"), C("boelcke", "cr", "l")], f="medium")
+B(56, None, "bg_ww_train_station", [C("boelcke", "c", "l")], f="close")
+B(57, None, "bg_ww_train_station", [C("boelcke", "c", "l")], kind="paper", paper=[("FLY CLOSE", "h", "Fly"), ("AIM WELL", "l", "aim")])
+B(58, None, "bg_ww_train_station", [C(Y + "observer", "c", "r")], f="close", warm=True)
+B(59, None, "bg_mr_airfield", [C("albatros_two", "c", "r")], f="wide")
+B(60, None, "bg_mr_airfield", [C("albatros_two", "c", "r")], f="wide", shake="crash", smoke=True, plate=("FIRST SOLO", "crashed", None, "crash"))
+B(61, None, "bg_ww_sky_clouds", [C("albatros_two", "cl", "r", "sky"), C("spad", "cr", "l", "sky")], f="wide", tag=("SPRING 1916", "Verdun"), flash="hit")
+B(62, None, "bg_ww1_nomansland", [C("spad", "c", "l", "sky", mv="l")], f="wide", smoke=True)
+B(63, None, "bg_ww1_nomansland", [], kind="paper", paper=[("VICTORY?", "h", "confirms")], stamp=("NOT COUNTED", "count"))
+
+B(64, None, "bg_ww_steppe", [C("albatros_two", "c", "r")], f="wide", tag=("AUGUST 1916", "Russian front"))
+B(65, None, "bg_ww_sky_clouds", [C("albatros_two", "c", "r", "sky", mv="r")], f="wide")
+B(66, None, "bg_ww_steppe", [C("boelcke", "cl", "r", mv="r"), C(A + "stand", "cr", "l")], f="medium")
+B(67, None, "bg_mr_airfield", [C("boelcke", "cl", "r"), C(A + "stand", "cr", "l")], f="wide", plate=("JASTA 2", "fighter squadron", None, "Jasta"))
+B(68, None, "bg_mr_airfield", [C("boelcke", "cl", "r"), C(A + "stand", "cr", "l")], f="medium", focus="picks")
+B(69, None, "bg_ww_sky_clouds", [C("albatros_red", "cl", "r", "sky")], f="wide", tag=("SEPT 17, 1916", ""))
+B(70, None, "bg_ww_sky_clouds", [C("fe2b", "cr", "l", "sky")], f="wide", plate=("CAMBRAI", "France", None, "Cambrai"))
+B(71, None, "bg_ww_sky_clouds", [C("albatros_red", "cl", "r", "sky", mv="r"), C("fe2b", "cr", "l", "sky")], f="medium", flash="fire", shake="fire")
+B(72, None, "bg_ww_sky_clouds", [C("fe2b", "c", "l", "sky")], f="close", focus="propeller", smoke=True)
+B(73, None, "bg_mr_sky_low", [C("fe2b", "c", "l", "sky", mv="l")], f="wide", smoke=True)
+B(74, None, "bg_mr_sky_low", [], kind="paper", paper=[("VICTORY #1", "h", "first")])
+B(75, None, "bg_ww1_nomansland", [C(A + "walk", "cl", "r"), C("fe2b", "cr")], f="wide")
+B(76, None, "bg_ww1_nomansland", [C("fe2b", "c")], f="medium", cam="pull", dark=0.4)
+B(77, None, "bg_mr_bedroom", [C(A + "stand", "c", "r"), C("letter", "cr", place="near")], f="medium", dark=0.2, warm=True)
+B(78, None, "bg_mr_bedroom", [C("silver_cup", "c", place="table")], f="close", focus="cup", warm=True)
+B(79, None, "bg_mr_bedroom", [C("silver_cup", "c", place="table")], f="close", warm=True)
+B(80, None, "bg_mr_bedroom", [C("cups_shelf", "c", place="wall")], f="medium", warm=True)
+B(82, None, "bg_ww_sky_clouds", [C("dh2", "cr", "l", "sky")], f="wide", tag=("OCT 28, 1916", ""))
+B(83, None, "bg_ww_sky_clouds", [C("albatros_two", "cl", "r", "sky", mv="r"), C("dh2", "cr", "l", "sky")], f="medium", label=("BOELCKE", "", 0, "Boelcke"))
+B(84, None, "bg_ww_sky_clouds", [C("albatros_two", "c", "r", "sky")], f="close", shake="touch", flash="touch")
+B(85, None, "bg_mr_sky_low", [C("albatros_two", "c", "r", "sky", mv="l")], f="wide", cam="pull", smoke=True, dark=0.3)
+B(86, None, "bg_mr_cemetery", [C(A + "walk", "c", "r", mv="r"), C("de_soldier", "r", "l", crowd=2)], f="wide", dark=0.3, cool=True)
+B(87, None, "bg_mr_cemetery", [C(A + "walk", "c", "r")], f="close", tag=("AGE 24", ""), dark=0.3, cool=True)
+B(88, None, "bg_ww_sky_clouds", [C("dh2", "c", "l", "sky")], f="wide", tag=("NOVEMBER 1916", ""))
+B(89, None, "bg_mr_airfield", [C("hawker", "c", "l")], f="medium", label=("LANOE HAWKER", "British ace", 0, "Britain"))
+B(90, None, "bg_ww_sky_clouds", [C("albatros_red", "cl", "r", "sky", mv="r"), C("dh2", "cr", "l", "sky", mv="l")], f="wide")
+B(91, None, "bg_mr_sky_low", [C("dh2", "c", "l", "sky")], f="medium")
+B(92, None, "bg_mr_sky_low", [C("dh2", "cr", "l", "sky", mv="l"), C("albatros_red", "cl", "r", "sky", mv="r")], f="wide")
+B(93, None, "bg_mr_sky_low", [C("dh2", "c", "l", "sky")], f="medium", flash="get", shake="get", smoke=True)
+B(94, None, "bg_mr_sky_low", [], kind="paper", paper=[("VICTORY #11", "h", "eleven")])
+B(95, None, "bg_mr_bedroom", [C("lewis_gun", "c", place="wall")], f="medium", focus="gun", warm=True)
+
+B(96, None, "bg_mr_airfield", [C(A + "stand", "c", "r")], f="wide", tag=("JANUARY 1917", ""))
+B(97, None, "bg_mr_airfield", [], kind="paper", paper=[("16 KILLS", "h", "Sixteen")])
+B(98, None, "bg_mr_airfield", [C(A + "medal", "c", "r")], f="medium", label=("POUR LE MERITE", "", 0, "Pour"), focus="Pour")
+B(99, None, "bg_mr_airfield", [C("blue_max", "c")], f="close", plate=("THE BLUE MAX", "", None, "Blue"))
+B(100, None, "bg_mr_airfield", [C(A + "medal", "cl", "r"), C("de_walk", "cr", "l", crowd=3)], f="wide", plate=("JASTA 11", "your squadron", None, "Jasta"))
+B(101, None, "bg_mr_airfield", [C(A + "bust", "c")], kind="bust", f="close")
+B(102, None, "bg_mr_airfield", [C("albatros_red", "c", "r")], f="medium", focus="red", warm=True)
+B(103, None, "bg_ww_sky_clouds", [C("albatros_red", "c", "r", "sky", mv="r")], f="wide")
+B(104, None, "bg_ww1_trench", [C("fr_poilu", "c", "l")], f="medium", plate=("LE DIABLE ROUGE", "The Red Devil", None, "Red"))
+B(105, None, "bg_ww_sky_clouds", [C("albatros_red", "c", "r", "sky")], f="medium", plate=("THE RED BARON?", "later", None, "Baron"))
+B(107, None, "bg_ww_sky_clouds", [C("albatros_red", "cl", "r", "sky", mv="r"), C("fe2b", "cr", "l", "sky")], f="wide", tag=("APRIL 1917", ""))
+B(108, None, "bg_ww_sky_clouds", [C("fe2b", "c", "l", "sky", mv="l")], f="medium", plate=("BLOODY APRIL", "", None, "Bloody"), smoke=True)
+B(109, None, "bg_mr_sky_low", [C("dh2", "l", "l", "sky"), C("fe2b", "r", "l", "sky")], f="wide", smoke=True, dark=0.25)
+B(110, None, "bg_ww_sky_clouds", [C("albatros_red", "c", "r", "sky")], f="medium", tag=("20+ KILLS", "in one month"))
+B(111, None, "bg_mr_airfield", [C(A + "stand", "cl", "r"), C("lothar", "cr", "l")], f="medium", label=("LOTHAR", "little brother", 1, "Lothar"))
+B(112, None, "bg_ww_sky_clouds", [C("albatros_red", "cl", "r", "sky", mv="r"), C("albatros_two", "cr", "r", "sky", mv="r")], f="wide")
+B(113, None, "bg_home_front", [C("newsboy", "c", "r"), C("woman", "cr", "l", crowd=2)], f="wide", warm=True)
+B(114, None, "bg_home_front", [C(A + "medal", "c", "r")], f="medium", warm=True)
+B(115, None, "bg_home_front", [C("letter", "c")], f="close", warm=True)
+B(116, None, "bg_home_front", [], kind="paper", paper=[("DER ROTE KAMPFFLIEGER", "n", "book"), ("BESTSELLER", "h", "sells")])
+
+B(117, None, "bg_ww_sky_clouds", [C("albatros_red", "c", "r", "sky")], f="wide", tag=("JULY 6, 1917", ""))
+B(118, None, "bg_ww_sky_clouds", [C("albatros_red", "cl", "r", "sky", mv="r"), C("fe2b", "cr", "l", "sky")], f="wide")
+B(119, None, "bg_ww_sky_clouds", [C("fe2b", "c", "l", "sky")], f="medium", flash="fires")
+B(120, None, "bg_ww_sky_clouds", [C(A + "bandage", "c", "r")], f="close", flash="bullet", shake="bullet", dark=0.3)
+B(121, None, "bg_ww_sky_clouds", [], kind="black")
+B(122, None, "bg_ww_sky_clouds", [C("albatros_red", "c", "r", "sky")], f="medium", dark=0.4)
+B(123, None, "bg_mr_sky_low", [C("albatros_red", "c", "r", "sky", mv="r")], f="wide", shake="falling", smoke=True)
+B(124, None, "bg_mr_sky_low", [C("albatros_red", "c", "r", "sky")], f="medium")
+B(125, None, "bg_ww_country_road", [C("albatros_red", "c", "r")], f="wide", smoke=True)
+B(126, None, "bg_ww_field_hospital", [C(A + "bandage", "c", "r"), C("nurse", "cr", "l")], f="medium")
+B(127, None, "bg_ww_field_hospital", [C(A + "bandage", "c", "r")], f="close", dark=0.25)
+B(128, None, "bg_ww_field_hospital", [C(A + "bandage", "c", "r"), C("doctor", "cr", "l")], f="medium", dark=0.2)
+B(129, None, "bg_mr_airfield", [C(A + "bandage", "cl", "r"), C("albatros_red", "cr", "l")], f="medium")
+B(130, None, "bg_mr_airfield", [C(A + "bust", "c")], kind="bust", f="close", dark=0.25)
+B(131, None, "bg_mr_bedroom", [C(A + "stand", "c", "r")], f="medium", dark=0.35)
+B(132, None, "bg_mr_bedroom", [C("cups_shelf", "c", place="wall")], f="medium", focus="cups", warm=True)
+B(133, None, "bg_mr_bedroom", [C("silver_cup", "c", place="table")], f="close", plate=("60 CUPS", "then no silver", None, "sixtieth"))
+B(135, None, "bg_mr_bedroom", [C("cups_shelf", "c", place="wall")], f="medium", cam="pull", dark=0.25)
+B(136, None, "bg_ww1_nomansland", [C("charge", "c", "r", crowd=3)], f="wide", smoke=True)
+B(137, None, "bg_mr_airfield", [C(A + "bust", "c")], kind="bust", f="close", warm=True)
+B(139, None, "bg_mr_airfield", [C(A + "stand", "c", "r")], f="medium", plate=("WHO'S NEXT?", "comment below", None, "next"))
+B(141, None, "bg_mr_airfield", [C(A + "bust", "c")], kind="bust", f="close")
+B(142, None, "bg_ww_sky_clouds", [C("dr1_red", "c", "r", "sky", mv="r")], f="wide")
+
+B(143, None, "bg_mr_airfield", [C(A + "medal", "c", "r"), C("de_walk", "cr", "l", crowd=3)], f="wide", label=("JG 1", "fighter wing", 0, "wing"))
+B(144, None, "bg_ww_train_station", [C("loco", "r", "l"), C("de_walk", "l", "r", crowd=2)], f="wide")
+B(145, None, "bg_mr_airfield", [C("albatros_red", "l", "r"), C("albatros_two", "r", "l")], f="wide", plate=("THE FLYING CIRCUS", "", None, "Flying"))
+B(146, None, "bg_ww_sky_clouds", [C("albatros_two", "cl", "r", "sky", mv="r"), C("albatros_red", "cr", "r", "sky", mv="r")], f="wide")
+B(147, None, "bg_mr_airfield", [C("dr1_red", "c", "r")], f="close", focus="red")
+B(148, None, "bg_mr_airfield", [C(A + "walk", "cl", "r"), C("dr1_red", "cr", "l")], f="wide", label=("FOKKER DR.I", "triplane", 1, "Fokker"))
+B(149, None, "bg_mr_airfield", [C("dr1_red", "c", "r")], f="medium")
+B(150, None, "bg_ww_sky_clouds", [C("dr1_red", "c", "r", "sky", mv="r")], f="wide")
+B(151, None, "bg_ww1_nomansland", [C("de_walk", "c", "r", crowd=4)], f="wide", tag=("MARCH 1918", "Spring Offensive"), smoke=True, shake=(152, "everything"))
+B(153, None, "bg_ww_sky_clouds", [C("dr1_red", "cl", "r", "sky", mv="r"), C("camel", "cr", "l", "sky")], f="wide", flash="scoring")
+B(154, None, "bg_ww_sky_clouds", [], kind="paper", paper=[("65", "h", "Sixty"), ("70", "h", (155, "Seventy"))])
+B(156, None, "bg_ww_sky_clouds", [C("dr1_red", "c", "r", "sky")], f="medium", tag=("APRIL 20, 1918", ""))
+B(157, None, "bg_ww_sky_clouds", [], kind="paper", paper=[("VICTORY #80", "h", "eighty")], stamp=("ACE OF ACES", (158, "pilot")))
+B(159, None, "bg_ww_command_bunker", [C("de_officer", "cl", "r"), C(A + "medal", "cr", "l")], f="medium")
+B(160, None, "bg_ww_command_bunker", [C("de_officer", "c", "r")], f="close")
+B(161, None, "bg_mr_airfield", [C(A + "walk", "cl", "r", mv="r"), C("dr1_red", "cr", "l")], f="wide")
+
+B(162, None, "bg_mr_sky_low", [C("dr1_red", "c", "r", "sky")], f="wide", tag=("APRIL 21, 1918", "morning"))
+B(164, None, "bg_mr_sky_low", [C("dr1_red", "cl", "r", "sky", mv="r"), C("camel", "cr", "l", "sky")], f="wide", plate=("SOMME VALLEY", "", None, "Somme"))
+B(165, None, "bg_mr_airfield", [C("wop_may", "c", "l")], f="medium", label=("WILFRID MAY", "first patrol", 0, "Wilfrid"))
+B(166, None, "bg_mr_sky_low", [C("camel", "c", "l", "sky", mv="l")], f="medium", shake="jam")
+B(167, None, "bg_mr_sky_low", [C("camel", "cl", "l", "sky", mv="l"), C("dr1_red", "r", "l", "sky", mv="l")], f="wide")
+B(169, None, "bg_mr_sky_low", [C("dr1_red", "c", "l", "sky", mv="l")], f="close")
+B(170, None, "bg_ww1_trench", [C("aus_gunner", "c", "r"), C("uk_soldier", "cr", "r", crowd=2)], f="wide")
+B(171, None, "bg_mr_sky_low", [C(A + "bust", "c")], kind="bust", f="close", dark=0.2)
+B(172, None, "bg_mr_sky_low", [], kind="paper", paper=[("NEVER FOLLOW", "h", "Never"), ("OVER ENEMY LINES", "l", "lines")])
+B(173, None, "bg_mr_sky_low", [C("camel", "l", "l", "sky"), C("dr1_red", "c", "l", "sky", mv="l"), C("camel", "r", "l", "sky")], f="wide", label=("ROY BROWN", "", 2, "Roy"))
+B(174, None, "bg_ww1_trench", [C("aus_gunner", "c", "r")], f="medium", flash="fire", shake="fire", smoke=True)
+B(175, None, "bg_mr_sky_low", [C("dr1_red", "c", "l", "sky")], f="close", flash="bullet", shake="bullet", dark=0.3)
+B(176, None, "bg_ww_country_road", [C("dr1_crashed", "c")], f="wide", smoke=True, shake="down")
+B(177, None, "bg_ww_country_road", [C("dr1_crashed", "c"), C("uk_soldier", "cl", "r", mv="r", crowd=3)], f="wide")
+B(178, None, "bg_ww_country_road", [C("dr1_crashed", "c")], f="medium", cam="pull", dark=0.4)
+B(179, None, "bg_ww_country_road", [C(A + "bust", "c")], kind="bust", f="close", tag=("AGE 25", ""), dark=0.35)
+B(180, None, "bg_ww_country_road", [], kind="black")
+B(181, None, "bg_ww_country_road", [C("dr1_crashed", "cr"), C("souvenir_soldier", "cl", "l", mv="l")], f="wide")
+B(182, None, "bg_ww_country_road", [C("souvenir_soldier", "c", "l")], f="close")
+B(184, None, "bg_ww_country_road", [C("dr1_crashed", "c")], f="medium")
+B(185, None, "bg_mr_bedroom", [C("antlers", "c", place="wall")], f="medium", warm=True)
+B(186, None, "bg_ww_country_road", [C("souvenir_soldier", "c", "l", mv="l")], f="medium", dark=0.2)
+B(187, None, "bg_ww1_trench", [C("roy_brown", "cl", "r"), C("aus_gunner", "cr", "l")], f="medium", plate=("WHO FIRED?", "", None, "fired"))
+B(188, None, "bg_mr_airfield", [C("roy_brown", "c", "l")], f="medium", label=("ROY BROWN", "credited by the RAF", 0, "Roy"))
+B(189, None, "bg_mr_sky_low", [C("dr1_red", "c", "l", "sky")], kind="paper", paper=[("BULLET PATH", "h", "below"), ("FROM BELOW", "l", "below")])
+B(190, None, "bg_ww1_trench", [C("aus_gunner", "c", "r")], f="medium", label=("AUSTRALIAN GUNNER", "most likely", 0, "Australian"))
+B(191, None, "bg_ww1_trench", [C("aus_gunner", "c", "r", crowd=3)], f="wide", plate=("WHICH ONE?", "", None, "Which"))
+B(193, None, "bg_mr_cemetery", [C("pallbearers", "c", "r", mv="r")], f="wide", tag=("APRIL 22, 1918", "Bertangles"), cool=True)
+B(194, None, "bg_mr_cemetery", [C("pallbearers", "cl", "r"), C("uk_soldier", "cr", "l", crowd=3)], f="wide", flash="salute", cool=True)
+B(195, None, "bg_ww_sky_clouds", [C("camel", "c", "r", "sky", mv="r")], f="wide")
+B(196, None, "bg_ww_sky_clouds", [C("letter", "c")], kind="paper", paper=[("THE RED BARON", "h", "Red"), ("IS DEAD", "l", "dead")])
+B(197, None, "bg_mr_bedroom", [C("mother", "c", "r")], f="medium", warm=True, dark=0.2)
+B(198, None, "bg_mr_bedroom", [C("antlers", "c", place="wall")], f="close", warm=True)
+B(199, None, "bg_mr_bedroom", [C("cups_shelf", "c", place="wall")], f="close", warm=True)
+B(200, None, "bg_ww1_nomansland", [C("de_soldier", "c", "r", crowd=3)], f="wide", tag=("NOV 1918", "armistice"), cam="pull", dark=0.3)
+B(201, None, "bg_mr_airfield", [C("lothar", "c", "r")], f="medium", plate=("LOTHAR", "died 1922", None, "Lothar"))
+B(202, None, "bg_mr_cemetery", [C("wreath", "c")], f="medium", cool=True)
+B(203, None, "bg_mr_cemetery", [], kind="paper", paper=[("FRANCE", "n", "France"), ("BERLIN", "n", "Berlin"), ("WIESBADEN", "h", "Wiesbaden")])
+
+B(204, None, None, [], kind="montage", montage=(["bg_mr_bedroom", "bg_ww_country_road", "bg_ww_sky_clouds", "bg_mr_cemetery"], ["1892", "1911", "1917", "1918"]))
+B(205, None, "bg_ww_country_road", [C(Y + "uhlan_ride", "c", "r", mv="r")], f="wide")
+B(206, None, "bg_mr_airfield", [C(A + "medal", "c", "r")], f="medium")
+B(207, None, "bg_mr_cemetery", [C(A + "walk", "c", "r")], f="medium", cool=True)
+B(208, None, "bg_mr_airfield", [C("albatros_red", "c", "r")], f="medium")
+B(209, None, "bg_ww_sky_clouds", [C("dr1_red", "cl", "r", "sky", mv="r"), C("camel", "cr", "l", "sky")], f="wide")
+B(210, None, "bg_ww_field_hospital", [C(A + "bandage", "c", "r")], f="medium")
+B(211, None, "bg_mr_sky_low", [C("dr1_red", "c", "l", "sky", mv="l")], f="wide")
+B(212, None, "bg_mr_airfield", [C(A + "bust", "c")], kind="bust", f="close", label=("MANFRED VON RICHTHOFEN", "1892 - 1918", 0, "Manfred"))
+B(213, None, "bg_ww1_trench", [C("aus_gunner", "cl", "r"), C("roy_brown", "cr", "l")], f="medium", tag=("THE LAST BULLET", "", "mystery"))
+B(215, None, "bg_mr_airfield", [C(A + "bust", "c")], kind="bust", f="close")
+B(216, None, "bg_mr_sky_low", [C("dr1_red", "c", "r", "sky")], f="medium", plate=("WHO SHOT HIM?", "comment below", None, "Who"), end="Baron")

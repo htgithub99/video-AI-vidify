@@ -1,0 +1,770 @@
+{
+ "sheets": [
+  {
+   "id": "samurai",
+   "kind": "person",
+   "era": "eastasia",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "samurai_full_armor_walking_katana",
+     1.7,
+     "samurai in full armor walking with katana at waist"
+    ],
+    [
+     "samurai_drawing_katana",
+     1.7,
+     "samurai drawing katana"
+    ],
+    [
+     "samurai_attacking_katana",
+     1.7,
+     "samurai attacking with katana"
+    ],
+    [
+     "samurai_archer_long_yumi_bow",
+     1.7,
+     "samurai archer with long yumi bow"
+    ],
+    [
+     "samurai_naginata",
+     1.7,
+     "samurai with naginata"
+    ],
+    [
+     "ashigaru_foot_soldier_yari_spear",
+     1.7,
+     "ashigaru foot soldier with yari spear and jingasa hat"
+    ],
+    [
+     "ashigaru_arquebus_matchlock_gun",
+     1.7,
+     "ashigaru with arquebus matchlock gun"
+    ],
+    [
+     "ninja_black_crouching",
+     1.2,
+     "ninja in black crouching"
+    ],
+    [
+     "ronin_kimono_straw_hat",
+     1.7,
+     "ronin in kimono with straw hat"
+    ],
+    [
+     "samurai_general_daimyo_war_fan",
+     1.7,
+     "samurai general daimyo with war fan"
+    ]
+   ]
+  },
+  {
+   "id": "japan_civ",
+   "kind": "person",
+   "era": "eastasia",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.65,
+   "items": [
+    [
+     "japanese_shogun_court_robes",
+     1.65,
+     "Japanese shogun in court robes"
+    ],
+    [
+     "japanese_noble_lady_layered_kimono",
+     1.65,
+     "Japanese noble lady in layered kimono"
+    ],
+    [
+     "japanese_geisha_umbrella",
+     1.65,
+     "Japanese geisha with umbrella"
+    ],
+    [
+     "japanese_peasant_farmer_straw_hat",
+     1.65,
+     "Japanese peasant farmer with straw hat"
+    ],
+    [
+     "japanese_merchant",
+     1.65,
+     "Japanese merchant"
+    ],
+    [
+     "buddhist_monk_shaved_head",
+     1.65,
+     "Buddhist monk with shaved head"
+    ],
+    [
+     "japanese_fisherman",
+     1.65,
+     "Japanese fisherman"
+    ],
+    [
+     "japanese_child_kimono",
+     1.2,
+     "Japanese child in kimono"
+    ],
+    [
+     "japanese_tea_master_kneeling",
+     1.0,
+     "Japanese tea master kneeling"
+    ],
+    [
+     "japanese_craftsman_carpenter",
+     1.65,
+     "Japanese craftsman carpenter"
+    ]
+   ]
+  },
+  {
+   "id": "china_imperial",
+   "kind": "person",
+   "era": "eastasia",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "tang_dynasty_soldier_armor_spear",
+     1.75,
+     "Tang dynasty soldier with armor and spear"
+    ],
+    [
+     "song_dynasty_archer",
+     1.75,
+     "Song dynasty archer"
+    ],
+    [
+     "ming_dynasty_soldier_musket",
+     1.75,
+     "Ming dynasty soldier with musket"
+    ],
+    [
+     "ming_dynasty_general_armor",
+     1.75,
+     "Ming dynasty general in armor"
+    ],
+    [
+     "qing_dynasty_bannerman_soldier_queue",
+     1.75,
+     "Qing dynasty bannerman soldier with queue hairstyle"
+    ],
+    [
+     "chinese_emperor_yellow_dragon_robe",
+     1.75,
+     "Chinese emperor in yellow dragon robe"
+    ],
+    [
+     "chinese_mandarin_official_robe_rank",
+     1.75,
+     "Chinese mandarin official in robe with rank badge"
+    ],
+    [
+     "chinese_court_lady_hanfu",
+     1.75,
+     "Chinese court lady in hanfu"
+    ],
+    [
+     "chinese_eunuch_official",
+     1.75,
+     "Chinese eunuch official"
+    ],
+    [
+     "chinese_imperial_guard_halberd",
+     1.75,
+     "Chinese imperial guard with halberd"
+    ]
+   ]
+  },
+  {
+   "id": "china_civ",
+   "kind": "person",
+   "era": "eastasia",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.7,
+   "items": [
+    [
+     "chinese_peasant_straw_hat_hoe",
+     1.7,
+     "Chinese peasant with straw hat and hoe"
+    ],
+    [
+     "chinese_peasant_woman_basket",
+     1.7,
+     "Chinese peasant woman with basket"
+    ],
+    [
+     "chinese_scholar_fan",
+     1.7,
+     "Chinese scholar with fan"
+    ],
+    [
+     "chinese_merchant_goods",
+     1.7,
+     "Chinese merchant with goods"
+    ],
+    [
+     "chinese_martial_artist_kung_fu",
+     1.7,
+     "Chinese martial artist in kung fu stance"
+    ],
+    [
+     "chinese_old_man_long_beard",
+     1.7,
+     "Chinese old man with long beard and cane"
+    ],
+    [
+     "chinese_child",
+     1.2,
+     "Chinese child"
+    ],
+    [
+     "chinese_street_vendor_shoulder_pole",
+     1.7,
+     "Chinese street vendor with shoulder pole baskets"
+    ],
+    [
+     "chinese_doctor_medicine_box",
+     1.7,
+     "Chinese doctor with medicine box"
+    ],
+    [
+     "chinese_monk_staff",
+     1.7,
+     "Chinese monk with staff"
+    ]
+   ]
+  },
+  {
+   "id": "mongol_korea",
+   "kind": "person",
+   "era": "eastasia",
+   "cols": 5,
+   "rows": 2,
+   "heightM": 1.75,
+   "items": [
+    [
+     "mongol_warrior_fur_hat_bow",
+     1.75,
+     "Mongol warrior with fur hat and bow"
+    ],
+    [
+     "mongol_khan_robe_fur_hat",
+     1.75,
+     "Mongol khan in robe and fur hat"
+    ],
+    [
+     "mongol_woman_deel",
+     1.75,
+     "Mongol woman in deel"
+    ],
+    [
+     "korean_joseon_soldier_wide_hat",
+     1.75,
+     "Korean Joseon soldier with wide hat and spear"
+    ],
+    [
+     "korean_joseon_general_armor",
+     1.75,
+     "Korean Joseon general in armor"
+    ],
+    [
+     "korean_joseon_scholar_gat_hat",
+     1.75,
+     "Korean Joseon scholar in gat hat"
+    ],
+    [
+     "korean_woman_hanbok",
+     1.75,
+     "Korean woman in hanbok"
+    ],
+    [
+     "korean_king_red_robe",
+     1.75,
+     "Korean king in red robe"
+    ],
+    [
+     "korean_peasant",
+     1.75,
+     "Korean peasant"
+    ],
+    [
+     "japanese_pirate_wokou_sword",
+     1.75,
+     "Japanese pirate wokou with sword"
+    ]
+   ]
+  },
+  {
+   "id": "ea_mounted",
+   "kind": "animal",
+   "era": "eastasia",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 2.5,
+   "items": [
+    [
+     "samurai_horse_bow",
+     2.5,
+     "samurai on horse with bow"
+    ],
+    [
+     "mongol_horse_archer_galloping",
+     2.5,
+     "Mongol horse archer galloping"
+    ],
+    [
+     "chinese_cavalry_general_horse_spear",
+     2.5,
+     "Chinese cavalry general on horse with spear"
+    ],
+    [
+     "korean_cavalryman_horse",
+     2.5,
+     "Korean cavalryman on horse"
+    ],
+    [
+     "mongol_rider_horse_walking",
+     2.5,
+     "Mongol rider on horse walking"
+    ],
+    [
+     "bactrian_camel_packs",
+     2.3,
+     "Bactrian camel with packs"
+    ]
+   ]
+  },
+  {
+   "id": "ea_vehicles",
+   "kind": "vehicle",
+   "era": "eastasia",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 3.0,
+   "items": [
+    [
+     "chinese_junk_ship_batten_sails",
+     15.0,
+     "Chinese junk ship with batten sails"
+    ],
+    [
+     "japanese_atakebune_war_ship",
+     12.0,
+     "Japanese atakebune war ship"
+    ],
+    [
+     "korean_turtle_ship",
+     10.0,
+     "Korean turtle ship"
+    ],
+    [
+     "palanquin_carried_by_four_bearers",
+     2.0,
+     "palanquin carried by four bearers"
+    ],
+    [
+     "chinese_ox_cart",
+     2.0,
+     "Chinese ox cart"
+    ],
+    [
+     "japanese_fishing_boat",
+     3.0,
+     "Japanese fishing boat"
+    ]
+   ]
+  },
+  {
+   "id": "ea_props",
+   "kind": "prop",
+   "era": "eastasia",
+   "cols": 6,
+   "rows": 3,
+   "heightM": 0.5,
+   "items": [
+    [
+     "katana_sheath",
+     1.0,
+     "katana in sheath"
+    ],
+    [
+     "samurai_helmet_kabuto",
+     0.4,
+     "samurai helmet kabuto"
+    ],
+    [
+     "samurai_armor_stand",
+     1.6,
+     "samurai armor on stand"
+    ],
+    [
+     "paper_lantern_red",
+     0.5,
+     "paper lantern red"
+    ],
+    [
+     "chinese_porcelain_vase",
+     0.6,
+     "Chinese porcelain vase"
+    ],
+    [
+     "tea_set_tray",
+     0.2,
+     "tea set on tray"
+    ],
+    [
+     "folding_fan",
+     0.3,
+     "folding fan"
+    ],
+    [
+     "bamboo_scroll",
+     0.4,
+     "bamboo scroll"
+    ],
+    [
+     "chinese_war_drum_stand",
+     1.5,
+     "Chinese war drum on stand"
+    ],
+    [
+     "gong",
+     1.5,
+     "gong"
+    ],
+    [
+     "incense_burner",
+     0.6,
+     "incense burner"
+    ],
+    [
+     "bonsai_tree_pot",
+     0.5,
+     "bonsai tree in pot"
+    ],
+    [
+     "rice_straw_bales",
+     0.8,
+     "rice straw bales"
+    ],
+    [
+     "bamboo_basket",
+     0.4,
+     "bamboo basket"
+    ],
+    [
+     "writing_brush_ink_stone",
+     0.1,
+     "writing brush and ink stone"
+    ],
+    [
+     "chinese_sword_jian",
+     0.9,
+     "Chinese sword jian"
+    ],
+    [
+     "war_banner_sashimono_blank",
+     1.5,
+     "war banner sashimono blank"
+    ],
+    [
+     "wooden_bucket",
+     0.4,
+     "wooden bucket"
+    ],
+    [
+     "jian_scabbard",
+     0.9,
+     "scabbard"
+    ]
+   ],
+   "splitNames": [
+    "katana_sheath",
+    "samurai_helmet_kabuto",
+    "samurai_armor_stand",
+    "paper_lantern_red",
+    "chinese_porcelain_vase",
+    "tea_set_tray",
+    "folding_fan",
+    "bamboo_scroll",
+    "chinese_war_drum_stand",
+    "gong",
+    "incense_burner",
+    "bonsai_tree_pot",
+    "rice_straw_bales",
+    "bamboo_basket",
+    "writing_brush_ink_stone",
+    "chinese_sword_jian",
+    "jian_scabbard",
+    "war_banner_sashimono_blank",
+    "wooden_bucket"
+   ]
+  },
+  {
+   "id": "ea_buildings",
+   "kind": "building",
+   "era": "eastasia",
+   "cols": 3,
+   "rows": 2,
+   "heightM": 15.0,
+   "items": [
+    [
+     "japanese_castle_tenshu",
+     30.0,
+     "Japanese castle tenshu"
+    ],
+    [
+     "japanese_wooden_temple",
+     15.0,
+     "Japanese wooden temple"
+    ],
+    [
+     "chinese_pagoda",
+     30.0,
+     "Chinese pagoda"
+    ],
+    [
+     "chinese_palace_hall_yellow_roof",
+     15.0,
+     "Chinese palace hall with yellow roof"
+    ],
+    [
+     "chinese_paifang_gate",
+     8.0,
+     "Chinese paifang gate"
+    ],
+    [
+     "korean_hanok_house",
+     6.0,
+     "Korean hanok house"
+    ]
+   ]
+  },
+  {
+   "id": "ea_structures",
+   "kind": "structure",
+   "era": "eastasia",
+   "cols": 4,
+   "rows": 2,
+   "heightM": 4.0,
+   "items": [
+    [
+     "japanese_torii_gate",
+     6.0,
+     "Japanese torii gate"
+    ],
+    [
+     "chinese_stone_lion_statue",
+     1.5,
+     "Chinese stone lion statue"
+    ],
+    [
+     "arched_stone_bridge",
+     4.0,
+     "arched stone bridge"
+    ],
+    [
+     "wooden_fence",
+     1.5,
+     "wooden fence"
+    ],
+    [
+     "tea_house",
+     5.0,
+     "tea house"
+    ],
+    [
+     "rice_paddy_terrace_patch",
+     1.0,
+     "rice paddy terrace patch"
+    ],
+    [
+     "stone_lantern",
+     1.5,
+     "stone lantern"
+    ],
+    [
+     "village_well",
+     1.2,
+     "village well"
+    ]
+   ]
+  },
+  {
+   "id": "ea_nature",
+   "kind": "nature",
+   "era": "eastasia",
+   "cols": 6,
+   "rows": 2,
+   "heightM": 8.0,
+   "items": [
+    [
+     "bamboo_grove",
+     10.0,
+     "bamboo grove"
+    ],
+    [
+     "cherry_blossom_tree",
+     7.0,
+     "cherry blossom tree"
+    ],
+    [
+     "japanese_pine_tree",
+     8.0,
+     "Japanese pine tree"
+    ],
+    [
+     "red_maple_tree",
+     8.0,
+     "red maple tree"
+    ],
+    [
+     "weeping_willow",
+     10.0,
+     "weeping willow"
+    ],
+    [
+     "plum_blossom_tree",
+     5.0,
+     "plum blossom tree"
+    ],
+    [
+     "lotus_plants",
+     1.0,
+     "lotus plants"
+    ],
+    [
+     "reed_grass",
+     1.5,
+     "reed grass"
+    ],
+    [
+     "rocky_outcrop",
+     3.0,
+     "rocky outcrop"
+    ],
+    [
+     "mountain_pine_rock",
+     6.0,
+     "mountain pine on rock"
+    ],
+    [
+     "moss_garden_rock",
+     1.0,
+     "moss garden rock"
+    ],
+    [
+     "gingko_tree",
+     12.0,
+     "gingko tree"
+    ]
+   ]
+  },
+  {
+   "id": "bg_japan_castle",
+   "bgs": [
+    [
+     "bg_japan_castle",
+     "eastasia",
+     "Japanese castle on stone walls with cherry blossoms"
+    ]
+   ]
+  },
+  {
+   "id": "bg_japan_village",
+   "bgs": [
+    [
+     "bg_japan_village",
+     "eastasia",
+     "Japanese village with thatched houses and rice fields"
+    ]
+   ]
+  },
+  {
+   "id": "bg_japan_temple_courtyard",
+   "bgs": [
+    [
+     "bg_japan_temple_courtyard",
+     "eastasia",
+     "Japanese temple courtyard with torii and stone lanterns"
+    ]
+   ]
+  },
+  {
+   "id": "bg_china_palace",
+   "bgs": [
+    [
+     "bg_china_palace",
+     "eastasia",
+     "Chinese imperial palace courtyard like the Forbidden City"
+    ]
+   ]
+  },
+  {
+   "id": "bg_china_market",
+   "bgs": [
+    [
+     "bg_china_market",
+     "eastasia",
+     "Ancient Chinese market street with shops and lanterns"
+    ]
+   ]
+  },
+  {
+   "id": "bg_china_mountains",
+   "bgs": [
+    [
+     "bg_china_mountains",
+     "eastasia",
+     "Chinese misty mountains with pine trees and river"
+    ]
+   ]
+  },
+  {
+   "id": "bg_mongol_steppe",
+   "bgs": [
+    [
+     "bg_mongol_steppe",
+     "eastasia",
+     "Mongolian steppe with yurts and grassland"
+    ]
+   ]
+  },
+  {
+   "id": "bg_korea_village",
+   "bgs": [
+    [
+     "bg_korea_village",
+     "eastasia",
+     "Korean Joseon village with hanok houses"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ea_battlefield",
+   "bgs": [
+    [
+     "bg_ea_battlefield",
+     "eastasia",
+     "Open field with hills for an Asian battle, banners far away"
+    ]
+   ]
+  },
+  {
+   "id": "bg_ea_sea_coast",
+   "bgs": [
+    [
+     "bg_ea_sea_coast",
+     "eastasia",
+     "Rocky East Asian sea coast with waves"
+    ]
+   ]
+  }
+ ]
+}

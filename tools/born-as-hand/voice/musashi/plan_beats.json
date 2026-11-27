@@ -1,0 +1,5825 @@
+{
+ "total": 531.358,
+ "series": "MIYAMOTO MUSASHI",
+ "turnT": 17.741,
+ "recapT": 456.9678799999999,
+ "beats": [
+  {
+   "t0": 0.0,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_staff",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "MIYAMOTO MUSASHI",
+    "sub": "1584? - 1645",
+    "cast": 0,
+    "t": 1.671
+   }
+  },
+  {
+   "t0": 5.394,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "60+ DUELS",
+    "sub": "never lost",
+    "at": null,
+    "t": 7.214
+   }
+  },
+  {
+   "t0": 9.354,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_oar",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kojiro",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 13.221,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_write",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 15.622,
+   "kind": "bust",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 17.741,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 18.892,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "NO SWORD",
+    "sub": "no master",
+    "at": null,
+    "t": 19.455
+   }
+  },
+  {
+   "t0": 20.086,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_baby",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 23.497,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 25.762,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER I",
+    "title": "Harima"
+   }
+  },
+  {
+   "t0": 27.712,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "japan_civ__japanese_peasant_farmer_straw_hat",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "c. 1584",
+    "sub": "Harima, Japan",
+    "corner": "tl",
+    "t": 27.712
+   }
+  },
+  {
+   "t0": 31.571,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "samurai__samurai_full_armor_walking_katana",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__ashigaru_foot_soldier_yari_spear",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 34.196,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "samurai__samurai_full_armor_walking_katana",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__ashigaru_foot_soldier_yari_spear",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 37.39,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "samurai__samurai_full_armor_walking_katana",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__ashigaru_foot_soldier_yari_spear",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 3
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 40.574,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 42.753,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "SHINMEN MUNISAI",
+    "sub": "your father",
+    "cast": 0,
+    "t": 42.753
+   }
+  },
+  {
+   "t0": 44.458,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 46.983,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "JITTE",
+    "sub": "",
+    "at": null,
+    "t": 47.141
+   }
+  },
+  {
+   "t0": 48.949,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 51.075,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 54.757,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "musashi_boy_stand",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 55.914,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 57.394,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "father_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 59.634,
+   "kind": "scene",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_boy_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "dorin",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 61.598,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 63.327,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "dorin_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "DORIN",
+    "sub": "your uncle",
+    "cast": 0,
+    "t": 64.796
+   },
+   "warm": true
+  },
+  {
+   "t0": 65.483,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 66.982,
+   "kind": "scene",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_boy_stand",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "dorin",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 69.204,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 71.073,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER II",
+    "title": "The First Duel"
+   }
+  },
+  {
+   "t0": 73.023,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1596",
+    "sub": "",
+    "corner": "tl",
+    "t": 73.023
+   }
+  },
+  {
+   "t0": 76.191,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "kihei_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "label": {
+    "text": "ARIMA KIHEI",
+    "sub": "Shinto-ryu",
+    "cast": 0,
+    "t": 77.943
+   }
+  },
+  {
+   "t0": 80.57,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "notice",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 82.108,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "notice",
+     "slot": "cl",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "kihei",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 83.194,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 84.974,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_write",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 86.933,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 88.483,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "dorin",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kihei",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 90.463,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "dorin_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 92.167,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "dorin",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kihei",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 93.381,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 94.803,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "dorin",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kihei",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 96.695,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 98.209,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "dorin",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kihei",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 100.987,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 103.387,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "kihei_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 105.045,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 106.522,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_staff",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "kihei",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "flash": 106.522
+  },
+  {
+   "t0": 108.443,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 108.443
+  },
+  {
+   "t0": 109.601,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_staff",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "kihei",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 109.601
+  },
+  {
+   "t0": 111.363,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 111.363
+  },
+  {
+   "t0": 113.499,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 114.988,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 116.771,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 120.193,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "REMEMBER",
+    "sub": "the sign",
+    "at": null,
+    "t": 120.193
+   },
+   "dark": 0.3
+  },
+  {
+   "t0": 121.726,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER III",
+    "title": "Akiyama"
+   }
+  },
+  {
+   "t0": 123.676,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_boy_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 126.706,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 128.135,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 131.79,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_draw",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__samurai_full_armor_walking_katana",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "AKIYAMA",
+    "sub": "",
+    "cast": 1,
+    "t": 131.79
+   }
+  },
+  {
+   "t0": 132.832,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 134.918,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_draw",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__samurai_full_armor_walking_katana",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 137.626,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 140.119,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_draw",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__samurai_full_armor_walking_katana",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 142.188,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IV",
+    "title": "Sekigahara"
+   }
+  },
+  {
+   "t0": 144.138,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "tag": {
+    "text": "1600",
+    "sub": "",
+    "corner": "tl",
+    "t": 144.138
+   },
+   "smoke": true
+  },
+  {
+   "t0": 147.124,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 150.127,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "SEKIGAHARA",
+    "sub": "",
+    "at": null,
+    "t": 150.127
+   },
+   "smoke": true
+  },
+  {
+   "t0": 151.694,
+   "kind": "paper",
+   "bg": "bg_mu_battle",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "150,000+",
+      "size": "h",
+      "t": 152.503
+     }
+    ]
+   }
+  },
+  {
+   "t0": 154.855,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 156.216,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "samurai__ashigaru_foot_soldier_yari_spear",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "crowd": 4
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 158.071,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 161.113,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 164.746,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 167.605,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3,
+   "smoke": true
+  },
+  {
+   "t0": 169.725,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "RONIN",
+    "sub": "no master",
+    "at": null,
+    "t": 170.304
+   }
+  },
+  {
+   "t0": 171.262,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 173.567,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER V",
+    "title": "The Road"
+   }
+  },
+  {
+   "t0": 175.517,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 177.555,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 179.674,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 181.69,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 182.906,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 184.539,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 186.04,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 188.664,
+   "kind": "scene",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 190.459,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 192.788,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 196.193,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_draw",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 197.882,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 200.714,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 202.935,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 205.515,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 208.469,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_draw",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "mongol_korea__japanese_pirate_wokou_sword",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 211.264,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 215.201,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "japan_civ__buddhist_monk_shaved_head",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 217.977,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 220.609,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VI",
+    "title": "Kyoto"
+   }
+  },
+  {
+   "t0": 222.559,
+   "kind": "scene",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1604",
+    "sub": "Kyoto",
+    "corner": "tl",
+    "t": 222.559
+   }
+  },
+  {
+   "t0": 225.122,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 226.187,
+   "kind": "scene",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "seijuro",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 230.215,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 232.432,
+   "kind": "scene",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "seijuro",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 234.324,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "seijuro_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "label": {
+    "text": "YOSHIOKA SEIJURO",
+    "sub": "",
+    "cast": 0,
+    "t": 234.324
+   }
+  },
+  {
+   "t0": 236.078,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 236.078
+  },
+  {
+   "t0": 238.572,
+   "kind": "scene",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_strike",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "seijuro",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 238.572
+  },
+  {
+   "t0": 241.085,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 241.085
+  },
+  {
+   "t0": 242.428,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "seijuro_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 245.05,
+   "kind": "scene",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "students",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 248.402,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 250.958,
+   "kind": "scene",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "seijuro",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 252.573,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 253.825,
+   "kind": "scene",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_strike",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 253.825
+  },
+  {
+   "t0": 256.078,
+   "kind": "bust",
+   "bg": "bg_mu_kyoto",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 259.043,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VII",
+    "title": "The Pine Tree"
+   }
+  },
+  {
+   "t0": 260.993,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "pine",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 262.614,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 264.198,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "pine",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 266.979,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "ICHIJOJI",
+    "sub": "the pine tree",
+    "at": null,
+    "t": 266.979
+   },
+   "cool": true
+  },
+  {
+   "t0": 268.09,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "students",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 270.314,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 271.846,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "students",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 275.266,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 278.189,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "students",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 279.502,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "cool": true
+  },
+  {
+   "t0": 280.95,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_crouch",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 282.395,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 283.741,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_crouch",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.35
+  },
+  {
+   "t0": 286.442,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "flash": 286.442
+  },
+  {
+   "t0": 288.77,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_two",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "students",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 288.77
+  },
+  {
+   "t0": 290.841,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 293.377,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "TWO SWORDS",
+    "sub": "",
+    "at": null,
+    "t": 293.78
+   },
+   "smoke": true
+  },
+  {
+   "t0": 294.981,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_two",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 296.772,
+   "kind": "bust",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 298.027,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_run",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 300.728,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER VIII",
+    "title": "The Island"
+   }
+  },
+  {
+   "t0": 302.678,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 304.393,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 307.394,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 310.34,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "kojiro",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "1612",
+    "sub": "",
+    "corner": "tl",
+    "t": 310.34
+   }
+  },
+  {
+   "t0": 312.832,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 315.867,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "kojiro_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "label": {
+    "text": "SASAKI KOJIRO",
+    "sub": "",
+    "cast": 0,
+    "t": 315.867
+   }
+  },
+  {
+   "t0": 317.506,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 320.263,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "kojiro",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 322.29,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "THE DRYING POLE",
+    "sub": "",
+    "at": null,
+    "t": 323.53
+   },
+   "dark": 0.2
+  },
+  {
+   "t0": 324.707,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "boat",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 327.502,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "FUNAJIMA",
+    "sub": "",
+    "at": null,
+    "t": 327.502
+   }
+  },
+  {
+   "t0": 328.687,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "boat",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 329.838,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "kojiro_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 332.208,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "kojiro",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 333.434,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_two_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 334.821,
+   "kind": "scene",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_boat",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 337.088,
+   "kind": "bust",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 339.592,
+   "kind": "bust",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 341.747,
+   "kind": "scene",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_carve",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 343.385,
+   "kind": "bust",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 345.153,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 347.165,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "kojiro_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 349.394,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 350.969,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "scabbard",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 353.514,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "bubble": {
+    "text": "You've lost.",
+    "cast": 0,
+    "t": 353.514
+   }
+  },
+  {
+   "t0": 355.771,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 358.285,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_oar",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r",
+     "move": "r"
+    },
+    {
+     "sprite": "kojiro",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 358.285
+  },
+  {
+   "t0": 359.437,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 359.437
+  },
+  {
+   "t0": 360.956,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "kojiro_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "flash": 360.956
+  },
+  {
+   "t0": 362.449,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 363.946,
+   "kind": "scene",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_boat",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 365.622,
+   "kind": "bust",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 367.041,
+   "kind": "bust",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 368.969,
+   "kind": "scene",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_boat",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "move": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "GANRYUJIMA",
+    "sub": "",
+    "at": null,
+    "t": 368.969
+   }
+  },
+  {
+   "t0": 370.376,
+   "kind": "bust",
+   "bg": "bg_ea_sea_coast",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 372.594,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER IX",
+    "title": "The Brush"
+   }
+  },
+  {
+   "t0": 374.544,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 377.089,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 378.498,
+   "kind": "paper",
+   "bg": "bg_mu_road",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "60+ DUELS",
+      "size": "h",
+      "t": 378.498
+     },
+     {
+      "text": "0 LOSSES",
+      "size": "l",
+      "t": 379.828
+     }
+    ]
+   }
+  },
+  {
+   "t0": 380.644,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 381.804,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 383.979,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 384.797,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 387.434,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 389.914,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 391.183,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 393.222,
+   "kind": "scene",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_old_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 396.053,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 398.77,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 401.765,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_old_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__ashigaru_foot_soldier_yari_spear",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 405.758,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 407.71,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 409.21,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_old_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__ashigaru_foot_soldier_yari_spear",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 412.471,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 414.007,
+   "kind": "scene",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_old_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "samurai__ashigaru_foot_soldier_yari_spear",
+     "slot": "r",
+     "place": "ground",
+     "swap": [],
+     "dir": "l",
+     "crowd": 2
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 417.177,
+   "kind": "bust",
+   "bg": "bg_mu_battle",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "smoke": true
+  },
+  {
+   "t0": 419.552,
+   "kind": "scene",
+   "bg": "bg_mu_castle",
+   "cast": [
+    {
+     "sprite": "musashi_old_walk",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "lord",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 422.996,
+   "kind": "bust",
+   "bg": "bg_mu_castle",
+   "cast": [
+    {
+     "sprite": "lord_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "label": {
+    "text": "HOSOKAWA TADATOSHI",
+    "sub": "",
+    "cast": 0,
+    "t": 422.996
+   },
+   "warm": true
+  },
+  {
+   "t0": 426.188,
+   "kind": "bust",
+   "bg": "bg_mu_castle",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "lord_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 429.532,
+   "kind": "scene",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_old_paint",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 431.266,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 432.275,
+   "kind": "scene",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "shrike",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 434.153,
+   "kind": "bust",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 436.509,
+   "kind": "scene",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "shrike",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 439.532,
+   "kind": "chapter",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "chapter": {
+    "label": "CHAPTER X",
+    "title": "The Cave"
+   }
+  },
+  {
+   "t0": 441.482,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 445.6,
+   "kind": "bust",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 448.895,
+   "kind": "bust",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "plate": {
+    "text": "REIGANDO",
+    "sub": "Cave of the Spirit Rock",
+    "at": null,
+    "t": 448.895
+   },
+   "dark": 0.2
+  },
+  {
+   "t0": 450.081,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.2
+  },
+  {
+   "t0": 452.421,
+   "kind": "bust",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 454.977,
+   "kind": "paper",
+   "bg": "bg_mu_cave",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "THE BOOK OF FIVE RINGS",
+      "size": "h",
+      "t": 454.977
+     }
+    ]
+   }
+  },
+  {
+   "t0": 457.211,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "book",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 459.881,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "book",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 461.969,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "book",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 463.646,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "book",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 465.396,
+   "kind": "scene",
+   "bg": "bg_mu_temple",
+   "cast": [
+    {
+     "sprite": "musashi_boy_stand",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 467.792,
+   "kind": "bust",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 470.043,
+   "kind": "bust",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 474.301,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_write",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 475.932,
+   "kind": "bust",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 477.936,
+   "kind": "paper",
+   "bg": "bg_mu_cave",
+   "cast": [],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true,
+   "paper": {
+    "lines": [
+     {
+      "text": "DO NOT REGRET",
+      "size": "h",
+      "t": 479.526
+     }
+    ]
+   }
+  },
+  {
+   "t0": 481.903,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_write",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "tag": {
+    "text": "JUNE 13, 1645",
+    "sub": "",
+    "corner": "tl",
+    "t": 481.903
+   },
+   "dark": 0.4
+  },
+  {
+   "t0": 484.778,
+   "kind": "bust",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.4
+  },
+  {
+   "t0": 486.055,
+   "kind": "scene",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_walk",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 488.871,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "dark": 0.3
+  },
+  {
+   "t0": 491.812,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 493.335,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 494.891,
+   "kind": "scene",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "father",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 497.331,
+   "kind": "bust",
+   "bg": "bg_mu_village",
+   "cast": [
+    {
+     "sprite": "musashi_boy_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 499.853,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_ronin_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 501.716,
+   "kind": "scene",
+   "bg": "bg_mu_pine",
+   "cast": [
+    {
+     "sprite": "musashi_two_two",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 504.173,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_oar",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 506.434,
+   "kind": "scene",
+   "bg": "bg_mu_cave",
+   "cast": [
+    {
+     "sprite": "musashi_old_paint",
+     "slot": "c",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "warm": true
+  },
+  {
+   "t0": 510.081,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 513.729,
+   "kind": "bust",
+   "bg": "bg_mu_road",
+   "cast": [
+    {
+     "sprite": "musashi_adult_bust",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 515.399,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 517.587,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_r",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    },
+    {
+     "sprite": "kojiro_b",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 519.296,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_l",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 523.151,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_oar",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kojiro",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true
+  },
+  {
+   "t0": 524.982,
+   "kind": "bust",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_b_talk",
+     "slot": "c",
+     "place": "ground",
+     "swap": []
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "pull",
+   "keep": true
+  },
+  {
+   "t0": 527.745,
+   "kind": "scene",
+   "bg": "bg_mu_island",
+   "cast": [
+    {
+     "sprite": "musashi_island_oar",
+     "slot": "cl",
+     "place": "ground",
+     "swap": [],
+     "dir": "r"
+    },
+    {
+     "sprite": "kojiro",
+     "slot": "cr",
+     "place": "ground",
+     "swap": [],
+     "dir": "l"
+    }
+   ],
+   "subject": 0,
+   "frame": "wide",
+   "cam": "push",
+   "keep": true,
+   "plate": {
+    "text": "GREATEST EVER?",
+    "sub": "comment below",
+    "at": null,
+    "t": 527.745
+   },
+   "endCard": {
+    "text": "WHO SHOULD BE NEXT?",
+    "sub": "Drop a name in the comments",
+    "t": 527.745
+   }
+  }
+ ],
+ "onsets": [
+  0.4,
+  0.596,
+  0.85,
+  1.163,
+  1.476,
+  1.671,
+  2.219,
+  2.94,
+  3.195,
+  3.508,
+  3.821,
+  4.193,
+  4.447,
+  4.643,
+  5.394,
+  5.733,
+  6.135,
+  6.537,
+  6.875,
+  7.214,
+  7.616,
+  8.018,
+  8.293,
+  8.695,
+  9.354,
+  9.624,
+  9.945,
+  10.215,
+  10.435,
+  10.908,
+  11.432,
+  11.6,
+  11.921,
+  12.192,
+  12.31,
+  12.681,
+  13.221,
+  13.462,
+  13.704,
+  14.168,
+  14.521,
+  14.707,
+  15.004,
+  15.622,
+  15.928,
+  16.406,
+  17.741,
+  17.981,
+  18.332,
+  18.892,
+  19.319,
+  19.455,
+  20.086,
+  20.441,
+  21.286,
+  21.556,
+  22.316,
+  22.576,
+  23.497,
+  23.778,
+  23.901,
+  24.287,
+  24.515,
+  24.953,
+  25.234,
+  27.712,
+  28.231,
+  28.821,
+  28.871,
+  29.416,
+  29.662,
+  31.571,
+  31.846,
+  32.375,
+  32.586,
+  32.798,
+  33.073,
+  33.411,
+  34.196,
+  34.753,
+  35.31,
+  36.036,
+  36.685,
+  37.39,
+  37.928,
+  38.273,
+  38.682,
+  39.156,
+  39.371,
+  39.91,
+  40.574,
+  40.866,
+  41.267,
+  41.449,
+  41.576,
+  42.032,
+  42.753,
+  43.445,
+  44.458,
+  44.75,
+  45.151,
+  45.387,
+  45.898,
+  46.189,
+  46.317,
+  46.983,
+  47.141,
+  47.569,
+  47.93,
+  48.949,
+  49.334,
+  49.808,
+  50.249,
+  51.075,
+  51.322,
+  51.707,
+  51.908,
+  52.062,
+  52.401,
+  52.509,
+  52.848,
+  53.002,
+  53.203,
+  53.45,
+  53.789,
+  53.897,
+  54.236,
+  54.757,
+  55.016,
+  55.395,
+  55.914,
+  56.228,
+  56.687,
+  57.394,
+  57.61,
+  57.955,
+  58.384,
+  58.979,
+  59.634,
+  60.01,
+  60.526,
+  60.902,
+  61.598,
+  61.781,
+  62.074,
+  62.367,
+  62.659,
+  63.327,
+  63.462,
+  64.004,
+  64.429,
+  64.796,
+  65.483,
+  65.642,
+  66.04,
+  66.247,
+  66.407,
+  66.982,
+  67.25,
+  67.922,
+  68.108,
+  68.457,
+  69.204,
+  69.483,
+  69.827,
+  70.365,
+  73.023,
+  73.695,
+  74.873,
+  75.291,
+  76.191,
+  76.341,
+  77.003,
+  77.537,
+  77.943,
+  78.348,
+  78.754,
+  79.16,
+  79.374,
+  79.716,
+  80.57,
+  80.804,
+  81.249,
+  81.413,
+  82.108,
+  82.249,
+  83.194,
+  83.529,
+  83.726,
+  84.016,
+  84.168,
+  84.457,
+  84.974,
+  85.247,
+  85.583,
+  85.793,
+  86.003,
+  86.276,
+  86.933,
+  87.123,
+  87.402,
+  87.636,
+  87.87,
+  88.016,
+  88.483,
+  88.833,
+  89.248,
+  89.466,
+  90.463,
+  90.714,
+  91.117,
+  91.368,
+  92.167,
+  92.511,
+  93.381,
+  93.72,
+  94.059,
+  94.208,
+  94.803,
+  95.163,
+  95.579,
+  95.769,
+  96.185,
+  96.695,
+  96.916,
+  97.203,
+  98.209,
+  98.556,
+  98.984,
+  99.812,
+  100.079,
+  100.987,
+  101.291,
+  101.665,
+  102.227,
+  102.542,
+  103.387,
+  103.721,
+  103.868,
+  104.328,
+  105.045,
+  105.358,
+  105.599,
+  106.522,
+  106.957,
+  107.391,
+  107.688,
+  108.443,
+  108.754,
+  109.601,
+  109.809,
+  110.114,
+  110.322,
+  110.482,
+  110.69,
+  111.363,
+  111.625,
+  111.888,
+  112.15,
+  112.533,
+  112.796,
+  113.499,
+  113.7,
+  114.204,
+  114.466,
+  114.988,
+  115.381,
+  115.88,
+  116.22,
+  116.771,
+  117.081,
+  117.606,
+  117.988,
+  118.513,
+  118.68,
+  119.276,
+  120.193,
+  120.799,
+  121.08,
+  123.676,
+  124.091,
+  124.506,
+  125.216,
+  125.353,
+  125.768,
+  126.052,
+  126.706,
+  127.225,
+  128.135,
+  128.359,
+  128.851,
+  129.515,
+  129.787,
+  130.146,
+  130.302,
+  130.795,
+  131.79,
+  132.832,
+  133.303,
+  133.471,
+  133.69,
+  134.06,
+  134.38,
+  134.918,
+  135.288,
+  135.828,
+  136.128,
+  136.532,
+  136.902,
+  137.626,
+  138.008,
+  138.866,
+  139.098,
+  139.567,
+  140.119,
+  140.356,
+  140.758,
+  140.995,
+  141.287,
+  141.414,
+  141.652,
+  144.138,
+  144.825,
+  145.738,
+  146.23,
+  147.124,
+  147.408,
+  147.953,
+  148.433,
+  148.651,
+  149.262,
+  150.127,
+  151.694,
+  152.026,
+  152.358,
+  152.503,
+  153.021,
+  153.291,
+  153.685,
+  154.265,
+  154.855,
+  155.066,
+  155.278,
+  155.587,
+  156.216,
+  156.527,
+  157.187,
+  157.556,
+  158.071,
+  158.277,
+  158.545,
+  159.081,
+  159.215,
+  159.669,
+  159.875,
+  160.144,
+  160.597,
+  161.113,
+  161.504,
+  161.771,
+  162.303,
+  162.84,
+  163.416,
+  163.683,
+  164.136,
+  164.746,
+  165.09,
+  166.356,
+  166.406,
+  166.741,
+  167.164,
+  167.605,
+  167.826,
+  168.046,
+  168.369,
+  168.692,
+  168.81,
+  169.082,
+  169.725,
+  170.164,
+  170.304,
+  170.683,
+  171.262,
+  171.437,
+  172.064,
+  172.465,
+  172.715,
+  175.517,
+  175.883,
+  176.557,
+  176.854,
+  177.555,
+  178.051,
+  178.548,
+  178.858,
+  179.674,
+  180.393,
+  180.65,
+  181.69,
+  181.918,
+  182.252,
+  182.906,
+  183.128,
+  183.452,
+  183.673,
+  183.946,
+  184.539,
+  184.84,
+  185.28,
+  186.04,
+  186.436,
+  186.67,
+  186.904,
+  187.246,
+  187.534,
+  187.66,
+  187.948,
+  188.664,
+  188.95,
+  189.369,
+  189.589,
+  190.459,
+  190.955,
+  191.699,
+  191.835,
+  192.175,
+  192.788,
+  193.021,
+  193.631,
+  193.864,
+  194.108,
+  194.309,
+  194.596,
+  194.829,
+  195.063,
+  195.35,
+  196.193,
+  196.447,
+  196.702,
+  197.308,
+  197.882,
+  198.038,
+  198.46,
+  198.949,
+  199.171,
+  199.326,
+  199.815,
+  200.038,
+  200.714,
+  201.303,
+  202.027,
+  202.935,
+  203.062,
+  203.893,
+  204.345,
+  204.688,
+  205.515,
+  205.687,
+  206.066,
+  206.187,
+  206.669,
+  206.996,
+  207.168,
+  207.547,
+  207.822,
+  208.469,
+  208.709,
+  209.06,
+  209.355,
+  209.706,
+  210.057,
+  210.352,
+  210.592,
+  211.264,
+  211.522,
+  212.254,
+  212.304,
+  212.728,
+  213.374,
+  213.865,
+  214.279,
+  215.201,
+  215.488,
+  215.721,
+  215.954,
+  216.24,
+  216.473,
+  216.922,
+  217.208,
+  217.977,
+  218.247,
+  218.518,
+  218.94,
+  219.261,
+  219.43,
+  219.65,
+  219.819,
+  220.039,
+  222.559,
+  224.199,
+  225.122,
+  225.495,
+  226.187,
+  226.439,
+  226.75,
+  227.177,
+  227.546,
+  227.973,
+  228.167,
+  228.42,
+  228.905,
+  229.099,
+  229.351,
+  230.215,
+  230.812,
+  231.025,
+  231.302,
+  231.579,
+  232.432,
+  232.672,
+  233.245,
+  233.597,
+  234.324,
+  235.081,
+  236.078,
+  236.315,
+  236.608,
+  236.79,
+  236.918,
+  237.265,
+  237.722,
+  237.96,
+  238.572,
+  238.911,
+  239.632,
+  239.82,
+  240.081,
+  240.499,
+  241.085,
+  241.354,
+  242.428,
+  242.679,
+  242.873,
+  243.182,
+  243.434,
+  243.685,
+  244.169,
+  244.363,
+  245.05,
+  245.381,
+  245.89,
+  247.11,
+  247.487,
+  248.402,
+  248.74,
+  249.312,
+  249.812,
+  250.03,
+  250.958,
+  251.55,
+  252.573,
+  252.912,
+  253.825,
+  254.165,
+  254.935,
+  255.098,
+  255.516,
+  256.078,
+  256.379,
+  256.681,
+  257.121,
+  257.631,
+  258.071,
+  258.373,
+  260.993,
+  261.318,
+  261.644,
+  261.786,
+  262.614,
+  262.841,
+  263.359,
+  264.198,
+  264.418,
+  264.572,
+  264.989,
+  265.341,
+  265.692,
+  266.242,
+  266.979,
+  268.09,
+  268.521,
+  268.815,
+  269.314,
+  269.54,
+  269.699,
+  270.314,
+  270.808,
+  271.234,
+  271.846,
+  272.444,
+  272.976,
+  273.485,
+  273.757,
+  274.274,
+  275.266,
+  276.146,
+  277.146,
+  278.189,
+  278.495,
+  278.743,
+  278.877,
+  279.502,
+  279.878,
+  280.113,
+  280.95,
+  281.144,
+  281.396,
+  281.706,
+  282.395,
+  282.989,
+  283.741,
+  284.177,
+  284.841,
+  285.213,
+  285.649,
+  286.442,
+  286.777,
+  287.111,
+  287.562,
+  287.839,
+  288.173,
+  288.77,
+  289.007,
+  289.408,
+  289.7,
+  289.937,
+  290.175,
+  290.841,
+  291.092,
+  291.297,
+  291.595,
+  291.847,
+  292.051,
+  292.444,
+  292.649,
+  292.806,
+  293.377,
+  293.78,
+  294.107,
+  294.981,
+  295.329,
+  295.596,
+  296.024,
+  296.772,
+  297.025,
+  297.279,
+  298.027,
+  298.311,
+  298.922,
+  299.402,
+  299.817,
+  302.678,
+  302.873,
+  303.068,
+  303.218,
+  303.413,
+  303.608,
+  304.393,
+  304.572,
+  304.804,
+  305.09,
+  305.376,
+  305.715,
+  306.001,
+  306.233,
+  306.492,
+  307.394,
+  307.722,
+  308.494,
+  308.544,
+  308.744,
+  309.134,
+  309.401,
+  309.913,
+  310.34,
+  310.852,
+  311.62,
+  311.912,
+  312.832,
+  313.327,
+  313.585,
+  313.843,
+  314.397,
+  314.714,
+  314.972,
+  315.289,
+  315.867,
+  316.527,
+  317.506,
+  317.791,
+  318.208,
+  318.428,
+  318.713,
+  319.262,
+  320.263,
+  320.646,
+  321.205,
+  321.499,
+  322.29,
+  322.651,
+  323.012,
+  323.237,
+  323.53,
+  324.026,
+  324.707,
+  325.008,
+  325.378,
+  325.609,
+  325.91,
+  326.141,
+  326.303,
+  326.673,
+  327.502,
+  328.687,
+  328.923,
+  329.047,
+  329.208,
+  329.838,
+  330.424,
+  330.69,
+  331.196,
+  331.462,
+  332.208,
+  332.778,
+  333.434,
+  333.968,
+  334.821,
+  335.132,
+  335.385,
+  335.638,
+  335.95,
+  336.086,
+  336.456,
+  337.088,
+  337.298,
+  337.571,
+  337.968,
+  338.179,
+  338.515,
+  338.662,
+  339.061,
+  339.592,
+  339.817,
+  340.042,
+  340.371,
+  340.544,
+  340.822,
+  341.099,
+  341.747,
+  342.076,
+  342.22,
+  342.673,
+  343.385,
+  343.84,
+  344.171,
+  344.44,
+  345.153,
+  345.418,
+  345.866,
+  346.131,
+  346.518,
+  347.165,
+  347.902,
+  348.237,
+  349.394,
+  349.6,
+  349.991,
+  350.258,
+  350.969,
+  351.163,
+  351.588,
+  351.84,
+  352.382,
+  352.691,
+  352.943,
+  353.514,
+  354.047,
+  354.434,
+  354.748,
+  355.136,
+  355.771,
+  355.895,
+  356.284,
+  356.621,
+  356.904,
+  357.134,
+  357.629,
+  358.285,
+  358.523,
+  359.437,
+  359.743,
+  360.26,
+  360.956,
+  361.257,
+  361.648,
+  362.449,
+  363.081,
+  363.946,
+  364.156,
+  364.366,
+  364.624,
+  364.786,
+  365.044,
+  365.622,
+  365.882,
+  366.141,
+  366.401,
+  367.041,
+  367.281,
+  367.688,
+  367.984,
+  368.113,
+  368.353,
+  368.969,
+  370.376,
+  371.004,
+  371.406,
+  371.85,
+  374.544,
+  375.009,
+  375.544,
+  376.23,
+  377.089,
+  377.469,
+  377.798,
+  378.498,
+  378.915,
+  379.333,
+  379.828,
+  380.644,
+  381.033,
+  381.804,
+  382.378,
+  382.953,
+  383.979,
+  384.797,
+  385.048,
+  385.415,
+  385.724,
+  385.975,
+  386.458,
+  387.434,
+  387.678,
+  387.922,
+  388.166,
+  388.636,
+  388.88,
+  389.181,
+  389.914,
+  390.241,
+  391.183,
+  391.423,
+  391.886,
+  392.126,
+  392.422,
+  392.662,
+  393.222,
+  393.414,
+  393.663,
+  394.027,
+  394.449,
+  394.813,
+  395.292,
+  395.541,
+  396.053,
+  396.392,
+  397.143,
+  397.354,
+  397.927,
+  398.77,
+  399.111,
+  399.531,
+  400.22,
+  400.544,
+  401.042,
+  401.765,
+  401.979,
+  402.513,
+  403.285,
+  403.572,
+  403.913,
+  404.127,
+  404.469,
+  404.746,
+  405.088,
+  405.758,
+  405.903,
+  406.543,
+  406.75,
+  407.71,
+  408.066,
+  408.227,
+  408.486,
+  409.21,
+  409.339,
+  409.633,
+  410.037,
+  410.331,
+  410.57,
+  410.975,
+  411.324,
+  411.618,
+  411.912,
+  412.471,
+  412.781,
+  413.234,
+  414.007,
+  414.313,
+  414.761,
+  415.477,
+  416.002,
+  416.238,
+  416.403,
+  417.177,
+  417.4,
+  417.725,
+  417.896,
+  418.068,
+  418.187,
+  418.564,
+  418.735,
+  418.855,
+  419.552,
+  420.242,
+  420.365,
+  421.232,
+  421.282,
+  421.606,
+  422.1,
+  422.438,
+  422.62,
+  422.996,
+  423.825,
+  424.946,
+  425.141,
+  426.188,
+  426.436,
+  426.907,
+  427.229,
+  427.448,
+  427.71,
+  428.308,
+  428.567,
+  429.532,
+  429.768,
+  430.003,
+  430.293,
+  430.474,
+  430.601,
+  431.266,
+  431.546,
+  432.275,
+  432.451,
+  432.853,
+  433.104,
+  433.28,
+  434.153,
+  434.319,
+  435.173,
+  435.598,
+  435.835,
+  436.509,
+  439.109,
+  439.159,
+  439.209,
+  439.259,
+  439.309,
+  441.482,
+  442.087,
+  443.062,
+  443.518,
+  443.977,
+  444.592,
+  445.047,
+  445.6,
+  445.842,
+  446.195,
+  446.492,
+  446.622,
+  446.92,
+  447.106,
+  447.236,
+  447.756,
+  448.054,
+  448.895,
+  450.081,
+  450.373,
+  450.732,
+  450.956,
+  451.248,
+  451.741,
+  452.421,
+  452.744,
+  453.067,
+  453.701,
+  453.943,
+  454.266,
+  454.977,
+  455.313,
+  455.727,
+  455.985,
+  456.399,
+  457.211,
+  458.061,
+  459.111,
+  459.881,
+  460.781,
+  460.971,
+  461.368,
+  461.969,
+  462.105,
+  462.415,
+  462.783,
+  463.646,
+  464.033,
+  464.599,
+  465.396,
+  465.854,
+  466.066,
+  466.279,
+  466.491,
+  466.949,
+  467.161,
+  467.792,
+  468.091,
+  468.39,
+  468.689,
+  468.988,
+  469.286,
+  470.043,
+  470.903,
+  470.953,
+  471.204,
+  471.723,
+  472.029,
+  472.573,
+  472.761,
+  473.209,
+  473.516,
+  473.893,
+  474.301,
+  475.114,
+  475.932,
+  476.245,
+  476.629,
+  476.87,
+  477.936,
+  478.25,
+  478.636,
+  479.526,
+  479.576,
+  479.83,
+  480.361,
+  480.747,
+  481.061,
+  481.448,
+  481.903,
+  482.289,
+  483.113,
+  483.713,
+  484.778,
+  485.256,
+  486.055,
+  486.393,
+  486.668,
+  487.134,
+  487.599,
+  487.81,
+  488.149,
+  488.871,
+  489.482,
+  489.931,
+  490.295,
+  490.579,
+  491.812,
+  492.0,
+  492.414,
+  492.715,
+  493.335,
+  493.527,
+  493.967,
+  494.891,
+  495.064,
+  495.606,
+  495.852,
+  496.247,
+  497.331,
+  497.673,
+  498.015,
+  498.229,
+  498.378,
+  498.72,
+  498.934,
+  499.853,
+  500.625,
+  501.716,
+  501.827,
+  502.128,
+  502.476,
+  502.871,
+  503.077,
+  503.236,
+  503.346,
+  503.6,
+  504.173,
+  504.335,
+  504.843,
+  505.144,
+  505.375,
+  505.606,
+  506.434,
+  506.961,
+  507.192,
+  507.324,
+  507.801,
+  508.194,
+  508.689,
+  508.92,
+  510.081,
+  510.679,
+  511.278,
+  511.517,
+  511.9,
+  512.571,
+  512.81,
+  513.729,
+  514.442,
+  515.399,
+  515.75,
+  516.006,
+  516.357,
+  516.661,
+  516.964,
+  517.587,
+  517.883,
+  518.179,
+  518.475,
+  519.296,
+  519.514,
+  519.667,
+  520.082,
+  520.3,
+  520.453,
+  520.736,
+  521.02,
+  521.369,
+  521.587,
+  522.198,
+  522.482,
+  523.151,
+  523.459,
+  523.86,
+  524.353,
+  524.982,
+  525.234,
+  525.719,
+  525.971,
+  526.513,
+  527.114,
+  527.745,
+  527.965,
+  528.317,
+  528.604,
+  528.956,
+  529.242
+ ]
+}
