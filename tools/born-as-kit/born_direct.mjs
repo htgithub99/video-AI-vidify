@@ -624,13 +624,14 @@ const shapeEvents = (plan, shots) => {
         if (shown.length) sh.outs = [...(sh.outs || []), ...shown.map((x) => [x[0], r3(Math.max(x[3] + EVENTS.textMin, sh.icons.at(-1)[1] - EVENTS.textOut))])];
       } else {
         const at = r3(Math.max(sh.t0, next.t0 - EVENTS.shiftLead)), props = next.actors, n = props.length;
-        const bm = meta(b0.sprite), left = Math.max(face.r, b0.x + (b0.h * bm.w * (1 - (b0.anchorX ?? 0.5))) / bm.h) + EVENTS.shiftDx + EVENTS.insetGap, right = 1920 - EVENTS.insetEdge, room = Math.min(right - left, EVENTS.insetW * (n > 1 ? EVENTS.insetTwoW : 1)) - EVENTS.insetGap * (n - 1);
+        const bm = meta(b0.sprite), left = Math.max(face.r, b0.x + (b0.h * bm.w * (1 - (b0.anchorX ?? 0.5))) / bm.h) + EVENTS.shiftDx + EVENTS.insetGap, right = 1920 - EVENTS.insetEdge, room = Math.min(right - left, EVENTS.insetW);
         const asps = props.map((a) => meta(a.sprite).w / meta(a.sprite).h), h0 = props.map((a, j) => Math.min((EVENTS.insetH * (n > 1 ? EVENTS.insetTwo : 1)) / Math.max(1, n > 1 ? asps[j] : 0), a.h * 3));
-        const k = Math.min(1, room / h0.reduce((u, h, j) => u + h * asps[j], 0)), hs = h0.map((h) => h * k), ws = hs.map((h, j) => h * asps[j]), all = ws.reduce((u, w) => u + w, 0) + EVENTS.insetGap * (n - 1);
-        let x = Math.min(Math.max(EVENTS.insetX - all / 2, left), right - all);
+        const k = Math.min(1, n > 1 ? EVENTS.stackH / (h0.reduce((u, h) => u + h, 0) + EVENTS.insetGap * (n - 1)) : room / (h0[0] * asps[0])), hs = h0.map((h) => h * k), ws = hs.map((h, j) => h * asps[j]);
+        const colW = Math.max(...ws), x = r3(Math.min(Math.max(EVENTS.insetX, left + colW / 2), right - colW / 2)), stack = hs.reduce((u, h) => u + h, 0) + EVENTS.insetGap * (n - 1);
+        let y = Math.max(EVENTS.stackTop, EVENTS.insetY - stack / 2);
         const slid = props.map((a, j) => {
-          const o = { sprite: a.sprite, x: r3(x + ws[j] / 2), y: r3(EVENTS.insetY + hs[j] / 2), h: r3(hs[j]), shadow: false, allow: true, enter: { t: r3(at + EVENTS.shiftDur * EVENTS.insetAfter + j * EVENTS.insetStep), kind: "slide", from: 1 } };
-          x += ws[j] + EVENTS.insetGap;
+          const o = { sprite: a.sprite, x, y: r3(y + hs[j]), h: r3(hs[j]), shadow: false, allow: true, enter: { t: r3(at + EVENTS.shiftDur * EVENTS.insetAfter + j * EVENTS.insetStep), kind: "slide", from: 1 } };
+          y += hs[j] + EVENTS.insetGap;
           return o;
         });
         sh.actors = [{ ...b0, shift: { t: at, dx: EVENTS.shiftDx, dur: EVENTS.shiftDur } }, ...slid];
@@ -655,7 +656,7 @@ const shapeEvents = (plan, shots) => {
   }
   return out;
 };
-const EVENTS = { insetX: 1380, insetY: 470, insetH: 380, insetW: 620, insetTwo: 0.75, insetTwoW: 1.2, insetStep: 0.25, insetGap: 60, insetEdge: 60, shiftDx: -250, shiftDur: 0.6, shiftLead: 0.3, insetAfter: 0.75, textOut: 0.5, textMin: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: VERT ? 13 : 15 };
+const EVENTS = { insetX: 1380, insetY: 470, insetH: 380, insetW: 620, insetTwo: 0.75, insetStep: 0.25, stackH: 820, stackTop: 130, insetGap: 60, insetEdge: 60, shiftDx: -250, shiftDur: 0.6, shiftLead: 0.3, insetAfter: 0.75, textOut: 0.5, textMin: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: VERT ? 13 : 15 };
 const shortName = (t) => { const w = String(t).trim().split(/\s+/), two = w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : w.join(" "); return t.length <= EVENTS.labelChars ? t : two.length <= EVENTS.labelChars ? two : w[w.length - 1]; };
 const iconOf = (plan, text) => { const hit = RULE.icons.find(([w]) => w.test(text)); const sprite = hit && Object.keys(plan.sprites || {}).find((n) => hit[1].test(n)); return sprite ? { sprite, cross: /^NO\b/i.test(String(text).trim()) } : null; };
 export const direct = (plan) => {

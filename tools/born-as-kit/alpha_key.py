@@ -71,7 +71,7 @@ def key(src, dst, session, objects, edge_only):
         flat = level[k] >= bgv - THIN_LEVEL and tone[k] <= THIN_CHROMA
         thin = flat and sizes[k] >= THIN_MIN and (model[k] < MODEL_HOLE or open_hole)
         sliver = objects and open_hole and sizes[k] >= SLIVER_MIN and level[k] >= bgv - SLIVER_LEVEL and tone[k] <= SLIVER_CHROMA
-        kill[i] = i in edge if edge_only else i in edge or hole or thin or sliver or (model[k] < MODEL_BG and level[k] >= bgv - 10)
+        kill[i] = (i in edge or (hole and model[k] < MODEL_HOLE)) if edge_only else i in edge or hole or thin or sliver or (model[k] < MODEL_BG and level[k] >= bgv - 10)
     bg = ndimage.binary_dilation(kill[lab], iterations=1) & (mn >= 200)
     alpha = np.where(bg, 0.0, 1.0)
     near = ~bg & (ndimage.distance_transform_edt(~bg) <= EDGE_PX)
