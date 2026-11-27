@@ -2,7 +2,7 @@ import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js"
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { StudioSelect } from "../../../components/ui/Studio.js";
 import * as MR from "../../../constants/motionRuntime.js";
-import { ChevronDown, ChevronRight, Film, Sparkles, Square } from "lucide-react";
+import { ChevronDown, ChevronRight, Film, FolderOpen, Sparkles, Square, type LucideIcon } from "lucide-react";
 import { FC, useEffect, useId, useLayoutEffect, useRef, useState, type SelectHTMLAttributes } from "react";
 import type { MotionLogEntry, MotionAiActivity, MotionStoryJobState, MotionJobState } from "../../../types/motionVideo.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../../constants/motionAiRecovery.js";
@@ -58,7 +58,8 @@ export const ChipButton: FC<{ active: boolean; onClick: () => void; children: Re
     variant={MR.MOTION_TEXT_UNSTYLED}
     disabled={disabled}
     onClick={onClick}
-    className={cn(MOTION_STYLES.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_MONO_FONT_BOLD_BORDER, active ? MOTION_STYLES.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_SHADOW_PURPLE_600_30_SHADOW_MD : MOTION_STYLES.BORDER_SLATE_800_BG_SLATE_955_80_TEXT_SLATE_300_HOVER_TEXT_WHITE_HOVER_BORDER_PURPLE_500_40_HOVER_BG_SLATE_900, className)}>
+    className={cn(MOTION_STYLES.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_MONO_FONT_BOLD_BORDER, active ? MOTION_STYLES.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_SHADOW_PURPLE_600_30_SHADOW_MD : MOTION_STYLES.BORDER_SLATE_800_BG_SLATE_955_80_TEXT_SLATE_300_HOVER_TEXT_WHITE_HOVER_BORDER_PURPLE_500_40_HOVER_BG_SLATE_900, className)}
+  >
     {children}
   </Button>
 );
@@ -108,7 +109,8 @@ const MotionLogSectionCard: FC<{ section: MotionLogSection; lang: "vi" | "en"; i
           data-motion-log-rows
           onScroll={() => {
             if (box.current) following.current = box.current.scrollHeight - box.current.scrollTop - box.current.clientHeight < LOG.FOLLOW_DISTANCE;
-          }}>
+          }}
+        >
           {rows.length
             ? rows.map((row) => (
                 <div key={row.key} className={LOG.UI.ROW}>
@@ -189,6 +191,12 @@ export const MotionProgressBar: FC<{ progress?: number; minimum?: number; classN
 );
 export const MOTION_LOADING_GLYPH = Sparkles;
 export const MotionLoadingIcon: FC<{ className?: string }> = ({ className = MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0 }) => <MOTION_LOADING_GLYPH className={className} aria-hidden={true} />;
+export const MotionPickButton: FC<{ label: React.ReactNode; loading?: boolean; disabled?: boolean; onClick: () => void; className: string; icon?: LucideIcon; id?: string }> = ({ label, loading = false, disabled = false, onClick, className, icon: Icon = FolderOpen, id }) => (
+  <Button id={id} variant="unstyled" type="button" onClick={onClick} disabled={disabled || loading} aria-busy={loading} className={className}>
+    {loading ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_SHRINK_0} /> : <Icon className={MOTION_STYLES.PICK_BUTTON_ICON} />}
+    <span>{label}</span>
+  </Button>
+);
 export const MotionSelectField: FC<SelectHTMLAttributes<HTMLSelectElement> & { label: React.ReactNode; wrapperClassName?: string; labelClassName?: string }> = ({ label, wrapperClassName = MOTION_STYLES.STEP1_TOGGLE_WRAPPER, labelClassName = MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE, id, children, ...props }) => {
   const generatedId = useId();
   const selectId = id ?? generatedId;

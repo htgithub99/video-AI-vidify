@@ -47,7 +47,7 @@ export const buildBornasShort = async (job: BornasJob, video: BornasVideo, plan:
   );
   const hero = _.maxBy(Object.keys(counts), (id) => counts[id]);
   const bust = hero && plan.sprites[`${hero}${BORNAS_BUSTS.SUFFIX}${BORNAS_SHORT.TALK}`] ? `${hero}${BORNAS_BUSTS.SUFFIX}${BORNAS_SHORT.TALK}` : Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust");
-  const kept = plan.beats.filter((b) => b.t0 < cut - BORNAS_SHORT.BEAT_GAP);
+  const kept = plan.beats.filter((b) => b.t0 < cut - BORNAS_SHORT.BEAT_GAP && b.kind !== "chapter");
   if (!bust || !kept.length) return;
   const t = BORNAS_SHORT_TEXT[job.channel.language] || BORNAS_SHORT_TEXT.en;
   const last = _.findLast(kept, (b) => !!b.bg);

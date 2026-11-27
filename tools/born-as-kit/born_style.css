@@ -12,3 +12,8 @@ html,body{margin:0;background:#000}#root{position:relative;width:1920px;height:1
 .grade-old .vig{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 46%,rgba(38,20,6,.62))}.grade-old .grain{opacity:.5}
 .rwi>img{position:absolute;inset:0}
 .chap{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center}.chl{font:800 50px/1.2 'Alegreya SC','Alegreya Sans SC',serif;letter-spacing:.5em;padding-left:.5em;color:#d6a756;margin-bottom:26px}.cht{font:700 148px/1.14 'Grenze Gotisch','Alegreya Sans',serif;padding-top:.12em;color:#f1e6cf;text-align:center;max-width:1640px;text-shadow:0 0 26px rgba(241,206,150,.45),0 0 64px rgba(214,167,86,.28)}
+
+.fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:40}.fx i{position:absolute;display:block}
+.grade-war .vig{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 50%,rgba(8,12,18,.55))}.grade-war .grain{opacity:.45}
+.grade-warm .vig{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(40,22,6,.45))}
+.grade-anime .grain{opacity:.18}.grade-anime .vig{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 62%,rgba(10,10,30,.35))}

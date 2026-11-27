@@ -19,6 +19,14 @@ const safe = (s) => String(s ?? "").replace(/'/g, "’").replace(/[\\`$]/g, "").
 const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
 const PAPER_W = VERT ? 540 : 1640;
 const OVT_OUT = 2.6;
+const FX = {
+  dust: { n: 26, size: [2, 5], color: "rgba(235,220,190,.55)", dx: [-60, 60], dy: [-40, -120], dur: [7, 12], blur: 0.4 },
+  embers: { n: 18, size: [2, 4], color: "rgba(255,150,70,.6)", dx: [-40, 40], dy: [-220, -420], dur: [5, 9], blur: 0.6 },
+  motes: { n: 22, size: [3, 6], color: "rgba(255,226,160,.45)", dx: [-30, 30], dy: [-60, -140], dur: [8, 14], blur: 1.5 },
+  petals: { n: 12, size: [8, 12], color: "rgba(246,190,205,.7)", dx: [120, 260], dy: [260, 520], dur: [7, 11], blur: 0, petal: true },
+  fog: { n: 5, size: [520, 820], color: "rgba(210,215,225,.08)", dx: [180, 320], dy: [-20, 20], dur: [20, 30], blur: 40, fog: true },
+  ash: { n: 24, size: [2, 4], color: "rgba(205,205,205,.45)", dx: [-50, 50], dy: [60, 160], dur: [8, 13], blur: 0.5 },
+};
 const PAPER_BIG = 1.6;
 const PAPER_OPTICAL = 0.92;
 const PAPER_STAMP_GAP = 150;
@@ -126,7 +134,13 @@ for (let i = 0; i < shots.length; i++) shots[i].t1 = i + 1 < shots.length ? shot
 const camAt = (s, t) => camState(s.cam, s.t0, t);
 const FFMPEG = process.env.FFMPEG || "ffmpeg";
 const SEPIA = "colorchannelmixer=rr=.6965:rg=.3845:rb=.0945:gr=.1745:gg=.843:gb=.084:br=.136:bg=.267:bb=.5655";
-const GRADE = plan.grade === "old" ? `${SEPIA},eq=saturation=0.68:contrast=1.06:brightness=-0.015` : "";
+const GRADES = {
+  old: `${SEPIA},eq=saturation=0.68:contrast=1.06:brightness=-0.015`,
+  war: "eq=saturation=0.74:contrast=1.08:brightness=-0.02,colorbalance=rs=-0.03:bs=0.05:rm=-0.02:bm=0.03",
+  warm: "eq=saturation=1.04:contrast=1.04,colorbalance=rm=0.05:gm=0.02:bm=-0.05:rh=0.03:bh=-0.03",
+  anime: "eq=saturation=1.08:contrast=1.03:brightness=0.01",
+};
+const GRADE = GRADES[plan.grade] || "";
 const BG_Q = "3";
 const BLUR = { W: 1920, SIGMA: 18, DIM: 0.7 };
 const ff = (args) => execFileSync(FFMPEG, ["-y", "-loglevel", "error", ...args], { windowsHide: true });
@@ -221,7 +235,13 @@ for (const s of shots) {
 }
 const css = fs.readFileSync(path.join(KIT, "born_style.css"), "utf8");
 const scripts = ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js", "MotionPathPlugin.min.js", "SplitText.min.js", "CustomEase.min.js", "CustomWiggle.min.js", "noise.min.js", "kit.js"].map((f) => `<script src="${f}"></script>`).join("");
-const out = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts/fonts.css"><style>${css}${VERT ? VERT_CSS : ""}</style></head><body>${spriteDefs()}<div id="root"${plan.grade ? ` class="grade-${plan.grade}"` : ""} data-composition-id="root" data-width="${VERT ? 1080 : 1920}" data-height="${VERT ? 1920 : 1080}" data-start="0" data-duration="${TOTAL}">\n${VERT ? `<div id="stage">${html}</div>` : html}<div class="grain"></div><div class="vig"></div>${VERT && fs.existsSync(path.join(jobDir, "ov.png")) ? '<img id="ovl" src="ov.png">' : ""}${VERT && fs.existsSync(path.join(jobDir, "ovt.png")) ? '<img id="ovt" src="ovt.png">' : ""}<audio id="vo" src="voice.wav" data-start="0" data-duration="${TOTAL}" data-volume="1"></audio></div>${scripts}<script>document.head.insertAdjacentHTML('beforeend','<style>'+BORN_CSS+'</style>');${VERT ? `BORN.TAG_AT=${JSON.stringify(TAG_AT)};` : ''}const tl=gsap.timeline({paused:true});${VERT ? `if(document.getElementById('ovt'))tl.to('#ovt',{opacity:0,duration:.4},${OVT_OUT});` : ''}\n${js}\ntl.to({},{duration:${TOTAL}},0);window.__timelines={root:tl};</script></body></html>`;
+const fxDef = FX[plan.fx];
+const rnd = ((seed) => () => ((seed = (seed * 16807) % 2147483647) / 2147483647))(97);
+const pick = ([a, b]) => a + (b - a) * rnd();
+const fxItems = fxDef ? Array.from({ length: fxDef.n }, (_, i) => ({ i, x: pick([0, 1920]), y: pick([0, 1080]), size: pick(fxDef.size), dx: pick(fxDef.dx), dy: pick(fxDef.dy), dur: pick(fxDef.dur), delay: pick([0, 6]) })) : [];
+const fxHtml = fxDef ? `<div class="fx">${fxItems.map((p) => `<i id="fx${p.i}" style="left:${p.x.toFixed(0)}px;top:${p.y.toFixed(0)}px;width:${p.size.toFixed(1)}px;height:${(fxDef.petal ? p.size * 0.62 : fxDef.fog ? p.size * 0.32 : p.size).toFixed(1)}px;background:${fxDef.color};border-radius:${fxDef.petal ? "60% 0" : "50%"};filter:blur(${fxDef.blur}px)"></i>`).join("")}</div>` : "";
+const fxJs = fxItems.map((p) => `tl.fromTo('#fx${p.i}',{x:0,y:0,opacity:0,rotation:0},{keyframes:[{opacity:1,duration:${(p.dur * 0.2).toFixed(2)}},{opacity:1,duration:${(p.dur * 0.6).toFixed(2)}},{opacity:0,duration:${(p.dur * 0.2).toFixed(2)}}],x:${p.dx.toFixed(0)},y:${p.dy.toFixed(0)},rotation:${fxDef.petal ? 220 : 0},ease:'none',repeat:${Math.max(0, Math.floor((TOTAL - p.delay) / p.dur) - 1)}},${p.delay.toFixed(2)});`).join("");
+const out = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts/fonts.css"><style>${css}${VERT ? VERT_CSS : ""}</style></head><body>${spriteDefs()}<div id="root"${plan.grade ? ` class="grade-${plan.grade}"` : ""} data-composition-id="root" data-width="${VERT ? 1080 : 1920}" data-height="${VERT ? 1920 : 1080}" data-start="0" data-duration="${TOTAL}">\n${VERT ? `<div id="stage">${html}${fxHtml}</div>` : html + fxHtml}<div class="grain"></div><div class="vig"></div>${VERT && fs.existsSync(path.join(jobDir, "ov.png")) ? '<img id="ovl" src="ov.png">' : ""}${VERT && fs.existsSync(path.join(jobDir, "ovt.png")) ? '<img id="ovt" src="ovt.png">' : ""}<audio id="vo" src="voice.wav" data-start="0" data-duration="${TOTAL}" data-volume="1"></audio></div>${scripts}<script>document.head.insertAdjacentHTML('beforeend','<style>'+BORN_CSS+'</style>');${VERT ? `BORN.TAG_AT=${JSON.stringify(TAG_AT)};` : ''}const tl=gsap.timeline({paused:true});${fxJs}${VERT ? `if(document.getElementById('ovt'))tl.to('#ovt',{opacity:0,duration:.4},${OVT_OUT});` : ''}\n${js}\ntl.to({},{duration:${TOTAL}},0);window.__timelines={root:tl};</script></body></html>`;
 fs.mkdirSync(path.join(jobDir, "png"), { recursive: true });
 fs.writeFileSync(path.join(jobDir, "index.html"), out);
 for (const n of pngUsed()) {

@@ -19,6 +19,7 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
     prevBg = "",
     current: string | undefined;
   const recent: string[] = [];
+  let prevSig = "";
   for (const b of beats) {
     if (b.kind !== "scene" || !b.bg || b.montage || b.endCard) {
       last = b.kind;
@@ -60,7 +61,12 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
       if (keep.bubble) b.bubble = { ...keep.bubble, cast: at };
       b.subject = 0;
     }
-    stats[comp] = (stats[comp] || 0) + 1;
+    const sig = JSON.stringify([b.kind, b.bg, b.cast.map((c) => c.sprite), b.slot]);
+    if (comp === "wide" && sig === prevSig) {
+      b.frame = "medium";
+      stats.punch = (stats.punch || 0) + 1;
+    } else stats[comp] = (stats[comp] || 0) + 1;
+    prevSig = sig;
     last = comp;
     k++;
   }

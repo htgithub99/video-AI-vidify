@@ -1,12 +1,12 @@
 import type { FC } from "react";
-import { Clock, Monitor, PauseCircle, Play, Plus, Radio, Rocket, RotateCcw, Trash2 } from "lucide-react";
+import { Clock, Film, Monitor, PauseCircle, Play, Plus, Radio, Rocket, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.js";
 import { StudioDeleteConfirm, useStudioDeleteConfirm } from "../../../components/common/StudioDeleteConfirm.js";
 import { StudioCard, StudioFieldset, StudioInput } from "../../../components/ui/Studio.js";
 import { MOTION_VOICE_CHANNEL_TEXT } from "../../../constants/motionVoice.js";
 import { MOTION_LANGUAGES, MOTION_LANGUAGE_CODES } from "../../../constants/motionLanguages/index.js";
 import { cn } from "../../../lib/utils.js";
-import { ActionBtn, MotionStatCard, StepHeader, StopBtn } from "../../motion/components/MotionControls.js";
+import { ActionBtn, MotionPickButton, MotionStatCard, StepHeader, StopBtn } from "../../motion/components/MotionControls.js";
 import { MotionNoticeHint } from "../../motion/components/MotionNoticeHint.js";
 import { MotionSettingsGroup } from "../../motion/components/MotionSettingsGroup.js";
 import { MOTION_NOTICE_IDS } from "../../motion/constants/motionNotices.js";
@@ -40,9 +40,7 @@ export const BornasSetupCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({
               <Trash2 className={S.ICON} />
               <span>{text.CHANNEL_DELETE}</span>
             </Button>
-            <Button variant="unstyled" onClick={() => void studio.pickSource()} disabled={locked} className={S.LINK_BUTTON}>
-              {text.PICK_FILE}
-            </Button>
+            <MotionPickButton label={text.PICK_FILE} icon={Film} loading={studio.picking} disabled={locked} onClick={() => void studio.pickSource()} className={S.LINK_BUTTON} />
           </>
         }
       />

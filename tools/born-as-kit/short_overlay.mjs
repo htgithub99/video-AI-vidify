@@ -24,7 +24,7 @@ const b = await chromium.launch({ ...(process.env.CHROME ? { executablePath: pro
 const p = await b.newPage({ viewport: { width: 1080, height: 1920 } });
 await p.goto(url(f));
 await p.evaluate(() => document.fonts.ready);
-for (const [part, file] of [["title", "ovt.png"], ["cta", "ov.png"]]) {
+for (const [part, file] of [["title", "ovt.png"]]) {
   await p.evaluate((c) => (document.body.className = c), part);
   await p.screenshot({ path: path.join(dir, file), omitBackground: true });
 }

@@ -29,6 +29,7 @@ import { FC, useEffect, useRef, useState } from "react";
 import _ from "lodash";
 import { ArrowDown, ArrowUp, Bot, CheckSquare, Clock, FolderOpen, HardDrive, ImageIcon, Music, Pause, Play, Sparkles, Square, Trophy, Upload, X } from "lucide-react";
 import { Button } from "../../../components/ui/Button.js";
+import { MotionLoadingIcon, MotionPickButton } from "../../motion/components/MotionControls.js";
 import { cn } from "../../../lib/utils.js";
 import { formatCleanTime } from "../../../lib/timeUtils.js";
 import { VideoExporterState } from "../hooks/useVideoExporter.js";
@@ -108,12 +109,7 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
         <VideoExportSectionHeading step={text.STEP_01} title={text.SOURCE_TITLE} icon={FolderOpen} titleClassName={cn(RT_SHARED.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100)} iconClassName={cn(RT_SHARED.W_3_5_H_3_5_TEXT_PURPLE_400)}>
           <span className={cn(RT_VIDEO_EXPORT.PX_1_5_PY_0_5_ROUNDED_TEXT_9PX_BG)}>{text.SOURCE_BADGE}</span>
         </VideoExportSectionHeading>
-        {(hasSource || isScanning || isRestoring) && (
-          <Button id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_CHANGE_FOLDER} variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={exporter.selectFolder} disabled={isBusy || isScanning || isRestoring} className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_SEMIBOLD_TEXT_PURPLE_400_HOVER_TEXT_PURPLE)}>
-            <FolderOpen className={cn(RT_SHARED.W_3_5_H_3_5)} />
-            <span>{text.CHANGE_FOLDER_BTN}</span>
-          </Button>
-        )}
+        {(hasSource || isScanning || isRestoring) && <MotionPickButton id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_CHANGE_FOLDER} label={text.CHANGE_FOLDER_BTN} loading={isScanning} disabled={isBusy || isRestoring} onClick={() => void exporter.selectFolder()} className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_SEMIBOLD_TEXT_PURPLE_400_HOVER_TEXT_PURPLE)} />}
       </div>
       {isRestoring ? (
         <div className={cn(RT_VIDEO_EXPORT.PY_10_PX_6_ROUNDED_2XL_BG_SLATE_950_40)}>
@@ -138,7 +134,7 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
         </div>
       ) : !hasSource ? (
         <Button id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PICK_FOLDER} variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={exporter.selectFolder} disabled={isBusy} className={cn(RT_VIDEO_EXPORT.W_FULL_MIN_H_240PX_BORDER_2_BORDER_DASHED_ROUNDED)}>
-          <div className={cn(RT_SHARED.W_12_H_12_ROUNDED_2XL_BG_SLATE_900_BORDER)}>{isScanning ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_6_H_6_TEXT_PURPLE_400_ANIMATE_SPIN)} /> : <Upload className={cn(RT_SHARED.W_6_H_6_TEXT_PURPLE_400_GROUP_HOVER_TEXT)} />}</div>
+          <div className={cn(RT_SHARED.W_12_H_12_ROUNDED_2XL_BG_SLATE_900_BORDER)}>{isScanning ? <MotionLoadingIcon className={cn(RT_VIDEO_EXPORT.W_6_H_6_TEXT_PURPLE_400_ANIMATE_SPIN)} /> : <Upload className={cn(RT_SHARED.W_6_H_6_TEXT_PURPLE_400_GROUP_HOVER_TEXT)} />}</div>
           <p className={cn(RT_SHARED.TEXT_SM_FONT_MEDIUM_TEXT_SLATE_200)}>{isScanning ? text.SOURCE_SCANNING : text.SOURCE_PICK_TITLE}</p>
           <p className={cn(RT_VIDEO_EXPORT.TEXT_XS_TEXT_SLATE_400_MT_1)}>{text.SOURCE_PICK_HINT}</p>
         </Button>
@@ -272,7 +268,8 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
                           type={VIDEO_EXPORT_TEXT_BUTTON}
                           onClick={() => exporter.toggleImage(item.id)}
                           title={item.relativePath}
-                          className={cn(RT_VIDEO_EXPORT.RELATIVE_GROUP_ROUNDED_XL_OVERFLOW_HIDDEN_BORDER_2_ASPECT_VIDEO, { "border-purple-500 shadow-md shadow-purple-500/20": isSelected, "border-slate-800 opacity-50 hover:opacity-80": !isSelected })}>
+                          className={cn(RT_VIDEO_EXPORT.RELATIVE_GROUP_ROUNDED_XL_OVERFLOW_HIDDEN_BORDER_2_ASPECT_VIDEO, { "border-purple-500 shadow-md shadow-purple-500/20": isSelected, "border-slate-800 opacity-50 hover:opacity-80": !isSelected })}
+                        >
                           <img src={item.url} alt={item.name} loading={VIDEO_EXPORT_TEXT_LAZY} className={cn(RT_VIDEO_EXPORT.W_FULL_H_FULL_OBJECT_COVER_GROUP_HOVER_SCALE_105)} />
                           <span className={cn(RT_VIDEO_EXPORT.ABSOLUTE_TOP_1_5_LEFT_1_5_W_5_H, isSelected ? RT_VIDEO_EXPORT.BG_PURPLE_600_TEXT_WHITE : RT_VIDEO_EXPORT.BG_SLATE_900_80_TEXT_SLATE_400)}>{isSelected ? displayOrder : VIDEO_EXPORT_TEXT_SYMBOL_8}</span>
                           <span className={cn(RT_VIDEO_EXPORT.ABSOLUTE_BOTTOM_0_INSET_X_0_PX_2_PY_1)}>{item.name}</span>

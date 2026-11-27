@@ -22,8 +22,6 @@ import {
   SOURCE_TEXT_W_3_5_H_3_5_TEXT,
   SOURCE_TEXT_PX_1_5_PY_0_2_ROUNDED_3,
   SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5,
-  SOURCE_TEXT_W_8_H_8_BG_TRANSPARENT_HOVER,
-  SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT,
   SOURCE_TEXT_W_4_H_4_SHRINK_0,
   SOURCE_TEXT_W_8_H_8_BG_TRANSPARENT_HOVER_2,
   SOURCE_TEXT_SR_ONLY,
@@ -202,6 +200,8 @@ import { Download, FolderOpen, FolderPlus, Music2, Shuffle, Trash2, Sparkles, Sl
 import { toast } from "sonner";
 import { Button } from "../../../components/ui/Button";
 import { Tooltip } from "../../../components/ui/Tooltip";
+import { MotionPickButton } from "../../motion/components/MotionControls.js";
+import { REUP_STYLES } from "../../reup/constants/reupStyles.js";
 import { Modal } from "../../../components/ui/Modal";
 import { Lang } from "../../../lib/lang.js";
 import { MUSIC_MIXER_TEXTS } from "../../../constants/texts";
@@ -799,11 +799,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                   </h3>
                 </div>
                 <div className={cn(SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5)}>
-                  <Tooltip content={isSelectingFolder ? text.SELECTING_FOLDER : text.PICK_FOLDER_BTN} align={SOURCE_TEXT_END}>
-                    <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={chooseFolder} disabled={isBusy || isSelectingFolder} className={cn(SOURCE_TEXT_W_8_H_8_BG_TRANSPARENT_HOVER)}>
-                      {isSelectingFolder ? <Sparkles className={SOURCE_TEXT_W_4_H_4_ANIMATE_SPIN_TEXT} /> : <FolderPlus className={cn(SOURCE_TEXT_W_4_H_4_SHRINK_0)} />}
-                    </Button>
-                  </Tooltip>
+                  <MotionPickButton label={isSelectingFolder ? text.SELECTING_FOLDER : text.PICK_FOLDER_BTN} icon={FolderPlus} loading={isSelectingFolder} disabled={isBusy} onClick={chooseFolder} className={REUP_STYLES.LINK_BUTTON} />
                   {tracks.length > 0 && (
                     <Tooltip content={text.CLEAR_ALL_BTN} align={SOURCE_TEXT_END}>
                       <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleClearAll} disabled={isBusy} className={cn(SOURCE_TEXT_W_8_H_8_BG_TRANSPARENT_HOVER_2)}>

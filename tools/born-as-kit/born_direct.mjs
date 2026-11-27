@@ -114,6 +114,8 @@ const RULE = {
   twoScale: 0.92,
   bustS: 1.05,
   bustSink: 0.06,
+  punchStep: 0.12,
+  punchCycle: 3,
   panY: 0.0015,
   bustNativeMax: 1.6,
   motionCycle: ["push", "push", "pull", "push", "hold"],
@@ -649,7 +651,9 @@ export const direct = (plan) => {
       const key = list.map((c) => c.sprite).join("+");
       const bRepeat = lastBust.sprite === key && lastBust.t1 >= beat.t0 - 0.05;
       const bSlot = bRepeat ? (lastBust.slot + 1) % RULE.bustXs.length : beat.slot ?? 0;
-      lastBust = { sprite: key, slot: bSlot, t1 };
+      const bStep = bRepeat ? (lastBust.step || 0) + 1 : 0;
+      lastBust = { sprite: key, slot: bSlot, t1, step: bStep };
+      const punch = 1 + RULE.punchStep * (bStep % RULE.punchCycle);
       const xs = VERT ? [960] : two ? RULE.twoXs.slice(0, list.length) : [RULE.bustXs[bSlot]];
       const hOf = (n) => Math.min(RULE.babyRe.test(n) ? RULE.babyH * (VERT ? RULE.vertBust : 1) : RULE.bustH * (VERT ? RULE.vertBust : two ? RULE.twoScale : 1), meta(n).h * RULE.bustNativeMax);
       const hs = list.map((c) => hOf(c.sprite)), hm = Math.min(...hs);
@@ -657,7 +661,7 @@ export const direct = (plan) => {
       const bx = two ? 960 : xs[0], bSide = bx < 960 ? 1 : bx > 960 ? -1 : (bi % 2 ? 1 : -1);
       const px = two ? 960 : bx < 960 ? 1420 : bx > 960 ? 500 : 960;
       const d = t1 - beat.t0, rate = beat.cam === "pull" ? -RULE.pullRate : hook ? RULE.hookPush : RULE.push;
-      const s0 = rate < 0 ? RULE.bustS * (1 + Math.abs(rate) * d) : RULE.bustS, s1 = rate < 0 ? RULE.bustS : RULE.bustS * (1 + rate * d);
+      const s0 = punch * (rate < 0 ? RULE.bustS * (1 + Math.abs(rate) * d) : RULE.bustS), s1 = punch * (rate < 0 ? RULE.bustS : RULE.bustS * (1 + rate * d));
       const lab = beat.label ? acts[Math.min(acts.length - 1, beat.label.cast || 0)] : null;
       const bub = beat.bubble ? acts[Math.min(acts.length - 1, beat.bubble.cast || 0)] : null;
       const mouth = (a) => {

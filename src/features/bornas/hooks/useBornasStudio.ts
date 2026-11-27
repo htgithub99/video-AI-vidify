@@ -133,9 +133,15 @@ export const useBornasStudio = (lang: Lang) => {
     },
     [channels, text.CHANNEL_NEW],
   );
+  const [picking, setPicking] = useState(false);
   const pickSource = useCallback(async () => {
-    const res = await motionRequest<{ filePath?: string }>(API_ROUTES.PIPELINE_SELECT_FILE, {}).catch(() => null);
-    if (res?.filePath) await loadSource(res.filePath);
+    setPicking(true);
+    try {
+      const res = await motionRequest<{ filePath?: string }>(API_ROUTES.PIPELINE_SELECT_FILE, {}).catch(() => null);
+      if (res?.filePath) await loadSource(res.filePath);
+    } finally {
+      setPicking(false);
+    }
   }, [loadSource]);
   const act = useCallback(async (url: string, body: unknown) => {
     setBusy(true);
@@ -187,6 +193,6 @@ export const useBornasStudio = (lang: Lang) => {
     [job, openJob, reloadResults],
   );
   const newJob = useCallback(() => setJob(null), []);
-  return { lang, text, loaded, channels, channel, selectChannel, patchChannel, addChannel, removeChannel, ai, setAi, sourcePath, setSourcePath, sample, loadSource, pickSource, busy, running, job, openJob, results, reloadResults, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, approve, rerun, resume, resumeStep, saveVideo, deleteVideos, newJob };
+  return { lang, text, loaded, channels, channel, selectChannel, patchChannel, addChannel, removeChannel, ai, setAi, sourcePath, setSourcePath, sample, loadSource, pickSource, picking, busy, running, job, openJob, results, reloadResults, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, approve, rerun, resume, resumeStep, saveVideo, deleteVideos, newJob };
 };
 export type BornasStudio = ReturnType<typeof useBornasStudio>;

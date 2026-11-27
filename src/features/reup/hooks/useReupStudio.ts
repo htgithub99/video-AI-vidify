@@ -136,10 +136,16 @@ export const useReupStudio = (lang: Lang) => {
     return () => clearInterval(timer);
   }, [job?.id, job?.status, reloadResults]);
   const patch = useCallback((value: Partial<ReupSettings>) => setPresetSettings((all) => ({ ...all, [preset]: cleanReupSettings({ ...(all[preset] || reupPresetDefaults(preset)), ...value }, preset) })), [preset]);
+  const [picking, setPicking] = useState(false);
   const pick = useCallback(
     async (url: string, key: "filePath" | "folderPath") => {
-      const res = await motionRequest<Record<string, string>>(url, {}).catch(() => null);
-      if (res?.[key]) await loadSource(res[key]);
+      setPicking(true);
+      try {
+        const res = await motionRequest<Record<string, string>>(url, {}).catch(() => null);
+        if (res?.[key]) await loadSource(res[key]);
+      } finally {
+        setPicking(false);
+      }
     },
     [loadSource],
   );
@@ -182,6 +188,6 @@ export const useReupStudio = (lang: Lang) => {
   }, []);
   const newJob = useCallback(() => setJob(null), []);
   const selectPreset = useCallback((id: ReupPresetId) => setPreset(reupPreset(id).id), []);
-  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, reused, loadSource, pickSource, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, rerollThumb, resume, resumeStep, rerun, exportVideo, approveScript, saveVideo, newJob };
+  return { text, loaded, preset, selectPreset, settings, patch, sourcePath, setSourcePath, source, reused, loadSource, pickSource, picking, rights, setRights, busy, running, job, openJob, results, deleteResults, voiceChannels, reloadVoiceChannels, start, cancel, rerollThumb, resume, resumeStep, rerun, exportVideo, approveScript, saveVideo, newJob };
 };
 export type ReupStudio = ReturnType<typeof useReupStudio>;

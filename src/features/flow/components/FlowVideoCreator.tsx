@@ -56,6 +56,7 @@ import { getErrorMessage } from "../../../utils/errorUtils";
 import { useEffect, useState } from "react";
 import { Film, FolderOpen, Sparkles, Check, Trash2, AlertTriangle, Video, Play, Flame, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
+import { MotionLoadingIcon } from "../../motion/components/MotionControls.js";
 import { recordWorkflowActivity } from "../../../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../../../constants/workflowActivity";
 import { stringifyJson } from "../../../lib/jsonStringify";
@@ -127,6 +128,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
   });
   const [showSettings, setShowSettings] = useState(false);
   const [busy, setBusy] = useState<"planning" | "generating" | null>(null);
+  const [isSelectingFolder, setIsSelectingFolder] = useState(false);
   const [progress, setProgress] = useState("");
   const { copiedKey: copiedPromptId, copyText: copyPrompt } = useClipboardFeedback({ language: currentLang });
   const { copiedKey: copiedAllKey, copyText: copyAll } = useClipboardFeedback({ language: currentLang });
@@ -221,6 +223,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
     }
   };
   const chooseFolder = async () => {
+    setIsSelectingFolder(true);
     try {
       const response = await fetch(API_ROUTES.PIPELINE_SELECT_FOLDER, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON } });
       const data = await response.json();
@@ -231,6 +234,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
       }
     } catch (error) {
       toast.error(getErrorMessage(error, flowTexts.SELECT_FOLDER_ERROR));
+    } finally {
+      setIsSelectingFolder(false);
     }
   };
   const post = async (url: string, body: object) => {
@@ -433,7 +438,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                 <StudioDisclosureButton type={SOURCE_TEXT_BUTTON} onClick={() => setShowSettings(!showSettings)} disabled={!!busy} expanded={showSettings} label={<>{flowTexts.AI_SETTINGS}</>} />
               </div>
             </>
-          }></StudioHeader>
+          }
+        ></StudioHeader>
         {showSettings && (
           <StudioFieldset disabled={!!busy} className={cn(RT_FLOW.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80)}>
             <ChatPlanningSettingsBlock
@@ -480,7 +486,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                         type={SOURCE_TEXT_BUTTON}
                         disabled={!!busy}
                         onClick={() => setRequest(sample.text)}
-                        className={cn(RT_FLOW.RELATIVE_H_8_PX_3_ROUNDED_XL_BORDER_FONT_BOLD, { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 !text-slate-300 hover:!text-white hover:border-purple-500/40 hover:bg-slate-900/90": !isSelected })}>
+                        className={cn(RT_FLOW.RELATIVE_H_8_PX_3_ROUNDED_XL_BORDER_FONT_BOLD, { "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 text-white shadow-purple-600/30 shadow-md scale-[1.02]": isSelected, "bg-slate-955/90 border-slate-800 !text-slate-300 hover:!text-white hover:border-purple-500/40 hover:bg-slate-900/90": !isSelected })}
+                      >
                         <span>{sample.title}</span>
                       </Button>
                     );
@@ -495,7 +502,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                 type={SOURCE_TEXT_BUTTON}
                 disabled={!!busy || !request.trim()}
                 onClick={plan}
-                className={cn(RT_FLOW.W_FULL_H_10_PX_4_ROUNDED_XL_TEXT_XS, { "bg-purple-600/50 text-purple-200 border border-purple-400/30 cursor-wait": busy === FLOW_BUSY_STATES.PLANNING, "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border border-purple-400/30 shadow-purple-600/20 active:scale-98": !(busy === FLOW_BUSY_STATES.PLANNING) })}>
+                className={cn(RT_FLOW.W_FULL_H_10_PX_4_ROUNDED_XL_TEXT_XS, { "bg-purple-600/50 text-purple-200 border border-purple-400/30 cursor-wait": busy === FLOW_BUSY_STATES.PLANNING, "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border border-purple-400/30 shadow-purple-600/20 active:scale-98": !(busy === FLOW_BUSY_STATES.PLANNING) })}
+              >
                 {busy === FLOW_BUSY_STATES.PLANNING ? (
                   <>
                     <Sparkles className={cn(RT_FLOW.W_4_H_4_ANIMATE_SPIN_SHRINK_0_TEXT_FUCHSIA)} />
@@ -524,9 +532,9 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
               <FlowVideoProductionSettings config={productionConfig} onChange={setProductionConfig} disabled={!!busy} texts={flowTexts} hasCharacterImages={characterImages.length > 0} />
               <FlowVideoCharacterImages images={characterImages} disabled={!!busy || !projectId || !characterImagesLoaded || isReadingCharacterImages} texts={flowTexts} onAdd={addCharacterImages} onRemove={(id) => setCharacterImages((current) => _.filter(current, (image) => image.id !== id))} />
               <div className={cn(RT_FLOW.GRID_GRID_COLS_1_SM_GRID_COLS_12_GAP_2)}>
-                <div onClick={!busy ? chooseFolder : undefined} className={cn(RT_FLOW.SM_COL_SPAN_7_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP, { "border-purple-500/40 hover:border-purple-500": folderPath, "border-dashed border-slate-700 hover:border-purple-500/60": !folderPath }, { "opacity-50 cursor-not-allowed": busy, "cursor-pointer": !busy })}>
+                <div onClick={!busy && !isSelectingFolder ? chooseFolder : undefined} aria-busy={isSelectingFolder} className={cn(RT_FLOW.SM_COL_SPAN_7_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP, { "border-purple-500/40 hover:border-purple-500": folderPath, "border-dashed border-slate-700 hover:border-purple-500/60": !folderPath }, { "opacity-50 cursor-not-allowed": busy, "cursor-pointer": !busy })}>
                   <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_2_MIN_W_0)}>
-                    <FolderOpen className={cn(RT_SHARED.W_4_H_4_TEXT_PURPLE_400_SHRINK_0)} />
+                    {isSelectingFolder ? <MotionLoadingIcon /> : <FolderOpen className={cn(RT_SHARED.W_4_H_4_TEXT_PURPLE_400_SHRINK_0)} />}
                     <span className={cn(RT_FLOW.TEXT_XS_FONT_MEDIUM_TEXT_SLATE_200_TRUNCATE)}>{folderPath || flowTexts.SELECT_FOLDER}</span>
                   </div>
                   <span className={cn(RT_FLOW.TEXT_11PX_FONT_SEMIBOLD_TEXT_PURPLE_300_SHRINK_0)}>{folderPath ? flowTexts.CHANGE : flowTexts.BROWSE}</span>
@@ -540,7 +548,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                     "border border-slate-800 bg-slate-800/40 text-slate-500 cursor-not-allowed shadow-none": (!readyClipsCount && !recoverableVideosCount && !unsavedVideosCount) || !folderPath,
                     "border border-rose-500/40 bg-rose-950/80 text-rose-300 cursor-wait animate-pulse": !((!readyClipsCount && !recoverableVideosCount && !unsavedVideosCount) || !folderPath) && busy === FLOW_BUSY_STATES.GENERATING,
                     "border border-rose-500/40 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-rose-600/30 cursor-pointer active:scale-98": !((!readyClipsCount && !recoverableVideosCount && !unsavedVideosCount) || !folderPath) && !(busy === FLOW_BUSY_STATES.GENERATING),
-                  })}>
+                  })}
+                >
                   {busy === FLOW_BUSY_STATES.GENERATING ? (
                     <>
                       <Sparkles className={cn(RT_FLOW.W_4_H_4_ANIMATE_SPIN_SHRINK_0_TEXT_WHITE)} />
@@ -590,7 +599,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                         "border-rose-500/30": !(clip.status === FLOW_CLIP_STATUSES.DONE) && clip.status === FLOW_CLIP_STATUSES.FAILED,
                         "border-purple-500/60 ring-1 ring-purple-500/20": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && clip.status === FLOW_CLIP_STATUSES.GENERATING,
                         "border-slate-800/80": !(clip.status === FLOW_CLIP_STATUSES.DONE) && !(clip.status === FLOW_CLIP_STATUSES.FAILED) && !(clip.status === FLOW_CLIP_STATUSES.GENERATING),
-                      })}>
+                      })}
+                    >
                       <span className={cn(RT_FLOW.W_5_H_5_ROUNDED_MD_BG_PURPLE_500_10)}>{index + 1}</span>
                       <p className={cn(RT_FLOW.FLEX_1_MIN_W_0_TEXT_XS_TEXT_SLATE_200)} title={clip.prompt}>
                         {clip.prompt}
@@ -652,7 +662,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                       "border-rose-500/30": !isDone && isFailed,
                       "border-purple-500/60 ring-1 ring-purple-500/20 animate-pulse": !isDone && !isFailed && isGenerating,
                       "border-slate-800": !isDone && !isFailed && !isGenerating,
-                    })}>
+                    })}
+                  >
                     <div className={cn(RT_FLOW.RELATIVE_ASPECT_VIDEO_BG_BLACK_FLEX_ITEMS_CENTER_JUSTIFY_CENTER)}>
                       {clip.url ? (
                         <div onClick={() => setPreviewVideoUrl(clip.url || null)} className={cn(RT_FLOW.RELATIVE_W_FULL_H_FULL_CURSOR_POINTER_GROUP_VIDEO_FLEX)} title={flowTexts.VIEW_VIDEO}>
@@ -697,7 +708,8 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                       className={cn(RT_FLOW.P_2_5_BG_SLATE_900_60_BORDER_T_BORDER, clip.url && RT_FLOW.CURSOR_POINTER_HOVER_BG_SLATE_900_90_TRANSITION_COLORS)}
                       onClick={() => {
                         if (clip.url) setPreviewVideoUrl(clip.url);
-                      }}>
+                      }}
+                    >
                       <div className={STUDIO_RESULTS.TITLE_ROW}>
                         <span onClick={(event) => event.stopPropagation()}>{slots.select}</span>
                         <p className={cn(RT_FLOW.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_200_TRUNCATE, STUDIO_RESULTS.TITLE_TEXT)} title={resolveClipTitle(clip)}>

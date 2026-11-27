@@ -1,12 +1,11 @@
 import type { FC } from "react";
-import { BookOpen, Captions, Clock, HardDrive, Image as ImageIcon, Monitor, PauseCircle, Play, Rocket, RotateCcw, Volume2 } from "lucide-react";
+import { BookOpen, Captions, Clock, Film, FolderOpen, HardDrive, Image as ImageIcon, Monitor, PauseCircle, Play, Rocket, RotateCcw, Volume2 } from "lucide-react";
 import { StudioCard, StudioFieldset, StudioInput } from "../../../components/ui/Studio.js";
-import { Button } from "../../../components/ui/Button.js";
 import { MOTION_LANGUAGES } from "../../../constants/motionLanguages/index.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import type { MotionVideoTexts } from "../../../constants/motionVideoTexts.js";
 import { MOTION_VOICE_CHANNEL_TEXT } from "../../../constants/motionVoice.js";
-import { ActionBtn, MotionStatCard, StepHeader, StopBtn } from "../../motion/components/MotionControls.js";
+import { ActionBtn, MotionPickButton, MotionStatCard, StepHeader, StopBtn } from "../../motion/components/MotionControls.js";
 import { MotionSettingsGroup } from "../../motion/components/MotionSettingsGroup.js";
 import { formatBytes } from "../../motion/components/motionApi.js";
 import { MOTION_SETTINGS_TEXT } from "../../motion/constants/motionSettings.js";
@@ -36,17 +35,7 @@ export const ReupSourceCard: FC<{ studio: ReupStudio; ui: "vi" | "en"; motionTex
   const runningStep = job && Object.entries(job.steps).find(([, step]) => step.status === "running")?.[0];
   return (
     <StudioCard className={S.CARD}>
-      <StepHeader
-        n="01"
-        icon={BookOpen}
-        title={text.STEP_SOURCE}
-        badge={folder ? text.BADGE_FOLDER : text.BADGE_VIDEO}
-        right={
-          <Button variant="unstyled" onClick={() => void studio.pickSource()} disabled={locked} className={S.LINK_BUTTON}>
-            {folder ? text.PICK_FOLDER : text.PICK_FILE}
-          </Button>
-        }
-      />
+      <StepHeader n="01" icon={BookOpen} title={text.STEP_SOURCE} badge={folder ? text.BADGE_FOLDER : text.BADGE_VIDEO} right={<MotionPickButton label={folder ? text.PICK_FOLDER : text.PICK_FILE} icon={folder ? FolderOpen : Film} loading={studio.picking} disabled={locked} onClick={() => void studio.pickSource()} className={S.LINK_BUTTON} />} />
       <div className={S.BODY}>
         <StudioInput className={S.INPUT} value={studio.sourcePath} placeholder={text.PATH_PLACEHOLDER} disabled={locked} onChange={(e) => studio.setSourcePath(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void studio.loadSource(e.currentTarget.value)} onBlur={(e) => e.target.value.trim() !== source?.path && void studio.loadSource(e.target.value)} />
         {source ? (
