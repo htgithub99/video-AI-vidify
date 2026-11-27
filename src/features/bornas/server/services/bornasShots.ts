@@ -138,7 +138,7 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
       first: k === 0,
       last: k === chunks.length - 1,
     });
-    const cache = bornasVideoDir(job, video, BORNAS_DIR.SHOTS, `${createHash("sha1").update(prompt).digest("hex").slice(0, 12)}.json`);
+    const cache = bornasVideoDir(job, video, BORNAS_DIR.SHOTS, `${createHash("sha1").update(`${job.ai.directAi.provider}|${job.ai.directAi.model}|${prompt}`).digest("hex").slice(0, 12)}.json`);
     const res = readJson<{ beats?: unknown } | null>(cache, null) ?? (await runMotionAi(prompt, BORNAS_ARTIFACT.SHOTS, reupExec(job.ai.directAi), signal, (line) => line && log(line)));
     if (Array.isArray(res?.beats) && !fs.existsSync(cache)) writeJson(cache, res);
     raw.push(...((Array.isArray(res?.beats) ? res.beats : []) as Obj[]));
