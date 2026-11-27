@@ -10,6 +10,7 @@ export const LOOKS = {
   ancient: { grade: "warm", fx: "motes", cam: { push: 0.8, pan: 0.85 }, impact: { re: W(`${BLADE}|${BATTLE}|crucified|whips?`), kind: "hit" }, accent: { re: W("rome|emperor|senate|gods?|consul|dictator|triumph|crown|empire"), kind: "zoom", amt: 0.05, dur: 0.8 }, amb: "rays" },
   victorian: { grade: "gaslight", fx: "fog", cam: { push: 0.75, pan: 0.8 }, impact: { re: W(`${GUN}|screams?|murder|murdered|falls|fell|falling|waterfall`), kind: "hit" }, accent: { re: W("clues?|footprints?|ash|letter|note|poison|poisoned|evidence|deduce|deduction|tracks|mud|cipher"), kind: "spot", amt: 0.05, dur: 0.5 }, amb: "gas" },
   eastasia: { grade: "silk", fx: "petals", cam: { push: 1, pan: 1 }, impact: { re: W(`${BLADE}|${BATTLE}|${GUN}`), kind: "slash" }, accent: null, amb: "" },
+  anime: { grade: "anime", fx: "motes", art: "anime", cam: { push: 1, pan: 1 }, impact: { re: W(`${BLADE}|${BATTLE}|${GUN}|${BLAST}|screams?|falls|fell|falling`), kind: "hit" }, accent: null, amb: "" },
   medieval: { grade: "stone", fx: "embers", cam: { push: 0.9, pan: 0.9 }, impact: { re: W(`${BLADE}|${BATTLE}|arrows?|burns?|burned|plague`), kind: "hit" }, accent: null, amb: "" },
 };
 export const ARTS = {
@@ -17,7 +18,7 @@ export const ARTS = {
 };
 export const LIMITS = { impactGap: 2.5, accentGap: 6, edgeIn: 0.12, edgeOut: 0.3 };
 export const lookOf = (plan) => {
-  const base = LOOKS[plan.look] || LOOKS.base, art = ARTS[plan.art];
+  const base = LOOKS[plan.look] || LOOKS.base, art = ARTS[plan.art || base.art];
   return { ...base, grade: base.grade || art?.grade || "", art: art || null, cam: { push: base.cam.push * (art?.cam.push || 1), pan: base.cam.pan * (art?.cam.pan || 1) } };
 };
 const clean = (w) => String(w).toLowerCase().replace(/[^a-z']/g, "").replace(/'s$/, "");

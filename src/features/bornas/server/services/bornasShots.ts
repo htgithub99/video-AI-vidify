@@ -261,7 +261,7 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
     total,
     series: script.series || script.title.toUpperCase().slice(0, BORNAS_LIMITS.SERIES_MAX),
     look: job.channel.topic,
-    art: job.channel.art === "anime" ? "anime" : "",
+    art: job.channel.topic === "anime" ? "anime" : "",
     words: words.map((w, i) => {
       const toks = bornasTokens(script.lines[i].text);
       return w.map(([s, e], j) => [s, e, toks[j] || ""] as [number, number, string]);

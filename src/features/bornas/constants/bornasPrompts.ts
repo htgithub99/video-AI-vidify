@@ -12,7 +12,7 @@ const SUBJECT: Record<BornasTopic, string> = {
   modern: "each script follows a different person or job of the modern world (soldiers, rescuers, pilots, athletes, workers, famous people)",
   game: "each script follows a different main or memorable character of a different real, well-known video game (a different franchise each time; RPG, shooter, action, horror, survival, fighting, strategy…), told with that game's own story facts",
   wildwest: "each script follows a different person of the American frontier (outlaws, lawmen, scouts, pioneers, cowboys, Native Americans, gamblers, railroad workers); scripts may share one town or event when the people differ",
-  victorian: "each script follows a different person of Victorian Britain, real or from a public-domain Victorian novel (detectives, inspectors, chimney sweeps, factory children, nurses, explorers, inventors, thieves); scripts may share one city or case when the people differ",
+  anime: "each script follows a different famous character from public-domain stories, legends or history, told as an anime life story (for example Sherlock Holmes, Miyamoto Musashi, Robin Hood, Hua Mulan, Sun Wukong, King Arthur, Dracula, the Count of Monte Cristo); never a copyrighted character from modern manga, anime, films or games",
 };
 const PICK = 'Pick the most gripping life for this channel, not only famous or controversial people: a lesser-known side character, an ordinary soldier, a child or a medic can make the strongest video. Every script is about a clearly different person; the "hero" field names that person.';
 const TOPIC: Record<BornasTopic, string> = {
@@ -25,7 +25,7 @@ const TOPIC: Record<BornasTopic, string> = {
   modern: "the modern world today (jobs, armies, cities, technology)",
   game: "the stories of characters from real video games",
   wildwest: "the American Wild West 1850–1900 (outlaws, sheriffs, settlers, frontier towns)",
-  victorian: "Victorian Britain 1837–1901 (London streets, Scotland Yard, factories, the empire), real people or characters of public-domain Victorian novels",
+  anime: "famous characters of public-domain literature, legend and history, retold in anime style",
 };
 const GENRE: Record<BornasGenre, string> = {
   bornas: 'Genre "If you were born as…": the hero\'s whole life from birth to death in second person ("you"), each life stage opened by an age, a place and a year.',

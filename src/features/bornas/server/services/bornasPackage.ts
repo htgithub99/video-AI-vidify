@@ -6,7 +6,7 @@ import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { MOTION_SEO } from "../../../../constants/motionSeo.js";
 import { MOTION_SEO_TEXTS } from "../../../../constants/motionVideoTexts.js";
 import { renderSeoOptionText } from "../../../../lib/motionSeo.js";
-import { BORNAS_CHAPTER, BORNAS_DIR, BORNAS_SEO, BORNAS_STYLE_LINES, BORNAS_THUMB_TEXT, bornasChapterLines, bornasGenre } from "../../constants/bornasConfig.js";
+import { BORNAS_CHAPTER, BORNAS_DIR, BORNAS_SEO, bornasStyleLine, BORNAS_THUMB_TEXT, bornasChapterLines, bornasGenre } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG, BORNAS_SEO_TEXT } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasScript, BornasSeo, BornasSeoOption, BornasThumb, BornasVideo } from "../../types/bornas.js";
@@ -63,7 +63,7 @@ const babyOf = async (job: BornasJob, video: BornasVideo, log: Log, signal?: Abo
   const fallback = youngSprite ? path.join(assets, "png", `${youngSprite}.png`) : undefined;
   if (!cast) return fallback;
   const ref = path.join(assets, BORNAS_DIR.RAW, `cast_${cast.id}.png`);
-  const file = await drawBornasSingle(job, BORNAS_PROMPT.BABY(BORNAS_STYLE_LINES[job.channel.art], cast.desc), path.join(assets, BORNAS_DIR.RAW, `${BORNAS_SEO.BABY}.png`), BORNAS_SEO.BABY, cast.desc, log, signal, fs.existsSync(ref) ? [ref] : []).catch((error) => {
+  const file = await drawBornasSingle(job, BORNAS_PROMPT.BABY(bornasStyleLine(job.channel.topic), cast.desc), path.join(assets, BORNAS_DIR.RAW, `${BORNAS_SEO.BABY}.png`), BORNAS_SEO.BABY, cast.desc, log, signal, fs.existsSync(ref) ? [ref] : []).catch((error) => {
     log(BORNAS_ERROR.TOOL("thumb_baby", String((error as Error)?.message || error)), "warn");
     return undefined;
   });

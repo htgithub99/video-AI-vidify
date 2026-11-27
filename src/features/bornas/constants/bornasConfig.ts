@@ -1,7 +1,7 @@
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import { encodeClaudeChatModel } from "../../../constants/claudeChatModels.js";
 import type { ReupAiChoice } from "../../reup/types/reup.js";
-import type { BornasAiField, BornasArt, BornasAiSettings, BornasDrawProvider, BornasChannel, BornasLine, BornasGenre, BornasLanguage, BornasMusicChoice, BornasStepId, BornasTopic } from "../types/bornas.js";
+import type { BornasAiField, BornasAiSettings, BornasDrawProvider, BornasChannel, BornasLine, BornasGenre, BornasLanguage, BornasMusicChoice, BornasStepId, BornasTopic } from "../types/bornas.js";
 export const BORNAS_STEPS: readonly BornasStepId[] = ["sample", "script", "voice", "assets", "shots", "build", "package", "render"];
 export const BORNAS_VIDEO_STEPS: readonly BornasStepId[] = ["voice", "assets", "shots", "build", "package", "render"];
 export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate", DELETE_VIDEOS: "/delete-videos" } as const;
@@ -29,7 +29,7 @@ export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = {
   modern: ["modern"],
   game: ["game"],
   wildwest: ["wildwest"],
-  victorian: ["victorian"],
+  anime: [],
 };
 export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }[] = [
   { re: /\b(?:mounted|galloping|riding|rider|horseman|cavalryman)\b/, min: 1.8, max: 2.8, std: 2.4 },
@@ -142,7 +142,7 @@ export const BORNAS_RENDER = {
 export const BORNAS_PY = { PACKAGES: ["pillow", "numpy", "scipy", "rembg", "onnxruntime", "opencv-python-headless"], READY: "ready.json", VERSION: 2 } as const;
 export const BORNAS_SAME_PERSON = " This is the same person as in the attached reference image: keep the same face shape, nose, eyes, eyebrows, hair colour and skin tone; only the age, clothes and pose change as described.";
 export const BORNAS_REVIEW_CONTEXT = "These are original drawings for a family-friendly educational cartoon about history: no real people, no photos, any fight shown only as cartoon falls. Your job is only a layout check of positions, sizes, text and picture edges; describe problems in neutral words.";
-export const BORNAS_STYLE_LINES: Record<BornasArt, string> = {
+const BORNAS_STYLE_LINES = {
   cartoon: "Bold cartoon illustration, thick black outlines, flat cel shading, warm muted colours, consistent with a history explainer cartoon",
   anime: "Anime illustration in the style of a hand-drawn 1990s Japanese TV anime, clean bold black outlines, flat cel shading, soft muted colours, expressive but realistic adult proportions",
 };
@@ -170,11 +170,10 @@ export const bornasAiSettings = (raw: LegacyAi | undefined): BornasAiSettings =>
     drawAi: { ...BORNAS_AI_DEFAULT.drawAi, ...(raw?.drawHeadless === undefined ? {} : { chromeHeadless: raw.drawHeadless }), ...raw?.drawAi, provider: BORNAS_DRAW_PROVIDERS.includes(raw?.drawAi?.provider as BornasDrawProvider) ? (raw!.drawAi!.provider as BornasDrawProvider) : "gemini-chat" },
   };
 };
-export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", art: "cartoon", voiceChannel: "", language: "vi", genre: "bornas", music: "library", count: 3, seconds: 120, review: false });
+export const bornasNewChannel = (id: string, name: string): BornasChannel => ({ id, name, topic: "world", voiceChannel: "", language: "vi", genre: "bornas", music: "library", count: 3, seconds: 120, review: false });
 export const BORNAS_GENRES: BornasGenre[] = ["bornas", "survive", "worst", "day", "whatif"];
 export const BORNAS_MUSIC_CHOICES: BornasMusicChoice[] = ["off", "library"];
-export const BORNAS_ARTS: BornasArt[] = ["cartoon", "anime"];
-export const bornasArt = (raw: unknown): BornasArt => (BORNAS_ARTS.includes(raw as BornasArt) ? (raw as BornasArt) : "cartoon");
+export const bornasStyleLine = (topic: BornasTopic): string => (topic === "anime" ? BORNAS_STYLE_LINES.anime : BORNAS_STYLE_LINES.cartoon);
 export const bornasMusicChoice = (raw: unknown): BornasMusicChoice => (BORNAS_MUSIC_CHOICES.includes(raw as BornasMusicChoice) ? (raw as BornasMusicChoice) : "off");
 export const BORNAS_MUSIC = { DIR: "bornas-music", FALLBACK_TOPIC: "world", BED_FILE: "music_bed.wav", MIX_FILE: "voice_mix.wav", MUSIC_DB: -17, DUCK: "threshold=0.03:ratio=6:attack=80:release=600", LOUDNORM: "loudnorm=I=-16:TP=-1.5", RATE: 48000 } as const;
 export const bornasGenre = (raw: unknown): BornasGenre => (BORNAS_GENRES.includes(raw as BornasGenre) ? (raw as BornasGenre) : "bornas");
