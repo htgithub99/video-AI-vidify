@@ -122,6 +122,32 @@ def bg_sheets(manifest, prefix):
     print(json.dumps(out))
 
 
+SCALE_READABLE = (0.34, 0.6)
+SCALE_REF = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref_adult.png")
+
+
+def scale_sheets(manifest, prefix):
+    items = json.load(open(manifest, encoding="utf-8"))
+    ref = Image.open(SCALE_REF).convert("RGBA")
+    ref = ref.crop(ref.getbbox())
+    lab = font(40)
+    out = []
+    for i, it in enumerate(items):
+        im = Image.open(it["png"]).convert("RGB").resize((1920, 1080))
+        d = ImageDraw.Draw(im)
+        for k, (x, y, h) in enumerate(it["ann"].get("spots") or []):
+            h = int(min(max(h, 1080 * SCALE_READABLE[0]), 1080 * SCALE_READABLE[1]))
+            w = int(ref.width * h / ref.height)
+            fig = ref.resize((w, h))
+            im.paste(fig, (int(x - w / 2), int(y - h)), fig)
+            d.text((x - 12, y + 6), str(k + 1), fill=(255, 0, 0), font=lab, stroke_width=4, stroke_fill=(255, 255, 255))
+        d.text((24, 16), f"#{i + 1}", fill=(255, 255, 0), font=lab, stroke_width=4, stroke_fill=(0, 0, 0))
+        f = f"{prefix}_{i + 1}.jpg"
+        im.resize((1440, 810)).save(f, quality=86)
+        out.append({"file": f, "name": it["name"]})
+    print(json.dumps(out))
+
+
 def free_zones(png):
     im = np.asarray(Image.open(png).convert("L").resize((96, 54))).astype(float)
     gy, gx = np.gradient(im)
@@ -169,4 +195,4 @@ def frame_sheets(manifest, prefix):
 
 if __name__ == "__main__":
     mode = sys.argv[1]
-    {"measure": measure, "sprites": sprite_sheets, "bgs": bg_sheets, "free": bg_free, "frames": frame_sheets}[mode](sys.argv[2], sys.argv[3])
+    {"measure": measure, "sprites": sprite_sheets, "bgs": bg_sheets, "free": bg_free, "frames": frame_sheets, "scale": scale_sheets}[mode](sys.argv[2], sys.argv[3])

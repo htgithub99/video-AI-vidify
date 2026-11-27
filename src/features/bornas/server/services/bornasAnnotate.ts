@@ -4,7 +4,7 @@ import path from "path";
 import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_ANN, BORNAS_LIMITS, BORNAS_SCALE } from "../../constants/bornasConfig.js";
+import { BORNAS_ANN, BORNAS_LIMITS, BORNAS_SCALE, BORNAS_SCALE_CHECK } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasBgAnn, BornasFace, BornasSeat, BornasSpriteAnn } from "../../types/bornas.js";
@@ -189,6 +189,39 @@ const cleanBg = (raw: Obj, free: [number, number, number, number][], lineHz: num
     boats: boats && boats[1] - boats[0] > 200 && boats[2] > 200 && boats[2] < 1075 ? boats : null,
   };
 };
+const checkScale = async (list: AnnBg[], out: Record<string, BornasBgAnn>, dir: string, ai: BornasAiSettings, log: Log, signal?: AbortSignal): Promise<void> => {
+  const todo = list.filter((b) => out[b.name]?.spots.length).map((b) => ({ name: b.name, png: b.png, ann: out[b.name] }));
+  if (!todo.length) return;
+  log(BORNAS_LOG.SCALE_CHECK(todo.length));
+  for (const [k, batch] of _.chunk(todo, BORNAS_LIMITS.AI_IMAGES).entries()) {
+    const manifest = path.join(dir, `scale_${k}.json`);
+    writeJson(manifest, batch);
+    const files = lastJson<{ file: string; name: string }[]>(await runKitPy("annotate.py", ["scale", manifest, path.join(dir, `scale_${k}`)], log, signal), []);
+    const res = (await runMotionAi(
+      BORNAS_PROMPT.BG_SCALE(batch.map((b) => b.name)),
+      BORNAS_ARTIFACT.BG_SCALE,
+      reupExec(ai.visionAi),
+      signal,
+      (line) => line && log(line),
+      files.map((f, i) => ({ name: `scale_${i + 1}.jpg`, mimeType: "image/jpeg", path: f.file })),
+    ).catch(() => undefined)) as { bgs?: Obj[] } | undefined;
+    for (const r of res?.bgs || []) {
+      const b = batch[Number(r.n) - 1];
+      if (!b) continue;
+      const a = out[b.name];
+      const f = num(r.scale);
+      const bad = new Set((Array.isArray(r.bad) ? r.bad : []).map((x) => Number(x) - 1));
+      const keep = a.spots.filter((_s, i) => !bad.has(i));
+      if (keep.length >= BORNAS_SCALE_CHECK.KEEP) a.spots = keep;
+      if (f !== null && f >= BORNAS_SCALE_CHECK.MIN && f <= BORNAS_SCALE_CHECK.MAX && Math.abs(f - 1) > BORNAS_SCALE_CHECK.TOL) {
+        a.person = a.person.map((p) => Math.round(p * f)) as [number, number, number];
+        a.spots = a.spots.map((t) => [t[0], t[1], Math.round(t[2] * f)] as [number, number, number]);
+        if (a.horizon !== undefined) a.horizon = Math.round(a.ground[1] - (a.person[1] * BORNAS_SCALE.EYE_M) / BORNAS_SCALE.PERSON_M);
+      }
+      if (bad.size || (f !== null && Math.abs(f - 1) > BORNAS_SCALE_CHECK.TOL)) log(BORNAS_LOG.SCALE_FIXED(b.name, f ?? 1, bad.size), "warn");
+    }
+  }
+};
 export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, log: Log, signal?: AbortSignal): Promise<{ ann: Record<string, BornasBgAnn>; open: string[] }> => {
   if (!list.length) return { ann: {}, open: [] };
   log(BORNAS_LOG.ANN_BGS(list.length));
@@ -222,6 +255,7 @@ export const annotateBackgrounds = async (list: AnnBg[], ai: BornasAiSettings, l
         else if (b) open.push(b.name);
       }
     }
+    await checkScale(list, out, dir, ai, log, signal);
     log(BORNAS_LOG.ANN_BGS_DONE(Object.keys(out).length, list.length));
     if (open.length) log(BORNAS_LOG.ANN_BGS_OPEN(open));
     return { ann: out, open };

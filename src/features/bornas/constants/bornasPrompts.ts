@@ -1,7 +1,22 @@
 import { BORNAS_CHAPTER, BORNAS_LIMITS, BORNAS_SEO, BORNAS_REVIEW_CONTEXT, BORNAS_SAME_PERSON } from "./bornasConfig.js";
 import { motionLanguage } from "../../../lib/motionLanguage.js";
 import type { BornasAnalysis, BornasBackground, BornasGenre, BornasLanguage, BornasLine, BornasScript, BornasSprite, BornasTopic } from "../types/bornas.js";
-export const BORNAS_ARTIFACT = { ANALYZE: "bornas-analyze", SCRIPTS: "bornas-scripts", STYLE: "bornas-style", TRIM: "bornas-trim", MATCH: "bornas-match", ASSETS: "bornas-assets", SPRITE_REVIEW: "bornas-sprite-review", SNAP_REVIEW: "bornas-snap-review", SEO: "bornas-seo", BG_MEASURE: "bornas-bg-measure", SHOTS: "bornas-shots", FACTS: "bornas-facts", REPLACE: "bornas-replace" } as const;
+export const BORNAS_ARTIFACT = {
+  ANALYZE: "bornas-analyze",
+  SCRIPTS: "bornas-scripts",
+  STYLE: "bornas-style",
+  TRIM: "bornas-trim",
+  MATCH: "bornas-match",
+  ASSETS: "bornas-assets",
+  SPRITE_REVIEW: "bornas-sprite-review",
+  SNAP_REVIEW: "bornas-snap-review",
+  SEO: "bornas-seo",
+  BG_MEASURE: "bornas-bg-measure",
+  BG_SCALE: "bornas-bg-scale",
+  SHOTS: "bornas-shots",
+  FACTS: "bornas-facts",
+  REPLACE: "bornas-replace",
+} as const;
 const SUBJECT: Record<BornasTopic, string> = {
   world: "each script follows a different person from any country and era",
   ww: "each script follows a different person of WW1 or WW2: commanders and leaders, but also ordinary soldiers, medics, pilots, tank crews, snipers, spies, nurses, children and civilians; several scripts may share one battle or campaign (Verdun, the Somme, Gallipoli, Stalingrad, Midway, Normandy…) when each tells a different person's side of it",
@@ -147,6 +162,13 @@ export const BORNAS_PROMPT = {
       "1) a text, arrow, tail or object sits on a face, two texts overlap, or a text points at the wrong thing (a place name or a title pointing at a person, a name pointing at the wrong person, a tail running into a body); 2) text that does not fit the picture (a chapter title shown as a person's name, a quote shown as a sign); 3) a person or object floating above or sunk into the floor, or standing inside a wall or building; 4) wrong size: a person bigger than a door or house, a person tiny next to a desk, chair, stove or door, an object as big as a person when it should be small, a child bigger than an adult (never judge size on a close-up of one object over a blurred background: that is an insert); 5) the same object or person twice, or a cut-off person filling the frame with no face visible; 6) an empty or almost black frame; 7) white holes inside a figure; 8) someone walking or riding backwards, or facing away from the person they talk to; 9) a weapon pointed at a friend, a child or a family member; 10) figures overlapping each other; 11) a pose that does not fit the moment (aiming or fighting in a calm family scene, a figure that does not belong to the place or time).",
       'For each problem give the fix: "tag" (move the text to a corner card), "drop_text" (remove the text), "wide" (show the whole scene instead of the close-up), "drop:<sprite>" (remove that figure: the extra copy, the out-of-place or wrongly sized figure, the wrong pose; never the only figure or the object the shot is about), "flip:<sprite>" (turn that figure to face the other way: walking backwards, facing away, a weapon aimed at a friend), "apart" (spread overlapping figures). Use sprite names exactly as listed. Frames without problems are not listed.',
       'JSON: {"issues": [{"n": number, "problem": string, "fix": string}]}',
+      JSON_ONLY,
+    ].join("\n\n"),
+  BG_SCALE: (names: string[]) =>
+    [
+      `Attached are ${names.length} background pictures numbered #1–#${names.length} (${names.join(", ")}). On each, the same adult cowboy (1.75 m tall) is pasted on every numbered standing spot (red number under his feet).`,
+      "For each picture judge: scale = how many times the cowboy should be resized so he matches the real size of the doors, desks, chairs, stoves, fences, wagons and buildings around him (1 = right; 1.4 = he must be 40 % taller; 0.7 = 30 % smaller); judge from things standing near his feet, not from far away. bad = spot numbers where he stands in water, inside a wall, a building or furniture, on a roof or in mid-air.",
+      'JSON: {"bgs": [{"n": number, "scale": number, "bad": [number]}]}',
       JSON_ONLY,
     ].join("\n\n"),
   BG_MEASURE: (names: string[]) =>

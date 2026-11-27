@@ -23,7 +23,7 @@ for (const t of times) {
     const vis = (e) => { let n = e; while (n && n !== clip) { if (+getComputedStyle(n).opacity < 0.5) return false; n = n.parentElement; } return true; };
     const texts = [...clip.querySelectorAll(".bl-t,.bp-p,.bb-p")].filter(vis).map((e) => ({ s: e.textContent.slice(0, 24), plate: e.classList.contains("bp-p"), ...R(e) }));
     const bodies = [...clip.querySelectorAll(".cam > svg use")].filter((u) => FM[u.getAttribute("href").slice(3)] && !/^bust/.test(u.getAttribute("href").slice(3))).map((u) => ({ n: u.getAttribute("href").slice(3), ...R(u) }));
-    const arrows = [...clip.querySelectorAll(".bl")].filter((w) => vis(w.querySelector(".bl-t")) && vis(w.querySelector(".h"))).map((w) => { const p = w.querySelector(".bl-a > path.w"), L = p.getTotalLength(), a = p.getPointAtLength(0), m = p.getScreenCTM(), st = { x: m.a * a.x + m.c * a.y + m.e, y: m.b * a.x + m.d * a.y + m.f }; return { s: w.querySelector(".bl-t").textContent.slice(0, 24), txt: R(w.querySelector(".bl-t b")), sub: w.querySelector(".bl-t i") ? R(w.querySelector(".bl-t i")) : null, st, head: R(w.querySelector(".h")) }; });
+    const arrows = [...clip.querySelectorAll(".bl")].filter((w) => vis(w.querySelector(".bl-t")) && vis(w.querySelector(".h"))).map((w) => { const p = w.querySelector(".bl-a > path.w"), L = p.getTotalLength(), a = p.getPointAtLength(0), m = p.getScreenCTM(), st = { x: m.a * a.x + m.c * a.y + m.e, y: m.b * a.x + m.d * a.y + m.f }; return { s: w.querySelector(".bl-t").textContent.slice(0, 24), txt: R(w.querySelector(".bl-t b")), sub: w.querySelector(".bl-t i") ? R(w.querySelector(".bl-t i")) : null, st, head: R(w.querySelector(".h")), touch: [...w.querySelectorAll(".bl-t b, .bl-t i")].map(R).some((q) => [8, 16, 24, 32].some((d) => { const pt = p.getPointAtLength(Math.min(L, d)), x = m.a * pt.x + m.c * pt.y + m.e, y = m.b * pt.x + m.d * pt.y + m.f; return x > q.l + 4 && x < q.r - 4 && y > q.t + 4 && y < q.b - 4; })) }; });
     const spr = [...clip.querySelectorAll(".cam > svg use")].map((u) => { const q = R(u), n = u.getAttribute("href").slice(3), f = FM[n] || { l: 0, r: 0, t: 0, b: 0 }, flip = /scale\(-/.test(u.parentElement.getAttribute("transform")), W = q.r - q.l, H = q.b - q.t; const fl = flip ? 1 - f.r : f.l, fr = flip ? 1 - f.l : f.r; return { n, l: q.l + W * fl, r: q.l + W * fr, t: q.t + H * f.t, b: q.t + H * f.b }; });
     const out = [];
     for (const x of texts) {
@@ -36,6 +36,7 @@ for (const t of times) {
       const box = ar.sub ? { l: Math.min(ar.txt.l, ar.sub.l), r: Math.max(ar.txt.r, ar.sub.r), t: ar.txt.t, b: ar.sub.b } : ar.txt;
       const gx = Math.max(box.l - ar.st.x, 0, ar.st.x - box.r), gy = Math.max(box.t - ar.st.y, 0, ar.st.y - box.b), g = Math.hypot(gx, gy);
       if (g > 22) out.push(`${ar.s}: đuôi mũi tên cách chữ ${Math.round(g)}px`);
+      if (ar.touch) out.push(`${ar.s}: mũi tên chạm chữ của chính nó`);
       for (const y of spr) { const a = Math.max(0, Math.min(ar.head.r, y.r) - Math.max(ar.head.l, y.l)) * Math.max(0, Math.min(ar.head.b, y.b) - Math.max(ar.head.t, y.t)); if (a / ((ar.head.r - ar.head.l) * (ar.head.b - ar.head.t)) > 0.35) out.push(`${ar.s}: đầu mũi tên che đầu ${y.n}`); }
     }
     return { id: clip.id, out };

@@ -59,6 +59,7 @@ export const BORNAS_SHORT_TEXT: Record<string, { LINE: string; CTA: string; END:
   ko: { LINE: "만약 당신이 태어난다면", CTA: "전체 이야기는 채널에서", END: "전체 이야기 보기", END_SUB: "채널에서 전체 영상" },
 };
 export const BORNAS_SCALE = { EYE_M: 1.6, PERSON_M: 1.75, REFS: { door: 2.05, table: 0.78, counter: 1.05, chair: 0.9, barrel: 0.9, fence: 1.2, wagon_wheel: 1.3, stove: 1.0, bed: 0.55 } as Record<string, number>, MIN_PX: 25, AGREE: 120, HORIZON_MIN: -2000, GROUND_GAP: 60, LINE_CONF: 0.45, LINE_MIN: 12 } as const;
+export const BORNAS_SCALE_CHECK = { MIN: 0.5, MAX: 2, TOL: 0.12, KEEP: 2 } as const;
 export const BORNAS_SEO = { OPTIONS: 2, TITLE_MAX: 70, WORD_MAX: 14, NAME_MAX: 16, DIR: "seo", FILE: "seo.txt", BABY: "thumb_baby" } as const;
 export const BORNAS_THUMB_TEXT: Record<string, { AGE: string; BORN: string }> = { vi: { AGE: "0 TUỔI", BORN: "BẠN SINH RA LÀ" }, en: { AGE: "AGE 0", BORN: "YOU WERE BORN AS" }, ja: { AGE: "0歳", BORN: "あなたの正体は" }, ko: { AGE: "0세", BORN: "당신은 태어났다" } };
 export const BORNAS_CHAPTER = { MIN_SECONDS: 180, CARD_SECONDS: 1.8, LEAD: 0.15, TITLE_MAX: 40, MAX: 8 } as const;

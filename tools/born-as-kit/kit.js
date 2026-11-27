@@ -1,6 +1,9 @@
 gsap.registerPlugin(DrawSVGPlugin, MorphSVGPlugin, MotionPathPlugin, SplitText, CustomEase, CustomWiggle);
 const BORN = {
   W: 1920,
+  LABEL_TILT: 3,
+  LABEL_ORIGIN: 0.4,
+  LEAN_SHARE: 0.85,
   H: 1080,
   cam(S, tx, ty, sx = 960, sy = 540) {
     let x = sx - S * tx, y = sy - S * ty;
@@ -48,7 +51,8 @@ const BORN = {
     t.style.top = ay + "px";
     gsap.set(t, { xPercent: dir === 1 ? 0 : dir === -1 ? -100 : -50, yPercent: below ? 0 : -100 });
     const l = dir === 1 ? ax : dir === -1 ? ax - w : ax - w / 2, tp = below ? ay : ay - h;
-    const [sx, sy] = BORN.arrowStart({ l, r: l + w, t: tp, b: tp + h }, ex, ey);
+    const [sx, sy0] = BORN.arrowStart({ l, r: l + w, t: tp, b: tp + h }, ex, ey);
+    const lean = !dir ? 0 : (sx - (l + w * BORN.LABEL_ORIGIN)) * Math.sin((BORN.LABEL_TILT * -(dir || 1) * Math.PI) / 180), sy = sy0 > tp + h ? sy0 + Math.max(0, lean) * BORN.LEAN_SHARE : sy0 < tp ? sy0 + Math.min(0, lean) * BORN.LEAN_SHARE : sy0;
     const a = BORN.curve(sx, sy, ex, ey, stop, sy < ey), hx = a.hx, hy = a.hy;
     wrap.querySelectorAll(".bl-a > path").forEach((p) => p.setAttribute("d", a.d));
     const hl = 28, sp = 0.6;
@@ -58,7 +62,7 @@ const BORN = {
   },
   labelIn(tl, lab, t) {
     const w = lab.wrap;
-    tl.fromTo(w.querySelector(".bl-t"), { scale: 0.2, rotation: -12, opacity: 0 }, { scale: 1, rotation: -3 * (lab.dir || 1), opacity: 1, duration: 0.22, ease: "back.out(2.4)" }, t);
+    tl.fromTo(w.querySelector(".bl-t"), { scale: 0.2, rotation: -12, opacity: 0 }, { scale: 1, rotation: -BORN.LABEL_TILT * (lab.dir || 1), opacity: 1, duration: 0.22, ease: "back.out(2.4)" }, t);
     tl.fromTo(w.querySelectorAll(".bl-a > path"), { drawSVG: "0%" }, { drawSVG: "100%", duration: 0.32, ease: "power2.out" }, t + 0.22);
     tl.fromTo(w.querySelector(".h"), { opacity: 0, scale: 0.3, svgOrigin: `${lab.ex} ${lab.ey}` }, { opacity: 1, scale: 1, duration: 0.14, ease: "back.out(3)", svgOrigin: `${lab.ex} ${lab.ey}` }, t + 0.52);
   },
