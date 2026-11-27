@@ -17,6 +17,7 @@ export const VIDEO_EXPORT_TEXT_EFFECT = "effect" as const;
 export const VIDEO_EXPORT_TEXT_TRANSITION = "transition" as const;
 export const VIDEO_EXPORT_TEXT_TRANSITIONSECONDS = "transitionSeconds" as const;
 export const VIDEO_EXPORT_TEXT_PLAYLISTLOOPS = "playlistLoops" as const;
+export const VIDEO_EXPORT_TEXT_LOOPORDER = "loopOrder" as const;
 export const VIDEO_EXPORT_TEXT_RESOLUTION = "resolution" as const;
 export const VIDEO_EXPORT_TEXT_FPS = "fps" as const;
 export const VIDEO_EXPORT_TEXT_BITRATE = "bitrate" as const;

@@ -60,6 +60,10 @@ export enum VideoExportTransition {
   DISTANCE = "distance",
   RANDOM = "random",
 }
+export enum VideoExportLoopOrder {
+  KEEP = "keep",
+  SHUFFLE = "shuffle",
+}
 export enum VideoExportSlideMode {
   EVEN = "even",
   FIXED = "fixed",
@@ -108,7 +112,21 @@ export enum VideoExportMediaKind {
 export type VideoExportAudioItem = { id: string; index: number; name: string; relativePath: string; sourcePath: string; url: string; sizeBytes: number; durationSeconds: number; aiScore?: number };
 export type VideoExportImageItem = { id: string; index: number; name: string; relativePath: string; sourcePath: string; url: string; sizeBytes: number };
 export type VideoExportSource = { token: string; folderName: string; folderPath: string; audios: VideoExportAudioItem[]; images: VideoExportImageItem[] };
-export type VideoExportConfig = { aspectRatio: VideoExportAspectRatio; reframeMode?: ShortsReframeMode; effect: VideoExportEffect; transition: VideoExportTransition; slideMode: VideoExportSlideMode; slideSeconds: number; transitionSeconds: number; playlistLoops: number; resolution: VideoExportResolution; fps: VideoExportFps; bitrate: VideoExportBitrate; codec: VideoExportCodec };
+export type VideoExportConfig = {
+  aspectRatio: VideoExportAspectRatio;
+  reframeMode?: ShortsReframeMode;
+  effect: VideoExportEffect;
+  transition: VideoExportTransition;
+  slideMode: VideoExportSlideMode;
+  slideSeconds: number;
+  transitionSeconds: number;
+  playlistLoops: number;
+  loopOrder: VideoExportLoopOrder;
+  resolution: VideoExportResolution;
+  fps: VideoExportFps;
+  bitrate: VideoExportBitrate;
+  codec: VideoExportCodec;
+};
 export type VideoExportResultItem = { id: string; title: string; fileName: string; outputVideoPath: string; videoUrl: string; durationSeconds: number; sizeBytes: number; trackCount: number; imageCount: number; aspectRatio: VideoExportAspectRatio; createdAt: string; codec?: VideoExportCodec; posterUrl?: string; previewUrl?: string };
 export type VideoExportResultInfo = { codec: VideoExportCodec; posterUrl: string; previewUrl?: string };
 export type VideoExportJobState = { jobId: string; status: VideoExportJobStatus; stage: VideoExportJobStage; percent: number; message: string; error?: string; result?: VideoExportResultItem };

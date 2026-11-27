@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { VIDEO_EXPORT_CONSTANTS } from "../constants/videoExport";
 import { ShortsReframeMode } from "../../../types/shorts";
-import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExportConfig, VideoExportEffect, VideoExportFps, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../types/videoExport";
+import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExportConfig, VideoExportEffect, VideoExportFps, VideoExportLoopOrder, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../types/videoExport";
 export const pickVideoExportEnum = <T extends string | number>(values: Record<string, T>, value: unknown, fallback: T): T => (_.includes(_.values(values), value) ? (value as T) : fallback);
 export const resolveVideoExportConfig = (raw: Partial<Record<keyof VideoExportConfig, unknown>> | null | undefined, options: { coerceNumbers?: boolean; forceEvenSlides?: boolean } = {}): VideoExportConfig => {
   const value = raw ?? {};
@@ -18,6 +18,7 @@ export const resolveVideoExportConfig = (raw: Partial<Record<keyof VideoExportCo
     slideSeconds: pickNumber(VIDEO_EXPORT_CONSTANTS.SLIDE_SECONDS_OPTIONS, value.slideSeconds, VIDEO_EXPORT_CONSTANTS.DEFAULT_SLIDE_SECONDS),
     transitionSeconds: pickNumber(VIDEO_EXPORT_CONSTANTS.TRANSITION_SECONDS_OPTIONS, value.transitionSeconds, VIDEO_EXPORT_CONSTANTS.DEFAULT_TRANSITION_SECONDS),
     playlistLoops: pickNumber(VIDEO_EXPORT_CONSTANTS.PLAYLIST_LOOP_OPTIONS, value.playlistLoops, VIDEO_EXPORT_CONSTANTS.DEFAULT_PLAYLIST_LOOPS),
+    loopOrder: pickVideoExportEnum(VideoExportLoopOrder, value.loopOrder, VIDEO_EXPORT_CONSTANTS.DEFAULT_LOOP_ORDER),
     resolution: pickVideoExportEnum(VideoExportResolution, value.resolution, VIDEO_EXPORT_CONSTANTS.DEFAULT_RESOLUTION),
     fps: pickNumber([VideoExportFps.FPS_24, VideoExportFps.FPS_30, VideoExportFps.FPS_60], value.fps, VIDEO_EXPORT_CONSTANTS.DEFAULT_FPS),
     bitrate: pickVideoExportEnum(VideoExportBitrate, value.bitrate, VIDEO_EXPORT_CONSTANTS.DEFAULT_BITRATE),

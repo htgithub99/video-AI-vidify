@@ -26,6 +26,7 @@ import {
   VIDEO_EXPORT_TEXT_TRANSITION,
   VIDEO_EXPORT_TEXT_TRANSITIONSECONDS,
   VIDEO_EXPORT_TEXT_PLAYLISTLOOPS,
+  VIDEO_EXPORT_TEXT_LOOPORDER,
   VIDEO_EXPORT_TEXT_UNSTYLED,
   VIDEO_EXPORT_TEXT_VIDEO_EXPORT_START,
   VIDEO_EXPORT_TEXT_VIDEO_EXPORT_STOP,
@@ -92,7 +93,7 @@ import { formatCleanTime } from "../../../lib/timeUtils.js";
 import { VideoExporterState } from "../hooks/useVideoExporter.js";
 import { VIDEO_EXPORT_CONSTANTS } from "../constants/videoExport.js";
 import { ShortsReframeMode } from "../../../types/shorts.js";
-import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExportEffect, VideoExportFps, VideoExportJobStatus, VideoExportResolution, VideoExportTransition } from "../types/videoExport.js";
+import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExportEffect, VideoExportFps, VideoExportJobStatus, VideoExportLoopOrder, VideoExportResolution, VideoExportTransition } from "../types/videoExport.js";
 import { VideoExportOptionGrid, VideoExportOptionItem, VideoExportOptionSection, VideoExportOptionTone } from "./VideoExportOptionGrid.js";
 import { VideoExportVisualSelector } from "./VideoExportVisualSelector.js";
 import { VideoExportAiClipPanel } from "./VideoExportAiClipPanel.js";
@@ -271,6 +272,10 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
     ],
     [text],
   );
+  const loopOrderOptions: VideoExportOptionItem<VideoExportLoopOrder>[] = [
+    { value: VideoExportLoopOrder.KEEP, label: text.LOOP_ORDER_KEEP },
+    { value: VideoExportLoopOrder.SHUFFLE, label: text.LOOP_ORDER_SHUFFLE },
+  ];
   const toLoopOptions = (values: readonly number[]): VideoExportOptionItem<number>[] => _.map(values, (value) => ({ value, label: `${value}${text.PLAYLIST_LOOPS_UNIT}` }));
   const toSecondOptions = (values: readonly number[]): VideoExportOptionItem<number>[] => _.map(values, (value) => ({ value, label: `${value}${text.SECONDS_UNIT}` }));
   const progressPercent = _.clamp(_.toNumber(job?.percent) || 0, 0, 100);
@@ -348,7 +353,12 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
         <VideoExportVisualSelector text={text} label={text.TRANSITION_LABEL} badge={VIDEO_EXPORT_CONSTANTS.FFMPEG_BADGE_TRANSITION} sections={transitionSections} value={config.transition} accentColor={VIDEO_EXPORT_CONSTANTS.COLOR_PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITION, value)} />
         {config.transition !== VideoExportTransition.NONE && <VideoExportOptionGrid label={text.TRANSITION_DURATION_LABEL} options={toSecondOptions(VIDEO_EXPORT_CONSTANTS.TRANSITION_SECONDS_OPTIONS)} value={config.transitionSeconds} columns={4} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITIONSECONDS, value)} />}
         <VideoExportOptionGrid label={text.PLAYLIST_LOOPS_LABEL} options={toLoopOptions(VIDEO_EXPORT_CONSTANTS.PLAYLIST_LOOP_OPTIONS)} value={config.playlistLoops} columns={3} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_PLAYLISTLOOPS, value)} />
-        {config.playlistLoops > 1 && <p className={cn(RT_VIDEO_EXPORT.TEXT_9PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE_TRUNCATE)}>{text.PLAYLIST_LOOPS_HINT(selectedAudioCount, config.playlistLoops)}</p>}
+        {config.playlistLoops > 1 && (
+          <>
+            <VideoExportOptionGrid label={text.LOOP_ORDER_LABEL} options={loopOrderOptions} value={config.loopOrder} columns={2} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_LOOPORDER, value)} />
+            <p className={cn(RT_VIDEO_EXPORT.TEXT_9PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE_TRUNCATE)}>{config.loopOrder === VideoExportLoopOrder.SHUFFLE ? text.LOOP_ORDER_SHUFFLE_HINT(selectedAudioCount, config.playlistLoops) : text.PLAYLIST_LOOPS_HINT(selectedAudioCount, config.playlistLoops)}</p>
+          </>
+        )}
         <VideoExportAiClipPanel text={text} aiClips={exporter.aiClips} disabled={isDisabled} />
         <div className={cn(RT_VIDEO_EXPORT.P_3_5_ROUNDED_2XL_BG_SLATE_950_50_BORDER_BORDER_SLATE_80)}>
           <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO_UPPERCASE_TRACKING_WIDER_TEXT)}>

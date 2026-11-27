@@ -1,5 +1,5 @@
 import { ShortsReframeMode } from "../../../types/shorts.js";
-import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExportEffect, VideoExportFps, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../types/videoExport.js";
+import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExportEffect, VideoExportFps, VideoExportLoopOrder, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../types/videoExport.js";
 export const VIDEO_EXPORT_CONSTANTS = {
   OUTPUT_FOLDER: "output",
   EXPORT_FOLDER: "video-export",
@@ -40,6 +40,7 @@ export const VIDEO_EXPORT_CONSTANTS = {
   TRANSITION_SECONDS_OPTIONS: [0.5, 1, 1.5, 2],
   PLAYLIST_LOOP_OPTIONS: [1, 2, 3, 4, 5, 10],
   DEFAULT_PLAYLIST_LOOPS: 1,
+  DEFAULT_LOOP_ORDER: VideoExportLoopOrder.KEEP,
   DEFAULT_ASPECT_RATIO: VideoExportAspectRatio.HORIZONTAL_16_9,
   DEFAULT_REFRAME_MODE: ShortsReframeMode.BLUR_BACKGROUND,
   DEFAULT_EFFECT: VideoExportEffect.ZOOM_IN,

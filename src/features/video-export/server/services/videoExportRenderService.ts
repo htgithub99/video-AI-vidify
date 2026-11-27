@@ -99,7 +99,7 @@ import { mediaEncodeArgs, pickMediaEncoder, isGpuEncoder, withEncoderFallback } 
 import { HEAVY_RENDER, runHeavyJob } from "../../../../server/utils/heavyJobQueue.js";
 import { runVideoExportLanes, videoExportRenderLanes } from "../../lib/videoExportLanes.js";
 import { VIDEO_EXPORT_AI_CLIP_CONSTANTS, VIDEO_EXPORT_AI_CLIP_FILTERS, VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS } from "../../constants/videoExportAiClip.js";
-import { VideoExportAspectRatio, VideoExportCodec, VideoExportConfig, VideoExportEffect, VideoExportJobStage, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../../types/videoExport.js";
+import { VideoExportAspectRatio, VideoExportCodec, VideoExportConfig, VideoExportEffect, VideoExportJobStage, VideoExportLoopOrder, VideoExportResolution, VideoExportSlideMode, VideoExportTransition } from "../../types/videoExport.js";
 export { VideoExportQuality };
 type EncodeProfile = { width: number; height: number; fps: number; preset: string; crf: string; codec: string };
 type VideoExportProgressHandler = (stage: VideoExportJobStage, percent: number, message: string) => void;
@@ -255,7 +255,18 @@ const buildSingleTrackNormalizeArgs = (inputPath: string, outputPath: string): s
 ];
 const buildAudioConcatCopyArgs = (listPath: string, outputPath: string): string[] => [VIDEO_EXPORT_AI_CLIP_CONSTANTS.FFLAGS, VIDEO_EXPORT_AI_CLIP_CONSTANTS.GENPTS, VIDEO_EXPORT_TEXT_F, VIDEO_EXPORT_TEXT_CONCAT, VIDEO_EXPORT_TEXT_SAFE, VIDEO_EXPORT_TEXT_0, VIDEO_EXPORT_TEXT_I, listPath, VIDEO_EXPORT_TEXT_VN, VIDEO_EXPORT_TEXT_C_A, VIDEO_EXPORT_TEXT_COPY, VIDEO_EXPORT_TEXT_Y, outputPath];
 const getAudioCacheDirectory = (): string => path.join(getDataDirectory(), VIDEO_EXPORT_CONSTANTS.OUTPUT_FOLDER, VIDEO_EXPORT_CONSTANTS.EXPORT_FOLDER, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUDIO_CACHE_FOLDER);
-const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string, workDir: string, signal?: AbortSignal, onProgressRatio?: (ratio: number) => void, loops: number = 1): Promise<number> => {
+const buildLoopRounds = (tracks: string[], loops: number, order: VideoExportLoopOrder): string[][] =>
+  _.reduce(
+    _.range(1, Math.max(1, loops)),
+    (rounds) => {
+      if (order !== VideoExportLoopOrder.SHUFFLE) return [...rounds, tracks];
+      const next = _.shuffle(tracks);
+      if (next.length > 1 && next[0] === _.last(_.last(rounds))) [next[0], next[1]] = [next[1], next[0]];
+      return [...rounds, next];
+    },
+    [tracks],
+  );
+const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string, workDir: string, signal?: AbortSignal, onProgressRatio?: (ratio: number) => void, loops: number = 1, order: VideoExportLoopOrder = VideoExportLoopOrder.KEEP): Promise<number> => {
   const cacheDir = getAudioCacheDirectory();
   await fs.promises.mkdir(cacheDir, { recursive: true });
   const stats = await Promise.all(_.map(audioPaths, (audioPath) => fs.promises.stat(audioPath)));
@@ -286,7 +297,7 @@ const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string
     onProgressRatio?.(completedTracks / totalTracks);
   });
   throwIfAborted(signal);
-  const playlist = _.flatten(_.times(Math.max(1, loops), () => cachedPaths));
+  const playlist = _.flatten(buildLoopRounds(cachedPaths, loops, order));
   if (playlist.length === 1) {
     await fs.promises.copyFile(playlist[0], outputPath);
   } else {
@@ -564,7 +575,7 @@ const renderVideoExportNow = async (params: RenderVideoExportParams): Promise<{ 
     const audioOutputPath = path.join(tempDir, VIDEO_EXPORT_CONSTANTS.AUDIO_FILE_NAME);
     notify(VideoExportJobStage.AUDIO, 0, VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO);
     const audioStarted = Date.now();
-    const totalSeconds = await prepareConcatenatedAudio(audioPaths, audioOutputPath, tempDir, signal, (ratio) => notify(VideoExportJobStage.AUDIO, toPercent(0, audioWeight, ratio), VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO), config.playlistLoops);
+    const totalSeconds = await prepareConcatenatedAudio(audioPaths, audioOutputPath, tempDir, signal, (ratio) => notify(VideoExportJobStage.AUDIO, toPercent(0, audioWeight, ratio), VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO), config.playlistLoops, config.loopOrder);
     throwIfAborted(signal);
     if (!(totalSeconds > 0)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_AUDIO_DURATION);
     logger.log(VIDEO_EXPORT_LOG_MESSAGES.STAGE_TIME(VIDEO_EXPORT_TIMING_STAGES.AUDIO, (Date.now() - audioStarted) / 1000));
