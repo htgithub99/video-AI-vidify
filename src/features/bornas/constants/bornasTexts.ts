@@ -84,7 +84,8 @@ const VI = {
   SHOTS: (n: number) => `${n} cảnh`,
   RERUN: "Chạy lại bước này",
   AI: {
-    writeAi: ["AI chính", "Viết kịch bản theo video mẫu, chọn hình trong kho, lên phân cảnh và viết SEO. Nên dùng model mạnh, đọc ngữ cảnh dài và viết tốt ngôn ngữ của kênh."],
+    writeAi: ["AI chính", "Việc quan trọng nhất: viết kịch bản theo video mẫu và viết SEO (tiêu đề, mô tả). Khoảng 4–5 lượt mỗi video, nên dùng model mạnh nhất (Claude)."],
+    directAi: ["AI đạo diễn", "Chọn hình trong kho, liệt kê hình cần vẽ và lên phân cảnh. Khoảng 20 lượt dài mỗi video 10 phút, nên dùng AI nhiều lượt dùng và đọc ngữ cảnh dài (Gemini)."],
     factAi: ["AI soát sự kiện & việc nhẹ", "Soát sự kiện, ngày tháng, con số, câu trích dẫn, chữ trên màn hình, và rút gọn kịch bản quá dài. Nên chọn AI khác AI chính và có tìm kiếm web."],
     visionAi: ["AI nhìn ảnh", "Xem video mẫu, đo mặt đất của nền, duyệt hình vẽ (đúng món, hỏng) và xem ảnh từng cảnh. Chỉ hiện AI nhận được ảnh."],
   } as Record<BornasAiField, [string, string]>,
@@ -188,7 +189,8 @@ const EN: BornasTexts = {
   SHOTS: (n: number) => `${n} shots`,
   RERUN: "Rerun this step",
   AI: {
-    writeAi: ["Main AI", "Writes the scripts after the sample, picks library pictures, plans the shots and writes the SEO. Use a strong model with long context that writes the channel language well."],
+    writeAi: ["Main AI", "The most important jobs: the scripts after the sample and the SEO (titles, descriptions). About 4–5 requests per video; use the strongest model (Claude)."],
+    directAi: ["Director AI", "Picks library pictures, lists pictures to draw and plans the shots. About 20 long requests per 10-minute video; use an AI with generous limits and long context (Gemini)."],
     factAi: ["Fact-check & light AI", "Checks facts, dates, numbers, quotes and on-screen text, and shortens over-long scripts. Prefer an AI other than the main AI, with web search."],
     visionAi: ["Vision AI", "Reads the sample, measures background ground lines, reviews drawings (right item, defects) and checks shot snapshots. Only image-capable AIs are listed."],
   },

@@ -142,8 +142,8 @@ const BORNAS_STYLE_LINES = { cartoon: "Bold cartoon illustration, thick black ou
 const AI_DEFAULT: ReupAiChoice = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: true, allowFallback: true, multiRoom: true };
 const CLAUDE: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.ClaudeChat, model: encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, "medium") };
 const CHATGPT: ReupAiChoice = { ...AI_DEFAULT, provider: AiPlanningFallbackProvider.ChatGptUi, model: AiPlanningChatModel.ChatGptAuto };
-export const BORNAS_AI_DEFAULT: BornasAiSettings = { writeAi: CLAUDE, factAi: CHATGPT, visionAi: AI_DEFAULT, drawAi: { provider: "gemini-chat", chromeHeadless: true, allowFallback: false } };
-export const BORNAS_AI_FIELDS: BornasAiField[] = ["writeAi", "factAi", "visionAi"];
+export const BORNAS_AI_DEFAULT: BornasAiSettings = { writeAi: CLAUDE, directAi: AI_DEFAULT, factAi: CHATGPT, visionAi: AI_DEFAULT, drawAi: { provider: "gemini-chat", chromeHeadless: true, allowFallback: false } };
+export const BORNAS_AI_FIELDS: BornasAiField[] = ["writeAi", "directAi", "factAi", "visionAi"];
 export const BORNAS_VISION_PROVIDERS: AiPlanningFallbackProvider[] = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat];
 export const BORNAS_DRAW_PROVIDERS: BornasDrawProvider[] = ["gemini-chat", "labs-flow"];
 export const BORNAS_LIBRARY_DRAW: BornasDrawProvider = "gemini-chat";
@@ -155,6 +155,7 @@ export const bornasAiSettings = (raw: LegacyAi | undefined): BornasAiSettings =>
   return {
     writeAi: pick("writeAi", main),
     factAi: pick("factAi", main),
+    directAi: pick("directAi"),
     visionAi: BORNAS_VISION_PROVIDERS.includes(vision.provider as AiPlanningFallbackProvider) ? vision : { ...vision, provider: AiPlanningFallbackProvider.GeminiChat },
     drawAi: { ...BORNAS_AI_DEFAULT.drawAi, ...(raw?.drawHeadless === undefined ? {} : { chromeHeadless: raw.drawHeadless }), ...raw?.drawAi, provider: BORNAS_DRAW_PROVIDERS.includes(raw?.drawAi?.provider as BornasDrawProvider) ? (raw!.drawAi!.provider as BornasDrawProvider) : "gemini-chat" },
   };
