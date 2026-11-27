@@ -178,6 +178,9 @@ export const VIDEO_EXPORT_POSTER = {
   EXT: ".jpg",
   AT_SECONDS: 2,
   ARGS: (videoPath: string, seconds: number, posterPath: string): string[] => ["-ss", seconds.toFixed(3), "-i", videoPath, "-frames:v", "1", "-vf", "scale=960:-2", "-q:v", "4", "-y", posterPath],
+  PREVIEW_SUFFIX: "_preview.mp4",
+  PREVIEW_SECONDS: 20,
+  PREVIEW_ARGS: (videoPath: string, seconds: number, outputPath: string): string[] => ["-t", seconds.toFixed(3), "-i", videoPath, "-map", "0:v:0", "-map", "0:a:0?", "-vf", "scale=960:-2", "-c:v", "libx264", "-preset", "veryfast", "-crf", "26", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "-y", outputPath],
 } as const;
 export const VIDEO_EXPORT_HEVC_MIME = 'video/mp4; codecs="hvc1.1.6.L120.90"';
 export const VIDEO_EXPORT_TIMING_STAGES = { AUDIO: "audio", VIDEO: "video", POSTER: "poster" } as const;

@@ -129,21 +129,30 @@ export const createVideoExportPreview = async (req: Request, res: Response): Pro
     if (activePreviewController === abortController) activePreviewController = null;
   }
 };
-const posterNameOf = (fileName: string): string => `${path.parse(path.basename(fileName)).name}${VIDEO_EXPORT_POSTER.EXT}`;
-const writePoster = async (videoPath: string, durationSeconds: number): Promise<string> => {
-  const posterName = posterNameOf(videoPath);
-  const posterPath = path.join(getExportDirectory(), posterName);
-  const started = Date.now();
-  const ok = await fs.promises.access(posterPath).then(
+const derivedNamesOf = (fileName: string): string[] => {
+  const stem = path.parse(path.basename(fileName)).name;
+  return [`${stem}${VIDEO_EXPORT_POSTER.EXT}`, `${stem}${VIDEO_EXPORT_POSTER.PREVIEW_SUFFIX}`];
+};
+const ensureDerived = async (name: string, args: string[]): Promise<string> => {
+  const target = path.join(getExportDirectory(), name);
+  const ok = await fs.promises.access(target).then(
     () => true,
     () =>
-      runFfmpeg(VIDEO_EXPORT_POSTER.ARGS(videoPath, Math.min(VIDEO_EXPORT_POSTER.AT_SECONDS, durationSeconds / 2), posterPath)).then(
+      runFfmpeg(args).then(
         () => true,
         () => false,
       ),
   );
+  return ok ? `${VIDEO_EXPORT_CONSTANTS.ASSETS_URL_PREFIX}${name}` : "";
+};
+const writeThumbs = async (videoPath: string, durationSeconds: number, codec: VideoExportCodec): Promise<VideoExportResultInfo> => {
+  const [posterName, previewName] = derivedNamesOf(videoPath);
+  const dir = getExportDirectory();
+  const started = Date.now();
+  const posterUrl = await ensureDerived(posterName, VIDEO_EXPORT_POSTER.ARGS(videoPath, Math.min(VIDEO_EXPORT_POSTER.AT_SECONDS, durationSeconds / 2), path.join(dir, posterName)));
+  const previewUrl = codec === VideoExportCodec.HEVC ? await ensureDerived(previewName, VIDEO_EXPORT_POSTER.PREVIEW_ARGS(videoPath, Math.min(VIDEO_EXPORT_POSTER.PREVIEW_SECONDS, durationSeconds), path.join(dir, previewName))) : "";
   logger.log(VIDEO_EXPORT_LOG_MESSAGES.STAGE_TIME(VIDEO_EXPORT_TIMING_STAGES.POSTER, (Date.now() - started) / 1000));
-  return ok ? `${VIDEO_EXPORT_CONSTANTS.ASSETS_URL_PREFIX}${posterName}` : "";
+  return { codec, posterUrl, ...(previewUrl ? { previewUrl } : {}) };
 };
 export const inspectVideoExportResults = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -159,7 +168,7 @@ export const inspectVideoExportResults = async (req: Request, res: Response): Pr
         )
           return null;
         const [codec, seconds] = await Promise.all([probeMediaVideoCodec(videoPath), probeMediaDurationSeconds(videoPath)]);
-        return [fileName, { codec: codec === VideoExportCodec.HEVC ? VideoExportCodec.HEVC : VideoExportCodec.H264, posterUrl: await writePoster(videoPath, seconds) }];
+        return [fileName, await writeThumbs(videoPath, seconds, codec === VideoExportCodec.HEVC ? VideoExportCodec.HEVC : VideoExportCodec.H264)];
       }),
     );
     res.json({ success: true, items: Object.fromEntries(_.compact(entries)) });
@@ -185,7 +194,7 @@ const runRenderJob = async (job: RenderJob, selection: SelectionResult, config: 
       },
     });
     const sizeBytes = (await fs.promises.stat(outputPath)).size;
-    const posterUrl = await writePoster(outputPath, durationSeconds);
+    const thumbs = await writeThumbs(outputPath, durationSeconds, config.codec);
     const result: VideoExportResultItem = {
       id: job.jobId,
       title: _.trim(title) || VIDEO_EXPORT_CONSTANTS.DEFAULT_TITLE,
@@ -198,8 +207,7 @@ const runRenderJob = async (job: RenderJob, selection: SelectionResult, config: 
       imageCount: selection.aiClipPaths.length || selection.imagePaths.length,
       aspectRatio: config.aspectRatio,
       createdAt: new Date().toISOString(),
-      codec: config.codec,
-      posterUrl,
+      ...thumbs,
     };
     _.assign(job, { status: VideoExportJobStatus.COMPLETED, stage: VideoExportJobStage.DONE, percent: 100, message: VIDEO_EXPORT_SERVER_TEXTS.MSG_DONE, result });
     logger.log(VIDEO_EXPORT_LOG_MESSAGES.RENDER_DONE(job.jobId, outputPath));
@@ -308,7 +316,7 @@ export const saveVideoExportVideo = async (req: Request, res: Response): Promise
 export const deleteVideoExportResults = async (req: Request, res: Response): Promise<void> => {
   try {
     const names = _.compact(_.castArray(req.body?.fileNames ?? []).map((name) => _.toString(name)));
-    res.json({ success: true, ...(await deleteOutputEntries(getExportDirectory(), [...names, ..._.map(names, posterNameOf)])) });
+    res.json({ success: true, ...(await deleteOutputEntries(getExportDirectory(), [...names, ..._.flatMap(names, derivedNamesOf)])) });
   } catch (error: any) {
     sendError(res, 500, error, VIDEO_EXPORT_SERVER_TEXTS.ERR_FILE_NOT_FOUND);
   }
