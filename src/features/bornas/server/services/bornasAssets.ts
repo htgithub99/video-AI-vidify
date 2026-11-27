@@ -6,7 +6,7 @@ import { runMotionAi } from "../../../motion/server/services/motionStoryService.
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { reupFfmpeg } from "../../../reup/server/services/reupFfmpeg.js";
 import { BORNAS_ANN, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, bornasStyleLine, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
-import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
+import { BORNAS_ARTIFACT, BORNAS_BUST_LOOKS, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasDrawChoice, BornasAssetPlan, BornasBackground, BornasBgAnn, BornasJob, BornasScript, BornasSprite, BornasSpriteAnn, BornasVideo } from "../../types/bornas.js";
 import { annotateBackgrounds, annotateSprites, bornasBadAnn } from "./bornasAnnotate.js";
@@ -239,26 +239,28 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     }
     names.forEach((name, i) => add(name, path.join(png, `${name}.png`), /bust/.test(poses[i].name) ? "bust" : "person", c.heightM, "r", `${c.desc}; ${poses[i].desc}`));
     if (BORNAS_BUSTS.SKIP.test(c.id) || !poses.length) continue;
-    const triple = path.join(raws, `busts_${c.id}.png`);
-    let parts: string[] = [];
-    for (let tries = 1; tries <= BORNAS_BUSTS.TRIES; tries++) {
-      const drew = fs.existsSync(triple) || (await drawSheet(BORNAS_PROMPT.BUST_TRIPLE(bornasStyleLine(job.channel.topic), c.desc), triple, `${c.id} busts`, job.ai.drawAi, log, misses, signal));
-      if (!drew) break;
-      const keyed = path.join(raws, `busts_${c.id}_key.png`);
-      await runKitPy("alpha_key.py", ["--edge", triple, keyed], log, signal);
-      parts = (JSON.parse(_.last((await runKitPy("bust_split.py", [keyed, path.join(raws, `busts_${c.id}`)], log, signal)).trim().split(/\r?\n/)) || "{}").files || []) as string[];
-      fs.rmSync(keyed, { force: true });
-      const tall = parts.length ? Math.min(...parts.map((f) => pngSize(f)[1])) / pngSize(triple)[1] : 0;
-      if (tall >= BORNAS_BUSTS.MIN_TALL || tries === BORNAS_BUSTS.TRIES) break;
-      log(BORNAS_LOG.BUST_SMALL(c.id, Math.round(tall * 100)), "warn");
-      fs.rmSync(triple, { force: true });
+    for (const sheet of BORNAS_BUSTS.SHEETS) {
+      const triple = path.join(raws, `busts_${c.id}${sheet.file}.png`);
+      let parts: string[] = [];
+      for (let tries = 1; tries <= BORNAS_BUSTS.TRIES; tries++) {
+        const drew = fs.existsSync(triple) || (await drawSheet(BORNAS_PROMPT.BUST_TRIPLE(bornasStyleLine(job.channel.topic), c.desc, sheet.views), triple, `${c.id} busts${sheet.file}`, job.ai.drawAi, log, misses, signal));
+        if (!drew) break;
+        const keyed = path.join(raws, `busts_${c.id}${sheet.file}_key.png`);
+        await runKitPy("alpha_key.py", ["--edge", triple, keyed], log, signal);
+        parts = (JSON.parse(_.last((await runKitPy("bust_split.py", [keyed, path.join(raws, `busts_${c.id}${sheet.file}`)], log, signal)).trim().split(/\r?\n/)) || "{}").files || []) as string[];
+        fs.rmSync(keyed, { force: true });
+        const tall = parts.length ? Math.min(...parts.map((f) => pngSize(f)[1])) / pngSize(triple)[1] : 0;
+        if (tall >= BORNAS_BUSTS.MIN_TALL || tries === BORNAS_BUSTS.TRIES) break;
+        log(BORNAS_LOG.BUST_SMALL(c.id, Math.round(tall * 100)), "warn");
+        fs.rmSync(triple, { force: true });
+      }
+      if (!parts.length) continue;
+      log(BORNAS_LOG.SPLIT(parts.length, sheet.views.length), parts.length === sheet.views.length ? "info" : "warn");
+      parts.slice(0, sheet.views.length).forEach((file, i) => {
+        const view = sheet.views[i];
+        add(`${c.id}${BORNAS_BUSTS.SUFFIX}${view}`, file, "bust", c.heightM, BORNAS_BUSTS.FACING[view], `${c.desc}; bust, ${BORNAS_BUST_LOOKS[view]}`);
+      });
     }
-    if (!parts.length) continue;
-    log(BORNAS_LOG.SPLIT(parts.length, BORNAS_BUSTS.VIEWS.length), parts.length === BORNAS_BUSTS.VIEWS.length ? "info" : "warn");
-    parts.slice(0, BORNAS_BUSTS.VIEWS.length).forEach((file, i) => {
-      const view = BORNAS_BUSTS.VIEWS[i];
-      add(`${c.id}${BORNAS_BUSTS.SUFFIX}${view}`, file, "bust", c.heightM, BORNAS_BUSTS.FACING[view], `${c.desc}; bust ${view}`);
-    });
   }
   const stamp = new Date().toISOString().slice(2, 10).replace(/-/g, "");
   const added: { lib: string; names: string[] } = { lib: home, names: [] };

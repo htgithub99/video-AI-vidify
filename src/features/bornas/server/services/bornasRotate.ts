@@ -1,10 +1,16 @@
 import _ from "lodash";
 import { BORNAS_BUSTS, BORNAS_ROTATION } from "../../constants/bornasConfig.js";
 import type { BornasBeat, BornasCast } from "./bornasShots.js";
-type Comp = (typeof BORNAS_ROTATION.ORDER)[number] | "solo";
+type Comp = (typeof BORNAS_ROTATION.ORDER)[number];
+export interface BornasBustReport {
+  share: number;
+  inRow: number;
+  repeats: number;
+}
 const castOf = (sprite: string): BornasCast => ({ sprite, slot: "c", place: "ground", swap: [] });
-export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string>): Record<string, number> => {
-  const ids = _.uniq([...kinds.keys()].filter((n) => n.endsWith(`${BORNAS_BUSTS.SUFFIX}r`)).map((n) => n.slice(0, -`${BORNAS_BUSTS.SUFFIX}r`.length)));
+export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string>, total: number): { stats: Record<string, number>; busts: BornasBustReport } => {
+  const suffix = `${BORNAS_BUSTS.SUFFIX}r`;
+  const ids = _.uniq([...kinds.keys()].filter((n) => n.endsWith(suffix)).map((n) => n.slice(0, -suffix.length)));
   const idOf = (sprite: string): string | undefined =>
     _.maxBy(
       ids.filter((id) => sprite.startsWith(`${id}_`) && !sprite.includes(BORNAS_BUSTS.SUFFIX)),
@@ -13,55 +19,86 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
   const bust = (id: string, view: string) => `${id}${BORNAS_BUSTS.SUFFIX}${view}`;
   const counts = _.countBy(beats.flatMap((b) => b.cast.map((c) => idOf(c.sprite)).filter(Boolean)));
   const hero = _.maxBy(Object.keys(counts), (id) => counts[id]);
+  const end = (i: number): number => beats[i + 1]?.t0 ?? total;
+  const used = new Map<string, number>();
+  const view = (id: string, t: number): string | undefined =>
+    _.minBy(
+      BORNAS_BUSTS.NEUTRAL.map((v) => bust(id, v)).filter((n) => kinds.has(n) && t - (used.get(n) ?? -Infinity) >= BORNAS_ROTATION.REPEAT_GAP),
+      (n) => used.get(n) ?? -Infinity,
+    );
   const stats: Record<string, number> = {};
   let k = 0,
     last = "",
     prevBg = "",
-    current: string | undefined;
+    prevBust = false,
+    bustTime = 0,
+    lastBust = -Infinity;
   const recent: string[] = [];
-  for (const b of beats) {
+  beats.forEach((b, i) => {
+    const dur = end(i) - b.t0;
+    const roomFor = (): boolean => !prevBust && b.t0 - lastBust >= BORNAS_ROTATION.BUST_GAP && (bustTime + dur) / Math.max(1, total) <= BORNAS_ROTATION.BUST_SHARE;
     if (b.kind !== "scene" || !b.bg || b.montage || b.endCard) {
+      if (b.kind === "bust") {
+        for (const c of b.cast) used.set(c.sprite, b.t0);
+        bustTime += dur;
+        lastBust = end(i);
+      }
+      prevBust = b.kind === "bust";
       last = b.kind;
-      continue;
+      return;
     }
     if (b.bg !== prevBg) {
       k = recent.slice(-BORNAS_ROTATION.RECENT).includes(b.bg) ? 1 : 0;
       prevBg = b.bg;
     }
     recent.push(b.bg);
-    const own = b.cast.map((c) => idOf(c.sprite)).find((id) => id && id === hero) || b.cast.map((c) => idOf(c.sprite)).find(Boolean);
-    if (own) current = own;
-    const lead = own || (k % 2 ? current : undefined);
-    const others = b.cast
-      .filter((c) => !c.crowd)
-      .map((c) => idOf(c.sprite))
-      .filter((id): id is string => !!id && id !== lead);
+    const people = b.cast.map((c, n) => ({ id: idOf(c.sprite), n, crowd: !!c.crowd })).filter((p): p is { id: string; n: number; crowd: boolean } => !!p.id && !p.crowd);
+    const lead = people.find((p) => p.id === hero) || people[0];
+    const others = people.filter((p) => p.id !== lead?.id);
     const prop = b.cast.find((c) => !c.crowd && (BORNAS_ROTATION.PROP_KINDS as readonly string[]).includes(kinds.get(c.sprite) || ""))?.sprite;
     const target = b.label?.cast ?? b.bubble?.cast;
-    const targetId = target !== undefined ? idOf(b.cast[target]?.sprite || "") : undefined;
+    const talking = !!b.bubble && lead && b.bubble.cast === lead.n;
+    const leadView = lead && view(lead.id, b.t0);
+    const fits = (want: Comp): boolean =>
+      want === "wide" ||
+      (want === "act" && !!people.length) ||
+      (want === "prop" && !!prop && !b.label && !b.bubble) ||
+      (want === "two" && !!leadView && !!others.length && target === undefined && roomFor() && kinds.has(bust(others[0].id, "l"))) ||
+      (want === "bust" && !!leadView && (target === undefined || talking) && roomFor());
     let comp: Comp = "wide";
-    if (k > 0 && target !== undefined) comp = targetId && targetId === lead ? (last === "L" ? "R" : "L") : targetId ? "solo" : "wide";
+    if (k > 0 && talking && fits("bust")) comp = "bust";
+    else if (k > 0 && target !== undefined) comp = "act";
     else if (k > 0)
       comp =
         _.range(BORNAS_ROTATION.ORDER.length)
           .map((s) => BORNAS_ROTATION.ORDER[(k + s) % BORNAS_ROTATION.ORDER.length])
-          .find((want) => want !== last && (want === "wide" || (lead && (want === "L" || want === "R" || want === "talk")) || (want === "two" && lead && others.length) || (want === "prop" && prop && !b.label && !b.bubble))) || "wide";
-    if (comp !== "wide") {
-      const keep = { label: b.label, bubble: b.bubble };
-      if (comp === "prop") {
-        b.cast = [castOf(prop!)];
-      } else {
-        b.kind = "bust";
-        b.cast = comp === "two" ? [castOf(bust(lead!, "r")), castOf(bust(others[0], "l"))] : comp === "solo" ? [castOf(bust(targetId!, "l"))] : [castOf(bust(lead!, BORNAS_ROTATION.VIEW[comp]))];
-      }
-      const at = comp === "two" && targetId && targetId !== lead ? 1 : 0;
-      if (keep.label) b.label = { ...keep.label, cast: at };
-      if (keep.bubble) b.bubble = { ...keep.bubble, cast: at };
+          .find((want) => want !== last && fits(want)) || "wide";
+    if (comp === "act") {
+      b.frame = "medium";
+      b.subject = target !== undefined && b.cast[target] ? target : lead!.n;
+    } else if (comp === "prop") {
+      const keep = b.plate;
+      const pointed = keep && keep.at !== null ? b.cast[keep.at]?.sprite : undefined;
+      b.cast = [castOf(prop!)];
       b.subject = 0;
+      if (keep) b.plate = { ...keep, at: pointed === prop ? 0 : null };
+    } else if (comp === "bust" || comp === "two") {
+      const keep = { label: b.label, bubble: b.bubble };
+      b.kind = "bust";
+      b.cast = comp === "two" ? [castOf(leadView!), castOf(bust(others[0].id, "l"))] : [castOf(leadView!)];
+      for (const c of b.cast) used.set(c.sprite, b.t0);
+      if (keep.label) b.label = { ...keep.label, cast: 0 };
+      if (keep.bubble) b.bubble = { ...keep.bubble, cast: 0 };
+      b.subject = 0;
+      bustTime += dur;
+      lastBust = end(i);
     }
+    prevBust = b.kind === "bust";
     stats[comp] = (stats[comp] || 0) + 1;
     last = comp;
     k++;
-  }
-  return stats;
+  });
+  const runs = beats.reduce((a, b) => (b.kind === "bust" ? { cur: a.cur + 1, max: Math.max(a.max, a.cur + 1) } : { cur: 0, max: a.max }), { cur: 0, max: 0 });
+  const per = _.countBy(beats.filter((b) => b.kind === "bust").flatMap((b) => b.cast.map((c) => c.sprite)));
+  return { stats, busts: { share: _.round(bustTime / Math.max(1, total), 2), inRow: runs.max, repeats: Math.max(0, ...Object.values(per)) } };
 };

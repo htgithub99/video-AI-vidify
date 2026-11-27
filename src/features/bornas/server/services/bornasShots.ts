@@ -3,7 +3,7 @@ import fs from "fs";
 import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_CHAPTER, BORNAS_CHAPTER_LABEL, BORNAS_DIR, BORNAS_LIMITS, bornasChapterLines, bornasTokens, BORNAS_CTA } from "../../constants/bornasConfig.js";
+import { BORNAS_CHAPTER, BORNAS_CHAPTER_LABEL, BORNAS_DIR, BORNAS_LIMITS, BORNAS_ROTATION, bornasChapterLines, bornasTokens, BORNAS_CTA } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasBgAnn, BornasSpriteAnn, BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
@@ -244,7 +244,9 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
       (b) => b.t0,
     ),
   );
-  log(BORNAS_LOG.ROTATION(JSON.stringify(rotateBornasBeats(beats, new Map(video.sprites!.map((s) => [s.name, s.kind]))))));
+  const rotated = rotateBornasBeats(beats, new Map(video.sprites!.map((s) => [s.name, s.kind])), total);
+  log(BORNAS_LOG.ROTATION(JSON.stringify(rotated.stats)));
+  log(BORNAS_LOG.BUSTS(rotated.busts), rotated.busts.share > BORNAS_ROTATION.BUST_WARN ? "warn" : "info");
   const pause = script.lines.findIndex((l) => l.pause);
   const turnT = pause >= 0 && words[pause + 1]?.[0] ? words[pause + 1][0][0] : Math.min(12, total * 0.1);
   const recap = beats.find((b) => b.kind === "montage" && b.t0 > turnT);

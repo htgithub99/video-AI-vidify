@@ -93,6 +93,7 @@ export const BORNAS_LOG = {
   SHORT_BUILT: (cut: number) => `Đã dựng Short 9:16 từ đoạn mở đầu ${cut.toFixed(1)} giây`,
   SHORT_RENDER: "Đang render Short 9:16",
   ROTATION: (stats: string) => `Bố cục theo câu: ${stats}`,
+  BUSTS: (b: { share: number; inRow: number; repeats: number }) => `Cảnh chân dung: ${Math.round(b.share * 100)}% thời lượng, liền nhau tối đa ${b.inRow}, một hình dùng nhiều nhất ${b.repeats} lần`,
   RENDER_DONE: (seconds: number) => `Render xong: ${clock(seconds)}`,
   PREVIEW: "Tạo bản xem trước 720p và bảng ảnh các cảnh",
   VIDEO_DONE: (i: number) => `Video ${i} xong`,
