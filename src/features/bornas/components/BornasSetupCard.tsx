@@ -47,7 +47,7 @@ export const BornasSetupCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({
       <div className={S.BODY}>
         <div className={B.CHANNEL_BAR}>
           {channels.map((c) => (
-            <Button key={c.id} variant="unstyled" disabled={locked} title={c.name} className={cn(B.CHANNEL_BUTTON, c.id === channel.id ? B.CHANNEL_ON : B.CHANNEL_OFF)} onClick={() => studio.selectChannel(c.id)}>
+            <Button key={c.id} variant={c.id === channel.id ? B.CHANNEL_ON_VARIANT : "unstyled"} disabled={locked} title={c.name} className={cn(B.CHANNEL_BUTTON, c.id === channel.id ? B.CHANNEL_ON : B.CHANNEL_OFF)} onClick={() => studio.selectChannel(c.id)}>
               <Radio className={S.ICON} />
               <span>{c.name}</span>
             </Button>
