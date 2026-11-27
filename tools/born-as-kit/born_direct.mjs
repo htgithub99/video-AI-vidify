@@ -119,6 +119,10 @@ const RULE = {
   bustH: 780,
   twoScale: 0.92,
   bustS: 1.05,
+  bustClose: 1.25,
+  bustCloseNative: 2.4,
+  bustCloseMin: 1.1,
+  bustCloseY: 470,
   bustSink: 0.12,
   panY: 0.0015,
   bustNativeMax: 2.1,
@@ -725,7 +729,10 @@ export const direct = (plan) => {
       const bx = two ? 960 : xs[0], bSide = bx < 960 ? 1 : bx > 960 ? -1 : (bi % 2 ? 1 : -1);
       const px = two ? 960 : bx < 960 ? 1420 : bx > 960 ? 500 : 960;
       const d = t1 - beat.t0, rate = beat.cam === "pull" ? -RULE.pullRate : hook ? RULE.hookPush : RULE.push;
-      const s0 = rate < 0 ? RULE.bustS * (1 + Math.abs(rate) * d) : RULE.bustS, s1 = rate < 0 ? RULE.bustS : RULE.bustS * (1 + rate * d);
+      const near = beat.frame === "close" && !two && !VERT && !RULE.babyRe.test(acts[0].sprite) ? Math.min(RULE.bustClose, (meta(acts[0].sprite).h * RULE.bustCloseNative) / acts[0].h) : 1;
+      const zoom = near >= RULE.bustCloseMin ? near : 1, nfb = faceBox(acts[0].sprite, acts[0].x, acts[0].y, acts[0].h, acts[0].dir, 0.5).fb;
+      const [cx, cy, csy] = zoom > 1 ? [r3((nfb.l + nfb.r) / 2), r3((nfb.t + nfb.b) / 2), RULE.bustCloseY] : [960, 540, 540];
+      const s0 = zoom * (rate < 0 ? RULE.bustS * (1 + Math.abs(rate) * d) : RULE.bustS), s1 = zoom * (rate < 0 ? RULE.bustS : RULE.bustS * (1 + rate * d));
       const icon = beat.plate ? iconOf(plan, beat.plate.text) : null;
       const lab = beat.label ? acts[Math.min(acts.length - 1, beat.label.cast || 0)] : null;
       const bub = beat.bubble ? acts[Math.min(acts.length - 1, beat.bubble.cast || 0)] : null;
@@ -733,7 +740,7 @@ export const direct = (plan) => {
         const { fb } = faceBox(a.sprite, a.x, a.y, a.h, a.dir, 0.5);
         return [r3((fb.l + fb.r) / 2), r3(fb.t + (fb.b - fb.t) * 0.78)];
       };
-      shots.push({ ...base, kind: "scene", bust: true, soft: !beat.blur, id: sid(), t0: beat.t0, bg: beat.bg, blur: !!beat.blur, actors: acts, cam: [{ t: 0, s: r3(s0), x: 960, y: 540, sx: 960, sy: 540 }, { t: r3(d), s: r3(s1), x: r3(960 + bSide * 1920 * RULE.pan * d), y: r3(540 - 1080 * RULE.panY * d), sx: 960, sy: 540 }], glowAt: beat.blur ? { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 } : undefined, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: lab ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lab.sprite, "up"]] : [], plates: beat.plate && !icon ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, VERT ? [960, RULE.vertPlateY] : [px, RULE.bustPlateY], null]] : [], icons: icon ? [[icon.sprite, beat.plate.t, bStep % 2 ? "r" : "l", beat.plate.text, icon.cross]] : [], bubbles: bub ? [["b", beat.bubble.text, beat.bubble.t, null, mouth(bub)]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), flash: beat.flash, series: !VERT && beat.t0 >= plan.turnT && beat.t0 < plan.recapT, subject: acts[0]?.sprite || null });
+      shots.push({ ...base, kind: "scene", bust: true, soft: !beat.blur, id: sid(), t0: beat.t0, bg: beat.bg, blur: !!beat.blur, actors: acts, cam: [{ t: 0, s: r3(s0), x: cx, y: cy, sx: 960, sy: csy }, { t: r3(d), s: r3(s1), x: r3(cx + bSide * 1920 * RULE.pan * d), y: r3(cy - 1080 * RULE.panY * d), sx: 960, sy: csy }], glowAt: beat.blur ? { x: bx, y: 470, r: 440, color: beat.cool ? "140,170,240" : "255,170,90", t: beat.t0 } : undefined, tags: beat.tag ? [["g", beat.tag.text, beat.tag.sub || "", beat.tag.t, beat.tag.corner || "tl"]] : [], labels: lab ? [["l", beat.label.text, beat.label.sub || "", beat.label.t, lab.sprite, "up"]] : [], plates: beat.plate && !icon ? [["p", beat.plate.text, beat.plate.sub || "", beat.plate.t, VERT ? [960, RULE.vertPlateY] : [px, RULE.bustPlateY], null]] : [], icons: icon ? [[icon.sprite, beat.plate.t, bStep % 2 ? "r" : "l", beat.plate.text, icon.cross]] : [], bubbles: bub ? [["b", beat.bubble.text, beat.bubble.t, null, mouth(bub)]] : [], dark: Math.min(RULE.darkMax, beat.dark || 0), flash: beat.flash, series: !VERT && beat.t0 >= plan.turnT && beat.t0 < plan.recapT, subject: acts[0]?.sprite || null });
       if (hook) hookShots.push(shots[shots.length - 1]);
       return;
     }

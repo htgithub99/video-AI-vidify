@@ -32,7 +32,8 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
     prevBg = "",
     prevBust = false,
     bustTime = 0,
-    lastBust = -Infinity;
+    lastBust = -Infinity,
+    closeNext = false;
   const recent: string[] = [];
   beats.forEach((b, i) => {
     const dur = end(i) - b.t0;
@@ -86,6 +87,10 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
       const keep = { label: b.label, bubble: b.bubble };
       b.kind = "bust";
       b.cast = comp === "two" ? [castOf(leadView!), castOf(bust(others[0].id, "l"))] : [castOf(leadView!)];
+      if (comp === "bust") {
+        b.frame = closeNext ? "close" : "medium";
+        closeNext = !closeNext;
+      }
       for (const c of b.cast) used.set(c.sprite, b.t0);
       if (keep.label) b.label = { ...keep.label, cast: 0 };
       if (keep.bubble) b.bubble = { ...keep.bubble, cast: 0 };
