@@ -9,6 +9,7 @@ const { camState, textJs, checkActors, plateSize, textW } = await import(pathToF
 const plan = JSON.parse(fs.readFileSync(planFile, "utf8"));
 const { direct } = await import(pathToFileURL(path.join(KIT, "born_direct.mjs")).href);
 const { VERT, VIEW, TAG_AT } = await import(pathToFileURL(path.join(KIT, "vert.mjs")).href);
+const { lookEvents, punchCam, AMB } = await import(pathToFileURL(path.join(KIT, "looks.mjs")).href);
 const VERT_CSS = `#root{width:1080px!important;height:1920px!important}#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;transform:translateX(${-((VIEW.l + VIEW.r) / 2) * VIEW.k + 540}px) scale(${VIEW.k})}#ovl,#ovt{position:absolute;left:0;top:0;width:1080px;height:1920px;z-index:60;pointer-events:none}.bl-t b{font-size:54px!important;-webkit-text-stroke:10px #16100c!important}.bl-t i{font-size:30px!important}`;
 const FIXRAW = process.env.BORN_FIX ? JSON.parse(fs.readFileSync(process.env.BORN_FIX, "utf8")) : {};
 const FIX = new Map(Array.isArray(FIXRAW) ? FIXRAW.map((id) => [id, ["tag", "wide"]]) : Object.entries(FIXRAW));
@@ -131,6 +132,8 @@ for (const s of planShots) {
   shots.push(o);
 }
 for (let i = 0; i < shots.length; i++) shots[i].t1 = i + 1 < shots.length ? shots[i + 1].t0 : TOTAL;
+const LOOK = lookEvents(plan, shots);
+for (const s of shots) if (s.accent && !s.roll) s.cam = punchCam(s.cam, s.t0, s.t1, s.accent);
 const camAt = (s, t) => camState(s.cam, s.t0, t);
 const FFMPEG = process.env.FFMPEG || "ffmpeg";
 const SEPIA = "colorchannelmixer=rr=.6965:rg=.3845:rb=.0945:gr=.1745:gg=.843:gb=.084:br=.136:bg=.267:bb=.5655";
@@ -139,8 +142,11 @@ const GRADES = {
   war: "eq=saturation=0.74:contrast=1.08:brightness=-0.02,colorbalance=rs=-0.03:bs=0.05:rm=-0.02:bm=0.03",
   warm: "eq=saturation=1.04:contrast=1.04,colorbalance=rm=0.05:gm=0.02:bm=-0.05:rh=0.03:bh=-0.03",
   anime: "eq=saturation=1.08:contrast=1.03:brightness=0.01",
+  silk: "eq=saturation=1.05:contrast=1.03,colorbalance=rh=0.02:bh=-0.02",
+  gaslight: "eq=saturation=0.8:contrast=1.08:brightness=-0.03,colorbalance=rs=-0.04:gs=-0.01:bs=0.07:rh=0.05:gh=0.02:bh=-0.04",
+  stone: "eq=saturation=0.84:contrast=1.06:brightness=-0.01,colorbalance=bs=0.03:bm=0.02",
 };
-const GRADE = GRADES[plan.grade] || "";
+const GRADE = GRADES[LOOK.grade] || "";
 const BG_Q = "3";
 const BLUR = { W: 1920, SIGMA: 18, DIM: 0.7 };
 const ff = (args) => execFileSync(FFMPEG, ["-y", "-loglevel", "error", ...args], { windowsHide: true });
@@ -162,6 +168,14 @@ const TEXTEV = [];
 let html = "", js = "";
 const camJs = (s) => ["c", "t"].map((k) => `BORN.camPath(tl,'#${s.id}${k}',[${s.cam.map((c) => `{t:${(s.t0 + c.t).toFixed(3)},v:BORN.cam(${c.s},${c.tx},${c.ty},${c.sx},${c.sy})${c.ease ? `,ease:'${c.ease}'` : ""}}`).join(",")}]);`).join("");
 const breath = (s) => `tl.fromTo('#${s.id} .cam > svg > g',{scaleY:1,transformOrigin:'50% 100%'},{scaleY:1.008,duration:.9,yoyo:true,repeat:${Math.max(1, Math.floor((s.t1 - s.t0) / 0.9))},ease:'sine.inOut'},${s.t0});`;
+const impactJs = (s, ov) => {
+  const t = s.impact.t.toFixed(3), k = `#${s.id}k`;
+  let o = `{const e=document.createElement('div');e.className='bw';${ov}.appendChild(e);tl.fromTo(e,{opacity:${s.impact.speed ? 0.85 : 0.6}},{opacity:0,duration:${s.impact.speed ? 0.22 : 0.35},immediateRender:false},${t});}`;
+  if (!s.roll) o += `tl.to('${k}',{scale:1.035,duration:.06,ease:'none'},${t});BORN.shake(tl,'${k}',${t},.45,${s.impact.speed ? 16 : 11},7);tl.to('${k}',{x:0,y:0,scale:1,duration:.3,ease:'sine.out'},${(s.impact.t + 0.5).toFixed(3)});`;
+  if (s.impact.kind === "slash") o += `{const e=document.createElement('div');e.className='slash';${ov}.appendChild(e);tl.fromTo(e,{scaleX:0,opacity:1},{scaleX:1,duration:.12,ease:'power2.out',immediateRender:false},${t});tl.to(e,{opacity:0,duration:.25},${(s.impact.t + 0.14).toFixed(3)});}`;
+  if (s.impact.speed) o += `{const e=document.createElement('div');e.className='speedl';${ov}.appendChild(e);tl.fromTo(e,{opacity:0,rotation:0},{keyframes:[{opacity:.9,rotation:4,duration:.08},{opacity:.7,rotation:-3,duration:.12},{opacity:0,rotation:2,duration:.3}],ease:'none',immediateRender:false},${t});}`;
+  return o;
+};
 const bar = (s) => `{const h=document.getElementById('${s.id}h');const e=document.createElement('div');e.className='sbar';e.innerHTML='<div class="sbl">${safe(s.bar.label)}</div><div class="sbt"><div class="sbf" id="${s.id}bf"></div></div><div class="sbv" id="${s.id}bv">${s.bar.from}%</div>';h.appendChild(e);tl.fromTo(e,{opacity:0,y:-30},{opacity:1,y:0,duration:.3},${s.bar.t});tl.fromTo('#${s.id}bf',{width:'${s.bar.from}%'},{width:'${s.bar.to}%',duration:.8,ease:'power2.out'},${s.bar.t + 0.4});const o={v:${s.bar.from}};tl.to(o,{v:${s.bar.to},duration:.8,ease:'power2.out',onUpdate:()=>{document.getElementById('${s.id}bv').textContent=Math.round(o.v)+'%'}},${s.bar.t + 0.4});}`;
 for (const s of shots) {
   const d = (s.t1 - s.t0).toFixed(3);
@@ -229,19 +243,24 @@ for (const s of shots) {
   }
   if (s.series) js += `{const e=BORN.series(${hud},{id:'${s.id}sr',text:'${s.series}'});tl.set(e,{opacity:1},${s.t0});}`;
   if (s.focusAt) js += `{const f=BORN.focus(${ov},'${s.id}fo',${s.focusAt[0]},${s.focusAt[1]},150,560,.75);BORN.fadeIn(tl,f,${s.focusAt[2]},.6);}`;
+  if (s.impact) js += impactJs(s, ov);
+  if (s.accent?.kind === "spot") js += `{const e=document.createElement('div');e.className='spot';${ov}.appendChild(e);tl.fromTo(e,{opacity:0},{opacity:1,duration:.4,immediateRender:false},${s.accent.t.toFixed(3)});tl.to(e,{opacity:0,duration:.6},${Math.min(s.t1 - 0.6, s.accent.t + 1.8).toFixed(3)});}`;
   if (s.flashAt !== undefined) js += `{const e=document.createElement('div');e.className='bw';${ov}.appendChild(e);tl.fromTo(e,{opacity:.55},{opacity:0,duration:.4,immediateRender:false},${s.flashAt});}`;
   if (s.smoke) js += `{const e=document.createElement('div');e.className='haze';${ov}.appendChild(e);tl.fromTo(e,{x:-200,opacity:0},{x:200,opacity:.45,duration:${(s.t1 - s.t0).toFixed(2)},ease:'none'},${s.t0});}`;
   if (s.endCard) js += `{const e=BORN.plate(${hud},{id:'${s.id}end',text:'${up(s.endCard.text)}',sub:'${up(s.endCard.sub)}',x:960,y:${VERT ? 760 : 190},size:${VERT ? 44 : 64},rot:-2});BORN.plateIn(tl,e,${s.endCard.t});}`;
 }
 const css = fs.readFileSync(path.join(KIT, "born_style.css"), "utf8");
 const scripts = ["gsap.min.js", "DrawSVGPlugin.min.js", "MorphSVGPlugin.min.js", "MotionPathPlugin.min.js", "SplitText.min.js", "CustomEase.min.js", "CustomWiggle.min.js", "noise.min.js", "kit.js"].map((f) => `<script src="${f}"></script>`).join("");
-const fxDef = FX[plan.fx];
+const fxDef = FX[LOOK.fx];
 const rnd = ((seed) => () => ((seed = (seed * 16807) % 2147483647) / 2147483647))(97);
 const pick = ([a, b]) => a + (b - a) * rnd();
 const fxItems = fxDef ? Array.from({ length: fxDef.n }, (_, i) => ({ i, x: pick([0, 1920]), y: pick([0, 1080]), size: pick(fxDef.size), dx: pick(fxDef.dx), dy: pick(fxDef.dy), dur: pick(fxDef.dur), delay: pick([0, 6]) })) : [];
+const amb = AMB[LOOK.amb];
+const ambHtml = amb ? `<div class="amb ${amb.cls}" id="amb"></div>` : "";
+const ambJs = amb ? `tl.fromTo('#amb',{opacity:${amb.from}},{keyframes:[${Array.from({ length: amb.keys }, () => `{opacity:${(amb.from + (amb.to - amb.from) * rnd()).toFixed(3)},duration:${amb.step}}`).join(",")}],ease:'none',repeat:${Math.max(0, Math.floor(TOTAL / (amb.keys * amb.step)))}},0);` : "";
 const fxHtml = fxDef ? `<div class="fx">${fxItems.map((p) => `<i id="fx${p.i}" style="left:${p.x.toFixed(0)}px;top:${p.y.toFixed(0)}px;width:${p.size.toFixed(1)}px;height:${(fxDef.petal ? p.size * 0.62 : fxDef.fog ? p.size * 0.32 : p.size).toFixed(1)}px;background:${fxDef.color};border-radius:${fxDef.petal ? "60% 0" : "50%"};filter:blur(${fxDef.blur}px)"></i>`).join("")}</div>` : "";
 const fxJs = fxItems.map((p) => `tl.fromTo('#fx${p.i}',{x:0,y:0,opacity:0,rotation:0},{keyframes:[{opacity:1,duration:${(p.dur * 0.2).toFixed(2)}},{opacity:1,duration:${(p.dur * 0.6).toFixed(2)}},{opacity:0,duration:${(p.dur * 0.2).toFixed(2)}}],x:${p.dx.toFixed(0)},y:${p.dy.toFixed(0)},rotation:${fxDef.petal ? 220 : 0},ease:'none',repeat:${Math.max(0, Math.floor((TOTAL - p.delay) / p.dur) - 1)}},${p.delay.toFixed(2)});`).join("");
-const out = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts/fonts.css"><style>${css}${VERT ? VERT_CSS : ""}</style></head><body>${spriteDefs()}<div id="root"${plan.grade ? ` class="grade-${plan.grade}"` : ""} data-composition-id="root" data-width="${VERT ? 1080 : 1920}" data-height="${VERT ? 1920 : 1080}" data-start="0" data-duration="${TOTAL}">\n${VERT ? `<div id="stage">${html}${fxHtml}</div>` : html + fxHtml}<div class="grain"></div><div class="vig"></div>${VERT && fs.existsSync(path.join(jobDir, "ov.png")) ? '<img id="ovl" src="ov.png">' : ""}${VERT && fs.existsSync(path.join(jobDir, "ovt.png")) ? '<img id="ovt" src="ovt.png">' : ""}<audio id="vo" src="voice.wav" data-start="0" data-duration="${TOTAL}" data-volume="1"></audio></div>${scripts}<script>document.head.insertAdjacentHTML('beforeend','<style>'+BORN_CSS+'</style>');${VERT ? `BORN.TAG_AT=${JSON.stringify(TAG_AT)};` : ''}const tl=gsap.timeline({paused:true});${fxJs}${VERT ? `if(document.getElementById('ovt'))tl.to('#ovt',{opacity:0,duration:.4},${OVT_OUT});` : ''}\n${js}\ntl.to({},{duration:${TOTAL}},0);window.__timelines={root:tl};</script></body></html>`;
+const out = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts/fonts.css"><style>${css}${VERT ? VERT_CSS : ""}</style></head><body>${spriteDefs()}<div id="root" class="${[LOOK.grade && `grade-${LOOK.grade}`, LOOK.art && "art-anime"].filter(Boolean).join(" ")}" data-composition-id="root" data-width="${VERT ? 1080 : 1920}" data-height="${VERT ? 1920 : 1080}" data-start="0" data-duration="${TOTAL}">\n${VERT ? `<div id="stage">${html}${fxHtml}</div>` : html + fxHtml}${ambHtml}<div class="grain"></div><div class="vig"></div>${VERT && fs.existsSync(path.join(jobDir, "ov.png")) ? '<img id="ovl" src="ov.png">' : ""}${VERT && fs.existsSync(path.join(jobDir, "ovt.png")) ? '<img id="ovt" src="ovt.png">' : ""}<audio id="vo" src="voice.wav" data-start="0" data-duration="${TOTAL}" data-volume="1"></audio></div>${scripts}<script>document.head.insertAdjacentHTML('beforeend','<style>'+BORN_CSS+'</style>');${VERT ? `BORN.TAG_AT=${JSON.stringify(TAG_AT)};` : ''}const tl=gsap.timeline({paused:true});${fxJs}${ambJs}${VERT ? `if(document.getElementById('ovt'))tl.to('#ovt',{opacity:0,duration:.4},${OVT_OUT});` : ''}\n${js}\ntl.to({},{duration:${TOTAL}},0);window.__timelines={root:tl};</script></body></html>`;
 fs.mkdirSync(path.join(jobDir, "png"), { recursive: true });
 fs.writeFileSync(path.join(jobDir, "index.html"), out);
 for (const n of pngUsed()) {

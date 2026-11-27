@@ -5,7 +5,7 @@ import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { reupFfmpeg } from "../../../reup/server/services/reupFfmpeg.js";
-import { BORNAS_ANN, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
+import { BORNAS_ANN, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, BORNAS_STYLE_LINES, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasAiSettings, BornasDrawChoice, BornasAssetPlan, BornasBackground, BornasBgAnn, BornasJob, BornasScript, BornasSprite, BornasSpriteAnn, BornasVideo } from "../../types/bornas.js";
@@ -220,7 +220,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     for (const [k, group] of _.chunk(c.poses, BORNAS_LIMITS.CAST_ROW).entries()) {
       const raw = path.join(raws, `cast_${c.id}_${k}.png`);
       const ref = castRef[personOf(c.id)];
-      const ok = fs.existsSync(raw) || (await drawSheet(BORNAS_PROMPT.CAST_SHEET(c.desc, group, !!ref), raw, c.id, job.ai.drawAi, log, misses, signal, ref ? [ref] : []));
+      const ok = fs.existsSync(raw) || (await drawSheet(BORNAS_PROMPT.CAST_SHEET(BORNAS_STYLE_LINES[job.channel.art], c.desc, group, !!ref), raw, c.id, job.ai.drawAi, log, misses, signal, ref ? [ref] : []));
       if (ok && !ref) castRef[personOf(c.id)] = raw;
       files.push(...(ok ? await keyedSplit(job, raw, path.join(raws, `cast_${c.id}_${k}`), group, log, signal) : group.map(() => undefined)));
     }
@@ -233,14 +233,14 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     for (const [i, pose] of poses.entries()) {
       if (!/bust/.test(pose.name)) continue;
       const single = path.join(raws, `bust_${c.id}.png`);
-      const drawn = fs.existsSync(single) || (await drawSheet(BORNAS_PROMPT.BUST_SINGLE(c.desc, pose.desc), single, `${c.id} ${pose.name}`, job.ai.drawAi, log, misses, signal));
+      const drawn = fs.existsSync(single) || (await drawSheet(BORNAS_PROMPT.BUST_SINGLE(BORNAS_STYLE_LINES[job.channel.art], c.desc, pose.desc), single, `${c.id} ${pose.name}`, job.ai.drawAi, log, misses, signal));
       const [file] = drawn ? await keyedSplit(job, single, path.join(raws, `bust_${c.id}`), [pose], log, signal) : [];
       if (file) copyCrop(file, path.join(png, `${names[i]}.png`));
     }
     names.forEach((name, i) => add(name, path.join(png, `${name}.png`), /bust/.test(poses[i].name) ? "bust" : "person", c.heightM, "r", `${c.desc}; ${poses[i].desc}`));
     if (BORNAS_BUSTS.SKIP.test(c.id) || !poses.length) continue;
     const triple = path.join(raws, `busts_${c.id}.png`);
-    const drew = fs.existsSync(triple) || (await drawSheet(BORNAS_PROMPT.BUST_TRIPLE(c.desc), triple, `${c.id} busts`, job.ai.drawAi, log, misses, signal));
+    const drew = fs.existsSync(triple) || (await drawSheet(BORNAS_PROMPT.BUST_TRIPLE(BORNAS_STYLE_LINES[job.channel.art], c.desc), triple, `${c.id} busts`, job.ai.drawAi, log, misses, signal));
     if (!drew) continue;
     const keyed = path.join(raws, `busts_${c.id}_key.png`);
     await runKitPy("alpha_key.py", ["--edge", triple, keyed], log, signal);
@@ -260,7 +260,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     const sheet = `auto_${stamp}_${job.id.slice(0, 6)}_${video.index + 1}${k}`;
     const raw = bornasLib(home, "raw", `${sheet}.jpg`);
     const tmp = path.join(raws, `${sheet}.png`);
-    const ok = fs.existsSync(tmp) || (await drawSheet(BORNAS_PROMPT.ITEM_SHEET(group, cols, rows), tmp, group.map((g) => g.name).join(", "), job.ai.drawAi, log, misses, signal));
+    const ok = fs.existsSync(tmp) || (await drawSheet(BORNAS_PROMPT.ITEM_SHEET(BORNAS_STYLE_LINES[job.channel.art], group, cols, rows), tmp, group.map((g) => g.name).join(", "), job.ai.drawAi, log, misses, signal));
     if (!ok) continue;
     await reupFfmpeg(["-y", "-i", tmp, "-q:v", "2", raw], { signal });
     const files = await keyedSplit(job, tmp, path.join(raws, sheet), group, log, signal);
@@ -279,7 +279,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
   }
   for (const b of plan.newBackgrounds) {
     const tmp = path.join(raws, `${b.name}.png`);
-    const ok = fs.existsSync(tmp) || (await drawSheet(BORNAS_PROMPT.BACKGROUND(b.desc), tmp, b.name, job.ai.drawAi, log, misses, signal));
+    const ok = fs.existsSync(tmp) || (await drawSheet(BORNAS_PROMPT.BACKGROUND(BORNAS_STYLE_LINES[job.channel.art], b.desc), tmp, b.name, job.ai.drawAi, log, misses, signal));
     if (!ok) continue;
     fs.mkdirSync(bornasLib(home, "bg"), { recursive: true });
     await reupFfmpeg(["-y", "-i", tmp, "-q:v", "2", bornasLib(home, "bg", `${b.name}.jpg`)], { signal });
@@ -363,7 +363,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
         const sheet = `fix_${stamp}_${job.id.slice(0, 6)}_${video.index + 1}${who}${k}`;
         const tmp = path.join(raws, `${sheet}.png`);
         const ref = who ? castRef[who] : undefined;
-        const ok = fs.existsSync(tmp) || (await drawSheet(BORNAS_PROMPT.FIX_SHEET(group, cols, rows, !!ref), tmp, group.map((sp) => sp.name).join(", "), job.ai.drawAi, log, misses, signal, ref ? [ref] : []));
+        const ok = fs.existsSync(tmp) || (await drawSheet(BORNAS_PROMPT.FIX_SHEET(BORNAS_STYLE_LINES[job.channel.art], group, cols, rows, !!ref), tmp, group.map((sp) => sp.name).join(", "), job.ai.drawAi, log, misses, signal, ref ? [ref] : []));
         if (!ok) continue;
         const files = await keyedSplit(job, tmp, path.join(raws, sheet), group, log, signal);
         group.forEach((sp, i) => {

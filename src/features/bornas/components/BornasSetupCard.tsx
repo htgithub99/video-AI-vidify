@@ -12,10 +12,10 @@ import { MotionSettingsGroup } from "../../motion/components/MotionSettingsGroup
 import { MOTION_NOTICE_IDS } from "../../motion/constants/motionNotices.js";
 import { ReupSelect, ReupTextField, ReupToggle, reupClock } from "../../reup/components/ReupControls.js";
 import { REUP_STYLES as S } from "../../reup/constants/reupStyles.js";
-import { BORNAS_COUNTS, BORNAS_GENRES, BORNAS_LENGTHS, BORNAS_MUSIC_CHOICES, BORNAS_STEPS, BORNAS_TOPICS } from "../constants/bornasConfig.js";
+import { BORNAS_ARTS, BORNAS_COUNTS, BORNAS_GENRES, BORNAS_LENGTHS, BORNAS_MUSIC_CHOICES, BORNAS_STEPS, BORNAS_TOPICS } from "../constants/bornasConfig.js";
 import { BORNAS_STYLES as B } from "../constants/bornasStyles.js";
 import type { BornasStudio } from "../hooks/useBornasStudio.js";
-import type { BornasGenre, BornasLanguage, BornasMusicChoice, BornasTopic } from "../types/bornas.js";
+import type { BornasArt, BornasGenre, BornasLanguage, BornasMusicChoice, BornasTopic } from "../types/bornas.js";
 export const BornasSetupCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({ studio, ui }) => {
   const { text, channel, channels, patchChannel, sample, job, running } = studio;
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[ui];
@@ -80,6 +80,7 @@ export const BornasSetupCard: FC<{ studio: BornasStudio; ui: "vi" | "en" }> = ({
           </MotionSettingsGroup>
           <MotionSettingsGroup title={text.GROUP_CONTENT}>
             <ReupSelect<BornasTopic> label={text.TOPIC} title={text.TOPIC_HINT} value={channel.topic} options={BORNAS_TOPICS.map((value) => ({ value, label: text.TOPICS[value] }))} onChange={(topic) => patchChannel({ topic })} />
+            <ReupSelect<BornasArt> label={text.ART} title={text.ART_HINT} value={channel.art} options={BORNAS_ARTS.map((value) => ({ value, label: text.ARTS[value] }))} onChange={(art) => patchChannel({ art })} />
             <ReupSelect<BornasGenre> label={text.GENRE} title={text.GENRE_HINT} value={channel.genre} options={BORNAS_GENRES.map((value) => ({ value, label: text.GENRES[value] }))} onChange={(genre) => patchChannel({ genre })} />
           </MotionSettingsGroup>
           <MotionSettingsGroup title={text.GROUP_AUDIO}>

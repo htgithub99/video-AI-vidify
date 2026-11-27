@@ -2,6 +2,7 @@ import { faceBox, meta } from "./sprites.mjs";
 import { camState } from "./layout.mjs";
 
 import { VERT, VERT_S } from "./vert.mjs";
+import { lookOf } from "./looks.mjs";
 const RULE = {
   shoreGap: 60,
   skyW: 580,
@@ -126,6 +127,7 @@ const RULE = {
   vertInsertW: 540,
   vertBust: 0.8,
 };
+const CAM0 = { push: RULE.push, hookPush: RULE.hookPush, pullRate: RULE.pullRate, pan: RULE.pan };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const TURNS = new Set(["person", "animal", "vehicle"]);
@@ -597,6 +599,8 @@ const cameraFor = (frame, d, hook, subj, subjEnd, actors, look) => {
 };
 
 export const direct = (plan) => {
+  const lk = lookOf(plan);
+  Object.assign(RULE, { push: CAM0.push * lk.cam.push, hookPush: CAM0.hookPush * lk.cam.push, pullRate: CAM0.pullRate * lk.cam.push, pan: CAM0.pan * lk.cam.pan });
   const onsets = plan.onsets || [];
   const shots = [];
   const beats = [...plan.beats].sort((a, b) => a.t0 - b.t0);

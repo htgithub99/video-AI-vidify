@@ -3,7 +3,7 @@ import fs from "fs";
 import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_CHAPTER, BORNAS_CHAPTER_LABEL, BORNAS_DIR, BORNAS_LIMITS, BORNAS_TOPIC_FX, BORNAS_TOPIC_GRADE, bornasChapterLines, bornasTokens, BORNAS_CTA } from "../../constants/bornasConfig.js";
+import { BORNAS_CHAPTER, BORNAS_CHAPTER_LABEL, BORNAS_DIR, BORNAS_LIMITS, bornasChapterLines, bornasTokens, BORNAS_CTA } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasBgAnn, BornasSpriteAnn, BornasJob, BornasScript, BornasVideo } from "../../types/bornas.js";
@@ -51,8 +51,9 @@ export interface BornasBeat {
 export interface BornasPlan {
   total: number;
   series: string;
-  grade: string;
-  fx: string;
+  look: string;
+  art: string;
+  words: [number, number, string][][];
   turnT: number;
   recapT: number;
   pxPerM: number;
@@ -259,8 +260,12 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
   return {
     total,
     series: script.series || script.title.toUpperCase().slice(0, BORNAS_LIMITS.SERIES_MAX),
-    grade: BORNAS_TOPIC_GRADE[job.channel.topic] || "",
-    fx: BORNAS_TOPIC_FX[job.channel.topic] || "",
+    look: job.channel.topic,
+    art: job.channel.art === "anime" ? "anime" : "",
+    words: words.map((w, i) => {
+      const toks = bornasTokens(script.lines[i].text);
+      return w.map(([s, e], j) => [s, e, toks[j] || ""] as [number, number, string]);
+    }),
     turnT,
     recapT: recap ? recap.t0 : total * 0.86,
     pxPerM: BORNAS_LIMITS.PX_PER_M,

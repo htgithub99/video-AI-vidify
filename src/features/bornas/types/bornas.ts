@@ -1,6 +1,7 @@
 import type { MotionLanguageCode } from "../../../constants/motionLanguages/index.js";
 import type { ReupAiChoice } from "../../reup/types/reup.js";
-export type BornasTopic = "world" | "ww" | "ancient" | "medieval" | "eastasia" | "vietnam" | "modern" | "game" | "wildwest";
+export type BornasTopic = "world" | "ww" | "ancient" | "medieval" | "eastasia" | "vietnam" | "modern" | "game" | "wildwest" | "victorian";
+export type BornasArt = "cartoon" | "anime";
 export type BornasLanguage = MotionLanguageCode;
 export type BornasGenre = "bornas" | "survive" | "worst" | "day" | "whatif";
 export type BornasMusicChoice = "off" | "library";
@@ -12,6 +13,7 @@ export interface BornasChannel {
   id: string;
   name: string;
   topic: BornasTopic;
+  art: BornasArt;
   voiceChannel: string;
   language: BornasLanguage;
   genre: BornasGenre;
