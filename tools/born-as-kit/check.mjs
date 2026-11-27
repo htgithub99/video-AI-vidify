@@ -27,7 +27,7 @@ for (const t of times) {
     const spr = [...clip.querySelectorAll(".cam > svg use")].map((u) => { const q = R(u), n = u.getAttribute("href").slice(3), f = FM[n] || { l: 0, r: 0, t: 0, b: 0 }, flip = /scale\(-/.test(u.parentElement.getAttribute("transform")), W = q.r - q.l, H = q.b - q.t; const fl = flip ? 1 - f.r : f.l, fr = flip ? 1 - f.l : f.r; return { n, l: q.l + W * fl, r: q.l + W * fr, t: q.t + H * f.t, b: q.t + H * f.b }; });
     const out = [];
     for (const x of texts) {
-      if (x.l < 20 || x.r > 1900 || x.t < 20 || x.b > 1060) out.push(`${x.s}: tràn mép`);
+      if (x.l < 20 || x.r > innerWidth - 20 || x.t < 20 || x.b > innerHeight - 20) out.push(`${x.s}: tràn mép ${Math.round(x.l)},${Math.round(x.t)},${Math.round(x.r)},${Math.round(x.b)}`);
       if (x.plate) for (const y of bodies) { const a = Math.max(0, Math.min(x.r, y.r) - Math.max(x.l, y.l)) * Math.max(0, Math.min(x.b, y.b) - Math.max(x.t, y.t)); if (a / ((x.r - x.l) * (x.b - x.t)) > 0.06) out.push(`${x.s}: thẻ đè người ${y.n} ${Math.round((a / ((x.r - x.l) * (x.b - x.t))) * 100)}%`); }
       for (const y of spr) { const a = Math.max(0, Math.min(x.r, y.r) - Math.max(x.l, y.l)) * Math.max(0, Math.min(x.b, y.b) - Math.max(x.t, y.t)); const fr = a / ((x.r - x.l) * (x.b - x.t)); if (fr > 0.04) out.push(`${x.s}: che đầu/mặt ${y.n} ${Math.round(fr * 100)}%`); }
       for (const z of texts) if (z !== x && z.s !== x.s) { const a = Math.max(0, Math.min(x.r, z.r) - Math.max(x.l, z.l)) * Math.max(0, Math.min(x.b, z.b) - Math.max(x.t, z.t)); if (a > 50) out.push(`${x.s}: đè chữ ${z.s}`); }

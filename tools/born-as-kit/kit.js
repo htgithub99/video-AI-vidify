@@ -79,7 +79,7 @@ const BORN = {
     if (pl.tail) tl.fromTo(pl.wrap.querySelectorAll(".bl-a path"), { drawSVG: "0%" }, { drawSVG: "100%", duration: 0.3, ease: "power2.out" }, t + 0.2);
   },
   tag(root, { id, text, sub = "", corner = "tr", size = 52 }) {
-    const at = BORN.TAG_AT || { tl: [330, 140], tr: [1570, 140] }, x = (at[corner] || at.tr)[0], y = corner[0] === "b" ? 950 : (at[corner] || at.tr)[1];
+    const at = BORN.TAG_AT || { tl: [330, 140], tr: [1570, 140] }, x = (at[corner] || at.tr)[0], y = at[corner] ? at[corner][1] : corner[0] === "b" ? 950 : at.tr[1];
     return BORN.plate(root, { id, text, sub, x, y, size, rot: corner === "tl" ? -3 : 3 });
   },
   bubble(root, { id, text, x, y, tail, size = 50 }) {

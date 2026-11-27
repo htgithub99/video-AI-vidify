@@ -623,8 +623,8 @@ const shapeEvents = (plan, shots) => {
   }
   return out;
 };
-const EVENTS = { insetX: 1380, insetY: 470, insetH: 460, shiftDx: -250, shiftDur: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: 14 };
-const shortName = (t) => { const w = String(t).trim().split(/\s+/); return t.length > EVENTS.labelChars && w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : t; };
+const EVENTS = { insetX: 1380, insetY: 470, insetH: 460, shiftDx: -250, shiftDur: 0.6, talkMax: 2.4, lateLabel: 0.4, labelChars: 15 };
+const shortName = (t) => { const w = String(t).trim().split(/\s+/), two = w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : w.join(" "); return t.length <= EVENTS.labelChars ? t : two.length <= EVENTS.labelChars ? two : w[w.length - 1]; };
 const iconOf = (plan, text) => { const hit = RULE.icons.find(([w]) => w.test(text)); const sprite = hit && Object.keys(plan.sprites || {}).find((n) => hit[1].test(n)); return sprite ? { sprite, cross: /^NO\b/i.test(String(text).trim()) } : null; };
 export const direct = (plan) => {
   plan = { ...plan, beats: plan.beats.map((b) => ({ ...b, cast: (b.cast || []).filter((c) => !RULE.builtKinds.has(plan.sprites[c.sprite]?.kind)), ...(b.label ? { label: { ...b.label, text: shortName(b.label.text) } } : {}) })) };

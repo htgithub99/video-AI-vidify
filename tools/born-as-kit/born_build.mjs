@@ -15,13 +15,20 @@ const FIXRAW = process.env.BORN_FIX ? JSON.parse(fs.readFileSync(process.env.BOR
 const FIX = new Map(Array.isArray(FIXRAW) ? FIXRAW.map((id) => [id, ["tag", "wide"]]) : Object.entries(FIXRAW));
 const sameScene = (a, b) => a.kind === "scene" && b.kind === "scene" && !a.roll && !b.roll && !a.endCard && !b.endCard && a.bg === b.bg && !!a.bust === !!b.bust && !!a.blur === !!b.blur && !!a.warm === !!b.warm && (a.actors || []).length === (b.actors || []).length && (a.actors || []).every((x, i) => x.sprite === b.actors[i].sprite && !x.shift && !b.actors[i].shift && Math.abs(x.h - b.actors[i].h) < 1);
 const joinMove = (m, n) => (!m ? n : !n ? m : { ...m, dx: m.dx + n.dx, dur: n.t + n.dur - m.t });
+const TEXT_T = { tags: 3, labels: 3, plates: 3, bubbles: 2 };
 const mergeRuns = (list) => {
   const out = [];
   for (const s of list) {
     const a = out.at(-1);
     if (!a || !sameScene(a, s)) { out.push({ ...s, actors: (s.actors || []).map((x) => ({ ...x })) }); continue; }
     a.actors.forEach((x, i) => { x.move = joinMove(x.move, s.actors[i].move); });
-    for (const k of ["tags", "labels", "plates", "bubbles", "icons", "swaps"]) a[k] = [...(a[k] || []), ...(s[k] || [])];
+    a.part = (a.part || 0) + 1;
+    for (const [k, ti] of Object.entries(TEXT_T)) {
+      const add = (s[k] || []).map((x, j) => [`${x[0]}${a.part}${j}`, ...x.slice(1)]);
+      if (add.length) a.outs = [...(a.outs || []), ...(a[k] || []).map((x) => [x[0], add[0][ti]])];
+      a[k] = [...(a[k] || []), ...add];
+    }
+    for (const k of ["icons", "swaps"]) a[k] = [...(a[k] || []), ...(s[k] || [])];
     for (const k of ["focusOn", "flash", "glowAt", "smoke"]) if (a[k] === undefined && s[k] !== undefined) a[k] = s[k];
     if ((s.dark || 0) !== (a.darkSteps?.at(-1)?.[1] ?? a.dark ?? 0)) a.darkSteps = [...(a.darkSteps || [[a.t0, a.dark || 0]]), [s.t0, s.dark || 0]];
     a.merged = true;
@@ -36,9 +43,10 @@ const up = (s) => safe(String(s ?? "").toLocaleUpperCase("vi"));
 const PAPER_W = VERT ? 540 : 1640;
 const OVT_OUT = 2.6;
 const LAYER = { BG: [0.25, 0.25] };
-const STEP = { ZOOM: 0.1, ZOOM2: 0.05, WIDE: 0.7, PULL: 0.6, PULL_MAX: 0, DUR: 0.8, MIN_DUR: 0.45, MIN_LEAD: 0.2, MIN_TAIL: 0.3, EARLY: 0.75, GAP: 0.9, HOLD: 0.15, DEFAULT_AT: 0.3, CENTER: 1, SY: 520, FACE_DROP: 40, GROUP_Y: 0.35, LINE_EPS: 0.3, S_MAX: 1.4, EASE: "power2.inOut" };
+const STEP = { ZOOM: 0.1, ZOOM2: 0.05, WIDE: 0.7, PULL: 0.6, PULL_MAX: 0, DUR: 0.8, MIN_DUR: 0.45, MIN_LEAD: 0.2, MIN_TAIL: 0.3, EARLY: 0.75, GAP: 0.9, HOLD: 0.15, DEFAULT_AT: 0.3, CENTER: 1, SY: VERT ? 640 : 520, FACE_DROP: 40, GROUP_Y: 0.35, LINE_EPS: 0.3, S_MAX: 1.4, EASE: "power2.inOut" };
+const VERT_TITLE_END = 2.8;
 const ICON = { H: 220, W: 280, GAP: 80, HAIR: 0.55, LIFT: 95, Y: 470, RAIL: 0.38 };
-const VISIT = { AHEAD: 130, DUR_IN: 1.0, DUR_OUT: 0.6, LEAD: 0.45, DUR: 0.7, HOLD: 1.6, AFTER: 0.3, LABEL_HOLD: 1.1, LABEL_Z: 1.35, ICON_Z: 1.55, FACE_DROP: 60, OUT: 0.25, STEP: 1 / 15 };
+const VISIT = { AHEAD: VERT ? 40 : 130, DUR_IN: 1.0, DUR_OUT: 0.6, LEAD: 0.45, DUR: 0.7, HOLD: 1.6, AFTER: 0.3, LABEL_HOLD: 1.1, LABEL_Z: VERT ? 1.12 : 1.35, ICON_Z: VERT ? 1.25 : 1.55, FACE_DROP: 60, OUT: 0.25, STEP: 1 / 15 };
 const DRIFT = { DARK_FADE: 0.8, RATE: 0.012, PUNCH: 0.03, PEAK: 0.16, BACK: 0.5, MIN_TAIL: 0.3, IN: "power2.out" };
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const EVENT = { FLAP: 0.15, FADE: 0.12, SLIDE: 140, ROT: 6, SLIDE_DUR: 0.18 };
@@ -91,7 +99,7 @@ const spread = (actors) => {
   if (over) for (const a of solid) a.x = Math.max(40 + width(a) / 2, a.x - over);
 };
 for (const s of planShots) {
-  const o = { actorMoves: Object.fromEntries((s.actors || []).filter((a) => a.move?.dx).map((a) => [a.sprite, a.move])), darkSteps: s.darkSteps, merged: !!s.merged, icons: (s.icons || []).map((x) => [x[0], x[1], x[2], up(x[3]), x[4]]), id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, bust: !!s.bust, soft: !!s.soft, subject: s.subject || null, shiftT: (s.actors || []).find((x) => x.shift)?.shift.t, mover: (s.actors || []).find((x) => x.move?.dx && (x.sprite === s.subject || !s.subject))?.move, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, chapter: s.chapter, endCard: s.endCard, moves: "" };
+  const o = { outs: s.outs || [], actorMoves: Object.fromEntries((s.actors || []).filter((a) => a.move?.dx).map((a) => [a.sprite, a.move])), darkSteps: s.darkSteps, merged: !!s.merged, icons: (s.icons || []).map((x) => [x[0], x[1], x[2], up(x[3]), x[4]]), id: s.id, t0: s.t0, kind: s.kind || "scene", bg: s.bg, blur: !!s.blur, bust: !!s.bust, soft: !!s.soft, subject: s.subject || null, shiftT: (s.actors || []).find((x) => x.shift)?.shift.t, mover: (s.actors || []).find((x) => x.move?.dx && (x.sprite === s.subject || !s.subject))?.move, cam: (s.cam?.length ? s.cam : [{ t: 0, s: 1, x: 960, y: 540 }]).map((c) => ({ t: c.t, s: c.s, tx: c.x, ty: c.y, sx: c.sx ?? 960, sy: c.sy ?? 540, ease: c.ease })), tags: (s.tags || []).map((g) => [g[0], up(g[1]), up(g[2]), g[3], g[4]]), labels: (s.labels || []).filter((l) => !VERT || l[3] >= VERT_TITLE_END).map((l) => [l[0], up(l[1]), up(l[2]), l[3], l[4], l[5]]), plates: s.endCard ? [] : (s.plates || []).map((p) => [p[0], up(p[1]), up(p[2]), p[3], p[4], p[5] ?? null, fitPlate(up(p[1]), up(p[2]), p[6] || 56)]), roll: s.roll, bubbles: (s.bubbles || []).map((b) => [b[0], safe(b[1]), b[2], null, b[4]]), glowAt: s.glowAt, focusOn: s.focusOn, labelOut: s.labelOut, dark: s.dark, warm: s.warm, cool: s.cool, smoke: s.smoke, focusAt: s.focus, flashAt: s.flash, bar: s.bar, series: s.series && plan.series ? safe(plan.series) : "", rew: s.rew, paper: s.paper, montage: s.montage, chapter: s.chapter, endCard: s.endCard, moves: "" };
   const wide = o.tags.filter((g) => plateSize(g[1], g[2], 52).w > TAG_MAX_W);
   if (wide.length) {
     o.tags = o.tags.filter((g) => !wide.includes(g));
@@ -420,6 +428,7 @@ for (const s of shots) {
   if (s.bar) js += bar(s);
   js += textJs(s, { camAt, MV, MOVES, hud });
   js += iconJs(s);
+  for (const [k, t] of s.outs || []) js += `{const e=document.getElementById('${s.id}${k}');if(e)tl.to(e,{opacity:0,duration:${VISIT.OUT}},${(t - VISIT.OUT).toFixed(3)});}`;
   for (const x of [...(s.tags || []), ...(s.labels || []), ...(s.plates || [])]) TEXTEV.push({ id: s.id, t: x[3], end: s.labelOut && (s.labels || []).includes(x) ? s.labelOut : s.t1 });
   for (const x of s.bubbles || []) TEXTEV.push({ id: s.id, t: x[2], end: s.t1 });
   if (s.glowAt) js += `{const g=BORN.glow(${ov},'${s.id}gl',${s.glowAt.x},${s.glowAt.y},${s.glowAt.r},'${s.glowAt.color}',.5);BORN.fadeIn(tl,g,${s.glowAt.t},.6);}`;

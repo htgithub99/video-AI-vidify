@@ -19,7 +19,7 @@ const area = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Ma
 const offscreen = (r) => (r.r - r.l) * (r.b - r.t) - area(r, SAFE);
 export const RESERVED = VERT ? { tl: { l: 0, r: 0, t: 0, b: 0 }, tr: { l: 0, r: 0, t: 0, b: 0 } } : { tl: { l: 60, r: 620, t: 70, b: 210 }, tr: { l: 1300, r: 1890, t: 30, b: 210 } };
 export const FACE_PAD = 0.3;
-const LABEL_POS = { AIM_OUT: 30, AIM_DOWN: 12, DX: [90, -90, 120, -120, 150, -150, 190, -190, 240, -240], DY: [-70, -95, -120, -150], ARROW_MIN: 110, ARROW_MAX: 240, PER_PX: 6, PATH_N: 6, START: 0.8, BEND: 0.1 };
+const LABEL_POS = { AIM_OUT: 30, AIM_DOWN: 12, DX: VERT ? [0, 40, -40, 80, -80] : [90, -90, 120, -120, 150, -150, 190, -190, 240, -240], DY: [-70, -95, -120, -150, 70, 110], ARROW_MIN: 110, ARROW_MAX: 240, PER_PX: 6, PATH_N: 6, START: 0.8, BEND: 0.1 };
 export const scoreRect = (r, sprites, extra = [], bodyW = 4) => {
   let sc = offscreen(r) * 400;
   for (const p of sprites) {
@@ -52,7 +52,7 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
   const tagRect = (corner, w, h) => { const [cx, cy] = TAG_AT[corner] || TAG_AT.tl; return { l: cx - w / 2, r: cx + w / 2, t: cy - h / 2, b: cy + h / 2 }; };
   for (const g of s.tags || []) {
     const [k, text, sub, t, pref] = g, sz = plateSize(text, sub, 52);
-    const cands = [pref, pref === "tl" ? "tr" : "tl"].filter((c) => !(c === "tr" && s.series));
+    const cands = VERT ? ["tl", "bl"] : [pref, pref === "tl" ? "tr" : "tl"].filter((c) => !(c === "tr" && s.series));
     const best = cands.map((c, i) => ({ c, sc: scoreRect(tagRect(c, sz.w, sz.h), rectsAt(t + 0.3)) + scoreRect(tagRect(c, sz.w, sz.h), rectsAt(s.t1 - 0.05)) + i * 500 })).sort((a, b) => a.sc - b.sc)[0];
     const rr = tagRect(best.c, sz.w, sz.h);
     placed.push(rr);
@@ -75,7 +75,7 @@ export const textJs = (s, { camAt, MV, MOVES, hud }) => {
   };
   const faceNear = (P) => (s.boxes || []).filter((b) => b.fb && !b.grp?.startsWith?.("x")).map((b) => ({ b, d: Math.hypot(Math.max(b.fb.l - P[0], 0, P[0] - b.fb.r), Math.max(b.fb.t - P[1], 0, P[1] - b.fb.b)) })).filter((q) => q.d < 90).sort((a, c) => a.d - c.d)[0]?.b.fb;
   const GAP = 30;
-  const aim = (to, fb, dx, dy) => (!fb ? to : dx > 20 ? [fb.r + LABEL_POS.AIM_OUT, (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dx < -20 ? [fb.l - LABEL_POS.AIM_OUT, (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dy < 0 ? [(fb.l + fb.r) / 2, Math.min(fb.t, fb.top ?? fb.t) - GAP] : [(fb.l + fb.r) / 2, fb.b + GAP]);
+  const aim = (to, fb, dx, dy) => (!fb ? to : dx > 20 ? [fb.r + LABEL_POS.AIM_OUT, dy > 0 ? fb.b : (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dx < -20 ? [fb.l - LABEL_POS.AIM_OUT, dy > 0 ? fb.b : (fb.top ?? fb.t) + LABEL_POS.AIM_DOWN] : dy < 0 ? [(fb.l + fb.r) / 2, Math.min(fb.t, fb.top ?? fb.t) - GAP] : [(fb.l + fb.r) / 2, fb.b + GAP]);
   const startAt = (bx, ex, ey) => { const w = bx.r - bx.l, vert = ey > bx.b || ey < bx.t; return [vert ? (ex > bx.r ? bx.l + w * LABEL_POS.START : ex < bx.l ? bx.r - w * LABEL_POS.START : Math.min(bx.r - 20, Math.max(bx.l + 20, ex))) : ex > (bx.l + bx.r) / 2 ? bx.r + 8 : bx.l - 8, ey > bx.b ? bx.b + 14 : ey < bx.t ? bx.t - 14 : (bx.t + bx.b) / 2]; };
   for (const [k, text, sub, t, to0, side, follow] of s.labels || []) {
     const hit = typeof to0 === "string" ? (s.boxes || []).find((b) => b.n === to0) : null, ref = hit ? hit.fb || { l: hit.l, r: hit.r, t: hit.t, b: hit.b } : null;
