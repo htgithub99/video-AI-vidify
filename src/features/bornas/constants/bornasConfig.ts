@@ -67,7 +67,7 @@ export const bornasChapterLines = (lines: BornasLine[], seconds: number): number
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 export const BORNAS_CHAPTER_LABEL: Record<string, (n: number) => string> = { vi: (n) => `CHƯƠNG ${ROMAN[n - 1] || n}`, en: (n) => `CHAPTER ${ROMAN[n - 1] || n}`, ja: (n) => `第${n}章`, ko: (n) => `제${n}장` };
 export const BORNAS_ROTATION = { ORDER: ["wide", "L", "two", "prop", "R", "wide", "talk"], RECENT: 8, VIEW: { L: "r", R: "l", talk: "talk" }, PROP_KINDS: ["prop", "weapon"] } as const;
-export const BORNAS_BUSTS = { VIEWS: ["r", "talk", "l"], FACING: { r: "r", talk: "r", l: "l" }, SUFFIX: "_b_", SKIP: /baby|bust/ } as const;
+export const BORNAS_BUSTS = { VIEWS: ["r", "talk", "l"], FACING: { r: "r", talk: "r", l: "l" }, SUFFIX: "_b_", SKIP: /baby|bust/, MIN_TALL: 0.7, TRIES: 2 } as const;
 export const BORNAS_SIZE_RANGE: Record<string, [number, number]> = { person: [0.5, 2.3], bust: [0.5, 2.3], animal: [0.08, 4.5], vehicle: [0.8, 7], prop: [0.02, 3], weapon: [0.1, 2.6], structure: [0.8, 60], building: [2, 80], nature: [0.1, 45] };
 export const BORNAS_ANN = { VERSION: 2, BG_VERSION: 6, BUST_FACE: 0.33, LIE_ASPECT: 1.25, SEATS: ["bed", "bench", "sofa", "chair"], TMP_PREFIX: "bornas_ann_", CAST_FILE: "ann.json", GROUND_MIN: 420, GROUND_MAX: 1075, PERSON_MIN: 80, PERSON_MAX: 820, PERSON_DEFAULT: 420, LIB_BATCH: 240 } as const;
 export const BORNAS_REVIEW = { TEXT_DELAY: 0.7, SNAP_BATCH: 40, FIXES: ["wide", "tag", "drop_text", "apart"], TARGET_FIXES: ["drop", "flip"] } as const;

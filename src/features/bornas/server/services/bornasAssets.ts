@@ -240,12 +240,20 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     names.forEach((name, i) => add(name, path.join(png, `${name}.png`), /bust/.test(poses[i].name) ? "bust" : "person", c.heightM, "r", `${c.desc}; ${poses[i].desc}`));
     if (BORNAS_BUSTS.SKIP.test(c.id) || !poses.length) continue;
     const triple = path.join(raws, `busts_${c.id}.png`);
-    const drew = fs.existsSync(triple) || (await drawSheet(BORNAS_PROMPT.BUST_TRIPLE(bornasStyleLine(job.channel.topic), c.desc), triple, `${c.id} busts`, job.ai.drawAi, log, misses, signal));
-    if (!drew) continue;
-    const keyed = path.join(raws, `busts_${c.id}_key.png`);
-    await runKitPy("alpha_key.py", ["--edge", triple, keyed], log, signal);
-    const parts = (JSON.parse(_.last((await runKitPy("bust_split.py", [keyed, path.join(raws, `busts_${c.id}`)], log, signal)).trim().split(/\r?\n/)) || "{}").files || []) as string[];
-    fs.rmSync(keyed, { force: true });
+    let parts: string[] = [];
+    for (let tries = 1; tries <= BORNAS_BUSTS.TRIES; tries++) {
+      const drew = fs.existsSync(triple) || (await drawSheet(BORNAS_PROMPT.BUST_TRIPLE(bornasStyleLine(job.channel.topic), c.desc), triple, `${c.id} busts`, job.ai.drawAi, log, misses, signal));
+      if (!drew) break;
+      const keyed = path.join(raws, `busts_${c.id}_key.png`);
+      await runKitPy("alpha_key.py", ["--edge", triple, keyed], log, signal);
+      parts = (JSON.parse(_.last((await runKitPy("bust_split.py", [keyed, path.join(raws, `busts_${c.id}`)], log, signal)).trim().split(/\r?\n/)) || "{}").files || []) as string[];
+      fs.rmSync(keyed, { force: true });
+      const tall = parts.length ? Math.min(...parts.map((f) => pngSize(f)[1])) / pngSize(triple)[1] : 0;
+      if (tall >= BORNAS_BUSTS.MIN_TALL || tries === BORNAS_BUSTS.TRIES) break;
+      log(BORNAS_LOG.BUST_SMALL(c.id, Math.round(tall * 100)), "warn");
+      fs.rmSync(triple, { force: true });
+    }
+    if (!parts.length) continue;
     log(BORNAS_LOG.SPLIT(parts.length, BORNAS_BUSTS.VIEWS.length), parts.length === BORNAS_BUSTS.VIEWS.length ? "info" : "warn");
     parts.slice(0, BORNAS_BUSTS.VIEWS.length).forEach((file, i) => {
       const view = BORNAS_BUSTS.VIEWS[i];
