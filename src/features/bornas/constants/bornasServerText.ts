@@ -58,6 +58,7 @@ export const BORNAS_LOG = {
   DRAW_FALLBACK: (what: string, provider: string) => `Vẽ ${what} bằng công cụ dự phòng: ${provider}`,
   SPLIT: (got: number, want: number) => `Tách được ${got}/${want} món`,
   BUST_SMALL: (id: string, pct: number) => `Ảnh bust ${id} chỉ cao ${pct}% khung, vẽ lại`,
+  POSE_REDO: (id: string, names: string[]) => `Vẽ lại tư thế còn thiếu của ${id}: ${names.join(", ")}`,
   SPLIT_MISSING: (names: string[]) => `Không tìm thấy trong tờ vẽ: ${names.join(", ")}`,
   SIZE_CLAMPED: (name: string, from: number, to: number) => `Kích thước thật của ${name} (${from} m) vô lý, dùng ${to} m`,
   MATCH_FAILED: (n: number) => `AI chưa ghép được ${n} hình với tên, tạm theo thứ tự vẽ; bước duyệt hình sẽ kiểm tra lại từng hình`,

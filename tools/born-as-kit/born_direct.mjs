@@ -144,10 +144,12 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const TURNS = new Set(["person", "animal", "vehicle"]);
 
-const POSE = { ride: /ride|riding|horse|mounted|gallop/i, low: /sit|kneel|crouch|squat/i };
+const POSE = { ride: /ride|riding|horse|mounted|gallop/i, low: /sit|kneel|crouch|squat/i, seat: /sit|seated|cross_?leg/i, seatK: 0.58, lowK: 0.72 };
+const poseOf = (n) => (n.includes("__") ? n : n.slice(charId(n).length));
 const poseHeight = (n, base) => {
-  if (POSE.ride.test(n) && !n.includes("__")) return base * 1.35;
-  if (POSE.low.test(n) && !n.includes("__")) return base * 0.72;
+  const q = poseOf(n);
+  if (POSE.ride.test(q) && !n.includes("__")) return base * 1.35;
+  if (POSE.low.test(q) && !n.includes("__")) return base * (POSE.seat.test(q) ? POSE.seatK : POSE.lowK);
   return base;
 };
 const BACK = new Set(["building", "structure", "nature"]);
@@ -190,25 +192,25 @@ const refFaces = (plan) => {
   const by = {};
   for (const [n, s] of Object.entries(plan.sprites)) {
     const id = charId(n), f = s.ann?.face;
-    if (!id || s.kind !== "person" || !f || (s.ann.aspect ?? 1) >= 0.8) continue;
+    if (!id || s.kind !== "person" || !f || (s.ann.aspect ?? 1) >= 0.8 || POSE.low.test(poseOf(n)) || POSE.ride.test(`${poseOf(n)} ${s.ann?.is || ""}`)) continue;
     (by[id] = by[id] || []).push(f.b - f.t);
   }
   return Object.fromEntries(Object.entries(by).map(([id, v]) => [id, v.sort((a, b) => a - b)[Math.floor(v.length / 2)]]));
 };
 const personHeight = (plan, refs, n, base, pxm) => {
   const s = plan.sprites[n], id = charId(n), f = s?.ann?.face, ref = id && refs[id];
-  const m = meta(n), aspect = m.w / m.h, ride = POSE.ride.test(`${n} ${s?.ann?.is || ""}`);
+  const m = meta(n), aspect = m.w / m.h, ride = POSE.ride.test(`${poseOf(n)} ${s?.ann?.is || ""}`);
   const len = id || ride || aspect <= RULE.lieAspect ? base : RULE.bodyM * pxm;
   if (RULE.groupRe.test(n)) return base;
   if (aspect > RULE.lieAspect && !ride) return (len * RULE.lieFit) / aspect;
-  const h = ref && f && f.b - f.t > 0.02 && !ride ? clamp((base * ref) / (f.b - f.t), base * 0.3, base * 1.8) : ride ? base * RULE.rideM / 1.75 : poseHeight(n, base);
+  const h = ref && f && f.b - f.t > 0.02 && !ride && !POSE.low.test(poseOf(n)) ? clamp((base * ref) / (f.b - f.t), base * 0.3, base * 1.8) : ride ? base * RULE.rideM / 1.75 : poseHeight(n, base);
   const cap = ride && id ? RULE.rideM * pxm : len * RULE.capFit;
   return Math.min(h, cap / Math.max(1, aspect));
 };
 const readableHeight = (kind, n, h, per) => {
   const m = meta(n), aspect = m.w / m.h, lying = aspect > RULE.lieAspect && !RULE.groupRe.test(n);
   let out = h;
-  if (kind === "person" && !lying) out = clamp(h, 1080 * RULE.personMin, 1080 * RULE.personMax);
+  if (kind === "person" && !lying) out = clamp(h, 1080 * RULE.personMin * (POSE.low.test(poseOf(n)) && !n.includes("__") ? (POSE.seat.test(poseOf(n)) ? POSE.seatK : POSE.lowK) : 1), 1080 * RULE.personMax);
   else if (kind === "vehicle" || kind === "ship" || kind === "aircraft") out = Math.min(h, per * RULE.vehicleMax, 1080 * RULE.vehicleFrame, (1920 * RULE.vehicleWidth) / aspect);
   else if (kind === "animal") out = clamp(h, per * RULE.animalMin, per * RULE.animalMax);
   else if (kind === "prop") out = clamp(h, per * RULE.propMin, per * RULE.propMax);
@@ -216,7 +218,7 @@ const readableHeight = (kind, n, h, per) => {
 };
 const standing = (a) => {
   const m = meta(a.sprite);
-  return a.kind === "person" && !a.back && a.onGround && m.w / m.h <= RULE.lieAspect && !POSE.ride.test(a.sprite) && !POSE.low.test(a.sprite) && !RULE.groupRe.test(a.sprite) && !RULE.babyRe.test(a.sprite);
+  return a.kind === "person" && !a.back && a.onGround && m.w / m.h <= RULE.lieAspect && !POSE.ride.test(poseOf(a.sprite)) && !POSE.low.test(poseOf(a.sprite)) && !RULE.groupRe.test(a.sprite) && !RULE.babyRe.test(a.sprite);
 };
 const matchPeople = (plan, main) => {
   const people = main.filter((a) => a && standing(a));
@@ -415,7 +417,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     const flatOnly = k.kind === "prop" || k.kind === "weapon";
     const want = flatOnly && (ann.place === "wall" || ann.place === "table") ? ann.place : flatOnly || c.place === "near" || c.place === "ground" ? c.place : "ground";
     const bad = (want === "wall" && !A.walls.length) || (want === "table" && !A.table);
-    if (bad && i !== subject) {
+    if (bad && (i !== subject || beat.cast.some((o) => info(o.sprite).kind === "person"))) {
       report.push([id, "place_unsupported", c.sprite, want]);
       continue;
     }
@@ -531,7 +533,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
   for (const a of main) {
     if (!a || a.kind !== "person") continue;
     const m = meta(a.sprite), aspect = m.w / m.h, is = String(plan.sprites[a.sprite]?.ann?.is || "");
-    const bed = (aspect > RULE.lieAspect || RULE.lyingText.test(is)) && !POSE.ride.test(`${a.sprite} ${is}`) ? A.seats.filter((x) => RULE.lieOn.test(x.k)).sort((u, v) => v.x1 - v.x0 - (u.x1 - u.x0))[0] : null;
+    const bed = (aspect > RULE.lieAspect || RULE.lyingText.test(is)) && !POSE.ride.test(`${poseOf(a.sprite)} ${is}`) ? A.seats.filter((x) => RULE.lieOn.test(x.k)).sort((u, v) => v.x1 - v.x0 - (u.x1 - u.x0))[0] : null;
     if (bed) {
       a.h = ((bed.x1 - bed.x0) * RULE.lieBedFill) / aspect;
       a.x = (bed.x0 + bed.x1) / 2;
@@ -543,7 +545,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     }
     const w = poseWords(a.sprite).find((v) => RULE.furniture.test(v));
     const f = w && main.find((b) => b && b !== a && b.kind !== "person" && poseWords(b.sprite).some((v) => v.endsWith(w)));
-    const sits = !w && !a.sprite.includes("__") && RULE.sitText.test(`${a.sprite.replace(/_/g, " ")} ${is}`) && !POSE.ride.test(`${a.sprite} ${is}`);
+    const sits = !w && !a.sprite.includes("__") && RULE.sitText.test(`${poseOf(a.sprite).replace(/_/g, " ")} ${is}`) && !POSE.ride.test(`${poseOf(a.sprite)} ${is}`);
     const bs = (w && !f && A.seats.find((x) => x.k === seatKind(w))) || (sits ? A.seats.filter((x) => !RULE.lieOn.test(x.k) || x.k === "bench" || x.k === "sofa").sort((u, v) => Math.abs((u.x0 + u.x1) / 2 - a.x) - Math.abs((v.x0 + v.x1) / 2 - a.x))[0] : null);
     if (bs) {
       a.x = (bs.x0 + bs.x1) / 2;

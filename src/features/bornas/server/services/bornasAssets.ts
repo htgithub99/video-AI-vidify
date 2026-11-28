@@ -223,6 +223,18 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
       if (ok && !ref) castRef[personOf(c.id)] = raw;
       files.push(...(ok ? await keyedSplit(job, raw, path.join(raws, `cast_${c.id}_${k}`), group, log, signal) : group.map(() => undefined)));
     }
+    // Poses Gemini left out of the sheet are drawn once more on their own sheet; without this a hero could end up
+    // with only a sitting pose and every shot of that age reused it.
+    const lost = c.poses.flatMap((p, i) => (!files[i] && !/bust/.test(p.name) ? [i] : []));
+    for (const [k, idx] of _.chunk(lost, BORNAS_LIMITS.CAST_ROW).entries()) {
+      const group = idx.map((i) => c.poses[i]);
+      const raw = path.join(raws, `cast_${c.id}_redo${k}.png`);
+      const ref = castRef[personOf(c.id)];
+      log(BORNAS_LOG.POSE_REDO(c.id, group.map((g) => g.name)), "warn");
+      const ok = fs.existsSync(raw) || (await drawSheet(BORNAS_PROMPT.CAST_SHEET(bornasStyleLine(job.channel.topic), c.desc, group, !!ref), raw, c.id, job.ai.drawAi, log, misses, signal, ref ? [ref] : []));
+      const got = ok ? await keyedSplit(job, raw, path.join(raws, `cast_${c.id}_redo${k}`), group, log, signal) : [];
+      idx.forEach((i, j) => (files[i] ||= got[j]));
+    }
     const poses = c.poses.filter((_p, i) => files[i]);
     const names = poses.map((p) => {
       const name = `${c.id}_${p.name}`;
