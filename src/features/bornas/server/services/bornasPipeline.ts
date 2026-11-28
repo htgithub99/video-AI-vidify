@@ -185,7 +185,7 @@ export const approveBornas = (jobId: string, scripts: unknown): BornasJob => {
   void execute(job, "voice");
   return job;
 };
-export const rerunBornas = (jobId: string, step: BornasStepId, video?: number, ai?: Partial<BornasAiSettings>): BornasJob => {
+export const rerunBornas = (jobId: string, step: BornasStepId, video?: number, ai?: Partial<BornasAiSettings>, resume = false): BornasJob => {
   const job = getBornasJob(jobId);
   if (!job) throw new Error(BORNAS_ERROR.NO_JOB);
   if (job.status === "running") throw new Error(BORNAS_ERROR.BUSY);
@@ -196,7 +196,7 @@ export const rerunBornas = (jobId: string, step: BornasStepId, video?: number, a
   const seoOnly = step === "package" && video !== undefined && !!job.videos[video]?.outputUrl;
   for (const id of seoOnly ? [step] : BORNAS_STEPS.slice(at)) job.steps[id] = { status: "idle", progress: 0, message: "" };
   if (step === "sample" || step === "script") {
-    if (step === "sample") dropBornasAnalysis(job.sample.key);
+    if (step === "sample" && !resume) dropBornasAnalysis(job.sample.key);
     job.videos = [];
     void execute(job, step);
     return job;
@@ -242,7 +242,7 @@ export const resumeBornasJobs = (): void => {
       const step = job?.resumeStep;
       if (!job || !step || BORNAS_RESUME.SKIP.includes(step)) continue;
       try {
-        rerunBornas(job.id, step);
+        rerunBornas(job.id, step, undefined, undefined, true);
         bornasLog(job, BORNAS_LOG.RESUMED(step), "warn");
       } catch (error) {
         bornasLog(job, String((error as Error)?.message || error), "error");

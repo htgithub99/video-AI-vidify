@@ -1670,6 +1670,9 @@ export interface ImageGeneratorOptions {
   style?: string;
   retainBrowserSession?: boolean;
   forceNewPage?: boolean;
+  // Draw in the same Gemini chat as earlier calls with this key (one room per video and kind of picture) instead of
+  // opening a new chat whenever the settings or reference pictures change.
+  roomKey?: string;
   visualConfig?: {
     chromeHeadless?: boolean;
     generateType?: GenerateType;
@@ -1857,6 +1860,29 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
 let lastPlaywrightConfigState: string | null = null;
 let consecutiveGeminiErrors = 0;
 let lastGeminiConfigState: string | null = null;
+// room key -> Gemini conversation URL, kept on disk so a restarted app goes back to the same rooms
+const GEMINI_IMAGE_ROOMS_FILE = "gemini-image-rooms.json";
+const GEMINI_IMAGE_ROOMS_MAX = 300;
+const geminiImageRooms = new Map<string, string>(
+  (() => {
+    try {
+      return Object.entries(JSON.parse(fs.readFileSync(path.join(getDataDirectory(), GEMINI_IMAGE_ROOMS_FILE), "utf8")) as Record<string, string>);
+    } catch {
+      return [];
+    }
+  })(),
+);
+const saveGeminiImageRooms = (): void => {
+  try {
+    const entries = [...geminiImageRooms.entries()].slice(-GEMINI_IMAGE_ROOMS_MAX);
+    fs.writeFileSync(path.join(getDataDirectory(), GEMINI_IMAGE_ROOMS_FILE), JSON.stringify(Object.fromEntries(entries)));
+  } catch {
+    /* best effort */
+  }
+};
+export const forgetGeminiImageRooms = (prefix: string): void => {
+  for (const key of [...geminiImageRooms.keys()]) if (key.startsWith(prefix)) geminiImageRooms.delete(key);
+};
 let globalBatchPages: Page[] = [];
 const batchPagesErrors = new WeakMap<Page, number>();
 const batchPagesConfigs = new WeakMap<Page, string>();
@@ -3472,6 +3498,13 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
           needNewRoom = true;
           appLog(ImageGenMessages.CONFIG_CHANGED_FORCE_NEW_ROOM);
         }
+        if (options.roomKey && !isVideoGeneration && !isCurrentlyGenerating && !_.gt(roomAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
+          const keyed = geminiImageRooms.get(options.roomKey);
+          if (keyed) {
+            if (activePage!.url() !== keyed) await activePage!.goto(keyed, { waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL, timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS });
+            needNewRoom = false;
+          } else needNewRoom = true;
+        }
         if (needNewRoom) {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM.replace(SOURCE_TEXT_0_2, roomAttempts.toString()).replace(SOURCE_TEXT_1_3, maxRoomAttempts.toString()));
           await activePage.goto(getGeminiWorkspaceUrl(visualConfig?.generateType), { waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL, timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS });
@@ -3554,6 +3587,11 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
           if (base64Result) {
             success = true;
             consecutiveGeminiErrors = 0;
+            if (options.roomKey && _.includes(activePage!.url(), SOURCE_TEXT_GEMINI_GOOGLE_COM) && geminiImageRooms.get(options.roomKey) !== activePage!.url()) {
+              geminiImageRooms.delete(options.roomKey);
+              geminiImageRooms.set(options.roomKey, activePage!.url());
+              saveGeminiImageRooms();
+            }
           }
           const isAspectRatioMismatch = base64Result && !_.isEqual(visualConfig.generateType, GenerateType.Video) && !isImageAspectRatioCompatible(base64Result, visualConfig.aspectRatio);
           if (isAspectRatioMismatch) {

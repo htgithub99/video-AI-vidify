@@ -76,12 +76,12 @@ export const playwrightEnv = (): NodeJS.ProcessEnv => {
   const pw = path.join(process.cwd(), "node_modules", "playwright", "index.mjs");
   return { ...(fs.existsSync(pw) ? { PLAYWRIGHT: pw } : {}), ...(process.platform === "win32" && fs.existsSync(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH) ? { CHROME: REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH } : {}) };
 };
-const drawWith = async (provider: BornasDrawProvider, prompt: string, headless: boolean, referenceImages: string[]): Promise<Buffer> => {
+const drawWith = async (provider: BornasDrawProvider, prompt: string, headless: boolean, referenceImages: string[], roomKey?: string): Promise<Buffer> => {
   const visualConfig = { generateType: GenerateType.Image, aspectRatio: "16:9", chromeHeadless: headless, ...(referenceImages.length ? { referenceImages } : {}) };
   const result =
     provider === "labs-flow"
       ? await generateImageWithPlaywright({ prompt, visualConfig: { ...visualConfig, generationMode: ImageGenerationMode.LabsFlow }, sandboxConfig: {} } as Parameters<typeof generateImageWithPlaywright>[0])
-      : await generateImageWithGeminiChat({ prompt, visualConfig: { ...visualConfig, generationMode: ImageGenerationMode.GeminiChat } } as Parameters<typeof generateImageWithGeminiChat>[0]);
+      : await generateImageWithGeminiChat({ prompt, roomKey, visualConfig: { ...visualConfig, generationMode: ImageGenerationMode.GeminiChat } } as Parameters<typeof generateImageWithGeminiChat>[0]);
   const r = result as { success?: boolean; base64?: string | null; base64s?: string[]; fallbackUrl?: string; warning?: string };
   const data = r.base64 || r.base64s?.[0] || (r.fallbackUrl?.startsWith("data:") ? r.fallbackUrl.split(",")[1] : "");
   if (data) return Buffer.from(data, "base64");
@@ -91,13 +91,13 @@ const drawWith = async (provider: BornasDrawProvider, prompt: string, headless: 
   }
   throw new Error(BORNAS_ERROR.DRAW(r.warning || ""));
 };
-export const bornasDraw = async (prompt: string, file: string, draw: BornasDrawChoice, refs: string[] = []): Promise<BornasDrawProvider> => {
+export const bornasDraw = async (prompt: string, file: string, draw: BornasDrawChoice, refs: string[] = [], roomKey?: string): Promise<BornasDrawProvider> => {
   const referenceImages = refs.filter((f) => fs.existsSync(f)).map((f) => `data:image/${path.extname(f).slice(1) === "jpg" ? "jpeg" : path.extname(f).slice(1)};base64,${fs.readFileSync(f).toString("base64")}`);
   const order = draw.allowFallback ? [draw.provider, ...BORNAS_DRAW_PROVIDERS.filter((p) => p !== draw.provider)] : [draw.provider];
   let last: unknown;
   for (const provider of order) {
     try {
-      const buf = await drawWith(provider, prompt, draw.chromeHeadless, referenceImages);
+      const buf = await drawWith(provider, prompt, draw.chromeHeadless, referenceImages, roomKey);
       fs.mkdirSync(path.dirname(file), { recursive: true });
       fs.writeFileSync(file, buf);
       return provider;

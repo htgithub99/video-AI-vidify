@@ -11,6 +11,7 @@ import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasJob, BornasLanguage, BornasLine, BornasScript } from "../../types/bornas.js";
 import { listBornasJobs } from "./bornasStore.js";
 import { bornasKit, readJson, runKitPy, slug } from "./bornasTools.js";
+import { checkScreenYears } from "./bornasNumbers.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 const KINDS = ["tag", "plate", "label", "quote", "none"] as const;
 const words = (text: string): number => bornasTokens(text).length;
@@ -146,6 +147,9 @@ export const writeBornasScripts = async (job: BornasJob, log: Log, signal?: Abor
     if (fixedScript && fixedScript.lines.length >= script.lines.length - 1) script = fixedScript;
     log(BORNAS_LOG.SCRIPT_FACTS(fixedScript ? fixed : -1));
     script = await fit(script);
+    const years = checkScreenYears(script.lines);
+    if (years.removed.length) log(BORNAS_LOG.SCREEN_YEARS(years.removed), "warn");
+    script = { ...script, lines: years.lines };
     out.push(script);
   }
   log(BORNAS_LOG.SCRIPTS_DONE(out.map((s) => s.title)));

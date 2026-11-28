@@ -101,7 +101,7 @@ export const BORNAS_REVIEW = { TEXT_DELAY: 0.7, SNAP_BATCH: 40, FIXES: ["wide", 
 export const BORNAS_TOPICS = Object.keys(BORNAS_TOPIC_LIBS) as BornasTopic[];
 export const BORNAS_LENGTHS = [60, 120, 180, 300, 480, 600] as const;
 export const BORNAS_COUNTS = [1, 2, 3, 4, 5, 6, 8, 10] as const;
-export const BORNAS_RESUME = { DELAY_MS: 20000, MAX_AGE_MS: 12 * 3600 * 1000, SKIP: ["sample", "script"] as readonly BornasStepId[] } as const;
+export const BORNAS_RESUME = { DELAY_MS: 20000, MAX_AGE_MS: 12 * 3600 * 1000, SKIP: [] as readonly BornasStepId[] } as const;
 export const BORNAS_LIMITS = {
   END_HOLD: 2.5,
   POOL_KINDS: ["person", "animal"] as string[],
@@ -128,10 +128,10 @@ export const BORNAS_LIMITS = {
   SCENE_CUT: 0.12,
   CAST_MAX: 4,
   POSES_MAX: 6,
-  CAST_ROW: 3,
+  CAST_ROW: 4,
   NEW_ITEMS_MAX: 12,
   NEW_BG_MAX: 4,
-  SHEET_ITEMS: 12,
+  SHEET_ITEMS: 15,
   SHOT_LINES: 12,
   PAUSE: 0.3,
   BREAK_PAUSE: 0.7,

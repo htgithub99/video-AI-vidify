@@ -58,6 +58,7 @@ export const BORNAS_LOG = {
   DRAW_FALLBACK: (what: string, provider: string) => `Vẽ ${what} bằng công cụ dự phòng: ${provider}`,
   SPLIT: (got: number, want: number) => `Tách được ${got}/${want} món`,
   BUST_SMALL: (id: string, pct: number) => `Ảnh bust ${id} chỉ cao ${pct}% khung, vẽ lại`,
+  SCREEN_YEARS: (items: string[]) => `Bỏ năm trên màn không khớp lời đọc (câu: năm): ${items.join(", ")}`,
   ALIKE: (pairs: string[]) => `Hình giống hệt nhau, không cho đứng chung một cảnh: ${pairs.join("; ")}`,
   ITEM_REDO: (names: string[]) => `Vẽ lại món còn thiếu: ${names.join(", ")}`,
   POSE_REDO: (id: string, names: string[]) => `Vẽ lại tư thế còn thiếu của ${id}: ${names.join(", ")}`,
