@@ -4,7 +4,7 @@ import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { reupFfmpeg } from "../../../reup/server/services/reupFfmpeg.js";
-import { BORNAS_AGE_WORDS, BORNAS_AI_CACHE, BORNAS_ANN, BORNAS_LIB_KEEP, BORNAS_POSTURE, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, bornasStyleLine, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
+import { BORNAS_AGE_WORDS, BORNAS_AI_CACHE, BORNAS_CAST_STAND, BORNAS_ANN, BORNAS_LIB_KEEP, BORNAS_LONG, BORNAS_POSTURE, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, bornasStyleLine, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_BUST_LOOKS, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
 import type { BornasPosture, BornasAiSettings, BornasDrawChoice, BornasAssetPlan, BornasBackground, BornasBgAnn, BornasJob, BornasScript, BornasSprite, BornasSpriteAnn, BornasVideo } from "../../types/bornas.js";
@@ -89,6 +89,10 @@ const partsPrefix = (prefix: string): string => {
   fs.mkdirSync(dir, { recursive: true });
   return path.join(dir, "p");
 };
+// Crowd variants must be the same kind of person or animal: a cavalry crowd once took a vaquero, a cowboy and an
+// outlaw from the same sheet, and a horse herd took a coyote and a rattlesnake. Without a group, no variants.
+const headNoun = (it: LibItem): string => (it.ann?.is || "").toLowerCase().split(/[^a-z]+/).filter(Boolean).pop() || "";
+const sameGroup = (a: LibItem, b: LibItem): boolean => (a.kind === "person" ? !!a.ann?.group && a.ann.group === b.ann?.group : !!headNoun(a) && headNoun(a) === headNoun(b));
 const keyedSplit = async (job: BornasJob, raw: string, sheetPrefix: string, wanted: Wanted[], log: Log, signal?: AbortSignal): Promise<(string | undefined)[]> => {
   const prefix = partsPrefix(sheetPrefix);
   const keyed = `${prefix}_key.png`;
@@ -230,7 +234,13 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     if (path.resolve(file) !== path.resolve(dst)) copyCrop(file, dst);
     const [w, h] = pngSize(dst);
     const [lo, hi] = BORNAS_SIZE_RANGE[kind] || BORNAS_SIZE_RANGE.prop;
-    const size = heightM >= lo && heightM <= hi ? heightM : _.clamp(sizeOf(name, kind, NaN), lo, hi);
+    let size = heightM >= lo && heightM <= hi ? heightM : _.clamp(sizeOf(name, kind, NaN), lo, hi);
+    const long = (kind === "prop" || kind === "weapon") && BORNAS_LONG.find((x) => x.re.test(words(name).toLowerCase()));
+    if (long) {
+      const across = Math.max(1, w / Math.max(1, h));
+      const length = size >= long.min && size <= long.max ? size : size * across >= long.min && size * across <= long.max ? size * across : long.std;
+      size = _.round(length / across, 3);
+    }
     if (size !== heightM) log(BORNAS_LOG.SIZE_CLAMPED(name, heightM, size), "warn");
     sprites.push({ name, kind, heightM: size, facing, aspect: w / Math.max(1, h), desc, ...(pool ? { pool } : {}), ...(who || {}) });
   };
@@ -264,6 +274,20 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
       const got = ok ? await keyedSplit(job, raw, path.join(raws, `cast_${c.id}_redo${k}`), group, log, signal) : [];
       idx.forEach((i, j) => (files[i] ||= got[j]));
     }
+    // every age of a character needs one standing pose: without it every shot of that age reused a sitting or riding pose
+    const body = c.poses.filter((p, i) => files[i] && !/bust/.test(p.name));
+    if (body.length && !body.some((p) => postureOf(`${p.name} ${p.desc}`) === "stand")) {
+      const stand = { name: BORNAS_CAST_STAND.name, desc: BORNAS_CAST_STAND.desc };
+      const raw = path.join(raws, `cast_${c.id}_stand.png`);
+      const ref = castRef[personOf(c.id)];
+      log(BORNAS_LOG.POSE_REDO(c.id, [stand.name]), "warn");
+      const ok = fs.existsSync(raw) || (await drawSheet(BORNAS_PROMPT.CAST_SHEET(bornasStyleLine(job.channel.topic), c.desc, [stand], !!ref), raw, c.id, job.ai.drawAi, log, misses, signal, ref ? [ref] : []));
+      const [file] = ok ? await keyedSplit(job, raw, path.join(raws, `cast_${c.id}_stand`), [stand], log, signal) : [];
+      if (file) {
+        c.poses.push(stand);
+        files.push(file);
+      }
+    }
     const poses = c.poses.filter((_p, i) => files[i]);
     const names = poses.map((p) => {
       const name = `${c.id}_${p.name}`;
@@ -290,7 +314,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
         parts = (JSON.parse(_.last((await runKitPy("bust_split.py", [keyed, partsPrefix(path.join(raws, `busts_${c.id}${sheet.file}`))], log, signal)).trim().split(/\r?\n/)) || "{}").files || []) as string[];
         fs.rmSync(keyed, { force: true });
         // a part narrower than MIN_WIDE of its height is a sliver (an arm, a feather), not a bust
-        const whole = parts.length === sheet.views.length && parts.every((f) => pngSize(f)[0] >= pngSize(f)[1] * BORNAS_BUSTS.MIN_WIDE);
+        const whole = parts.length === sheet.views.length && parts.every((f) => pngSize(f)[0] >= pngSize(f)[1] * BORNAS_BUSTS.MIN_WIDE && pngSize(f)[1] >= BORNAS_BUSTS.MIN_PX);
         const tall = whole ? Math.min(...parts.map((f) => pngSize(f)[1])) / pngSize(triple)[1] : 0;
         if (tall >= BORNAS_BUSTS.MIN_TALL || tries === BORNAS_BUSTS.TRIES) break;
         log(BORNAS_LOG.BUST_SMALL(c.id, Math.round(tall * 100)), "warn");
@@ -321,6 +345,17 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     if (!ok) continue;
     await reupFfmpeg(["-y", "-i", tmp, "-q:v", "2", raw], { signal });
     const files = await keyedSplit(job, tmp, path.join(raws, sheet), group, log, signal);
+    // items Gemini left out are drawn once more on their own sheet
+    const lost = group.flatMap((_it, i) => (files[i] ? [] : [i]));
+    if (lost.length) {
+      const redo = path.join(raws, `${sheet}_redo.png`);
+      const sub = lost.map((i) => group[i]);
+      log(BORNAS_LOG.ITEM_REDO(sub.map((g) => g.name)), "warn");
+      const c2 = Math.min(6, sub.length);
+      const drew = fs.existsSync(redo) || (await drawSheet(BORNAS_PROMPT.ITEM_SHEET(bornasStyleLine(job.channel.topic), sub, c2, Math.ceil(sub.length / c2)), redo, sub.map((g) => g.name).join(", "), job.ai.drawAi, log, misses, signal));
+      const got = drew ? await keyedSplit(job, redo, path.join(raws, `${sheet}_redo`), sub, log, signal) : [];
+      lost.forEach((i, j) => (files[i] ||= got[j]));
+    }
     const pairs = group.flatMap((it, i) => (files[i] ? [{ f: files[i]!, it, name: `${sheet}__${it.name}` }] : []));
     for (const { f, name } of pairs) copyCrop(f, bornasLib(home, "sprites", `${name}.png`));
     const cat = readCatalog(home);
@@ -363,7 +398,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
       it = cats[lib]?.items[name];
     if (!it || !BORNAS_LIMITS.POOL_KINDS.includes(it.kind)) continue;
     const sheet = name.split("__")[0];
-    const sibs = Object.keys(cats[lib].items).filter((n) => n !== name && !pooled.has(n) && n.split("__")[0] === sheet && cats[lib].items[n].kind === it.kind && !(cats[lib].items[n].ann && bornasBadAnn(cats[lib].items[n].ann!)) && fs.existsSync(bornasLib(lib, "sprites", `${n}.png`)));
+    const sibs = Object.keys(cats[lib].items).filter((n) => n !== name && !pooled.has(n) && n.split("__")[0] === sheet && cats[lib].items[n].kind === it.kind && sameGroup(it, cats[lib].items[n]) && !(cats[lib].items[n].ann && bornasBadAnn(cats[lib].items[n].ann!)) && fs.existsSync(bornasLib(lib, "sprites", `${n}.png`)));
     for (const n of sibs.slice(0, BORNAS_LIMITS.POOL_PER_ITEM)) {
       if (poolCount >= BORNAS_LIMITS.POOL_MAX) break;
       pooled.add(n);
@@ -474,6 +509,21 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
   const castNames = finalSprites.filter((s) => plan.cast.some((c) => s.name.startsWith(`${c.id}_`))).map((s) => s.name);
   writeJson(path.join(assets, "catalog.json"), { actor: castNames.length ? `^(${castNames.map(_.escapeRegExp).join("|")})$` : "^$", facing: Object.fromEntries(finalSprites.filter((s) => s.facing === "l").map((s) => [s.name, "l"])), faceFix: {} });
   writeJson(path.join(assets, "faces.json"), Object.fromEntries(finalSprites.filter((s) => s.ann?.face).map((s) => [s.name, s.ann!.face])));
+  // Extras that look the same (the same crop under two names, two near-identical drawings) count as one person,
+  // so the kit never puts both in one shot or one crowd.
+  const extras = finalSprites.filter((s) => !s.char && (s.kind === "person" || s.kind === "animal"));
+  if (extras.length > 1) {
+    const out = await runKitPy("look_alike.py", extras.map((s) => path.join(png, `${s.name}.png`)), log, signal).catch(() => "");
+    const pairs = (() => {
+      try {
+        return (JSON.parse(_.last(out.trim().split(/\r?\n/)) || "{}").alike || []) as [number, number, number][];
+      } catch {
+        return [];
+      }
+    })();
+    for (const [i, j] of pairs) extras[j].person = extras[i].person || extras[i].name;
+    if (pairs.length) log(BORNAS_LOG.ALIKE(pairs.map(([i, j]) => `${extras[i].name.split("__").pop()} = ${extras[j].name.split("__").pop()}`)), "warn");
+  }
   sprites.splice(0, sprites.length, ...finalSprites);
   video.plan = plan;
   video.sprites = sprites;

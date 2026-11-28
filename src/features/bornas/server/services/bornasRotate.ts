@@ -35,6 +35,8 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
     lastBust = -Infinity,
     closeNext = false;
   const recent: string[] = [];
+  let lastSig = "",
+    sigRun = 0;
   beats.forEach((b, i) => {
     const dur = end(i) - b.t0;
     const roomFor = (): boolean => !prevBust && b.t0 - lastBust >= BORNAS_ROTATION.BUST_GAP && (bustTime + dur) / Math.max(1, total) <= BORNAS_ROTATION.BUST_SHARE;
@@ -74,9 +76,23 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
         _.range(BORNAS_ROTATION.ORDER.length)
           .map((s) => BORNAS_ROTATION.ORDER[(k + s) % BORNAS_ROTATION.ORDER.length])
           .find((want) => want !== last && fits(want)) || "wide";
-    if (comp === "act") {
+    // the same place with the same figures at most REPEAT_SAME times in a row as a wide shot (four identical wides at
+    // Little Bighorn): then frame the first person medium, or show the object
+    const sig = `${b.bg}|${b.cast.map((c) => c.sprite).sort().join(",")}`;
+    sigRun = sig === lastSig ? sigRun + 1 : 1;
+    lastSig = sig;
+    if (comp === "wide" && sigRun > BORNAS_ROTATION.REPEAT_SAME) {
+      const anyone = b.cast.findIndex((c) => !c.crowd && kinds.get(c.sprite) === "person");
+      if (anyone >= 0) {
+        b.frame = "medium";
+        b.subject = anyone;
+        comp = "act";
+        sigRun = 0;
+      } else if (prop && !b.label && !b.bubble) comp = "prop";
+    }
+    if (comp === "act" && lead) {
       b.frame = "medium";
-      b.subject = target !== undefined && b.cast[target] ? target : lead!.n;
+      b.subject = target !== undefined && b.cast[target] ? target : lead.n;
     } else if (comp === "prop") {
       const keep = b.plate;
       const pointed = keep && keep.at !== null ? b.cast[keep.at]?.sprite : undefined;

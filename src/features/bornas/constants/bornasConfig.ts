@@ -72,8 +72,19 @@ const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 export const BORNAS_CHAPTER_LABEL: Record<string, (n: number) => string> = { vi: (n) => `CHƯƠNG ${ROMAN[n - 1] || n}`, en: (n) => `CHAPTER ${ROMAN[n - 1] || n}`, ja: (n) => `第${n}章`, ko: (n) => `제${n}장` };
 export const BORNAS_LIB_KEEP = { MIN_WORD: 3, GENERIC: ["hero", "young", "adult", "old", "teen", "child", "baby", "boy", "girl", "bust", "kid", "man", "woman", "the", "and", "with"] as string[], NAME_END: /,| at age | aged | in (?:the )?\d/ } as const;
 export const BORNAS_AI_CACHE = { KEY_LEN: 12, SHOTS_PREFIX: "", PLAN_PREFIX: "plan_", REVIEW_PREFIX: "review_", FALLBACK_EXT: ".fallback.json", FALLBACK_TTL_MS: 6 * 3600 * 1000 } as const;
-export const BORNAS_ROTATION = { ORDER: ["wide", "act", "prop", "two", "act", "bust"], RECENT: 8, BUST_SHARE: 0.18, BUST_GAP: 6, REPEAT_GAP: 30, BUST_WARN: 0.25, PROP_KINDS: ["prop", "weapon"] } as const;
-export const BORNAS_BUSTS = { SHEETS: [{ file: "", views: ["r", "talk", "l"] }, { file: "_moods", views: ["fierce", "shock", "smile"] }], NEUTRAL: ["r", "l", "talk"], FACING: { r: "r", talk: "r", l: "l", fierce: "r", shock: "l", smile: "r" } as Record<string, "l" | "r">, SUFFIX: "_b_", SKIP: /baby|bust/, MIN_TALL: 0.7, MIN_WIDE: 0.4, TRIES: 2 } as const;
+export const BORNAS_ROTATION = { ORDER: ["wide", "act", "prop", "two", "act", "bust"], RECENT: 8, BUST_SHARE: 0.18, BUST_GAP: 6, REPEAT_GAP: 30, BUST_WARN: 0.25, REPEAT_SAME: 2, PROP_KINDS: ["prop", "weapon"] } as const;
+export const BORNAS_BUSTS = { SHEETS: [{ file: "", views: ["r", "talk", "l"] }, { file: "_moods", views: ["fierce", "shock", "smile"] }], NEUTRAL: ["r", "l", "talk"], FACING: { r: "r", talk: "r", l: "l", fierce: "r", shock: "l", smile: "r" } as Record<string, "l" | "r">, SUFFIX: "_b_", SKIP: /baby|bust/, MIN_TALL: 0.7, MIN_WIDE: 0.4, MIN_PX: 380, TRIES: 2 } as const;
+// Long thin things: the real LENGTH (longest side) in metres. A catalog heightM may mean the length (1 m rifle) or the
+// height of the drawing (0.18 m); the picture's aspect decides the drawn height, so a rifle lying flat is never as long as a man.
+export const BORNAS_LONG: { re: RegExp; min: number; max: number; std: number }[] = [
+  { re: /\b(?:rifle|shotgun|winchester|musket|carbine|springfield|henry)s?\b/, min: 0.8, max: 1.4, std: 1.1 },
+  { re: /\b(?:revolver|pistol|derringer|colt|six shooter)s?\b/, min: 0.15, max: 0.4, std: 0.28 },
+  { re: /\b(?:knife|dagger|bowie|tomahawk|hatchet)s?\b/, min: 0.2, max: 0.55, std: 0.32 },
+  { re: /\b(?:sword|saber|sabre|katana|gladius|blade)s?\b/, min: 0.6, max: 1.2, std: 0.9 },
+  { re: /\b(?:spear|lance|pike|pilum|javelin)s?\b/, min: 1.6, max: 3, std: 2.1 },
+  { re: /\b(?:bow|longbow)s?\b/, min: 1.1, max: 1.8, std: 1.4 },
+  { re: /\b(?:cane|staff|walking stick|crutch)s?\b/, min: 0.8, max: 1.6, std: 0.95 },
+];
 export const BORNAS_SIZE_RANGE: Record<string, [number, number]> = { person: [0.5, 2.3], bust: [0.5, 2.3], animal: [0.08, 4.5], vehicle: [0.8, 7], prop: [0.02, 3], weapon: [0.1, 2.6], structure: [0.8, 60], building: [2, 80], nature: [0.1, 45] };
 // Posture of a cast pose from its own name and description (never from the character's name).
 export const BORNAS_POSTURE: [BornasPosture, RegExp][] = [
@@ -82,6 +93,7 @@ export const BORNAS_POSTURE: [BornasPosture, RegExp][] = [
   ["sit", /\b(?:sit|sits|sitting|seated|cross[ -]?legged)\b/i],
   ["kneel", /\b(?:kneel|kneels|kneeling|crouch|crouching|squat|squatting)\b/i],
 ];
+export const BORNAS_CAST_STAND = { name: "stand", desc: "standing upright and calm, arms relaxed, full body, side view" } as const;
 export const BORNAS_POSTURES: BornasPosture[] = ["stand", "sit", "kneel", "lie", "ride"];
 export const BORNAS_AGE_WORDS = /^(?:\d+|baby|infant|child|kid|boy|girl|teen|teenager|young|youth|adult|old|elder|aged|middle)$/;
 export const BORNAS_ANN = { VERSION: 3, BG_VERSION: 6, BUST_FACE: 0.33, LIE_ASPECT: 1.25, SEATS: ["bed", "bench", "sofa", "chair"], TMP_PREFIX: "bornas_ann_", CAST_FILE: "ann.json", GROUND_MIN: 420, GROUND_MAX: 1075, PERSON_MIN: 80, PERSON_MAX: 820, PERSON_DEFAULT: 420, LIB_BATCH: 240 } as const;
