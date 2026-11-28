@@ -12,8 +12,8 @@
     361
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.6312,
+    "v": 3,
+    "foot": 0.628,
     "pad": 0.0083,
     "aspect": 0.5568,
     "face": {
@@ -33,8 +33,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Outlaw in duster coat standing"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw in duster coat"
    }
   },
   "west_outlaws__wild_west_outlaw_bandana_over": {
@@ -48,19 +52,19 @@
     359
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5601,
-    "pad": 0.0084,
+    "pad": 0.0111,
     "aspect": 0.4596,
     "face": {
-     "l": 0.3203,
-     "r": 0.5237,
-     "t": 0.009,
-     "b": 0.119
+     "l": 0.1463,
+     "r": 0.3497,
+     "t": -0.027,
+     "b": 0.083
     },
     "mouth": [
-     0.422,
-     0.0948
+     0.248,
+     0.0588
     ],
     "place": "ground",
     "facing": "r",
@@ -69,8 +73,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Outlaw with bandana over face"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw with bandana over face"
    }
   },
   "west_outlaws__wild_west_outlaw_standing_winchester": {
@@ -84,8 +92,8 @@
     362
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4841,
+    "v": 3,
+    "foot": 0.4857,
     "pad": 0.0083,
     "aspect": 0.5939,
     "face": {
@@ -105,8 +113,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Outlaw standing with Winchester rifle"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw holding winchester rifle"
    }
   },
   "west_outlaws__young_ragged_wild_west_outlaw": {
@@ -120,7 +132,7 @@
     354
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5293,
     "pad": 0.0085,
     "aspect": 0.3588,
@@ -141,8 +153,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Young ragged outlaw standing"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "young ragged wild west outlaw"
    }
   },
   "west_outlaws__wild_west_gang_leader_black": {
@@ -156,8 +172,8 @@
     365
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.6049,
+    "v": 3,
+    "foot": 0.6074,
     "pad": 0.0082,
     "aspect": 0.4,
     "face": {
@@ -177,8 +193,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Gang leader in black coat"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west gang leader in black coat"
    }
   },
   "west_outlaws__wild_west_outlaw_drawing_revolver": {
@@ -192,29 +212,33 @@
     356
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.5134,
+    "v": 3,
+    "foot": 0.5089,
     "pad": 0.0084,
     "aspect": 0.4775,
     "face": {
-     "l": 0.6561,
-     "r": 0.8519,
-     "t": 0.373,
-     "b": 0.483
+     "l": 0.4139,
+     "r": 0.5744,
+     "t": 0.0197,
+     "b": 0.4747
     },
     "mouth": [
-     0.754,
-     0.4588
+     0.4942,
+     0.3746
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false,
+    "cut": true,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Outlaw drawing revolver"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw drawing revolver"
    }
   },
   "west_outlaws__wild_west_outlaw_aiming_revolver": {
@@ -228,19 +252,19 @@
     349
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.3869,
+    "v": 3,
+    "foot": 0.387,
     "pad": 0.0086,
     "aspect": 0.7049,
     "face": {
-     "l": 0.8407,
-     "r": 0.9733,
-     "t": 0.373,
-     "b": 0.483
+     "l": 0.0087,
+     "r": 0.1413,
+     "t": 0.173,
+     "b": 0.283
     },
     "mouth": [
-     0.907,
-     0.4588
+     0.075,
+     0.2588
     ],
     "place": "ground",
     "facing": "r",
@@ -249,8 +273,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": true,
-    "is": "Outlaw aiming revolver"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw aiming revolver"
    }
   },
   "west_outlaws__wild_west_outlaw_counting_stolen": {
@@ -264,9 +292,9 @@
     352
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4514,
-    "pad": 0.0085,
+    "pad": 0.0114,
     "aspect": 0.5114,
     "face": {
      "l": 0.3398,
@@ -285,8 +313,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Outlaw holding money bag and bills"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw counting stolen cash"
    }
   },
   "west_outlaws__mexican_bandit_sombrero_bandolier": {
@@ -300,19 +332,19 @@
     367
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.6167,
+    "v": 3,
+    "foot": 0.6183,
     "pad": 0.0082,
     "aspect": 0.436,
     "face": {
-     "l": 0.7998,
-     "r": 1.0142,
-     "t": 0.009,
-     "b": 0.119
+     "l": 0.4265,
+     "r": 0.6048,
+     "t": 0.0109,
+     "b": 0.0708
     },
     "mouth": [
-     0.907,
-     0.0948
+     0.5156,
+     0.0576
     ],
     "place": "ground",
     "facing": "r",
@@ -321,8 +353,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Bandit wearing sombrero and poncho"
+    "posture": "stand",
+    "flat": false,
+    "group": "mexican bandit",
+    "is": "mexican bandit with sombrero and bandolier"
    }
   },
   "west_outlaws__female_wild_west_outlaw_riding": {
@@ -336,19 +372,19 @@
     354
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.5638,
+    "v": 3,
+    "foot": 0.569,
     "pad": 0.0085,
     "aspect": 0.4096,
     "face": {
      "l": 0.347,
      "r": 0.6806,
-     "t": 0.0113,
+     "t": 0.0141,
      "b": 0.2175
     },
     "mouth": [
      0.5138,
-     0.1721
+     0.1728
     ],
     "place": "ground",
     "facing": "r",
@@ -357,8 +393,12 @@
     "cut": false,
     "mismatch": true,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Female outlaw with two holstered revolvers"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "female wild west outlaw standing with revolvers"
    }
   },
   "west_law__wild_west_sheriff_star_badge": {
@@ -372,8 +412,8 @@
     370
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.6077,
+    "v": 3,
+    "foot": 0.6085,
     "pad": 0.0081,
     "aspect": 0.4027,
     "face": {
@@ -393,8 +433,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Sheriff with star badge standing"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west sheriff",
+    "is": "wild west sheriff with star badge"
    }
   },
   "west_law__wild_west_sheriff_walking_hand": {
@@ -408,8 +452,8 @@
     365
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.5664,
+    "v": 3,
+    "foot": 0.5666,
     "pad": 0.0082,
     "aspect": 0.4685,
     "face": {
@@ -429,8 +473,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Sheriff walking with hand near holster"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west sheriff",
+    "is": "wild west sheriff walking"
    }
   },
   "west_law__wild_west_deputy_shotgun": {
@@ -444,7 +492,7 @@
     364
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.3971,
     "pad": 0.0082,
     "aspect": 0.6291,
@@ -465,8 +513,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Deputy holding shotgun"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west deputy",
+    "is": "wild west deputy holding shotgun"
    }
   },
   "west_law__us_marshal_long_coat_badge": {
@@ -480,7 +532,7 @@
     369
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4607,
     "pad": 0.0081,
     "aspect": 0.6911,
@@ -501,8 +553,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "US Marshal in long coat holding shotgun"
+    "posture": "stand",
+    "flat": false,
+    "group": "us marshal",
+    "is": "us marshal in long coat with rifle"
    }
   },
   "west_law__wild_west_bounty_hunter_poncho": {
@@ -516,9 +572,9 @@
     366
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5723,
-    "pad": 0.0082,
+    "pad": 0.0109,
     "aspect": 0.5984,
     "face": {
      "l": 0.467,
@@ -537,8 +593,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Bounty hunter in poncho holding rifle"
+    "posture": "stand",
+    "flat": false,
+    "group": "bounty hunter",
+    "is": "wild west bounty hunter in poncho"
    }
   },
   "west_law__wild_west_sheriff_aiming_revolver": {
@@ -552,8 +612,8 @@
     355
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.3115,
+    "v": 3,
+    "foot": 0.313,
     "pad": 0.0085,
     "aspect": 0.6817,
     "face": {
@@ -573,8 +633,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": true,
-    "is": "Sheriff aiming revolver"
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west sheriff",
+    "is": "wild west sheriff aiming revolver"
    }
   },
   "west_law__wild_west_texas_ranger_rifle": {
@@ -588,8 +652,8 @@
     359
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4212,
+    "v": 3,
+    "foot": 0.4182,
     "pad": 0.0084,
     "aspect": 0.6295,
     "face": {
@@ -609,8 +673,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Texas Ranger holding rifle"
+    "posture": "stand",
+    "flat": false,
+    "group": "texas ranger",
+    "is": "wild west texas ranger holding rifle"
    }
   },
   "west_law__wild_west_judge_black_suit": {
@@ -624,9 +692,9 @@
     352
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4333,
-    "pad": 0.0085,
+    "v": 3,
+    "foot": 0.4385,
+    "pad": 0.0114,
     "aspect": 0.5511,
     "face": {
      "l": 0.2839,
@@ -645,8 +713,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Judge in black suit holding gavel"
+    "posture": "stand",
+    "flat": false,
+    "group": "town judge",
+    "is": "wild west judge in black suit with gavel"
    }
   },
   "west_law__wild_west_hangman_executioner_plain": {
@@ -660,8 +732,8 @@
     348
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4078,
+    "v": 3,
+    "foot": 0.4051,
     "pad": 0.0086,
     "aspect": 0.5718,
     "face": {
@@ -681,8 +753,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Executioner holding coiled rope noose"
+    "posture": "stand",
+    "flat": false,
+    "group": "town executioner",
+    "is": "wild west hangman holding noose"
    }
   },
   "west_law__pinkerton_detective_bowler_hat_suit": {
@@ -696,19 +772,19 @@
     358
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5709,
     "pad": 0.0084,
     "aspect": 0.4162,
     "face": {
      "l": 0.3004,
      "r": 0.7332,
-     "t": 0.0112,
+     "t": 0.014,
      "b": 0.2486
     },
     "mouth": [
      0.5168,
-     0.1964
+     0.197
     ],
     "place": "ground",
     "facing": "r",
@@ -717,8 +793,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Detective in bowler hat and suit"
+    "posture": "stand",
+    "flat": false,
+    "group": "pinkerton detective",
+    "is": "pinkerton detective in bowler hat and suit"
    }
   },
   "west_town__wild_west_saloon_keeper_apron": {
@@ -732,25 +812,33 @@
     361
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.578,
-    "pad": 0.0083,
+    "v": 3,
+    "foot": 0.5809,
+    "pad": 0.0111,
     "aspect": 0.4266,
     "face": {
      "l": 0.3465,
      "r": 0.7249,
-     "t": 0.0111,
+     "t": 0.0139,
      "b": 0.2078
     },
     "mouth": [
      0.5357,
-     0.1645
+     0.1651
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west saloon keeper in apron"
    }
   },
   "west_town__wild_west_saloon_girl_ruffled": {
@@ -764,8 +852,8 @@
     375
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6825,
+    "v": 3,
+    "foot": 0.6823,
     "pad": 0.008,
     "aspect": 0.44,
     "face": {
@@ -782,7 +870,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west saloon girl in ruffled dress"
    }
   },
   "west_town__wild_west_shopkeeper_apron_sleeve": {
@@ -796,8 +892,8 @@
     361
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4779,
+    "v": 3,
+    "foot": 0.4787,
     "pad": 0.0083,
     "aspect": 0.4294,
     "face": {
@@ -814,7 +910,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west shopkeeper in apron holding box"
    }
   },
   "west_town__wild_west_banker_suit_pocket": {
@@ -828,7 +932,7 @@
     369
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5738,
     "pad": 0.0081,
     "aspect": 0.3875,
@@ -846,7 +950,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west banker in suit"
    }
   },
   "west_town__wild_west_blacksmith_hammer": {
@@ -860,9 +972,9 @@
     362
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5106,
-    "pad": 0.0083,
+    "pad": 0.011,
     "aspect": 0.489,
     "face": {
      "l": 0.4409,
@@ -878,7 +990,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west blacksmith with hammer and tongs"
    }
   },
   "west_town__wild_west_preacher_black_bible": {
@@ -892,25 +1012,33 @@
     361
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.575,
     "pad": 0.0083,
     "aspect": 0.4238,
     "face": {
      "l": 0.3373,
      "r": 0.702,
-     "t": 0.0111,
+     "t": 0.0139,
      "b": 0.2327
     },
     "mouth": [
      0.5197,
-     0.1839
+     0.1846
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west preacher in black holding bible"
    }
   },
   "west_town__wild_west_town_doctor_black": {
@@ -924,7 +1052,7 @@
     354
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5752,
     "pad": 0.0085,
     "aspect": 0.4463,
@@ -942,7 +1070,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west town doctor with medical bag"
    }
   },
   "west_town__wild_west_newspaper_editor_visor": {
@@ -956,8 +1092,8 @@
     356
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5588,
+    "v": 3,
+    "foot": 0.5594,
     "pad": 0.0084,
     "aspect": 0.4382,
     "face": {
@@ -974,7 +1110,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west newspaper editor in visor"
    }
   },
   "west_town__wild_west_stagecoach_driver_whip": {
@@ -988,8 +1132,8 @@
     361
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3692,
+    "v": 3,
+    "foot": 0.3675,
     "pad": 0.0083,
     "aspect": 0.6565,
     "face": {
@@ -1006,7 +1150,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "stagecoach driver",
+    "is": "wild west stagecoach driver with whip"
    }
   },
   "west_town__wild_west_bartender_polishing_glass": {
@@ -1020,7 +1172,7 @@
     355
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4884,
     "pad": 0.0085,
     "aspect": 0.493,
@@ -1038,7 +1190,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west bartender polishing glass"
    }
   },
   "west_frontier__poor_frontier_farmer_patched_overalls": {
@@ -1052,8 +1212,8 @@
     372
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4779,
+    "v": 3,
+    "foot": 0.4744,
     "pad": 0.0081,
     "aspect": 0.5161,
     "face": {
@@ -1073,8 +1233,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Farmer in patched overalls holding hoe"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "poor frontier farmer in patched overalls"
    }
   },
   "west_frontier__frontier_mother_long_faded_dress": {
@@ -1088,8 +1252,8 @@
     355
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.523,
+    "v": 3,
+    "foot": 0.5186,
     "pad": 0.0085,
     "aspect": 0.4423,
     "face": {
@@ -1109,8 +1273,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Frontier mother in dress holding basket"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "frontier mother in long faded dress"
    }
   },
   "west_frontier__ragged_frontier_boy_barefoot": {
@@ -1124,19 +1292,19 @@
     339
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.3848,
+    "v": 3,
+    "foot": 0.3749,
     "pad": 0.0088,
     "aspect": 0.3451,
     "face": {
-     "l": 0.3193,
-     "r": 0.8174,
-     "t": 0.0118,
-     "b": 0.3363
+     "l": 0.2825,
+     "r": 0.5535,
+     "t": -0.027,
+     "b": 0.083
     },
     "mouth": [
-     0.5684,
-     0.2649
+     0.418,
+     0.0588
     ],
     "place": "ground",
     "facing": "r",
@@ -1145,8 +1313,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Barefoot frontier boy in ragged clothes"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "ragged barefoot frontier boy"
    }
   },
   "west_frontier__frontier_girl_plain_dress_bonnet": {
@@ -1160,8 +1332,8 @@
     306
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.5796,
+    "v": 3,
+    "foot": 0.5752,
     "pad": 0.0098,
     "aspect": 0.3693,
     "face": {
@@ -1181,8 +1353,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Frontier girl in bonnet holding doll"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "frontier girl in plain dress and bonnet"
    }
   },
   "west_frontier__frontier_baby_wrapped_blanket_being": {
@@ -1213,12 +1389,16 @@
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Woman holding wrapped baby in blanket"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "frontier woman holding wrapped baby"
    }
   },
   "west_frontier__gold_prospector_miner_pickaxe_pan": {
@@ -1232,8 +1412,8 @@
     371
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4385,
+    "v": 3,
+    "foot": 0.4321,
     "pad": 0.0081,
     "aspect": 0.504,
     "face": {
@@ -1253,8 +1433,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "gold prospector with pickaxe and pan"
+    "posture": "stand",
+    "flat": false,
+    "group": "gold prospector",
+    "is": "gold prospector miner with pickaxe and pan"
    }
   },
   "west_frontier__cattle_cowboy_lasso_chaps": {
@@ -1268,8 +1452,8 @@
     375
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4731,
+    "v": 3,
+    "foot": 0.4794,
     "pad": 0.008,
     "aspect": 0.44,
     "face": {
@@ -1289,8 +1473,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Cowboy in chaps holding lasso"
+    "posture": "stand",
+    "flat": false,
+    "group": "cowboy",
+    "is": "cattle cowboy with lasso and chaps"
    }
   },
   "west_frontier__old_frontier_man_long_gray": {
@@ -1304,8 +1492,8 @@
     368
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.3515,
+    "v": 3,
+    "foot": 0.3406,
     "pad": 0.0082,
     "aspect": 0.5272,
     "face": {
@@ -1325,8 +1513,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "old man with gray beard and cane"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "old frontier man with cane"
    }
   },
   "west_frontier__chinese_railroad_worker_straw_hat": {
@@ -1340,29 +1532,33 @@
     369
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4839,
+    "v": 3,
+    "foot": 0.4795,
     "pad": 0.0081,
     "aspect": 0.5041,
     "face": {
-     "l": 0.4863,
-     "r": 0.6717,
-     "t": 0.186,
-     "b": 0.296
+     "l": 0.2643,
+     "r": 0.6443,
+     "t": 0.0136,
+     "b": 0.122
     },
     "mouth": [
-     0.579,
-     0.2718
+     0.4543,
+     0.0982
     ],
     "place": "ground",
-    "facing": "l",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "railroad worker in straw hat with sledgehammer"
+    "posture": "stand",
+    "flat": false,
+    "group": "railroad worker",
+    "is": "chinese railroad worker in straw hat"
    }
   },
   "west_frontier__african_american_cowboy_rope_hat": {
@@ -1376,9 +1572,9 @@
     376
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4179,
-    "pad": 0.008,
+    "v": 3,
+    "foot": 0.44,
+    "pad": 0.0106,
     "aspect": 0.5505,
     "face": {
      "l": 0.397,
@@ -1397,8 +1593,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "African American cowboy with rope"
+    "posture": "stand",
+    "flat": false,
+    "group": "cowboy",
+    "is": "african american cowboy with rope and hat"
    }
   },
   "west_frontier2__frontier_settler_family_three_walking": {
@@ -1413,8 +1613,8 @@
    ],
    "ann": {
     "v": 2,
-    "foot": 0.3776,
-    "pad": 0.009,
+    "foot": 0.3834,
+    "pad": 0.0119,
     "aspect": 0.8448,
     "face": {
      "l": 0.2796,
@@ -1429,12 +1629,16 @@
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "frontier family of three walking"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "frontier settler family of three walking"
    }
   },
   "west_frontier2__sick_frontier_man_coughing_blanket": {
@@ -1448,9 +1652,9 @@
     326
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4766,
-    "pad": 0.0092,
+    "v": 3,
+    "foot": 0.4826,
+    "pad": 0.0123,
     "aspect": 0.4939,
     "face": {
      "l": 0.5734,
@@ -1469,8 +1673,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "sick man wrapped in blanket coughing"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "sick frontier man coughing in blanket"
    }
   },
   "west_frontier2__frontier_widow_black_mourning_dress": {
@@ -1484,7 +1692,7 @@
     324
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5329,
     "pad": 0.0093,
     "aspect": 0.4691,
@@ -1505,8 +1713,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "woman in black mourning dress"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "frontier widow in black mourning dress"
    }
   },
   "west_frontier2__orphan_boy_oversized_clothes_holding": {
@@ -1520,8 +1732,8 @@
     295
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.5082,
+    "v": 3,
+    "foot": 0.5073,
     "pad": 0.0102,
     "aspect": 0.4136,
     "face": {
@@ -1541,8 +1753,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "boy in oversized clothes holding bread"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "orphan boy in oversized clothes holding bread"
    }
   },
   "west_frontier2__frontier_farmer_plowing_behind_horse": {
@@ -1556,9 +1772,9 @@
     314
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5337,
-    "pad": 0.0096,
+    "v": 2,
+    "foot": 0.5229,
+    "pad": 0.0127,
     "aspect": 1.2261,
     "face": {
      "l": 0.2623,
@@ -1573,8 +1789,16 @@
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": true
+    "double": true,
+    "cut": true,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "frontier farmer plowing behind cut-off horse"
    }
   },
   "west_frontier2__frontier_woman_washing_clothes_tub": {
@@ -1588,9 +1812,9 @@
     337
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.5108,
-    "pad": 0.0089,
+    "v": 3,
+    "foot": 0.4923,
+    "pad": 0.0119,
     "aspect": 0.6736,
     "face": {
      "l": 0.4308,
@@ -1609,8 +1833,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "woman washing clothes in wooden tub"
+    "posture": "stand",
+    "flat": false,
+    "group": "frontier settler",
+    "is": "frontier woman washing clothes in tub"
    }
   },
   "west_frontier2__wild_west_mail_rider_pony": {
@@ -1624,8 +1852,8 @@
     358
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.5419,
+    "v": 3,
+    "foot": 0.5461,
     "pad": 0.0084,
     "aspect": 0.4218,
     "face": {
@@ -1645,8 +1873,12 @@
     "cut": false,
     "mismatch": true,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "mail rider standing without pony"
+    "posture": "stand",
+    "flat": false,
+    "group": "mail carrier",
+    "is": "wild west mail rider standing without pony"
    }
   },
   "west_frontier2__wild_west_train_engineer_cap": {
@@ -1660,8 +1892,8 @@
     356
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4743,
+    "v": 3,
+    "foot": 0.4711,
     "pad": 0.0084,
     "aspect": 0.4803,
     "face": {
@@ -1681,8 +1913,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "train engineer in cap holding pocket watch"
+    "posture": "stand",
+    "flat": false,
+    "group": "railroad worker",
+    "is": "wild west train engineer in cap"
    }
   },
   "west_frontier2__wild_west_town_crowd_five": {
@@ -1697,7 +1933,7 @@
    ],
    "ann": {
     "v": 2,
-    "foot": 0.4368,
+    "foot": 0.4376,
     "pad": 0.0087,
     "aspect": 0.9128,
     "face": {
@@ -1713,12 +1949,16 @@
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "crowd of five frontier townspeople"
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west town crowd of four people"
    }
   },
   "west_frontier2__wild_west_undertaker_measuring_tape": {
@@ -1732,7 +1972,7 @@
     363
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4507,
     "pad": 0.0083,
     "aspect": 0.4187,
@@ -1750,7 +1990,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "wild west undertaker with measuring tape"
    }
   },
   "west_military_native__us_cavalry_trooper_1870s_blue": {
@@ -1764,8 +2012,8 @@
     355
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.3685,
+    "v": 3,
+    "foot": 0.3697,
     "pad": 0.0085,
     "aspect": 0.6507,
     "face": {
@@ -1785,8 +2033,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "US cavalry trooper holding rifle"
+    "posture": "stand",
+    "flat": false,
+    "group": "us cavalry soldier",
+    "is": "us cavalry trooper in 1870s blue uniform"
    }
   },
   "west_military_native__us_cavalry_officer_saber_gauntlets": {
@@ -1800,9 +2052,9 @@
     357
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4635,
-    "pad": 0.0084,
+    "v": 3,
+    "foot": 0.5093,
+    "pad": 0.0112,
     "aspect": 0.4426,
     "face": {
      "l": 0.3549,
@@ -1821,8 +2073,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "US cavalry officer with saber"
+    "posture": "stand",
+    "flat": false,
+    "group": "us cavalry officer",
+    "is": "us cavalry officer with saber and gauntlets"
    }
   },
   "west_military_native__us_cavalry_soldier_foot_firing": {
@@ -1836,7 +2092,7 @@
     278
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.332,
     "pad": 0.0108,
     "aspect": 1.1978,
@@ -1857,8 +2113,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": true,
-    "is": "kneeling US cavalry soldier firing rifle"
+    "posture": "kneel",
+    "flat": false,
+    "group": "us cavalry soldier",
+    "is": "us cavalry soldier kneeling and firing rifle"
    }
   },
   "west_military_native__plains_native_american_man_buckskin": {
@@ -1872,19 +2132,19 @@
     341
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.342,
     "pad": 0.0088,
     "aspect": 0.6217,
     "face": {
-     "l": 0.0158,
-     "r": 0.1662,
-     "t": 0.581,
-     "b": 0.691
+     "l": 0.8348,
+     "r": 0.9852,
+     "t": 0.573,
+     "b": 0.683
     },
     "mouth": [
-     0.091,
-     0.6668
+     0.91,
+     0.6588
     ],
     "place": "ground",
     "facing": "r",
@@ -1893,8 +2153,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Native American man in buckskin with bow"
+    "posture": "stand",
+    "flat": false,
+    "group": "plains native warrior",
+    "is": "plains native american man in buckskin with bow"
    }
   },
   "west_military_native__plains_native_american_chief_feather": {
@@ -1908,19 +2172,19 @@
     366
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4892,
+    "v": 3,
+    "foot": 0.4908,
     "pad": 0.0082,
     "aspect": 0.5574,
     "face": {
-     "l": 0.4706,
-     "r": 0.6225,
-     "t": 0.3525,
-     "b": 0.4973
+     "l": -0.0019,
+     "r": 0.1659,
+     "t": 0.773,
+     "b": 0.883
     },
     "mouth": [
-     0.5466,
-     0.4654
+     0.082,
+     0.8588
     ],
     "place": "ground",
     "facing": "r",
@@ -1929,8 +2193,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Native American chief in feathered headdress"
+    "posture": "stand",
+    "flat": false,
+    "group": "plains native chief",
+    "is": "plains native american chief in feather headdress"
    }
   },
   "west_military_native__plains_native_american_woman_decorated": {
@@ -1944,8 +2212,8 @@
     346
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5928,
+    "v": 3,
+    "foot": 0.5911,
     "pad": 0.0087,
     "aspect": 0.3497,
     "face": {
@@ -1962,7 +2230,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "plains native woman",
+    "is": "plains native american woman in decorated dress"
    }
   },
   "west_military_native__apache_scout_headband_rifle_respectful": {
@@ -1976,25 +2252,33 @@
     349
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.2671,
+    "v": 3,
+    "foot": 0.2,
     "pad": 0.0086,
     "aspect": 0.6361,
     "face": {
-     "l": 0.0056,
-     "r": 0.553,
-     "t": 0.0115,
-     "b": 0.4642
+     "l": 0.3285,
+     "r": 0.4755,
+     "t": 0.773,
+     "b": 0.883
     },
     "mouth": [
-     0.2793,
-     0.3646
+     0.402,
+     0.8588
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "apache scout",
+    "is": "apache scout with headband and rifle"
    }
   },
   "west_military_native__native_american_boy_respectful_accurate": {
@@ -2008,25 +2292,33 @@
     299
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5347,
+    "v": 3,
+    "foot": 0.5379,
     "pad": 0.01,
     "aspect": 0.3177,
     "face": {
-     "l": 0.0648,
-     "r": 0.8088,
-     "t": 0.0167,
-     "b": 0.495
+     "l": 0.4328,
+     "r": 0.7272,
+     "t": 0.773,
+     "b": 0.883
     },
     "mouth": [
-     0.4368,
-     0.3898
+     0.58,
+     0.8588
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "native american boy",
+    "is": "native american boy in buckskin"
    }
   },
   "west_military_native__army_scout_fringed_buckskin_jacket": {
@@ -2040,7 +2332,7 @@
     362
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.3615,
     "pad": 0.0083,
     "aspect": 0.616,
@@ -2058,7 +2350,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "us army scout",
+    "is": "army scout in fringed buckskin jacket"
    }
   },
   "west_military_native__mexican_vaquero_sombrero_lasso": {
@@ -2072,7 +2372,7 @@
     372
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5003,
     "pad": 0.0081,
     "aspect": 0.4435,
@@ -2090,13 +2390,21 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "mexican vaquero",
+    "is": "mexican vaquero with sombrero and lasso"
    }
   },
   "west_mounted__cowboy_riding_brown_horse_walk": {
    "sheet": "west_mounted",
    "era": "wildwest",
-   "kind": "animal",
+   "kind": "person",
    "heightM": 2.5,
    "facing": "r",
    "px": [
@@ -2105,24 +2413,28 @@
    ],
    "ann": {
     "v": 2,
-    "foot": 0.4266,
+    "foot": 0.4226,
     "pad": 0.0085,
     "aspect": 0.9633,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Cowboy riding walking brown horse"
+    "posture": "ride",
+    "flat": false,
+    "group": "cowboy",
+    "is": "cowboy riding walking brown horse"
    }
   },
   "west_mounted__outlaw_galloping_black_horse_firing": {
    "sheet": "west_mounted",
    "era": "wildwest",
-   "kind": "animal",
+   "kind": "person",
    "heightM": 2.5,
    "facing": "r",
    "px": [
@@ -2137,18 +2449,22 @@
     "place": "ground",
     "facing": "l",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": true,
-    "is": "Outlaw galloping black horse and firing"
+    "posture": "ride",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "outlaw galloping black horse firing revolver"
    }
   },
   "west_mounted__sheriff_riding_horse_trot": {
    "sheet": "west_mounted",
    "era": "wildwest",
-   "kind": "animal",
+   "kind": "person",
    "heightM": 2.5,
    "facing": "r",
    "px": [
@@ -2157,24 +2473,28 @@
    ],
    "ann": {
     "v": 2,
-    "foot": 0.3511,
-    "pad": 0.0087,
+    "foot": 0.3754,
+    "pad": 0.0116,
     "aspect": 1.1279,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Sheriff riding trotting horse"
+    "posture": "ride",
+    "flat": false,
+    "group": "wild west sheriff",
+    "is": "sheriff riding trotting brown horse"
    }
   },
   "west_mounted__us_cavalry_trooper_galloping_horse": {
    "sheet": "west_mounted",
    "era": "wildwest",
-   "kind": "animal",
+   "kind": "person",
    "heightM": 2.5,
    "facing": "r",
    "px": [
@@ -2189,18 +2509,22 @@
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "US cavalry trooper riding galloping horse"
+    "posture": "ride",
+    "flat": false,
+    "group": "us cavalry soldier",
+    "is": "us cavalry trooper galloping horse"
    }
   },
   "west_mounted__native_american_rider_pinto_horse": {
    "sheet": "west_mounted",
    "era": "wildwest",
-   "kind": "animal",
+   "kind": "person",
    "heightM": 2.5,
    "facing": "r",
    "px": [
@@ -2208,15 +2532,23 @@
     344
    ],
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.4172,
-    "pad": 0.0087,
+    "pad": 0.0116,
     "aspect": 1.1192,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "plains native warrior",
+    "is": "native american rider on pinto horse"
    }
   },
   "west_mounted__bounty_hunter_horse_leading_captured": {
@@ -2230,15 +2562,23 @@
     343
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3364,
+    "v": 2,
+    "foot": 0.3321,
     "pad": 0.0087,
     "aspect": 1.277,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "bounty hunter",
+    "is": "bounty hunter on horse leading captured outlaw"
    }
   },
   "west_outlaws_act__wild_west_outlaw_running_away": {
@@ -2252,8 +2592,8 @@
     304
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.8028,
+    "v": 3,
+    "foot": 0.8005,
     "pad": 0.0099,
     "aspect": 0.7007,
     "face": {
@@ -2270,7 +2610,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw running away"
    }
   },
   "west_outlaws_act__wild_west_outlaw_crouching_behind": {
@@ -2284,7 +2632,7 @@
     268
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5468,
     "pad": 0.0149,
     "aspect": 1.1157,
@@ -2307,7 +2655,10 @@
     "partial": false,
     "furniture": false,
     "aims": true,
-    "is": "outlaw crouching behind rock firing revolver"
+    "posture": "kneel",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw crouching behind rock firing"
    }
   },
   "west_outlaws_act__wild_west_outlaw_lying_prone": {
@@ -2321,7 +2672,7 @@
     122
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4864,
     "pad": 0.0246,
     "aspect": 3.0164,
@@ -2339,7 +2690,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "lie",
+    "flat": true,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw lying prone aiming rifle"
    }
   },
   "west_outlaws_act__wounded_wild_west_outlaw_sitting": {
@@ -2353,9 +2712,9 @@
     224
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.618,
-    "pad": 0.0134,
+    "v": 3,
+    "foot": 0.616,
+    "pad": 0.0179,
     "aspect": 1.1161,
     "face": {
      "l": 0.3986,
@@ -2374,8 +2733,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Wounded outlaw sitting on ground"
+    "posture": "sit",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wounded wild west outlaw sitting on ground"
    }
   },
   "west_outlaws_act__wild_west_outlaw_hands_tied": {
@@ -2389,25 +2752,33 @@
     299
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4977,
-    "pad": 0.01,
+    "v": 3,
+    "foot": 0.5033,
+    "pad": 0.0134,
     "aspect": 0.5318,
     "face": {
-     "l": 0.6741,
-     "r": 0.8499,
-     "t": 0.177,
-     "b": 0.287
+     "l": 0.6641,
+     "r": 0.8399,
+     "t": 0.173,
+     "b": 0.283
     },
     "mouth": [
-     0.762,
-     0.2628
+     0.752,
+     0.2588
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw with hands tied"
    }
   },
   "west_outlaws_act__wild_west_outlaw_raising_hands": {
@@ -2421,7 +2792,7 @@
     314
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5424,
     "pad": 0.0096,
     "aspect": 0.5223,
@@ -2439,7 +2810,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw raising hands in surrender"
    }
   },
   "west_outlaws_act__cowboy_hat_falling": {
@@ -2453,7 +2832,7 @@
     77
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.2062,
     "pad": 0.039,
     "aspect": 1.039,
@@ -2476,7 +2855,9 @@
     "partial": true,
     "furniture": false,
     "aims": false,
-    "is": "tilted brown cowboy hat with empty face box"
+    "posture": "stand",
+    "flat": false,
+    "is": "cowboy hat falling"
    }
   },
   "west_outlaws_act__wild_west_outlaw_lying_dead": {
@@ -2490,29 +2871,33 @@
     135
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.2373,
-    "pad": 0.0222,
+    "v": 3,
+    "foot": 0.2428,
+    "pad": 0.0296,
     "aspect": 2.3185,
     "face": {
-     "l": 0.4847,
-     "r": 0.5873,
-     "t": 0.746,
-     "b": 1.026
+     "l": 0.1537,
+     "r": 0.2563,
+     "t": 0.335,
+     "b": 0.615
     },
     "mouth": [
-     0.536,
-     0.9644
+     0.205,
+     0.5534
     ],
     "place": "ground",
-    "facing": "l",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Outlaw lying on ground"
+    "posture": "lie",
+    "flat": true,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw lying on ground"
    }
   },
   "west_outlaws_act__wild_west_outlaw_sleeping_ground": {
@@ -2526,25 +2911,33 @@
     177
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.6919,
     "pad": 0.0169,
     "aspect": 1.6045,
     "face": {
-     "l": 0.2175,
-     "r": 0.3354,
-     "t": 0.0226,
-     "b": 0.3164
+     "l": 0.3058,
+     "r": 0.4542,
+     "t": 0.318,
+     "b": 0.598
     },
     "mouth": [
-     0.2765,
-     0.2518
+     0.38,
+     0.5364
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "lie",
+    "flat": true,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw sleeping in bedroll on ground"
    }
   },
   "west_outlaws_act__wild_west_outlaw_sitting_by": {
@@ -2558,8 +2951,8 @@
     222
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5694,
+    "v": 3,
+    "foot": 0.5722,
     "pad": 0.0135,
     "aspect": 0.8108,
     "face": {
@@ -2576,7 +2969,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw sitting eating beans"
    }
   },
   "west_outlaws_act__campfire": {
@@ -2590,19 +2991,19 @@
     137
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4712,
+    "v": 3,
+    "foot": 0.458,
     "pad": 0.0219,
     "aspect": 0.7591,
     "face": {
-     "l": 0.4258,
-     "r": 0.5838,
-     "t": 0,
-     "b": 0.16
+     "l": -0.0616,
+     "r": 0.0616,
+     "t": -0.055,
+     "b": 0.055
     },
     "mouth": [
-     0.5048,
-     0.1248
+     0,
+     0.0308
     ],
     "place": "ground",
     "facing": "r",
@@ -2611,8 +3012,11 @@
     "cut": false,
     "mismatch": false,
     "partial": true,
+    "furniture": false,
     "aims": false,
-    "is": "Burning wooden campfire"
+    "posture": "stand",
+    "flat": false,
+    "is": "burning campfire"
    }
   },
   "west_outlaws_act__wild_west_outlaw_shot_back": {
@@ -2626,7 +3030,7 @@
     269
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.2111,
     "pad": 0.0112,
     "aspect": 0.7398,
@@ -2644,7 +3048,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "wild west outlaw falling backward"
    }
   },
   "west_animals__saddled_brown_horse_standing": {
@@ -2658,9 +3070,9 @@
     239
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4476,
-    "pad": 0.0126,
+    "v": 3,
+    "foot": 0.451,
+    "pad": 0.0167,
     "aspect": 1.1548,
     "place": "ground",
     "facing": "r",
@@ -2669,7 +3081,10 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
+    "posture": "stand",
+    "flat": false,
     "is": "saddled brown horse standing"
    }
   },
@@ -2684,7 +3099,7 @@
     236
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4457,
     "pad": 0.0127,
     "aspect": 1.1568,
@@ -2697,7 +3112,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "saddled dark horse standing facing right"
+    "posture": "stand",
+    "flat": false,
+    "is": "saddled black horse standing"
    }
   },
   "west_animals__pack_mule_supplies": {
@@ -2711,15 +3128,22 @@
     238
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4476,
+    "v": 3,
+    "foot": 0.4457,
     "pad": 0.0126,
     "aspect": 0.9832,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pack mule loaded with supplies"
    }
   },
   "west_animals__longhorn_cattle": {
@@ -2733,9 +3157,9 @@
     197
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.3998,
-    "pad": 0.0152,
+    "v": 3,
+    "foot": 0.3993,
+    "pad": 0.0203,
     "aspect": 1.5381,
     "place": "ground",
     "facing": "r",
@@ -2744,8 +3168,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "longhorn cow"
+    "posture": "stand",
+    "flat": false,
+    "is": "longhorn cattle standing"
    }
   },
   "west_animals__american_bison_buffalo": {
@@ -2759,7 +3186,7 @@
     209
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5392,
     "pad": 0.0144,
     "aspect": 1.2823,
@@ -2767,7 +3194,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "american bison buffalo standing"
    }
   },
   "west_animals__coyote": {
@@ -2781,15 +3215,22 @@
     202
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4857,
-    "pad": 0.0149,
+    "v": 3,
+    "foot": 0.5074,
+    "pad": 0.0198,
     "aspect": 1.2228,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "coyote standing"
    }
   },
   "west_animals__rattlesnake_coiled": {
@@ -2803,15 +3244,22 @@
     168
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4898,
+    "v": 3,
+    "foot": 0.4872,
     "pad": 0.0179,
     "aspect": 1.1667,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "coiled rattlesnake"
    }
   },
   "west_animals__vulture_sitting": {
@@ -2825,15 +3273,22 @@
     197
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4185,
-    "pad": 0.0152,
+    "v": 3,
+    "foot": 0.3841,
+    "pad": 0.0203,
     "aspect": 0.8477,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "vulture sitting"
    }
   },
   "west_animals__skinny_stray_dog": {
@@ -2847,7 +3302,7 @@
     183
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4472,
     "pad": 0.0164,
     "aspect": 1.2077,
@@ -2855,7 +3310,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "skinny stray dog standing"
    }
   },
   "west_animals__hen_chicks": {
@@ -2869,15 +3331,22 @@
     163
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4776,
+    "v": 2,
+    "foot": 0.485,
     "pad": 0.0184,
     "aspect": 1.3252,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "hen with three chicks"
    }
   },
   "west_vehicles__stagecoach_pulled_by_four_horses": {
@@ -2892,18 +3361,21 @@
    ],
    "ann": {
     "v": 2,
-    "foot": 0.4985,
+    "foot": 0.5007,
     "pad": 0.0127,
     "aspect": 2.2839,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Stagecoach pulled by four horses"
+    "posture": "stand",
+    "flat": false,
+    "is": "stagecoach pulled by four horses"
    }
   },
   "west_vehicles__covered_wagon_prairie_schooner_pulled": {
@@ -2918,18 +3390,21 @@
    ],
    "ann": {
     "v": 2,
-    "foot": 0.673,
+    "foot": 0.6876,
     "pad": 0.0128,
     "aspect": 1.8162,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Covered wagon pulled by two horses"
+    "posture": "stand",
+    "flat": false,
+    "is": "covered wagon prairie schooner pulled by oxen"
    }
   },
   "west_vehicles__chuckwagon": {
@@ -2943,15 +3418,22 @@
     224
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4921,
+    "v": 3,
+    "foot": 0.5,
     "pad": 0.0134,
     "aspect": 1.3973,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chuckwagon"
    }
   },
   "west_vehicles__buckboard_wagon_horse_driver": {
@@ -2965,15 +3447,23 @@
     202
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3837,
+    "v": 2,
+    "foot": 0.3817,
     "pad": 0.0149,
     "aspect": 2.1931,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "stagecoach driver",
+    "is": "buckboard wagon pulled by horse with driver"
    }
   },
   "west_vehicles__mine_cart_rails": {
@@ -2987,15 +3477,22 @@
     155
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4768,
+    "v": 3,
+    "foot": 0.4981,
     "pad": 0.0194,
     "aspect": 1.8452,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "mine cart on rails"
    }
   },
   "west_vehicles__horsedrawn_hearse_wagon": {
@@ -3009,15 +3506,22 @@
     360
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4226,
+    "v": 2,
+    "foot": 0.4224,
     "pad": 0.0083,
     "aspect": 1.2361,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": true,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "horsedrawn hearse wagon with two horses"
    }
   },
   "west_trains__1870s_american_steam_locomotive_cowcatcher": {
@@ -3031,7 +3535,7 @@
     229
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.2239,
     "pad": 0.0131,
     "aspect": 2.1921,
@@ -3044,7 +3548,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "1870s steam locomotive facing left"
+    "posture": "stand",
+    "flat": false,
+    "is": "1870s american steam locomotive with cowcatcher"
    }
   },
   "west_trains__1870s_passenger_railroad_car": {
@@ -3058,12 +3564,12 @@
     205
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4729,
     "pad": 0.0195,
     "aspect": 2.161,
     "place": "ground",
-    "facing": "l",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
@@ -3071,7 +3577,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "1870s wooden passenger railroad car"
+    "posture": "stand",
+    "flat": false,
+    "is": "1870s passenger railroad car"
    }
   },
   "west_trains__1870s_mail_express_railroad_car": {
@@ -3085,15 +3593,22 @@
     186
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4662,
+    "v": 3,
+    "foot": 0.4665,
     "pad": 0.0161,
     "aspect": 2.0269,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "1870s mail express railroad car"
    }
   },
   "west_trains__cattle_railroad_car": {
@@ -3107,15 +3622,22 @@
     206
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5028,
+    "v": 3,
+    "foot": 0.5044,
     "pad": 0.0146,
     "aspect": 2.2282,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "cattle railroad car"
    }
   },
   "west_trains__caboose": {
@@ -3129,15 +3651,22 @@
     240
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4981,
+    "v": 3,
+    "foot": 0.5027,
     "pad": 0.0125,
     "aspect": 1.6208,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "railroad caboose"
    }
   },
   "west_trains__railroad_handcar_two_workers": {
@@ -3151,15 +3680,23 @@
     212
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4966,
-    "pad": 0.0142,
+    "v": 2,
+    "foot": 0.4983,
+    "pad": 0.0189,
     "aspect": 1.3962,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "railroad worker",
+    "is": "railroad handcar with two workers"
    }
   },
   "west_guns__colt_single_action_revolver": {
@@ -3173,9 +3710,9 @@
     135
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.117,
-    "pad": 0.0222,
+    "pad": 0.0296,
     "aspect": 1.963,
     "place": "hand",
     "facing": "r",
@@ -3184,8 +3721,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Single-action revolver"
+    "posture": "stand",
+    "flat": true,
+    "is": "colt single action revolver"
    }
   },
   "west_guns__winchester_lever_action_rifle": {
@@ -3199,7 +3739,7 @@
     125
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.0394,
     "pad": 0.024,
     "aspect": 4.472,
@@ -3210,8 +3750,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Lever-action rifle"
+    "posture": "stand",
+    "flat": true,
+    "is": "winchester lever action rifle"
    }
   },
   "west_guns__double_barrel_shotgun": {
@@ -3227,17 +3770,20 @@
    "ann": {
     "v": 2,
     "foot": 0.3026,
-    "pad": 0.0155,
+    "pad": 0.0207,
     "aspect": 1.2073,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
-    "mismatch": true,
+    "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Leather gun belt and holster"
+    "posture": "stand",
+    "flat": false,
+    "is": "gun belt with holster"
    }
   },
   "west_guns__gun_belt_holster_bullets": {
@@ -3251,7 +3797,7 @@
     116
    ],
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.1983,
     "pad": 0.0259,
     "aspect": 1.5,
@@ -3259,7 +3805,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "derringer pistol"
    }
   },
   "west_guns__derringer_pistol": {
@@ -3273,15 +3826,22 @@
     102
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.0286,
+    "v": 2,
+    "foot": 0.0278,
     "pad": 0.0294,
     "aspect": 5.6471,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "double barrel shotgun"
    }
   },
   "west_guns__bowie_knife": {
@@ -3295,15 +3855,22 @@
     75
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3609,
+    "v": 3,
+    "foot": 0.3629,
     "pad": 0.04,
     "aspect": 3.3067,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "bowie knife"
    }
   },
   "west_guns__box_bullets": {
@@ -3317,15 +3884,22 @@
     149
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6643,
-    "pad": 0.0201,
+    "v": 3,
+    "foot": 0.6618,
+    "pad": 0.0268,
     "aspect": 1.3893,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "open box of bullets"
    }
   },
   "west_guns__dynamite_sticks_bundle_fuse": {
@@ -3339,7 +3913,7 @@
     108
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4339,
     "pad": 0.0278,
     "aspect": 2.1019,
@@ -3347,7 +3921,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "bundle of dynamite sticks with fuse"
    }
   },
   "west_guns__handcuffs": {
@@ -3361,7 +3942,7 @@
     112
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.2,
     "pad": 0.0357,
     "aspect": 1.875,
@@ -3374,7 +3955,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "pair of iron handcuffs"
+    "posture": "stand",
+    "flat": true,
+    "is": "pair of handcuffs"
    }
   },
   "west_guns__coiled_lasso_rope": {
@@ -3388,15 +3971,22 @@
     223
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.7555,
-    "pad": 0.0135,
+    "v": 3,
+    "foot": 0.7591,
+    "pad": 0.0179,
     "aspect": 0.6143,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "coiled lasso rope"
    }
   },
   "west_guns__sheriff_star_badge": {
@@ -3410,7 +4000,7 @@
     172
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0174,
     "aspect": 0.8895,
@@ -3421,8 +4011,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Metal sheriff star badge"
+    "posture": "stand",
+    "flat": false,
+    "is": "sheriff star badge"
    }
   },
   "west_guns__cowboy_hat": {
@@ -3436,7 +4029,7 @@
     131
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.2489,
     "pad": 0.0229,
     "aspect": 1.6718,
@@ -3447,8 +4040,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Brown cowboy hat"
+    "posture": "stand",
+    "flat": false,
+    "is": "cowboy hat"
    }
   },
   "west_guns__spurs": {
@@ -3462,15 +4058,22 @@
     148
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.7559,
+    "v": 2,
+    "foot": 0.7578,
     "pad": 0.0203,
     "aspect": 1.5068,
-    "place": "table",
+    "place": "hand",
     "facing": "r",
     "text": false,
     "double": true,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "pair of cowboy spurs"
    }
   },
   "west_guns__saddle": {
@@ -3484,7 +4087,7 @@
     260
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5355,
     "pad": 0.0115,
     "aspect": 0.8115,
@@ -3497,7 +4100,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "brown leather western saddle"
+    "posture": "stand",
+    "flat": false,
+    "is": "leather horse saddle"
    }
   },
   "west_guns__horse_saddlebags": {
@@ -3511,15 +4116,22 @@
     218
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3448,
+    "v": 3,
+    "foot": 0.3473,
     "pad": 0.0138,
     "aspect": 0.9312,
-    "place": "table",
+    "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "leather horse saddlebags"
    }
   },
   "west_guns__canteen": {
@@ -3533,15 +4145,22 @@
     193
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3976,
+    "v": 3,
+    "foot": 0.4029,
     "pad": 0.0155,
     "aspect": 0.9585,
-    "place": "table",
+    "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "metal canteen with strap"
    }
   },
   "west_guns__bedroll_blanket": {
@@ -3555,15 +4174,22 @@
     140
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.2152,
+    "v": 3,
+    "foot": 0.2173,
     "pad": 0.0214,
     "aspect": 1.6929,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "rolled bedroll blanket"
    }
   },
   "west_guns__lantern": {
@@ -3577,15 +4203,22 @@
     245
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4962,
+    "v": 3,
+    "foot": 0.5,
     "pad": 0.0122,
     "aspect": 0.5388,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "oil lantern"
    }
   },
   "west_buildings__wild_west_saloon_swinging_doors": {
@@ -3599,8 +4232,8 @@
     334
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.598,
+    "v": 3,
+    "foot": 0.5954,
     "pad": 0.009,
     "aspect": 1.1766,
     "place": "ground",
@@ -3610,8 +4243,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Two-story wooden saloon building"
+    "posture": "stand",
+    "flat": false,
+    "is": "wild west saloon with swinging doors"
    }
   },
   "west_buildings__wild_west_general_store_porch": {
@@ -3625,15 +4261,22 @@
     307
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5497,
-    "pad": 0.0098,
+    "v": 3,
+    "foot": 0.544,
+    "pad": 0.013,
     "aspect": 1.3192,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wild west general store with porch"
    }
   },
   "west_buildings__wild_west_bank_building_made": {
@@ -3647,7 +4290,7 @@
     306
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4961,
     "pad": 0.0098,
     "aspect": 1.2712,
@@ -3655,7 +4298,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wild west brick bank building"
    }
   },
   "west_buildings__wild_west_sheriff_office_jail": {
@@ -3669,7 +4319,7 @@
     304
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.597,
     "pad": 0.0099,
     "aspect": 1.4408,
@@ -3680,8 +4330,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Wooden sheriff office building"
+    "posture": "stand",
+    "flat": false,
+    "is": "wild west sheriff office and jail"
    }
   },
   "west_buildings__wild_west_church_bell_tower": {
@@ -3695,15 +4348,22 @@
     344
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6272,
-    "pad": 0.0087,
+    "v": 3,
+    "foot": 0.6185,
+    "pad": 0.0116,
     "aspect": 1.0058,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wild west wooden church with bell tower"
    }
   },
   "west_buildings__wild_west_livery_stable_barn": {
@@ -3717,9 +4377,9 @@
     308
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.6243,
-    "pad": 0.0097,
+    "v": 3,
+    "foot": 0.6196,
+    "pad": 0.013,
     "aspect": 1.4708,
     "place": "ground",
     "facing": "r",
@@ -3728,8 +4388,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Wooden livery barn building"
+    "posture": "stand",
+    "flat": false,
+    "is": "wild west livery stable barn"
    }
   },
   "west_buildings2__ramshackle_frontier_log_cabin": {
@@ -3743,15 +4406,22 @@
     265
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4848,
-    "pad": 0.0113,
+    "v": 3,
+    "foot": 0.497,
+    "pad": 0.0151,
     "aspect": 1.5472,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "ramshackle frontier log cabin"
    }
   },
   "west_buildings2__sod_house_prairie": {
@@ -3765,15 +4435,22 @@
     213
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4508,
+    "v": 3,
+    "foot": 0.4432,
     "pad": 0.0141,
     "aspect": 1.9202,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "prairie sod house"
    }
   },
   "west_buildings2__frontier_farmhouse_wooden": {
@@ -3787,15 +4464,22 @@
     268
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6217,
+    "v": 3,
+    "foot": 0.6262,
     "pad": 0.0112,
     "aspect": 1.3209,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden frontier farmhouse"
    }
   },
   "west_buildings2__wild_west_hotel_two_stories": {
@@ -3809,15 +4493,22 @@
     353
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5561,
+    "v": 3,
+    "foot": 0.5572,
     "pad": 0.0085,
     "aspect": 1.2635,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "two-story wild west hotel"
    }
   },
   "west_buildings2__railroad_water_tower": {
@@ -3831,15 +4522,22 @@
     358
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6268,
+    "v": 3,
+    "foot": 0.632,
     "pad": 0.0084,
     "aspect": 0.6955,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "railroad water tower"
    }
   },
   "west_buildings2__wild_west_train_station_depot": {
@@ -3853,7 +4551,7 @@
     260
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4761,
     "pad": 0.0115,
     "aspect": 1.7731,
@@ -3861,7 +4559,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wild west train station depot"
    }
   },
   "west_structures__wooden_gallows_steps": {
@@ -3875,12 +4580,12 @@
     328
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.3112,
     "pad": 0.0091,
     "aspect": 0.9207,
     "place": "ground",
-    "facing": "l",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
@@ -3888,6 +4593,8 @@
     "partial": false,
     "furniture": false,
     "aims": false,
+    "posture": "stand",
+    "flat": false,
     "is": "wooden gallows with steps and noose"
    }
   },
@@ -3902,7 +4609,7 @@
     200
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.527,
     "pad": 0.015,
     "aspect": 1.665,
@@ -3913,8 +4620,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Wooden corral fence section"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden corral fence section"
    }
   },
   "west_structures__mine_entrance_rock_timber_frame": {
@@ -3928,15 +4638,22 @@
     265
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5981,
+    "v": 3,
+    "foot": 0.5969,
     "pad": 0.0113,
     "aspect": 1.1623,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "rock mine entrance with timber frame"
    }
   },
   "west_structures__outhouse": {
@@ -3950,7 +4667,7 @@
     284
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4467,
     "pad": 0.0106,
     "aspect": 0.7923,
@@ -3958,7 +4675,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden outhouse"
    }
   },
   "west_structures__wooden_well_roof": {
@@ -3972,7 +4696,7 @@
     270
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5023,
     "pad": 0.0111,
     "aspect": 0.7889,
@@ -3980,7 +4704,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden water well with roof"
    }
   },
   "west_structures__canvas_tent_prospector_camp": {
@@ -3994,8 +4725,8 @@
     264
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4324,
+    "v": 3,
+    "foot": 0.4294,
     "pad": 0.0114,
     "aspect": 1.428,
     "place": "ground",
@@ -4005,8 +4736,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "prospector canvas tent"
+    "posture": "stand",
+    "flat": false,
+    "is": "canvas prospector camp tent"
    }
   },
   "west_structures__boardwalk_porch_section_posts": {
@@ -4020,9 +4754,9 @@
     283
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4742,
-    "pad": 0.0106,
+    "v": 3,
+    "foot": 0.4749,
+    "pad": 0.0141,
     "aspect": 0.9894,
     "place": "ground",
     "facing": "r",
@@ -4031,8 +4765,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Wooden boardwalk porch section"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden boardwalk porch section with posts"
    }
   },
   "west_structures__cemetery_fence_gate": {
@@ -4046,15 +4783,22 @@
     211
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4065,
+    "v": 3,
+    "foot": 0.4034,
     "pad": 0.0142,
     "aspect": 1.5403,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "cemetery iron fence and gate"
    }
   },
   "west_nature__saguaro_cactus": {
@@ -4068,9 +4812,9 @@
     282
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5098,
-    "pad": 0.0106,
+    "pad": 0.0142,
     "aspect": 0.5426,
     "place": "ground",
     "facing": "r",
@@ -4079,8 +4823,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Green saguaro cactus"
+    "posture": "stand",
+    "flat": false,
+    "is": "saguaro cactus"
    }
   },
   "west_nature__prickly_pear_cactus": {
@@ -4094,15 +4841,22 @@
     215
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4715,
+    "v": 3,
+    "foot": 0.4737,
     "pad": 0.014,
     "aspect": 1.0605,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "prickly pear cactus"
    }
   },
   "west_nature__dead_desert_tree": {
@@ -4116,15 +4870,22 @@
     281
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4762,
+    "v": 3,
+    "foot": 0.49,
     "pad": 0.0107,
     "aspect": 0.8043,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "dead desert tree"
    }
   },
   "west_nature__sagebrush_bush": {
@@ -4138,7 +4899,7 @@
     180
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4665,
     "pad": 0.0167,
     "aspect": 1.1611,
@@ -4151,7 +4912,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "greenish-grey sagebrush bush"
+    "posture": "stand",
+    "flat": false,
+    "is": "sagebrush bush"
    }
   },
   "west_nature__tumbleweed": {
@@ -4165,15 +4928,22 @@
     169
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4587,
+    "v": 3,
+    "foot": 0.4611,
     "pad": 0.0178,
     "aspect": 1.0651,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "tumbleweed"
    }
   },
   "west_nature__red_rock_boulder": {
@@ -4187,7 +4957,7 @@
     166
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5437,
     "pad": 0.0181,
     "aspect": 1.3193,
@@ -4198,8 +4968,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Red rock boulder"
+    "posture": "stand",
+    "flat": false,
+    "is": "red rock boulder"
    }
   },
   "west_nature__red_rock_pinnacle": {
@@ -4213,8 +4986,8 @@
     288
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4528,
+    "v": 3,
+    "foot": 0.4437,
     "pad": 0.0104,
     "aspect": 0.7708,
     "place": "ground",
@@ -4224,8 +4997,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Tall red rock pinnacle"
+    "posture": "stand",
+    "flat": false,
+    "is": "red rock pinnacle"
    }
   },
   "west_nature__cottonwood_tree": {
@@ -4239,7 +5015,7 @@
     330
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5219,
     "pad": 0.0121,
     "aspect": 0.7606,
@@ -4252,7 +5028,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "leafy cottonwood tree"
+    "posture": "stand",
+    "flat": false,
+    "is": "cottonwood tree"
    }
   },
   "west_nature__ponderosa_pine": {
@@ -4266,7 +5044,7 @@
     397
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5081,
     "pad": 0.0076,
     "aspect": 0.4685,
@@ -4279,7 +5057,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "tall ponderosa pine tree"
+    "posture": "stand",
+    "flat": false,
+    "is": "ponderosa pine tree"
    }
   },
   "west_nature__prairie_grass_clump": {
@@ -4293,8 +5073,8 @@
     201
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4906,
+    "v": 3,
+    "foot": 0.4907,
     "pad": 0.0149,
     "aspect": 1.0547,
     "place": "ground",
@@ -4304,8 +5084,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Clump of prairie grass"
+    "posture": "stand",
+    "flat": false,
+    "is": "prairie grass clump"
    }
   },
   "west_nature__cow_skull_ground": {
@@ -4319,7 +5102,7 @@
     157
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.9031,
     "pad": 0.0191,
     "aspect": 1.2484,
@@ -4327,7 +5110,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "cow skull on ground"
    }
   },
   "west_nature__desert_rocks_pile": {
@@ -4341,15 +5131,22 @@
     142
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.7093,
+    "v": 2,
+    "foot": 0.707,
     "pad": 0.0211,
     "aspect": 1.5986,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pile of desert rocks"
    }
   },
   "west_props__blank_wanted_poster_nailed_board": {
@@ -4363,15 +5160,22 @@
     223
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5054,
+    "v": 3,
+    "foot": 0.5027,
     "pad": 0.0135,
     "aspect": 0.8296,
     "place": "wall",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "blank wanted poster nailed to board"
    }
   },
   "west_props__money_sack_dollar_sign": {
@@ -4385,7 +5189,7 @@
     210
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0143,
     "aspect": 0.7429,
@@ -4398,7 +5202,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "tied canvas money sack with dollar sign"
+    "posture": "stand",
+    "flat": false,
+    "is": "money sack with dollar sign"
    }
   },
   "west_props__stack_dollar_bills": {
@@ -4412,7 +5218,7 @@
     138
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.2948,
     "pad": 0.0217,
     "aspect": 1.5362,
@@ -4420,7 +5226,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "stack of dollar bills"
    }
   },
   "west_props__gold_nuggets_pile": {
@@ -4434,15 +5247,22 @@
     135
    ],
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.6449,
     "pad": 0.0222,
     "aspect": 1.3037,
     "place": "table",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pile of gold nuggets"
    }
   },
   "west_props__whisky_bottle": {
@@ -4456,7 +5276,7 @@
     233
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5231,
     "pad": 0.0129,
     "aspect": 0.4635,
@@ -4467,8 +5287,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "brown glass whisky bottle"
+    "posture": "stand",
+    "flat": false,
+    "is": "whisky bottle"
    }
   },
   "west_props__tin_cup_coffee": {
@@ -4482,15 +5305,22 @@
     148
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3994,
+    "v": 3,
+    "foot": 0.4025,
     "pad": 0.0203,
     "aspect": 1.0743,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "tin cup of coffee"
    }
   },
   "west_props__tin_plate_beans": {
@@ -4504,7 +5334,7 @@
     112
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5022,
     "pad": 0.0268,
     "aspect": 2.0357,
@@ -4512,7 +5342,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "tin plate of beans"
    }
   },
   "west_props__hardtack_crackers_beef_jerky": {
@@ -4526,15 +5363,22 @@
     148
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5359,
+    "v": 2,
+    "foot": 0.5383,
     "pad": 0.0203,
     "aspect": 1.4122,
     "place": "table",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "hardtack crackers and beef jerky"
    }
   },
   "west_props__cast_iron_pot_campfire": {
@@ -4548,15 +5392,22 @@
     235
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4755,
-    "pad": 0.0128,
+    "v": 3,
+    "foot": 0.4798,
+    "pad": 0.017,
     "aspect": 0.9362,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "cast iron pot hanging over campfire"
    }
   },
   "west_props__bank_safe": {
@@ -4570,15 +5421,22 @@
     208
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3601,
+    "v": 3,
+    "foot": 0.3627,
     "pad": 0.0144,
     "aspect": 0.9279,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "metal bank safe"
    }
   },
   "west_props__old_bible": {
@@ -4592,7 +5450,7 @@
     170
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4229,
     "pad": 0.0176,
     "aspect": 1.1059,
@@ -4603,8 +5461,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Closed brown leather Bible with cross"
+    "posture": "stand",
+    "flat": true,
+    "is": "old bible book"
    }
   },
   "west_props__pocket_watch": {
@@ -4618,8 +5479,8 @@
     173
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.6299,
+    "v": 3,
+    "foot": 0.6243,
     "pad": 0.0173,
     "aspect": 1.0231,
     "place": "hand",
@@ -4629,8 +5490,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Open pocket watch with chain"
+    "posture": "stand",
+    "flat": false,
+    "is": "open pocket watch"
    }
   },
   "west_props__playing_cards_poker_chips_table": {
@@ -4644,15 +5508,22 @@
     103
    ],
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.5,
     "pad": 0.0291,
     "aspect": 2.2913,
     "place": "table",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "small round table with playing cards and poker chips"
    }
   },
   "west_props__doctor_bag_tools_bullet_pliers": {
@@ -4666,8 +5537,8 @@
     190
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.3671,
+    "v": 3,
+    "foot": 0.3647,
     "pad": 0.0158,
     "aspect": 1.0895,
     "place": "table",
@@ -4677,8 +5548,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "leather doctor bag with tools"
+    "posture": "stand",
+    "flat": false,
+    "is": "open doctor bag with medical tools"
    }
   },
   "west_props__bandage_roll": {
@@ -4692,8 +5566,8 @@
     99
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.75,
+    "v": 3,
+    "foot": 0.7557,
     "pad": 0.0303,
     "aspect": 0.8889,
     "place": "table",
@@ -4703,8 +5577,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Roll of white cloth bandage"
+    "posture": "stand",
+    "flat": false,
+    "is": "rolled bandage"
    }
   },
   "west_props__medicine_bottle": {
@@ -4718,7 +5595,7 @@
     166
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5064,
     "pad": 0.0181,
     "aspect": 0.4699,
@@ -4729,8 +5606,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "amber glass medicine bottle"
+    "posture": "stand",
+    "flat": false,
+    "is": "glass medicine bottle"
    }
   },
   "west_props__wooden_grave_cross": {
@@ -4744,15 +5624,22 @@
     205
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5281,
-    "pad": 0.0146,
+    "v": 3,
+    "foot": 0.5398,
+    "pad": 0.0195,
     "aspect": 0.6683,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden grave cross"
    }
   },
   "west_props__noose_rope_hanging": {
@@ -4766,7 +5653,7 @@
     218
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4898,
     "pad": 0.0138,
     "aspect": 0.6743,
@@ -4779,7 +5666,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "hanging rope noose on wooden beam"
+    "posture": "stand",
+    "flat": false,
+    "is": "hanging noose rope on beam"
    }
   },
   "west_props__wooden_water_trough": {
@@ -4793,15 +5682,22 @@
     153
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.2362,
+    "v": 3,
+    "foot": 0.2379,
     "pad": 0.0196,
     "aspect": 1.8954,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden water trough"
    }
   },
   "west_props2__hitching_post": {
@@ -4815,8 +5711,8 @@
     185
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.5124,
+    "v": 3,
+    "foot": 0.5109,
     "pad": 0.0162,
     "aspect": 0.373,
     "place": "ground",
@@ -4826,8 +5722,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Wooden hitching post with iron rings"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden hitching post"
    }
   },
   "west_props2__wooden_barrel": {
@@ -4841,7 +5740,7 @@
     183
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5035,
     "pad": 0.0164,
     "aspect": 0.776,
@@ -4854,7 +5753,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "wooden barrel with iron hoops"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden barrel"
    }
   },
   "west_props2__hay_bale": {
@@ -4868,7 +5769,7 @@
     151
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.3868,
     "pad": 0.0265,
     "aspect": 1.3113,
@@ -4881,7 +5782,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "rectangular tied hay bale"
+    "posture": "stand",
+    "flat": false,
+    "is": "hay bale"
    }
   },
   "west_props2__wagon_wheel": {
@@ -4895,8 +5798,8 @@
     184
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.4972,
+    "v": 3,
+    "foot": 0.4945,
     "pad": 0.0163,
     "aspect": 0.9837,
     "place": "ground",
@@ -4906,8 +5809,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Wooden spoked wagon wheel"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden wagon wheel"
    }
   },
   "west_props2__wooden_crates_stack": {
@@ -4932,8 +5838,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Stack of four wooden crates"
+    "posture": "stand",
+    "flat": false,
+    "is": "stack of three wooden crates"
    }
   },
   "west_props2__wooden_bench": {
@@ -4947,7 +5856,7 @@
     166
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.3146,
     "pad": 0.0181,
     "aspect": 1.2831,
@@ -4955,7 +5864,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden bench"
    }
   },
   "west_props2__rocking_chair": {
@@ -4969,7 +5885,7 @@
     197
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4875,
     "pad": 0.0152,
     "aspect": 0.8122,
@@ -4977,7 +5893,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden rocking chair"
    }
   },
   "west_props2__piano_saloon_upright": {
@@ -4991,7 +5914,7 @@
     194
    ],
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.3103,
     "pad": 0.0155,
     "aspect": 1.0052,
@@ -5004,7 +5927,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "upright wooden saloon piano"
+    "posture": "stand",
+    "flat": false,
+    "is": "upright saloon piano"
    }
   },
   "west_props2__round_saloon_table_chairs": {
@@ -5018,15 +5943,22 @@
     140
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5,
+    "v": 2,
+    "foot": 0.4978,
     "pad": 0.0214,
     "aspect": 1.5429,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "round saloon table with two chairs"
    }
   },
   "west_props2__oil_lamp_table": {
@@ -5044,15 +5976,18 @@
     "foot": 0.3893,
     "pad": 0.0148,
     "aspect": 0.601,
-    "place": "table",
+    "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Oil lamp sitting on small wooden table"
+    "posture": "stand",
+    "flat": false,
+    "is": "oil lamp on small wooden side table"
    }
   },
   "west_props2__wooden_bucket": {
@@ -5066,8 +6001,8 @@
     193
    ],
    "ann": {
-    "v": 2,
-    "foot": 0.507,
+    "v": 3,
+    "foot": 0.5035,
     "pad": 0.0155,
     "aspect": 0.7409,
     "place": "ground",
@@ -5077,8 +6012,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "wooden bucket with handle"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden bucket"
    }
   },
   "west_props2__washtub": {
@@ -5092,7 +6030,7 @@
     138
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5029,
     "pad": 0.0217,
     "aspect": 1.2609,
@@ -5100,7 +6038,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden washtub"
    }
   },
   "west_props2__wood_pile_axe": {
@@ -5114,15 +6059,22 @@
     175
    ],
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.6225,
     "pad": 0.0171,
     "aspect": 1.1429,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wood pile with axe"
    }
   },
   "west_props2__anvil": {
@@ -5136,15 +6088,22 @@
     143
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4839,
+    "v": 3,
+    "foot": 0.4866,
     "pad": 0.021,
     "aspect": 1.3007,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "blacksmith anvil on stump"
    }
   },
   "west_props2__pickaxe": {
@@ -5158,7 +6117,7 @@
     162
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.9038,
     "pad": 0.0185,
     "aspect": 0.8025,
@@ -5166,7 +6125,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "mining pickaxe"
    }
   },
   "west_props2__mining_shovel": {
@@ -5180,15 +6146,22 @@
     144
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.7949,
+    "v": 3,
+    "foot": 0.7991,
     "pad": 0.0208,
     "aspect": 0.8125,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "mining shovel"
    }
   },
   "west_props2__gold_pan": {
@@ -5202,15 +6175,22 @@
     105
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.616,
-    "pad": 0.0286,
+    "v": 3,
+    "foot": 0.6105,
+    "pad": 0.0381,
     "aspect": 1.7238,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "gold panning pan"
    }
   },
   "west_props2__telegraph_pole": {
@@ -5224,7 +6204,7 @@
     199
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4953,
     "pad": 0.0151,
     "aspect": 0.5327,
@@ -5232,7 +6212,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden telegraph pole"
    }
   },
   "west_props2__windmill_water_pump": {
@@ -5246,7 +6233,7 @@
     203
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.3918,
     "pad": 0.0148,
     "aspect": 0.5567,
@@ -5254,7 +6241,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "windmill water pump tower"
    }
   },
   "west_props3__wanted_board_big": {
@@ -5269,15 +6263,22 @@
    ],
    "note": "blank paper area x0.15-0.85 y0.10-0.90, nails at corners",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4947,
-    "pad": 0.0045,
+    "pad": 0.006,
     "aspect": 0.8464,
     "place": "wall",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "large blank wooden wanted board"
    }
   },
   "west_props3__grave_cross_bandana": {
@@ -5292,15 +6293,22 @@
    ],
    "note": "red bandana tied on cross, hat at base",
    "ann": {
-    "v": 1,
-    "foot": 0.594,
+    "v": 3,
+    "foot": 0.5952,
     "pad": 0.0045,
     "aspect": 0.6297,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden grave cross with bandana and hat"
    }
   },
   "auto_261125_f7113a_10__brick_chimney_roof_section": {
@@ -5315,7 +6323,7 @@
    ],
    "note": "Narrow red brick jailhouse chimney rising from a dark angled wooden shingle roof at night, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0102,
     "aspect": 0.7559,
@@ -5323,7 +6331,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "brick chimney on roof section"
    }
   },
   "auto_261125_f7113a_10__skill_badges_trio": {
@@ -5338,7 +6353,7 @@
    ],
    "note": "Three vertical stacked circular frontier skill icons in warm ochre and olive green showing a horse head, a crossed rifle target, and a quill pen with ABC letters",
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.5,
     "pad": 0.0134,
     "aspect": 0.5,
@@ -5346,7 +6361,14 @@
     "facing": "r",
     "text": false,
     "double": true,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pair of round skill badges"
    }
   },
   "auto_261125_f7113a_10__adobe_low_wall": {
@@ -5361,15 +6383,22 @@
    ],
    "note": "Cracked earth-toned adobe mud-brick wall section for rifle ambush cover in Lincoln",
    "ann": {
-    "v": 1,
-    "foot": 0.308,
+    "v": 3,
+    "foot": 0.3036,
     "pad": 0.0142,
     "aspect": 1.0616,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "damaged low adobe wall"
    }
   },
   "auto_261125_f7113a_10__stone_cabin_snowy": {
@@ -5384,15 +6413,22 @@
    ],
    "note": "Small rough-hewn stone cabin with snow piled on the roof and frosted wooden door at Stinking Springs",
    "ann": {
-    "v": 1,
-    "foot": 0.5561,
+    "v": 3,
+    "foot": 0.549,
     "pad": 0.0142,
     "aspect": 1.2038,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "stone cabin with snow on roof"
    }
   },
   "auto_261125_f7113a_10__judge_bench_gavel": {
@@ -5407,7 +6443,7 @@
    ],
    "note": "Elevated dark timber courtroom judge desk with a wooden gavel and sound block",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.2925,
     "pad": 0.0141,
     "aspect": 0.939,
@@ -5420,7 +6456,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "wooden judge bench with gavel and block"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden judge bench with gavel"
    }
   },
   "auto_261125_f7113a_10__death_warrant_scroll": {
@@ -5435,15 +6473,22 @@
    ],
    "note": "Aged beige parchment death warrant document reading May 13 1881 with black ink signature and red wax seal",
    "ann": {
-    "v": 1,
-    "foot": 0.5983,
+    "v": 3,
+    "foot": 0.6011,
     "pad": 0.0124,
     "aspect": 0.7355,
     "place": "hand",
     "facing": "r",
     "text": true,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "death warrant scroll dated may 13 1881"
    }
   },
   "auto_261125_f7113a_10__leg_irons_shackles": {
@@ -5458,7 +6503,7 @@
    ],
    "note": "Heavy iron ankle cuffs connected by a thick steel chain falling open",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.3786,
     "pad": 0.0159,
     "aspect": 1.0688,
@@ -5471,7 +6516,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "iron leg shackles with chain"
+    "posture": "stand",
+    "flat": true,
+    "is": "iron leg shackles"
    }
   },
   "auto_261125_f7113a_10__wanted_poster_500_billy": {
@@ -5486,15 +6533,22 @@
    ],
    "note": "Weathered parchment paper sheet blowing in the wind printed with WANTED and $500 REWARD and a geometric outlaw sketch",
    "ann": {
-    "v": 1,
-    "foot": 0.5257,
+    "v": 3,
+    "foot": 0.5262,
     "pad": 0.0142,
     "aspect": 0.9336,
     "place": "wall",
     "facing": "r",
     "text": true,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wanted poster for 500 reward"
    }
   },
   "auto_261125_f7113a_10__chronicle_book_timeline": {
@@ -5509,7 +6563,7 @@
    ],
    "note": "Large leather-bound historical book shown both open with timeline pages extending to 1901 and closed with brass clasps",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0224,
     "aspect": 1.7313,
@@ -5517,7 +6571,14 @@
     "facing": "r",
     "text": true,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "open chronicle book showing 1901 timeline"
    }
   },
   "auto_261125_f7113a_10__mystery_portrait_older_billy": {
@@ -5532,15 +6593,22 @@
    ],
    "note": "Dashed white outline frame containing a silhouette portrait of a 41-year-old man in an early 1900s formal suit and bowler hat with a question mark",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4914,
     "pad": 0.0146,
     "aspect": 0.8488,
-    "place": "icon",
+    "place": "wall",
     "facing": "r",
     "text": true,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "silhouette mystery portrait with question mark"
    }
   },
   "auto_261125_09cb9f_10__bloody_bill_anderson_mounted": {
@@ -5555,25 +6623,33 @@
    ],
    "note": "Fierce 1860s Missouri bushwhacker guerrilla leader with long dark hair and beard, slouch hat, dark coat, riding a galloping brown horse in side view, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
-    "foot": 0.4338,
-    "pad": 0.0081,
+    "v": 2,
+    "foot": 0.4325,
+    "pad": 0.0108,
     "aspect": 1.0782,
     "face": {
-     "l": 0.5703,
-     "r": 0.6447,
-     "t": 0.0485,
-     "b": 0.1617
+     "l": 0.3825,
+     "r": 0.4535,
+     "t": 0.577,
+     "b": 0.667
     },
     "mouth": [
-     0.6075,
-     0.1368
+     0.418,
+     0.6472
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "confederate guerrilla",
+    "is": "bloody bill anderson riding brown horse"
    }
   },
   "auto_261125_09cb9f_10__frank_james_duster": {
@@ -5588,9 +6664,9 @@
    ],
    "note": "Tall lean older brother outlaw Frank James in long tan duster coat, wide-brimmed hat, angular jaw and mustache, standing in side view, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
-    "foot": 0.5298,
-    "pad": 0.0079,
+    "v": 3,
+    "foot": 0.5271,
+    "pad": 0.0105,
     "aspect": 0.3953,
     "face": {
      "l": 0.4424,
@@ -5606,7 +6682,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "frank james in duster coat"
    }
   },
   "auto_261125_09cb9f_10__old_missouri_newspaper": {
@@ -5621,7 +6705,7 @@
    ],
    "note": "Folded yellowed 1860s vintage newspaper sheet with decorative block layout lines and blank columns without readable letters, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5142,
     "pad": 0.0181,
     "aspect": 0.9548,
@@ -5634,7 +6718,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "folded yellowed newspaper with blank columns"
+    "posture": "stand",
+    "flat": true,
+    "is": "folded old newspaper"
    }
   },
   "auto_261125_09cb9f_10__brass_magnifying_glass": {
@@ -5649,7 +6735,7 @@
    ],
    "note": "Antique 19th-century brass magnifying glass with dark wooden handle and clear round lens, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.081,
     "pad": 0.0136,
     "aspect": 0.9774,
@@ -5657,7 +6743,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "brass magnifying glass"
    }
   },
   "auto_261125_09cb9f_10__derailed_express_car_tilted": {
@@ -5672,15 +6765,22 @@
    ],
    "note": "1870s wooden railroad mail express car tilted off the rails at an angle with open sliding side door, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
-    "foot": 0.1466,
+    "v": 3,
+    "foot": 0.1491,
     "pad": 0.0144,
     "aspect": 1.7129,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "tilted derailed railroad express car"
    }
   },
   "auto_261125_09cb9f_10__iron_crowbar": {
@@ -5695,15 +6795,22 @@
    ],
    "note": "Heavy forged iron pry bar used to force open a safe, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
-    "foot": 0.1024,
-    "pad": 0.0132,
+    "v": 3,
+    "foot": 0.1048,
+    "pad": 0.0176,
     "aspect": 0.9251,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "iron crowbar"
    }
   },
   "auto_261125_09cb9f_10__wall_picture_frame_landscape": {
@@ -5718,15 +6825,22 @@
    ],
    "note": "Framed 19th-century parlor wall picture in a rectangular wooden frame showing a simple racehorse silhouette, hanging slightly crooked, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
-    "foot": 0.28,
+    "v": 3,
+    "foot": 0.2782,
     "pad": 0.0121,
     "aspect": 1.1089,
     "place": "wall",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "framed wall picture of horse landscape"
    }
   },
   "auto_261125_09cb9f_10__wooden_parlor_chair_upright": {
@@ -5741,15 +6855,22 @@
    ],
    "note": "Simple 1880s turned-wood parlor chair standing upright, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
-    "foot": 0.4774,
+    "v": 3,
+    "foot": 0.4746,
     "pad": 0.012,
     "aspect": 0.7052,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "upright wooden parlor chair"
    }
   },
   "auto_261125_09cb9f_10__wooden_parlor_chair_toppled": {
@@ -5764,7 +6885,7 @@
    ],
    "note": "Simple 1880s turned-wood parlor chair knocked over on its side on the floor, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.8876,
     "pad": 0.0222,
     "aspect": 1.8444,
@@ -5772,7 +6893,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "toppled wooden parlor chair"
    }
   },
   "auto_261126_a7dc9a_10__nickel_plated_revolver": {
@@ -5787,7 +6915,7 @@
    ],
    "note": "shiny silver nickel-plated single-action revolver with an ivory grip, clean black outline, flat 2D vector style",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.1239,
     "pad": 0.0168,
     "aspect": 1.8268,
@@ -5795,7 +6923,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "nickel plated revolver"
    }
   },
   "auto_261126_a7dc9a_10__wooden_sickbed": {
@@ -5810,9 +6945,9 @@
    ],
    "note": "1880s dark carved wooden single bed with white linen sheets, pillow, and a folded dark quilt",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5561,
-    "pad": 0.011,
+    "pad": 0.0147,
     "aspect": 1.1758,
     "place": "ground",
     "facing": "r",
@@ -5821,8 +6956,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Carved wooden single bed with white bedding"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden sickbed with pillow and blanket"
    }
   },
   "auto_261126_a7dc9a_10__rolled_diploma_scroll": {
@@ -5837,15 +6975,22 @@
    ],
    "note": "rolled cream parchment diploma scroll tied around the middle with a crimson ribbon, no text",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.2145,
-    "pad": 0.0116,
+    "pad": 0.0154,
     "aspect": 1.0618,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "rolled diploma scroll with ribbon"
    }
   },
   "auto_261126_a7dc9a_10__wooden_hourglass": {
@@ -5860,15 +7005,22 @@
    ],
    "note": "antique wooden-framed table hourglass with golden sand running from the top bulb to the bottom bulb",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
-    "pad": 0.0102,
+    "pad": 0.0136,
     "aspect": 0.6169,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden hourglass"
    }
   },
   "auto_261126_a7dc9a_10__bloody_white_handkerchief": {
@@ -5883,7 +7035,7 @@
    ],
    "note": "crumpled white linen handkerchief with a small crimson blood spot in the center",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.531,
     "pad": 0.0132,
     "aspect": 1.2719,
@@ -5891,7 +7043,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "blood-stained white handkerchief"
    }
   },
   "auto_261126_a7dc9a_10__untouched_whiskey_glass": {
@@ -5906,15 +7065,22 @@
    ],
    "note": "short crystal tumbler glass filled halfway with amber whiskey",
    "ann": {
-    "v": 1,
-    "foot": 0.5,
+    "v": 3,
+    "foot": 0.4973,
     "pad": 0.0135,
     "aspect": 0.8423,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "glass of whiskey"
    }
   },
   "auto_261126_a7dc9a_10__wooden_bedside_nightstand": {
@@ -5929,8 +7095,8 @@
    ],
    "note": "small 1880s dark oak bedside table with a single drawer and turned legs",
    "ann": {
-    "v": 2,
-    "foot": 0.3299,
+    "v": 3,
+    "foot": 0.332,
     "pad": 0.0105,
     "aspect": 0.8397,
     "place": "ground",
@@ -5940,8 +7106,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Small dark oak bedside table"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden bedside nightstand"
    }
   },
   "auto_261126_a7dc9a_10__mystery_portrait_older_doc": {
@@ -5956,15 +7125,22 @@
    ],
    "note": "dashed rectangular portrait frame showing a shadowy aged silhouette of an older Doc Holliday in a gambler hat and long mustache, no text",
    "ann": {
-    "v": 1,
-    "foot": 0.39,
-    "pad": 0.0099,
+    "v": 3,
+    "foot": 0.3858,
+    "pad": 0.0132,
     "aspect": 0.7987,
     "place": "wall",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "monochrome mystery portrait of older man"
    }
   },
   "auto_261126_6fa48d_10__governor_official": {
@@ -5979,7 +7155,7 @@
    ],
    "note": "1890s state governor official with angular jaw, thick brows, neat hair, dark formal suit, vest, and tie in side view.",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5272,
     "pad": 0.009,
     "aspect": 0.7134,
@@ -5997,7 +7173,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": true,
+    "mismatch": false,
+    "partial": true,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "government official",
+    "is": "half-body portrait of governor official in suit"
    }
   },
   "auto_261126_6fa48d_10__paper_calendar_1899": {
@@ -6012,7 +7196,7 @@
    ],
    "note": "Flat 2D vector paper-cutout torn calendar sheet blowing in the wind with grid lines and no readable text.",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.3358,
     "pad": 0.0126,
     "aspect": 1.1387,
@@ -6020,7 +7204,14 @@
     "facing": "r",
     "text": true,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "paper wall calendar"
    }
   },
   "auto_261126_6fa48d_10__rubber_stamp_mark": {
@@ -6035,11 +7226,11 @@
    ],
    "note": "Flat 2D vector paper-cutout angled crimson stamp mark on a card with no letters.",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.2255,
     "pad": 0.0168,
     "aspect": 1.2017,
-    "place": "table",
+    "place": "icon",
     "facing": "r",
     "text": true,
     "double": false,
@@ -6048,7 +7239,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "card with angled red ink stamp mark"
+    "posture": "stand",
+    "flat": false,
+    "is": "red ink rubber stamp mark"
    }
   },
   "auto_261126_6fa48d_10__steamship_liner": {
@@ -6063,15 +7256,22 @@
    ],
    "note": "Early 1900s ocean steamship in side view with dark hull, white superstructure, and twin smokestacks.",
    "ann": {
-    "v": 1,
-    "foot": 0.5027,
+    "v": 3,
+    "foot": 0.5025,
     "pad": 0.0141,
     "aspect": 1.7324,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "steamship ocean liner"
    }
   },
   "auto_261126_6fa48d_10__south_american_port_pier": {
@@ -6086,15 +7286,22 @@
    ],
    "note": "Early 1900s South American wooden dock pier with bollards and low waterfront cargo sheds in side view.",
    "ann": {
-    "v": 1,
-    "foot": 0.7208,
+    "v": 3,
+    "foot": 0.7326,
     "pad": 0.0144,
     "aspect": 2.0673,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden port pier dock"
    }
   },
   "auto_261126_6fa48d_10__adobe_house_san_vicente": {
@@ -6109,7 +7316,7 @@
    ],
    "note": "Small single-story Bolivian adobe house with flat mud roof, small shuttered window, and low courtyard wall in side view.",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.7009,
     "pad": 0.0129,
     "aspect": 1.8627,
@@ -6117,7 +7324,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "adobe house building"
    }
   },
   "auto_261126_6fa48d_10__open_chronicle_book": {
@@ -6132,9 +7346,9 @@
    ],
    "note": "Open antique book in side view with aged cream pages, serif-style decorative lines on left page, and dashed portrait outline on right page.",
    "ann": {
-    "v": 2,
-    "foot": 0.1968,
-    "pad": 0.0106,
+    "v": 3,
+    "foot": 0.2008,
+    "pad": 0.0142,
     "aspect": 1.3156,
     "place": "table",
     "facing": "r",
@@ -6143,8 +7357,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Open antique book with portrait sketch"
+    "posture": "stand",
+    "flat": true,
+    "is": "open chronicle book"
    }
   },
   "auto_261126_baacd3_10__lakota_leather_tipi": {
@@ -6159,15 +7376,22 @@
    ],
    "note": "Traditional Great Plains Lakota buffalo-hide conical tipi tent with wooden poles extending at the top and earth-toned geometric painted band around the base, side view",
    "ann": {
-    "v": 1,
-    "foot": 0.4369,
+    "v": 3,
+    "foot": 0.4394,
     "pad": 0.0082,
     "aspect": 0.9429,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "lakota leather tipi"
    }
   },
   "auto_261126_baacd3_10__lakota_council_elder_sitting": {
@@ -6182,25 +7406,33 @@
    ],
    "note": "Elderly Lakota tribal elder with braided gray hair and buffalo robe wrapped around shoulders, sitting cross-legged by a fire and pointing upward toward distant hills, side view",
    "ann": {
-    "v": 1,
-    "foot": 0.7864,
+    "v": 3,
+    "foot": 0.7848,
     "pad": 0.0119,
     "aspect": 1.2817,
     "face": {
-     "l": 0.3202,
-     "r": 0.3798,
-     "t": 0.235,
-     "b": 0.325
+     "l": 0.8482,
+     "r": 0.9078,
+     "t": 0.397,
+     "b": 0.487
     },
     "mouth": [
-     0.35,
-     0.3052
+     0.878,
+     0.4672
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "lakota elder",
+    "is": "lakota council elder sitting by campfire"
    }
   },
   "auto_261126_baacd3_10__us_general_crook_retreating": {
@@ -6215,25 +7447,33 @@
    ],
    "note": "US Army General George Crook in 1876 wearing canvas campaign coat, slouch hat, and full beard split into two braids, turning his brown horse around to retreat, side view",
    "ann": {
-    "v": 1,
-    "foot": 0.4612,
+    "v": 2,
+    "foot": 0.4717,
     "pad": 0.0084,
     "aspect": 0.8329,
     "face": {
      "l": 0.3315,
      "r": 0.5347,
-     "t": 0.0111,
+     "t": 0.0139,
      "b": 0.3538
     },
     "mouth": [
      0.4331,
-     0.2784
+     0.279
     ],
     "place": "ground",
-    "facing": "r",
+    "facing": "l",
     "text": false,
-    "double": false,
-    "cut": true
+    "double": true,
+    "cut": true,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "us army general",
+    "is": "us general crook riding brown horse"
    }
   },
   "auto_261126_baacd3_10__us_soldier_bayonet_guard": {
@@ -6248,9 +7488,9 @@
    ],
    "note": "1877 US Army infantry guard in dark blue wool uniform coat and forage cap lunging forward with one Springfield rifle fitted with a fixed steel bayonet, side view",
    "ann": {
-    "v": 1,
-    "foot": 0.3396,
-    "pad": 0.0103,
+    "v": 3,
+    "foot": 0.3408,
+    "pad": 0.0137,
     "aspect": 1.0205,
     "face": {
      "l": 0.3736,
@@ -6266,13 +7506,21 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "us army soldier",
+    "is": "us soldier holding rifle with bayonet"
    }
   },
   "auto_261126_baacd3_10__riderless_cavalry_horse_running": {
    "sheet": "auto_261126_baacd3_10",
    "era": "wildwest",
-   "kind": "animal",
+   "kind": "person",
    "heightM": 1.65,
    "facing": "r",
    "px": [
@@ -6281,15 +7529,22 @@
    ],
    "note": "Panicked brown US Cavalry horse with military leather saddle and dangling stirrups galloping without a rider, side view",
    "ann": {
-    "v": 1,
-    "foot": 0.5171,
-    "pad": 0.0088,
+    "v": 2,
+    "foot": 0.5161,
+    "pad": 0.0118,
     "aspect": 1.5546,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "riderless saddled cavalry horse running"
    }
   },
   "auto_261126_baacd3_10__unbridled_pinto_pony": {
@@ -6304,15 +7559,22 @@
    ],
    "note": "Spotted pinto Lakota war pony without saddle standing alert by a creek, side view",
    "ann": {
-    "v": 1,
-    "foot": 0.465,
-    "pad": 0.0085,
+    "v": 3,
+    "foot": 0.4677,
+    "pad": 0.0113,
     "aspect": 1.051,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "unbridled pinto pony standing"
    }
   },
   "auto_261126_baacd3_10__mystery_portrait_older_crazy_horse": {
@@ -6327,7 +7589,7 @@
    ],
    "note": "Framed dashed-outline silhouette portrait of an older 50-year-old Lakota leader with braided hair and single feather on parchment card, side view",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.502,
     "pad": 0.009,
     "aspect": 0.7477,
@@ -6335,7 +7597,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "mystery portrait of older native warrior"
    }
   },
   "auto_261126_baacd3_20__elderly_bass_retiring": {
@@ -6350,7 +7619,7 @@
    ],
    "note": "69-year-old elderly African American lawman in 1907 with gray mustache and dark suit leaning slightly over in side view and placing a silver star badge down with one hand",
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.4227,
     "pad": 0.0091,
     "aspect": 1.4299,
@@ -6365,33 +7634,18 @@
      0.2005
     ],
     "place": "ground",
-    "facing": "r",
+    "facing": "l",
     "text": false,
-    "double": false,
-    "cut": false
-   }
-  },
-  "auto_261126_baacd3_20__prison_transport_wagon": {
-   "sheet": "auto_261126_baacd3_20",
-   "era": "wildwest",
-   "kind": "vehicle",
-   "heightM": 2.3,
-   "facing": "r",
-   "px": [
-    339,
-    163
-   ],
-   "note": "1880s wooden open buckboard prison wagon in side view carrying three seated outlaws bound in iron chains",
-   "ann": {
-    "v": 1,
-    "foot": 0.6179,
-    "pad": 0.0184,
-    "aspect": 2.0798,
-    "place": "ground",
-    "facing": "r",
-    "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": true,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "us marshal",
+    "is": "elderly marshal sitting in horsedrawn wagon"
    }
   },
   "auto_261126_baacd3_20__hoofprint_in_mud": {
@@ -6415,11 +7669,14 @@
     "text": false,
     "double": false,
     "cut": false,
-    "mismatch": true,
+    "mismatch": false,
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "older man in dark suit holding star badge"
+    "posture": "stand",
+    "flat": false,
+    "group": "us marshal",
+    "is": "elderly african american marshal holding star badge"
    }
   },
   "auto_261126_baacd3_20__worn_farmer_straw_hat": {
@@ -6434,15 +7691,22 @@
    ],
    "note": "tattered wide-brimmed woven straw farmer hat with a frayed brim, side view",
    "ann": {
-    "v": 1,
-    "foot": 0.2647,
+    "v": 3,
+    "foot": 0.2636,
     "pad": 0.0155,
     "aspect": 1.772,
-    "place": "table",
+    "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "worn farmer straw hat"
    }
   },
   "auto_261126_baacd3_20__black_marshal_hat_and_badge": {
@@ -6457,15 +7721,22 @@
    ],
    "note": "black wide-brimmed flat-crown cowboy hat resting beside a five-pointed silver marshal star badge on a flat surface, side view",
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.7761,
     "pad": 0.0141,
     "aspect": 1.5305,
-    "place": "table",
+    "place": "hand",
     "facing": "r",
     "text": false,
     "double": true,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "black marshal hat and star badge"
    }
   },
   "auto_261126_baacd3_20__mystery_portrait_older_bass": {
@@ -6480,7 +7751,7 @@
    ],
    "note": "dashed-outline rectangular portrait frame containing a silhouette of an elderly mustached lawman in a wide-brimmed cowboy hat, front view",
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5246,
     "pad": 0.0107,
     "aspect": 0.7972,
@@ -6488,7 +7759,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "silhouette mystery portrait with cowboy hat"
    }
   },
   "fix_261126_baacd3_20__black_marshal_hat_and_badge": {
@@ -6503,15 +7781,22 @@
    ],
    "note": "black wide-brimmed flat-crown cowboy hat resting beside a five-pointed silver marshal star badge on a flat surface, side view",
    "ann": {
-    "v": 1,
-    "foot": 0.5,
+    "v": 2,
+    "foot": 0.4995,
     "pad": 0.0087,
     "aspect": 2.9304,
-    "place": "table",
+    "place": "hand",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "black marshal hat and star badge"
    }
   },
   "auto_261126_3640d2_10__wooden_target_post": {
@@ -6526,9 +7811,9 @@
    ],
    "note": "weathered wooden fence post with a painted round target nailed to it for shooting practice, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 2,
-    "foot": 0.4563,
-    "pad": 0.005,
+    "v": 3,
+    "foot": 0.4551,
+    "pad": 0.0066,
     "aspect": 0.6844,
     "place": "ground",
     "facing": "r",
@@ -6537,8 +7822,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "wooden fence post with target"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden shooting target post"
    }
   },
   "auto_261126_3640d2_10__quarantine_cots_row": {
@@ -6554,18 +7842,22 @@
    "note": "row of simple canvas camp cots with sick patients under wool blankets inside a quarantine tent, flat 2D vector paper-cutout style",
    "ann": {
     "v": 2,
-    "foot": 0.3774,
+    "foot": 0.3691,
     "pad": 0.0052,
     "aspect": 0.8392,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "row of camp cots with patients in tent"
+    "posture": "lie",
+    "flat": true,
+    "group": "townsfolk",
+    "is": "row of quarantine cots with sick patients"
    }
   },
   "auto_261126_3640d2_10__mystery_portrait_older_jane": {
@@ -6580,9 +7872,9 @@
    ],
    "note": "framed sepia oval portrait of an elderly Calamity Jane in her seventies wearing a frontier hat and coat, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 2,
-    "foot": 0.5024,
-    "pad": 0.0051,
+    "v": 3,
+    "foot": 0.5012,
+    "pad": 0.0068,
     "aspect": 0.7265,
     "place": "wall",
     "facing": "r",
@@ -6591,8 +7883,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "framed sepia oval portrait of older woman"
+    "posture": "stand",
+    "flat": false,
+    "is": "oval framed portrait of older woman"
    }
   },
   "auto_261126_0729f3_10__nicholas_earp_father": {
@@ -6607,8 +7902,8 @@
    ],
    "note": "Nicholas Earp, middle-aged frontier father in 1864 with bearded jaw, dark hat, flannel shirt, vest, and boots, side view pointing forward to instruct his son, flat 2D vector paper-cutout style with clean black outlines",
    "ann": {
-    "v": 2,
-    "foot": 0.3618,
+    "v": 3,
+    "foot": 0.3619,
     "pad": 0.0083,
     "aspect": 0.674,
     "face": {
@@ -6628,8 +7923,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Nicholas Earp pointing forward"
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "older man pointing right"
    }
   },
   "auto_261126_0729f3_10__virgil_earp": {
@@ -6644,7 +7943,7 @@
    ],
    "note": "Virgil Earp in 1881 Tombstone, sturdy man in his late 30s with thick dark mustache, black hat, dark three-piece suit and long coat, side view walking or standing ready, flat 2D vector paper-cutout style with clean black outlines",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5664,
     "pad": 0.0083,
     "aspect": 0.4667,
@@ -6665,8 +7964,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Virgil Earp in suit and coat"
+    "posture": "stand",
+    "flat": false,
+    "group": "us marshal",
+    "is": "lawman in dark coat and hat"
    }
   },
   "auto_261126_0729f3_10__morgan_earp": {
@@ -6681,7 +7984,7 @@
    ],
    "note": "Morgan Earp in 1881 Tombstone, tall man in his early 30s with thick mustache, black hat, dark vest and coat, side view standing ready in gunfight stance, flat 2D vector paper-cutout style with clean black outlines",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5406,
     "pad": 0.0081,
     "aspect": 0.4946,
@@ -6702,8 +8005,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Morgan Earp in gunfight stance"
+    "posture": "stand",
+    "flat": false,
+    "group": "us marshal",
+    "is": "lawman in dark coat and hat"
    }
   },
   "auto_261126_0729f3_10__virgil_earp_wounded": {
@@ -6718,9 +8025,9 @@
    ],
    "note": "Virgil Earp after the December 1881 ambush, standing in side view with his left arm tightly wrapped in white bandages and supported in a cloth sling across his chest, dark trousers and white shirt, flat 2D vector paper-cutout style with clean black outlines",
    "ann": {
-    "v": 2,
-    "foot": 0.5376,
-    "pad": 0.0085,
+    "v": 3,
+    "foot": 0.5419,
+    "pad": 0.0114,
     "aspect": 0.3551,
     "face": {
      "l": 0.3149,
@@ -6739,8 +8046,12 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Virgil Earp with bandaged arm in sling"
+    "posture": "stand",
+    "flat": false,
+    "group": "us marshal",
+    "is": "man with arm in sling"
    }
   },
   "auto_261126_0729f3_10__wooden_shooting_target": {
@@ -6755,7 +8066,7 @@
    ],
    "note": "Weathered round wooden target board mounted on a timber post on the prairie, side view, flat 2D vector paper-cutout style with clean black outlines",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4558,
     "pad": 0.0098,
     "aspect": 0.482,
@@ -6766,8 +8077,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Round wooden target on timber post"
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden shooting target post"
    }
   },
   "auto_261126_0729f3_10__worn_black_hat_and_revolver": {
@@ -6793,8 +8107,11 @@
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "Black hat and revolver on wooden tabletop"
+    "posture": "stand",
+    "flat": false,
+    "is": "black hat and revolver on wooden table"
    }
   },
   "fix_261126_0729f3_10__worn_black_hat_and_revolver": {
@@ -6816,12 +8133,15 @@
     "place": "table",
     "facing": "r",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
+    "furniture": false,
     "aims": false,
-    "is": "black hat and revolver on wood"
+    "posture": "stand",
+    "flat": false,
+    "is": "black hat and revolver on wooden shelf"
    }
   },
   "auto_261127_9a79af_10__antique_percussion_revolver": {
@@ -6836,7 +8156,7 @@
    ],
    "note": "1860s long-barreled blued-steel cap-and-ball revolver with a walnut grip, side view",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.0987,
     "pad": 0.0182,
     "aspect": 2.3636,
@@ -6849,7 +8169,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "long-barreled percussion revolver"
+    "posture": "stand",
+    "flat": true,
+    "is": "antique percussion revolver"
    }
   },
   "auto_261127_9a79af_10__double_barrel_shotgun": {
@@ -6864,7 +8186,7 @@
    ],
    "note": "1880s side-by-side double-barreled wooden-stock shotgun with dark steel barrels, side view",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.0432,
     "pad": 0.0244,
     "aspect": 3.7642,
@@ -6877,7 +8199,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "double-barreled wooden-stock shotgun"
+    "posture": "stand",
+    "flat": true,
+    "is": "double barrel shotgun"
    }
   },
   "auto_261127_9a79af_10__ambusher_silhouette_shotgun": {
@@ -6892,19 +8216,19 @@
    ],
    "note": "shadowy dark slate-grey figure in a long coat and slouch hat crouching and aiming a double-barrel shotgun forward, side view",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4188,
     "pad": 0.0157,
     "aspect": 1.4409,
     "face": {
-     "l": 0.4214,
-     "r": 0.5185,
-     "t": 0,
-     "b": 0.16
+     "l": 0.6624,
+     "r": 0.8276,
+     "t": 0.095,
+     "b": 0.375
     },
     "mouth": [
-     0.47,
-     0.1248
+     0.745,
+     0.3134
     ],
     "place": "ground",
     "facing": "r",
@@ -6915,7 +8239,10 @@
     "partial": false,
     "furniture": false,
     "aims": true,
-    "is": "dark silhouette figure crouching aiming shotgun"
+    "posture": "kneel",
+    "flat": false,
+    "group": "wild west outlaw",
+    "is": "dark silhouette of kneeling shooter with shotgun"
    }
   },
   "auto_261127_9a79af_10__bare_winter_tree": {
@@ -6930,7 +8257,7 @@
    ],
    "note": "leafless gnarled winter oak tree with dark brown bark and bare branches against cold air, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4884,
     "pad": 0.0097,
     "aspect": 1.0453,
@@ -6943,7 +8270,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "leafless gnarled bare winter tree"
+    "posture": "stand",
+    "flat": false,
+    "is": "bare winter tree"
    }
   },
   "auto_261127_9a79af_10__iron_prison_gate": {
@@ -6958,7 +8287,7 @@
    ],
    "note": "heavy dark iron-barred prison gate with riveted frame and massive lock mechanism, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.4985,
     "pad": 0.0109,
     "aspect": 1.1861,
@@ -6971,7 +8300,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "heavy iron-barred prison gate with lock"
+    "posture": "stand",
+    "flat": false,
+    "is": "iron prison cell door"
    }
   },
   "auto_261127_9a79af_10__case_file_folder_tied": {
@@ -6986,7 +8317,7 @@
    ],
    "note": "thick tan manila police investigation dossier tied shut with a red cloth ribbon, side view",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5172,
     "pad": 0.0135,
     "aspect": 1.4305,
@@ -6999,7 +8330,9 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "tan manila folder tied with red ribbon"
+    "posture": "stand",
+    "flat": true,
+    "is": "tied paper case file folder"
    }
   },
   "auto_261127_9a79af_10__calendar_page_feb_1889": {
@@ -7014,7 +8347,7 @@
    ],
    "note": "torn wall calendar sheet in beige paper showing February grid with one date circled in crimson red, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 2,
+    "v": 3,
     "foot": 0.5725,
     "pad": 0.014,
     "aspect": 1.1302,
@@ -7027,14 +8360,16 @@
     "partial": false,
     "furniture": false,
     "aims": false,
-    "is": "torn wall calendar sheet with circled date"
+    "posture": "stand",
+    "flat": false,
+    "is": "blank calendar grid page with circled date"
    }
   },
   "hand_jesse__gravestone": {
    "sheet": "hand_jesse",
    "era": "wildwest",
    "kind": "prop",
-   "heightM": 1.0,
+   "heightM": 1,
    "facing": "r",
    "px": [
     239,
@@ -7042,19 +8377,22 @@
    ],
    "note": "gravestone",
    "ann": {
-    "facing": "r",
-    "aspect": 0.7445,
+    "v": 3,
     "foot": 0.2862,
     "pad": 0.0093,
-    "v": 2,
+    "aspect": 0.7445,
     "place": "ground",
-    "is": "gravestone",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "stone gravestone"
    }
   },
   "hand_jesse__sampler": {
@@ -7069,19 +8407,22 @@
    ],
    "note": "sampler",
    "ann": {
-    "facing": "r",
-    "aspect": 1.0432,
+    "v": 3,
     "foot": 0.4666,
     "pad": 0.01,
-    "v": 2,
+    "aspect": 1.0432,
     "place": "wall",
-    "is": "sampler",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "framed embroidered sampler"
    }
   },
   "hand_jesse__townsman_rifle": {
@@ -7096,29 +8437,33 @@
    ],
    "note": "townsman rifle",
    "ann": {
-    "facing": "r",
-    "aspect": 0.8933,
+    "v": 3,
     "foot": 0.302,
     "pad": 0.0122,
+    "aspect": 0.8933,
     "face": {
-     "l": 0.253,
-     "r": 0.3954,
-     "t": 0.0213,
-     "b": 0.1681
+     "l": 0.2214,
+     "r": 0.4373,
+     "t": 0.0152,
+     "b": 0.2287
     },
     "mouth": [
-     0.3242,
-     0.129
+     0.3294,
+     0.1817
     ],
-    "v": 2,
     "place": "ground",
-    "is": "townsman rifle",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": true
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "townsman in apron aiming rifle"
    }
   },
   "hand_jesse__union_militia": {
@@ -7133,36 +8478,40 @@
    ],
    "note": "union militia",
    "ann": {
-    "facing": "r",
-    "aspect": 0.4891,
+    "v": 3,
     "foot": 0.4802,
     "pad": 0.0082,
+    "aspect": 0.4891,
     "face": {
-     "l": 0.2966,
-     "r": 0.5581,
-     "t": 0.0164,
-     "b": 0.1639
+     "l": 0.2695,
+     "r": 0.602,
+     "t": 0.0109,
+     "b": 0.2295
     },
     "mouth": [
-     0.4274,
-     0.1246
+     0.4358,
+     0.1814
     ],
-    "v": 2,
     "place": "ground",
-    "is": "union militia",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "union militia",
+    "is": "union militia soldier with rope"
    }
   },
   "hand_billy__burning_house": {
    "sheet": "hand_billy",
    "era": "wildwest",
    "kind": "structure",
-   "heightM": 4.0,
+   "heightM": 4,
    "facing": "r",
    "px": [
     402,
@@ -7170,26 +8519,29 @@
    ],
    "note": "burning house",
    "ann": {
-    "facing": "r",
-    "aspect": 1.391,
+    "v": 3,
     "foot": 0.3881,
     "pad": 0.0104,
-    "v": 2,
+    "aspect": 1.391,
     "place": "ground",
-    "is": "burning house",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "burning adobe house"
    }
   },
   "hand_billy__grave": {
    "sheet": "hand_billy",
    "era": "wildwest",
    "kind": "prop",
-   "heightM": 1.0,
+   "heightM": 1,
    "facing": "r",
    "px": [
     368,
@@ -7197,19 +8549,22 @@
    ],
    "note": "grave",
    "ann": {
-    "facing": "r",
-    "aspect": 1.2267,
+    "v": 3,
     "foot": 0.5285,
     "pad": 0.0133,
-    "v": 2,
+    "aspect": 1.2267,
     "place": "ground",
-    "is": "grave",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "grave with headstone and wooden fence"
    }
   },
   "hand_billy__letter": {
@@ -7224,19 +8579,22 @@
    ],
    "note": "letter",
    "ann": {
-    "facing": "r",
-    "aspect": 1.0036,
+    "v": 3,
     "foot": 0.3612,
     "pad": 0.0107,
-    "v": 2,
-    "place": "table",
-    "is": "letter",
+    "aspect": 1.0036,
+    "place": "hand",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "handwritten letter sheet"
    }
   },
   "hand_billy__newspaper": {
@@ -7251,26 +8609,29 @@
    ],
    "note": "newspaper",
    "ann": {
-    "facing": "r",
-    "aspect": 1.4357,
+    "v": 3,
     "foot": 0.4863,
     "pad": 0.0107,
-    "v": 2,
+    "aspect": 1.4357,
     "place": "table",
-    "is": "newspaper",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "folded newspaper"
    }
   },
   "hand_billy__stone_hut": {
    "sheet": "hand_billy",
    "era": "wildwest",
    "kind": "structure",
-   "heightM": 3.0,
+   "heightM": 3,
    "facing": "r",
    "px": [
     401,
@@ -7278,19 +8639,265 @@
    ],
    "note": "stone hut",
    "ann": {
-    "facing": "r",
-    "aspect": 1.3875,
+    "v": 3,
     "foot": 0.4509,
     "pad": 0.0173,
-    "v": 2,
+    "aspect": 1.3875,
     "place": "ground",
-    "is": "stone hut",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "small stone hut with snowy roof"
+   }
+  },
+  "auto_261128_1bd0a1_10__wooden_coup_stick": {
+   "sheet": "auto_261128_1bd0a1_10",
+   "era": "wildwest",
+   "kind": "prop",
+   "heightM": 1.3,
+   "facing": "r",
+   "px": [
+    246,
+    290
+   ],
+   "note": "Curved wooden coup stick wrapped in tan buckskin strips with two dangling eagle feathers, side view, no text",
+   "ann": {
+    "v": 3,
+    "foot": 0.4032,
+    "pad": 0.0103,
+    "aspect": 0.8483,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden coup stick with feathers"
+   }
+  },
+  "auto_261128_1bd0a1_10__indian_agency_policeman_mounted": {
+   "sheet": "auto_261128_1bd0a1_10",
+   "era": "wildwest",
+   "kind": "person",
+   "heightM": 2.4,
+   "facing": "r",
+   "px": [
+    326,
+    376
+   ],
+   "note": "1890 Indian Agency policeman wearing a dark blue wool uniform coat with brass buttons, yellow-corded black campaign hat, and trimmed mustache, riding a dark brown horse in side view",
+   "ann": {
+    "v": 2,
+    "foot": 0.373,
+    "pad": 0.0106,
+    "aspect": 0.867,
+    "face": {
+     "l": 0.3989,
+     "r": 0.5244,
+     "t": 0.0106,
+     "b": 0.1835
+    },
+    "mouth": [
+     0.4617,
+     0.1455
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "indian agency policeman",
+    "is": "native agency policeman riding brown horse"
+   }
+  },
+  "auto_261128_1bd0a1_10__indian_agency_policeman_standing": {
+   "sheet": "auto_261128_1bd0a1_10",
+   "era": "wildwest",
+   "kind": "person",
+   "heightM": 1.78,
+   "facing": "r",
+   "px": [
+    206,
+    327
+   ],
+   "note": "1890 Indian Agency policeman wearing a dark blue wool uniform coat with brass buttons and black campaign hat, standing in side view holding a rifle at the ready",
+   "ann": {
+    "v": 3,
+    "foot": 0.3662,
+    "pad": 0.0092,
+    "aspect": 0.63,
+    "face": {
+     "l": 0.2375,
+     "r": 0.4421,
+     "t": 0.0122,
+     "b": 0.2141
+    },
+    "mouth": [
+     0.3398,
+     0.1697
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "indian agency policeman",
+    "is": "native agency policeman holding rifle"
+   }
+  },
+  "auto_261128_1bd0a1_10__sun_dance_sacred_pole": {
+   "sheet": "auto_261128_1bd0a1_10",
+   "era": "wildwest",
+   "kind": "prop",
+   "heightM": 0.5,
+   "facing": "r",
+   "px": [
+    81,
+    383
+   ],
+   "note": "Tall stripped cottonwood ceremonial Sun Dance pole with rawhide cords tied near the top fork, side view",
+   "ann": {
+    "v": 3,
+    "foot": 0.5432,
+    "pad": 0.0078,
+    "aspect": 0.2115,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "forked wooden sacred pole"
+   }
+  },
+  "auto_261128_1bd0a1_10__silver_dollar_coins_pile": {
+   "sheet": "auto_261128_1bd0a1_10",
+   "era": "wildwest",
+   "kind": "prop",
+   "heightM": 0.08,
+   "facing": "r",
+   "px": [
+    236,
+    147
+   ],
+   "note": "Small neat stack and scattered gleaming silver coins resting flat, side view, no markings",
+   "ann": {
+    "v": 2,
+    "foot": 0.5699,
+    "pad": 0.0204,
+    "aspect": 1.6054,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pile of silver coins"
+   }
+  },
+  "auto_261128_1bd0a1_10__poor_city_orphan_child": {
+   "sheet": "auto_261128_1bd0a1_10",
+   "era": "wildwest",
+   "kind": "person",
+   "heightM": 1.25,
+   "facing": "r",
+   "px": [
+    155,
+    272
+   ],
+   "note": "Barefoot 1885 city street child in a worn patched grey wool coat and flat cap standing in side view with an open hand extended",
+   "ann": {
+    "v": 3,
+    "foot": 0.3604,
+    "pad": 0.011,
+    "aspect": 0.5699,
+    "face": {
+     "l": 0.1982,
+     "r": 0.5502,
+     "t": 0.0184,
+     "b": 0.2537
+    },
+    "mouth": [
+     0.3742,
+     0.2019
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "townsfolk",
+    "is": "poor barefoot orphan boy in ragged coat"
+   }
+  },
+  "auto_261128_1bd0a1_10__wild_west_show_poster": {
+   "sheet": "auto_261128_1bd0a1_10",
+   "era": "wildwest",
+   "kind": "prop",
+   "heightM": 0.75,
+   "facing": "r",
+   "px": [
+    197,
+    263
+   ],
+   "note": "1885 vintage paper theatrical poster sheet showing an illustrated silhouette portrait of a feathered chief inside a decorative crimson and ochre border with no text or letters, flat 2D vector paper-cutout style",
+   "ann": {
+    "v": 3,
+    "foot": 0.5025,
+    "pad": 0.0114,
+    "aspect": 0.749,
+    "place": "wall",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wild west show poster with native silhouette"
    }
   }
  },
@@ -7771,50 +9378,46 @@
     1376,
     768
    ],
-   "ground": 840,
+   "ground": 850,
    "desc": "Night campsite in a rocky canyon with a glowing campfire, tent, and supplies.",
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     840,
-     840,
-     840
+     850,
+     850,
+     850
     ],
     "person": [
-     250,
-     250,
-     250
+     369,
+     369,
+     369
     ],
+    "horizon": 513,
     "spots": [
      [
-      250,
-      840,
-      250
+      450,
+      860,
+      379
      ],
      [
-      550,
-      820,
-      240
-     ],
-     [
-      850,
-      800,
-      230
-     ],
-     [
-      1050,
-      820,
-      240
-     ],
-     [
-      1350,
+      750,
       830,
-      245
+      347
      ],
      [
-      1650,
+      960,
       840,
-      250
+      358
+     ],
+     [
+      1200,
+      830,
+      347
+     ],
+     [
+      1500,
+      860,
+      379
      ]
     ],
     "walls": [],
@@ -8310,45 +9913,46 @@
     1376,
     768
    ],
-   "ground": 840,
+   "ground": 900,
    "desc": "Snowy mountain pass with snow-covered pine trees and rocky cliffs.",
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     880,
-     840,
-     860
+     920,
+     900,
+     920
     ],
     "person": [
-     280,
-     240,
-     255
+     514,
+     492,
+     514
     ],
+    "horizon": 450,
     "spots": [
      [
-      280,
-      880,
-      280
-     ],
-     [
-      600,
-      850,
-      255
-     ],
-     [
+      450,
       920,
-      840,
-      240
+      514
      ],
      [
-      1240,
-      840,
-      240
+      750,
+      890,
+      481
      ],
      [
-      1540,
-      860,
-      255
+      960,
+      880,
+      470
+     ],
+     [
+      1200,
+      890,
+      481
+     ],
+     [
+      1480,
+      920,
+      514
      ]
     ],
     "walls": [],
@@ -8940,44 +10544,45 @@
     768
    ],
    "desc": "Narrow 1860s city slum alley with brick tenements, fire escapes, and clotheslines.",
-   "ground": 860,
+   "ground": 850,
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
      850,
-     860,
+     850,
      850
     ],
     "person": [
-     270,
-     250,
-     260
+     243,
+     243,
+     243
     ],
+    "horizon": 628,
     "spots": [
      [
-      260,
-      850,
-      270
+      450,
+      860,
+      254
      ],
      [
-      580,
-      860,
-      260
+      700,
+      820,
+      210
      ],
      [
-      900,
-      860,
-      250
+      960,
+      800,
+      188
      ],
      [
       1220,
-      860,
-      255
+      820,
+      210
      ],
      [
-      1520,
-      850,
-      260
+      1450,
+      860,
+      254
      ]
     ],
     "walls": [],
@@ -10141,47 +11746,43 @@
    ],
    "desc": "Symmetrical 16:9 eye-level background of the sacred Black Hills in Dakota Territory, dark slate-grey granite spires and pine-covered ridges rising behind a golden ochre prairie valley, open lower third, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     850,
-     850,
-     850
+     860,
+     860,
+     860
     ],
     "person": [
-     320,
-     320,
-     320
+     328,
+     328,
+     328
     ],
+    "horizon": 560,
     "spots": [
      [
-      250,
+      300,
+      870,
+      339
+     ],
+     [
+      650,
+      850,
+      317
+     ],
+     [
+      960,
       860,
-      320
+      328
      ],
      [
-      550,
+      1300,
       850,
-      320
+      317
      ],
      [
-      850,
-      840,
-      310
-     ],
-     [
-      1150,
-      840,
-      310
-     ],
-     [
-      1450,
-      850,
-      320
-     ],
-     [
-      1700,
-      860,
-      320
+      1650,
+      870,
+      339
      ]
     ],
     "walls": [],
@@ -10211,7 +11812,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 850
+   "ground": 860
   },
   "bg_little_bighorn_greasy_grass_hills": {
    "era": "wildwest",
@@ -10221,47 +11822,43 @@
    ],
    "desc": "Symmetrical 16:9 eye-level background of the Little Bighorn battlefield in summer, rolling sun-baked tan grass hills, dusty ravines, and a winding river lined with Lakota tipis in the mid-distance under a hot ochre sky, open lower third, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
      850,
      850,
      850
     ],
     "person": [
-     320,
-     320,
-     320
+     580,
+     580,
+     580
     ],
+    "horizon": 320,
     "spots": [
      [
-      250,
+      300,
       860,
-      320
+      591
      ],
      [
-      550,
-      850,
-      320
-     ],
-     [
-      850,
+      650,
       840,
-      310
+      569
      ],
      [
-      1150,
-      840,
-      310
-     ],
-     [
-      1450,
+      960,
       850,
-      320
+      580
      ],
      [
-      1700,
+      1300,
+      840,
+      569
+     ],
+     [
+      1650,
       860,
-      320
+      591
      ]
     ],
     "walls": [],
@@ -10624,47 +12221,43 @@
    ],
    "desc": "Symmetrical 16:9 eye-level background of the 1876 Rosebud Creek valley in Montana, rolling dry ochre hills, sparse pine ridges, and dusty battleground in muted slate grey and warm earth tones, open lower third, flat 2D vector paper-cutout style",
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     610,
-     610,
-     610
+     860,
+     860,
+     860
     ],
     "person": [
-     220,
-     110,
-     200
+     407,
+     407,
+     407
     ],
+    "horizon": 488,
     "spots": [
      [
-      220,
-      580,
-      210
+      400,
+      880,
+      429
      ],
      [
-      520,
-      575,
-      150
+      700,
+      850,
+      396
      ],
      [
-      820,
-      570,
-      120
+      960,
+      840,
+      385
      ],
      [
-      1150,
-      565,
-      120
+      1250,
+      850,
+      396
      ],
      [
-      1480,
-      555,
-      150
-     ],
-     [
-      1750,
-      550,
-      195
+      1550,
+      880,
+      429
      ]
     ],
     "walls": [],
@@ -10692,13 +12285,9 @@
     ],
     "seats": [],
     "rails": null,
-    "boats": [
-     200,
-     1750,
-     610
-    ]
+    "boats": null
    },
-   "ground": 610
+   "ground": 860
   },
   "bg_deadwood_quarantine_tent_interior": {
    "era": "wildwest",
@@ -12359,6 +13948,559 @@
     "rails": null,
     "boats": null
    }
+  },
+  "bg_grand_river_winter_cabin": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Symmetrical 16:9 eye-level background of Sitting Bull's weathered wooden log cabin beside the frozen Grand River at pre-dawn winter twilight, snow-dusted ground, split-rail fence, bare cottonwood trees, cold slate-grey sky, open lower third, flat 2D vector paper-cutout style",
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     388,
+     388,
+     388
+    ],
+    "horizon": 495,
+    "spots": [
+     [
+      250,
+      860,
+      399
+     ],
+     [
+      600,
+      840,
+      377
+     ],
+     [
+      960,
+      830,
+      367
+     ],
+     [
+      1320,
+      840,
+      377
+     ],
+     [
+      1650,
+      860,
+      399
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": 530,
+    "free": [
+     [
+      840,
+      0,
+      1320,
+      180
+     ],
+     [
+      840,
+      180,
+      1320,
+      360
+     ],
+     [
+      360,
+      0,
+      840,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_grand_river_summer_prairie": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Symmetrical 16:9 eye-level background of the winding muted blue Grand River curving through rolling green and warm ochre Dakota prairie hills in summer under a wide sky, open lower third, flat 2D vector paper-cutout style",
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     470,
+     470,
+     470
+    ],
+    "horizon": 420,
+    "spots": [
+     [
+      300,
+      860,
+      481
+     ],
+     [
+      650,
+      840,
+      459
+     ],
+     [
+      960,
+      850,
+      470
+     ],
+     [
+      1300,
+      840,
+      459
+     ],
+     [
+      1650,
+      860,
+      481
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": 660,
+    "free": [
+     [
+      840,
+      180,
+      1320,
+      360
+     ],
+     [
+      480,
+      0,
+      960,
+      180
+     ],
+     [
+      360,
+      180,
+      840,
+      360
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_fort_buford_parade_ground": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Symmetrical 16:9 eye-level background of 1881 Fort Buford wooden palisade walls, timber barracks, and dusty parade ground in muted ochre and slate-grey tones, open lower third, flat 2D vector paper-cutout style",
+   "ann": {
+    "v": 6,
+    "ground": [
+     800,
+     800,
+     800
+    ],
+    "person": [
+     333,
+     333,
+     333
+    ],
+    "horizon": 496,
+    "spots": [
+     [
+      350,
+      800,
+      333
+     ],
+     [
+      650,
+      760,
+      289
+     ],
+     [
+      960,
+      720,
+      245
+     ],
+     [
+      1270,
+      760,
+      289
+     ],
+     [
+      1570,
+      800,
+      333
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      360,
+      0,
+      840,
+      180
+     ],
+     [
+      1080,
+      0,
+      1560,
+      180
+     ],
+     [
+      960,
+      180,
+      1440,
+      360
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 800
+  },
+  "bg_wild_west_arena_1885": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Symmetrical 16:9 eye-level background of an 1885 outdoor Wild West show wooden grandstand arena filled with tiered spectator silhouettes and fluttering bunting banners under a warm afternoon sky, open dusty arena floor in lower third, flat 2D vector paper-cutout style",
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     880,
+     880
+    ],
+    "person": [
+     278,
+     278,
+     278
+    ],
+    "horizon": 626,
+    "spots": [
+     [
+      300,
+      890,
+      286
+     ],
+     [
+      650,
+      860,
+      263
+     ],
+     [
+      960,
+      850,
+      255
+     ],
+     [
+      1270,
+      860,
+      263
+     ],
+     [
+      1620,
+      890,
+      286
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1320,
+      480,
+      1800,
+      660
+     ],
+     [
+      120,
+      480,
+      600,
+      660
+     ],
+     [
+      960,
+      0,
+      1440,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 880
+  },
+  "bg_lakota_camp_night": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Symmetrical 16:9 eye-level background of a 19th-century Lakota leather tipi encampment at night encircling a central stone fire ring under a dark slate-grey starry sky, crimson and warm orange firelight tones, open lower third, flat 2D vector paper-cutout style",
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     454,
+     454,
+     454
+    ],
+    "horizon": 435,
+    "spots": [
+     [
+      400,
+      870,
+      476
+     ],
+     [
+      700,
+      830,
+      432
+     ],
+     [
+      960,
+      840,
+      443
+     ],
+     [
+      1220,
+      830,
+      432
+     ],
+     [
+      1520,
+      870,
+      476
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      720,
+      0,
+      1200,
+      180
+     ],
+     [
+      720,
+      180,
+      1200,
+      360
+     ],
+     [
+      240,
+      0,
+      720,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_snowy_northern_border_plain": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Symmetrical 16:9 eye-level background of a vast snow-covered northern Dakota and Canadian border prairie under a cold pale slate-grey sky, gentle snowdrifts and distant muted blue hills, open lower third, flat 2D vector paper-cutout style",
+   "ann": {
+    "v": 6,
+    "ground": [
+     820,
+     820,
+     820
+    ],
+    "person": [
+     481,
+     481,
+     481
+    ],
+    "horizon": 380,
+    "spots": [
+     [
+      320,
+      830,
+      492
+     ],
+     [
+      650,
+      810,
+      470
+     ],
+     [
+      960,
+      820,
+      481
+     ],
+     [
+      1280,
+      810,
+      470
+     ],
+     [
+      1600,
+      830,
+      492
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      720,
+      120,
+      1200,
+      300
+     ],
+     [
+      1320,
+      120,
+      1800,
+      300
+     ],
+     [
+      0,
+      120,
+      480,
+      300
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 820
+  },
+  "bg_backstage_canvas_tent_interior": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Symmetrical 16:9 eye-level interior of an 1885 Wild West show canvas backstage tent with central timber support poles, draped canvas walls, and a rustic wooden table in warm ochre and tan tones, open lower third, flat 2D vector paper-cutout style",
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     880,
+     880
+    ],
+    "person": [
+     369,
+     369,
+     369
+    ],
+    "horizon": 543,
+    "spots": [
+     [
+      350,
+      910,
+      402
+     ],
+     [
+      650,
+      880,
+      369
+     ],
+     [
+      960,
+      880,
+      369
+     ],
+     [
+      1270,
+      880,
+      369
+     ],
+     [
+      1570,
+      910,
+      402
+     ]
+    ],
+    "walls": [],
+    "table": [
+     760,
+     1190,
+     668
+    ],
+    "water": null,
+    "free": [
+     [
+      720,
+      360,
+      1200,
+      540
+     ],
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      0,
+      0,
+      480,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 880
+  },
+  "bg_dakota_territory_parchment_map": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Top-down 16:9 historical map background of Dakota Territory and the Great Sioux Reservation in warm beige parchment and muted sea blue winding rivers with subtle ridge lines and no text labels, flat 2D vector paper-cutout style",
+   "openV": 6
+  },
+  "bg_prairie_ridge_sunset": {
+   "era": "wildwest",
+   "px": [
+    1376,
+    768
+   ],
+   "desc": "Symmetrical 16:9 eye-level background of a wide frontier prairie ridge at dusk, dark silhouetted rolling hill crest against a layered crimson red, glowing orange, and warm ochre sunset sky, open lower third, subtle vignette edges, flat 2D vector paper-cutout style with clean black outlines"
   }
  }
 }

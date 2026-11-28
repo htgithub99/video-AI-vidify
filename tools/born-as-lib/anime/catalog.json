@@ -13,19 +13,22 @@
    ],
    "note": "beehive",
    "ann": {
-    "facing": "r",
-    "aspect": 0.9922,
+    "v": 3,
     "foot": 0.5571,
     "pad": 0.0156,
-    "v": 2,
+    "aspect": 0.9922,
     "place": "ground",
-    "is": "beehive",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden beehive"
    }
   },
   "hand_sherlock__bull_terrier": {
@@ -40,19 +43,22 @@
    ],
    "note": "bull terrier",
    "ann": {
-    "facing": "r",
-    "aspect": 1.2341,
+    "v": 3,
     "foot": 0.5378,
     "pad": 0.0159,
-    "v": 2,
+    "aspect": 1.2341,
     "place": "ground",
-    "is": "bull terrier",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "white bull terrier dog"
    }
   },
   "hand_sherlock__cane": {
@@ -67,26 +73,29 @@
    ],
    "note": "cane",
    "ann": {
-    "facing": "r",
-    "aspect": 4.9518,
+    "v": 3,
     "foot": 0.0718,
     "pad": 0.0482,
-    "v": 2,
-    "place": "ground",
-    "is": "cane",
+    "aspect": 4.9518,
+    "place": "hand",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "wooden walking cane"
    }
   },
   "hand_sherlock__hound": {
    "sheet": "hand_sherlock",
    "era": "anime",
    "kind": "animal",
-   "heightM": 1.0,
+   "heightM": 1,
    "facing": "r",
    "px": [
     489,
@@ -94,19 +103,22 @@
    ],
    "note": "hound",
    "ann": {
-    "facing": "r",
-    "aspect": 1.8736,
+    "v": 3,
     "foot": 0.6063,
     "pad": 0.023,
-    "v": 2,
+    "aspect": 1.8736,
     "place": "ground",
-    "is": "hound",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "black hound dog"
    }
   },
   "hand_sherlock__violin": {
@@ -121,19 +133,22 @@
    ],
    "note": "violin",
    "ann": {
-    "facing": "r",
-    "aspect": 2.6316,
+    "v": 3,
     "foot": 0.1586,
     "pad": 0.0226,
-    "v": 2,
-    "place": "table",
-    "is": "violin",
+    "aspect": 2.6316,
+    "place": "hand",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "wooden violin"
    }
   },
   "hand_musashi__boat": {
@@ -148,19 +163,22 @@
    ],
    "note": "boat",
    "ann": {
-    "facing": "r",
-    "aspect": 2.4271,
+    "v": 3,
     "foot": 0.8498,
     "pad": 0.0156,
-    "v": 2,
+    "aspect": 2.4271,
     "place": "ground",
-    "is": "boat",
+    "facing": "l",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden rowboat with oar"
    }
   },
   "hand_musashi__book": {
@@ -175,19 +193,22 @@
    ],
    "note": "book",
    "ann": {
-    "facing": "r",
-    "aspect": 1.4293,
+    "v": 3,
     "foot": 0.5141,
     "pad": 0.0152,
-    "v": 2,
+    "aspect": 1.4293,
     "place": "table",
-    "is": "book",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "blue bound book"
    }
   },
   "hand_musashi__notice": {
@@ -202,26 +223,29 @@
    ],
    "note": "notice",
    "ann": {
-    "facing": "r",
-    "aspect": 0.7376,
+    "v": 3,
     "foot": 0.5119,
     "pad": 0.0087,
-    "v": 2,
+    "aspect": 0.7376,
     "place": "ground",
-    "is": "notice",
-    "text": false,
+    "facing": "r",
+    "text": true,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden notice board"
    }
   },
   "hand_musashi__pine": {
    "sheet": "hand_musashi",
    "era": "anime",
    "kind": "nature",
-   "heightM": 8.0,
+   "heightM": 8,
    "facing": "r",
    "px": [
     481,
@@ -229,19 +253,22 @@
    ],
    "note": "pine",
    "ann": {
-    "facing": "r",
-    "aspect": 1.3,
+    "v": 3,
     "foot": 0.5151,
     "pad": 0.0081,
-    "v": 2,
+    "aspect": 1.3,
     "place": "ground",
-    "is": "pine",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "gnarled pine tree"
    }
   },
   "hand_musashi__scabbard": {
@@ -256,19 +283,22 @@
    ],
    "note": "scabbard",
    "ann": {
-    "facing": "r",
-    "aspect": 2.7885,
+    "v": 3,
     "foot": 0.4816,
     "pad": 0.0321,
-    "v": 2,
-    "place": "ground",
-    "is": "scabbard",
+    "aspect": 2.7885,
+    "place": "hand",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "sword scabbard in water"
    }
   },
   "hand_musashi__shrike": {
@@ -283,19 +313,22 @@
    ],
    "note": "shrike",
    "ann": {
-    "facing": "r",
-    "aspect": 0.4889,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0083,
-    "v": 2,
+    "aspect": 0.4889,
     "place": "wall",
-    "is": "shrike",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "hanging scroll with shrike bird"
    }
   },
   "hand_musashi__students": {
@@ -310,29 +343,33 @@
    ],
    "note": "students",
    "ann": {
-    "facing": "r",
-    "aspect": 1.0372,
+    "v": 2,
     "foot": 0.4249,
     "pad": 0.008,
+    "aspect": 1.0372,
     "face": {
-     "l": 0.5073,
-     "r": 0.6183,
-     "t": 0.1144,
-     "b": 0.2472
+     "l": 0.5501,
+     "r": 0.6423,
+     "t": 0.109,
+     "b": 0.2553
     },
     "mouth": [
-     0.5628,
-     0.2118
+     0.5962,
+     0.2231
     ],
-    "v": 2,
     "place": "ground",
-    "is": "students",
+    "facing": "l",
     "text": false,
-    "double": false,
+    "double": true,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "samurai students",
+    "is": "four samurai students"
    }
   }
  },

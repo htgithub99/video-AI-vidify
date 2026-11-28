@@ -1,1 +1,4419 @@
-{"style":"bold cartoon, thick black outlines, flat cel shading","items":{"samurai__samurai_full_armor_walking_katana":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[178,334],"ann":{"v":1,"foot":0.5728,"pad":0.009,"aspect":0.5329,"face":{"l":0.4413,"r":0.5249,"t":0.012,"b":0.0689},"mouth":[0.4831,0.0564],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"samurai__samurai_drawing_katana":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[190,314],"ann":{"v":1,"foot":0.4917,"pad":0.0096,"aspect":0.6051,"face":{"l":0.6745,"r":0.7202,"t":0.0127,"b":0.121},"mouth":[0.6973,0.0972],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"samurai__samurai_attacking_katana":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[232,325],"ann":{"v":1,"foot":0.4723,"pad":0.0092,"aspect":0.7138,"face":{"l":0.5217,"r":0.5645,"t":0.1477,"b":0.2031},"mouth":[0.5431,0.1909],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"samurai__samurai_archer_long_yumi_bow":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[231,374],"ann":{"v":1,"foot":0.3873,"pad":0.008,"aspect":0.6176,"face":{"l":0.3586,"r":0.4552,"t":0.262,"b":0.369},"mouth":[0.4069,0.3455],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"samurai__samurai_naginata":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[264,322],"ann":{"v":1,"foot":0.4314,"pad":0.0093,"aspect":0.8199,"face":{"l":0.4,"r":0.4939,"t":0.1242,"b":0.2609},"mouth":[0.447,0.2308],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"samurai__ashigaru_foot_soldier_yari_spear":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[342,315],"ann":{"v":1,"foot":0.394,"pad":0.0095,"aspect":1.0857,"face":{"l":0.3483,"r":0.4353,"t":0.0127,"b":0.2095},"mouth":[0.3918,0.1662],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"samurai__ashigaru_arquebus_matchlock_gun":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[244,312],"ann":{"v":1,"foot":0.3276,"pad":0.0096,"aspect":0.7821,"face":{"l":0.2961,"r":0.413,"t":0.0705,"b":0.1859},"mouth":[0.3546,0.1605],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"samurai__ninja_black_crouching":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.2,"facing":"r","px":[235,273],"ann":{"v":1,"foot":0.2926,"pad":0.011,"aspect":0.8608,"face":{"l":0.6999,"r":0.8107,"t":0.0806,"b":0.1538},"mouth":[0.7553,0.1377],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"samurai__ronin_kimono_straw_hat":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[201,314],"ann":{"v":1,"foot":0.4766,"pad":0.0096,"aspect":0.6401,"face":{"l":0.43,"r":0.6645,"t":0.0127,"b":0.1242},"mouth":[0.5473,0.0997],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"samurai__samurai_general_daimyo_war_fan":{"sheet":"samurai","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[237,328],"ann":{"v":1,"foot":0.3915,"pad":0.0091,"aspect":0.7226,"face":{"l":0.3143,"r":0.4241,"t":0.1006,"b":0.2104},"mouth":[0.3692,0.1862],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_shogun_court_robes":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.65,"facing":"r","px":[226,359],"ann":{"v":1,"foot":0.6168,"pad":0.0084,"aspect":0.6295,"face":{"l":0.515,"r":0.6796,"t":0.0111,"b":0.2674},"mouth":[0.5973,0.211],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_noble_lady_layered_kimono":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.65,"facing":"r","px":[271,321],"ann":{"v":1,"foot":0.452,"pad":0.0093,"aspect":0.8442,"face":{"l":0.6316,"r":0.6636,"t":0.2866,"b":0.3551},"mouth":[0.6476,0.34],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_geisha_umbrella":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.65,"facing":"r","px":[193,362],"ann":{"v":1,"foot":0.5164,"pad":0.0083,"aspect":0.5331,"face":{"l":0.4114,"r":0.6041,"t":0.0166,"b":0.1243},"mouth":[0.5077,0.1006],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_peasant_farmer_straw_hat":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.65,"facing":"r","px":[207,341],"ann":{"v":1,"foot":0.4608,"pad":0.0088,"aspect":0.607,"face":{"l":0.2417,"r":0.5892,"t":0.0117,"b":0.1144},"mouth":[0.4155,0.0918],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_merchant":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.65,"facing":"r","px":[143,339],"ann":{"v":1,"foot":0.6026,"pad":0.0088,"aspect":0.4218,"face":{"l":0.374,"r":0.7729,"t":0.0118,"b":0.2153},"mouth":[0.5735,0.1705],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__buddhist_monk_shaved_head":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.65,"facing":"r","px":[165,341],"ann":{"v":1,"foot":0.5193,"pad":0.0088,"aspect":0.4839,"face":{"l":0.2402,"r":0.6385,"t":0.0117,"b":0.2141},"mouth":[0.4394,0.1696],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_fisherman":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.65,"facing":"r","px":[239,361],"ann":{"v":1,"foot":0.5854,"pad":0.0083,"aspect":0.662,"face":{"l":0.4591,"r":0.6874,"t":0.0803,"b":0.277},"mouth":[0.5733,0.2337],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_child_kimono":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.2,"facing":"r","px":[122,288],"ann":{"v":1,"foot":0.5615,"pad":0.0104,"aspect":0.4236,"face":{"l":0.2259,"r":0.8561,"t":0.0139,"b":0.2917},"mouth":[0.541,0.2306],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_tea_master_kneeling":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1,"facing":"r","px":[163,279],"ann":{"v":1,"foot":0.5368,"pad":0.0108,"aspect":0.5842,"face":{"l":0.3367,"r":0.7247,"t":0.0143,"b":0.2939},"mouth":[0.5307,0.2324],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"japan_civ__japanese_craftsman_carpenter":{"sheet":"japan_civ","era":"eastasia","kind":"person","heightM":1.65,"facing":"r","px":[153,345],"ann":{"v":1,"foot":0.4143,"pad":0.0087,"aspect":0.4435,"face":{"l":0.2549,"r":0.6601,"t":0.0116,"b":0.2319},"mouth":[0.4575,0.1834],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_imperial__tang_dynasty_soldier_armor_spear":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[194,369],"ann":{"v":1,"foot":0.495,"pad":0.0081,"aspect":0.5257,"face":{"l":0.3493,"r":0.5219,"t":0.1003,"b":0.3089},"mouth":[0.4356,0.263],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_imperial__song_dynasty_archer":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[243,344],"ann":{"v":1,"foot":0.414,"pad":0.0087,"aspect":0.7064,"face":{"l":0.3523,"r":0.4543,"t":0.1279,"b":0.2762},"mouth":[0.4033,0.2436],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"china_imperial__ming_dynasty_soldier_musket":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[249,347],"ann":{"v":1,"foot":0.4089,"pad":0.0086,"aspect":0.7176,"face":{"l":0.2957,"r":0.4352,"t":0.0432,"b":0.2651},"mouth":[0.3655,0.2163],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"china_imperial__ming_dynasty_general_armor":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[212,362],"ann":{"v":1,"foot":0.5855,"pad":0.0083,"aspect":0.5856,"face":{"l":0.4387,"r":0.5849,"t":0.058,"b":0.2707},"mouth":[0.5118,0.2239],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_imperial__qing_dynasty_bannerman_soldier_queue":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[236,342],"ann":{"v":1,"foot":0.5648,"pad":0.0088,"aspect":0.6901,"face":{"l":0.4198,"r":0.6353,"t":0.0117,"b":0.2456},"mouth":[0.5276,0.1941],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_imperial__chinese_emperor_yellow_dragon_robe":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[154,364],"ann":{"v":1,"foot":0.5942,"pad":0.0082,"aspect":0.4231,"face":{"l":0.3584,"r":0.6805,"t":0.011,"b":0.2555},"mouth":[0.5195,0.2017],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_imperial__chinese_mandarin_official_robe_rank":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[132,354],"ann":{"v":1,"foot":0.5483,"pad":0.0085,"aspect":0.3729,"face":{"l":0.3045,"r":0.6803,"t":0.0113,"b":0.2316},"mouth":[0.4924,0.1831],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_imperial__chinese_court_lady_hanfu":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[162,350],"ann":{"v":1,"foot":0.5062,"pad":0.0086,"aspect":0.4629,"face":{"l":0.5696,"r":0.8069,"t":0.0114,"b":0.2571},"mouth":[0.6883,0.203],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_imperial__chinese_eunuch_official":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[120,355],"ann":{"v":1,"foot":0.5363,"pad":0.0085,"aspect":0.338,"face":{"l":0.281,"r":0.7357,"t":0.0113,"b":0.2789},"mouth":[0.5084,0.22],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_imperial__chinese_imperial_guard_halberd":{"sheet":"china_imperial","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[190,373],"ann":{"v":1,"foot":0.4984,"pad":0.008,"aspect":0.5094,"face":{"l":0.356,"r":0.5387,"t":0.1046,"b":0.3056},"mouth":[0.4474,0.2614],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_peasant_straw_hat_hoe":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[242,348],"ann":{"v":1,"foot":0.46,"pad":0.0086,"aspect":0.6954,"face":{"l":0.3268,"r":0.665,"t":0.0115,"b":0.1092},"mouth":[0.4959,0.0877],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_peasant_woman_basket":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[148,336],"ann":{"v":1,"foot":0.3755,"pad":0.0089,"aspect":0.4405,"face":{"l":0.2108,"r":0.5459,"t":0.0119,"b":0.2113},"mouth":[0.3784,0.1674],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_scholar_fan":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[170,352],"ann":{"v":1,"foot":0.4176,"pad":0.0085,"aspect":0.483,"face":{"l":0.3372,"r":0.6216,"t":0.0114,"b":0.2188},"mouth":[0.4794,0.1732],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_merchant_goods":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[167,342],"ann":{"v":1,"foot":0.5175,"pad":0.0088,"aspect":0.4883,"face":{"l":0.3104,"r":0.6297,"t":0.0117,"b":0.2135},"mouth":[0.4701,0.1691],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_martial_artist_kung_fu":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[248,325],"ann":{"v":1,"foot":0.5097,"pad":0.0092,"aspect":0.7631,"face":{"l":0.4192,"r":0.6292,"t":0.0123,"b":0.2308},"mouth":[0.5242,0.1827],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_old_man_long_beard":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[199,326],"ann":{"v":1,"foot":0.4111,"pad":0.0092,"aspect":0.6104,"face":{"l":0.4653,"r":0.7457,"t":0.0123,"b":0.2239},"mouth":[0.6055,0.1773],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_child":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.2,"facing":"r","px":[107,283],"ann":{"v":1,"foot":0.585,"pad":0.0106,"aspect":0.3781,"face":{"l":0.2093,"r":0.8467,"t":0.0141,"b":0.3286},"mouth":[0.528,0.2594],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_street_vendor_shoulder_pole":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[319,328],"ann":{"v":1,"foot":0.5342,"pad":0.0091,"aspect":0.9726,"face":{"l":0.4251,"r":0.6,"t":0.0122,"b":0.2988},"mouth":[0.5126,0.2357],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_doctor_medicine_box":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[139,337],"ann":{"v":1,"foot":0.6291,"pad":0.0089,"aspect":0.4125,"face":{"l":0.4394,"r":0.8052,"t":0.0119,"b":0.2196},"mouth":[0.6223,0.1739],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"china_civ__chinese_monk_staff":{"sheet":"china_civ","era":"eastasia","kind":"person","heightM":1.7,"facing":"r","px":[170,339],"ann":{"v":1,"foot":0.4432,"pad":0.0088,"aspect":0.5015,"face":{"l":0.2066,"r":0.564,"t":0.0472,"b":0.2389},"mouth":[0.3853,0.1967],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__mongol_warrior_fur_hat_bow":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[210,358],"ann":{"v":1,"foot":0.4194,"pad":0.0084,"aspect":0.5866,"face":{"l":0.2623,"r":0.5044,"t":0.014,"b":0.1508},"mouth":[0.3833,0.1207],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__mongol_khan_robe_fur_hat":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[163,361],"ann":{"v":1,"foot":0.6426,"pad":0.0083,"aspect":0.4515,"face":{"l":0.4172,"r":0.7975,"t":0.0111,"b":0.1385},"mouth":[0.6074,0.1105],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__mongol_woman_deel":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[110,358],"ann":{"v":1,"foot":0.6,"pad":0.0084,"aspect":0.3073,"face":{"l":0.5611,"r":0.7753,"t":0.0642,"b":0.2737},"mouth":[0.6682,0.2276],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__korean_joseon_soldier_wide_hat":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[179,362],"ann":{"v":1,"foot":0.5037,"pad":0.0083,"aspect":0.4945,"face":{"l":0.4022,"r":0.5754,"t":0.0718,"b":0.279},"mouth":[0.4888,0.2334],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__korean_joseon_general_armor":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[187,384],"ann":{"v":1,"foot":0.5253,"pad":0.0078,"aspect":0.487,"face":{"l":0.4712,"r":0.6304,"t":0.1589,"b":0.3203},"mouth":[0.5508,0.2848],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__korean_joseon_scholar_gat_hat":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[141,360],"ann":{"v":1,"foot":0.5724,"pad":0.0083,"aspect":0.3917,"face":{"l":0.4956,"r":0.7243,"t":0.0444,"b":0.2528},"mouth":[0.61,0.207],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__korean_woman_hanbok":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[169,325],"ann":{"v":1,"foot":0.5148,"pad":0.0092,"aspect":0.52,"face":{"l":0.4175,"r":0.689,"t":0.0123,"b":0.2185},"mouth":[0.5533,0.1731],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__korean_king_red_robe":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[140,359],"ann":{"v":1,"foot":0.6289,"pad":0.0084,"aspect":0.39,"face":{"l":0.3943,"r":0.7486,"t":0.039,"b":0.2479},"mouth":[0.5715,0.2019],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__korean_peasant":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[179,335],"ann":{"v":1,"foot":0.4174,"pad":0.009,"aspect":0.5343,"face":{"l":0.3774,"r":0.6337,"t":0.0119,"b":0.2},"mouth":[0.5056,0.1586],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"mongol_korea__japanese_pirate_wokou_sword":{"sheet":"mongol_korea","era":"eastasia","kind":"person","heightM":1.75,"facing":"r","px":[201,339],"ann":{"v":1,"foot":0.3489,"pad":0.0088,"aspect":0.5929,"face":{"l":0.3897,"r":0.6302,"t":0.0118,"b":0.2035},"mouth":[0.51,0.1613],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_mounted__samurai_horse_bow":{"sheet":"ea_mounted","era":"eastasia","kind":"animal","heightM":2.5,"facing":"r","px":[363,382],"ann":{"v":1,"foot":0.4349,"pad":0.0079,"aspect":0.9503,"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"ea_mounted__mongol_horse_archer_galloping":{"sheet":"ea_mounted","era":"eastasia","kind":"animal","heightM":2.5,"facing":"r","px":[398,354],"ann":{"v":1,"foot":0.4485,"pad":0.0085,"aspect":1.1243,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_mounted__chinese_cavalry_general_horse_spear":{"sheet":"ea_mounted","era":"eastasia","kind":"animal","heightM":2.5,"facing":"r","px":[419,355],"ann":{"v":1,"foot":0.4617,"pad":0.0085,"aspect":1.1803,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_mounted__korean_cavalryman_horse":{"sheet":"ea_mounted","era":"eastasia","kind":"animal","heightM":2.5,"facing":"r","px":[355,358],"ann":{"v":1,"foot":0.3349,"pad":0.0084,"aspect":0.9916,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_mounted__mongol_rider_horse_walking":{"sheet":"ea_mounted","era":"eastasia","kind":"animal","heightM":2.5,"facing":"r","px":[364,349],"ann":{"v":1,"foot":0.3581,"pad":0.0086,"aspect":1.043,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_mounted__bactrian_camel_packs":{"sheet":"ea_mounted","era":"eastasia","kind":"animal","heightM":2.3,"facing":"r","px":[374,306],"ann":{"v":1,"foot":0.3401,"pad":0.0098,"aspect":1.2222,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_vehicles__chinese_junk_ship_batten_sails":{"sheet":"ea_vehicles","era":"eastasia","kind":"vehicle","heightM":15,"facing":"r","px":[397,327],"ann":{"v":1,"foot":0.5294,"pad":0.0092,"aspect":1.2141,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_vehicles__japanese_atakebune_war_ship":{"sheet":"ea_vehicles","era":"eastasia","kind":"vehicle","heightM":12,"facing":"r","px":[442,269],"ann":{"v":1,"foot":0.511,"pad":0.0112,"aspect":1.6431,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_vehicles__korean_turtle_ship":{"sheet":"ea_vehicles","era":"eastasia","kind":"vehicle","heightM":10,"facing":"r","px":[401,335],"ann":{"v":1,"foot":0.4031,"pad":0.009,"aspect":1.197,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_vehicles__palanquin_carried_by_four_bearers":{"sheet":"ea_vehicles","era":"eastasia","kind":"vehicle","heightM":2,"facing":"r","px":[411,230],"ann":{"v":1,"foot":0.4507,"pad":0.013,"aspect":1.787,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_vehicles__chinese_ox_cart":{"sheet":"ea_vehicles","era":"eastasia","kind":"vehicle","heightM":2,"facing":"r","px":[432,230],"ann":{"v":1,"foot":0.4449,"pad":0.013,"aspect":1.8783,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_vehicles__japanese_fishing_boat":{"sheet":"ea_vehicles","era":"eastasia","kind":"vehicle","heightM":3,"facing":"r","px":[373,254],"ann":{"v":1,"foot":0.4587,"pad":0.0118,"aspect":1.4685,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_buildings__japanese_castle_tenshu":{"sheet":"ea_buildings","era":"eastasia","kind":"building","heightM":30,"facing":"r","px":[419,373],"ann":{"v":1,"foot":0.5274,"pad":0.008,"aspect":1.1233,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_buildings__japanese_wooden_temple":{"sheet":"ea_buildings","era":"eastasia","kind":"building","heightM":15,"facing":"r","px":[538,314],"ann":{"v":1,"foot":0.508,"pad":0.0096,"aspect":1.7134,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_buildings__chinese_pagoda":{"sheet":"ea_buildings","era":"eastasia","kind":"building","heightM":30,"facing":"r","px":[209,380],"ann":{"v":1,"foot":0.5,"pad":0.0079,"aspect":0.55,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_buildings__chinese_palace_hall_yellow_roof":{"sheet":"ea_buildings","era":"eastasia","kind":"building","heightM":15,"facing":"r","px":[536,294],"ann":{"v":1,"foot":0.5112,"pad":0.0102,"aspect":1.8231,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_buildings__chinese_paifang_gate":{"sheet":"ea_buildings","era":"eastasia","kind":"building","heightM":8,"facing":"r","px":[365,301],"ann":{"v":1,"foot":0.2028,"pad":0.01,"aspect":1.2126,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_buildings__korean_hanok_house":{"sheet":"ea_buildings","era":"eastasia","kind":"building","heightM":6,"facing":"r","px":[413,267],"ann":{"v":1,"foot":0.4358,"pad":0.0112,"aspect":1.5468,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_structures__japanese_torii_gate":{"sheet":"ea_structures","era":"eastasia","kind":"structure","heightM":6,"facing":"r","px":[297,306],"ann":{"v":1,"foot":0.3283,"pad":0.0098,"aspect":0.9706,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_structures__chinese_stone_lion_statue":{"sheet":"ea_structures","era":"eastasia","kind":"structure","heightM":1.5,"facing":"r","px":[218,303],"ann":{"v":1,"foot":0.5505,"pad":0.0099,"aspect":0.7195,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_structures__arched_stone_bridge":{"sheet":"ea_structures","era":"eastasia","kind":"structure","heightM":4,"facing":"r","px":[366,210],"ann":{"v":1,"foot":0.2022,"pad":0.0143,"aspect":1.7429,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_structures__wooden_fence":{"sheet":"ea_structures","era":"eastasia","kind":"structure","heightM":1.5,"facing":"r","px":[287,170],"ann":{"v":1,"foot":0.1481,"pad":0.0176,"aspect":1.6882,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_structures__tea_house":{"sheet":"ea_structures","era":"eastasia","kind":"structure","heightM":5,"facing":"r","px":[342,277],"ann":{"v":1,"foot":0.5323,"pad":0.0108,"aspect":1.2347,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_structures__rice_paddy_terrace_patch":{"sheet":"ea_structures","era":"eastasia","kind":"structure","heightM":1,"facing":"r","px":[366,243],"ann":{"v":1,"foot":0.5765,"pad":0.0123,"aspect":1.5062,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_structures__stone_lantern":{"sheet":"ea_structures","era":"eastasia","kind":"structure","heightM":1.5,"facing":"r","px":[159,322],"ann":{"v":1,"foot":0.5031,"pad":0.0093,"aspect":0.4938,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_structures__village_well":{"sheet":"ea_structures","era":"eastasia","kind":"structure","heightM":1.2,"facing":"r","px":[240,306],"ann":{"v":1,"foot":0.5104,"pad":0.0098,"aspect":0.7843,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__bamboo_grove":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":10,"facing":"r","px":[180,230],"ann":{"v":1,"foot":0.4729,"pad":0.013,"aspect":0.7826,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__cherry_blossom_tree":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":7,"facing":"r","px":[242,238],"ann":{"v":1,"foot":0.4016,"pad":0.0126,"aspect":1.0168,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__japanese_pine_tree":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":8,"facing":"r","px":[233,229],"ann":{"v":1,"foot":0.4807,"pad":0.0131,"aspect":1.0175,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__red_maple_tree":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":8,"facing":"r","px":[227,233],"ann":{"v":1,"foot":0.511,"pad":0.0129,"aspect":0.9742,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__weeping_willow":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":10,"facing":"r","px":[205,235],"ann":{"v":1,"foot":0.4488,"pad":0.0128,"aspect":0.8723,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__plum_blossom_tree":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":5,"facing":"r","px":[209,231],"ann":{"v":1,"foot":0.3086,"pad":0.013,"aspect":0.9048,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__lotus_plants":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":1,"facing":"r","px":[216,223],"ann":{"v":1,"foot":0.5319,"pad":0.0135,"aspect":0.9686,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__reed_grass":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":1.5,"facing":"r","px":[177,243],"ann":{"v":1,"foot":0.4887,"pad":0.0123,"aspect":0.7284,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__rocky_outcrop":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":3,"facing":"r","px":[213,215],"ann":{"v":1,"foot":0.4587,"pad":0.014,"aspect":0.9907,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__mountain_pine_rock":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":6,"facing":"r","px":[205,252],"ann":{"v":1,"foot":0.3295,"pad":0.0119,"aspect":0.8135,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__moss_garden_rock":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":1,"facing":"r","px":[208,138],"ann":{"v":1,"foot":0.355,"pad":0.0217,"aspect":1.5072,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_nature__gingko_tree":{"sheet":"ea_nature","era":"eastasia","kind":"nature","heightM":12,"facing":"r","px":[212,266],"ann":{"v":1,"foot":0.5024,"pad":0.0113,"aspect":0.797,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_props__katana_sheath":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":1,"facing":"r","px":[233,190],"ann":{"v":1,"foot":0.073,"pad":0.0158,"aspect":1.2263,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"ea_props__samurai_helmet_kabuto":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.4,"facing":"r","px":[165,186],"ann":{"v":1,"foot":0.6333,"pad":0.0161,"aspect":0.8871,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"ea_props__samurai_armor_stand":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":1.6,"facing":"r","px":[123,252],"ann":{"v":1,"foot":0.5447,"pad":0.0119,"aspect":0.4881,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_props__paper_lantern_red":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.5,"facing":"r","px":[103,213],"ann":{"v":1,"foot":0.4951,"pad":0.0141,"aspect":0.4836,"place":"wall","facing":"r","text":false,"double":false,"cut":false}},"ea_props__chinese_porcelain_vase":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.6,"facing":"r","px":[117,196],"ann":{"v":1,"foot":0.5,"pad":0.0153,"aspect":0.5969,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"ea_props__tea_set_tray":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.2,"facing":"r","px":[200,106],"ann":{"v":1,"foot":0.5,"pad":0.0283,"aspect":1.8868,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"ea_props__folding_fan":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.3,"facing":"r","px":[205,135],"ann":{"v":1,"foot":0.4951,"pad":0.0222,"aspect":1.5185,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"ea_props__bamboo_scroll":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.4,"facing":"r","px":[205,149],"ann":{"v":1,"foot":0.5976,"pad":0.0201,"aspect":1.3758,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"ea_props__chinese_war_drum_stand":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":1.5,"facing":"r","px":[144,187],"ann":{"v":1,"foot":0.5799,"pad":0.016,"aspect":0.7701,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_props__gong":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":1.5,"facing":"r","px":[199,184],"ann":{"v":1,"foot":0.4598,"pad":0.0163,"aspect":1.0815,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_props__incense_burner":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.6,"facing":"r","px":[174,159],"ann":{"v":1,"foot":0.5,"pad":0.0189,"aspect":1.0943,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"ea_props__bonsai_tree_pot":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.5,"facing":"r","px":[179,196],"ann":{"v":1,"foot":0.5196,"pad":0.0153,"aspect":0.9133,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"ea_props__rice_straw_bales":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.8,"facing":"r","px":[208,165],"ann":{"v":1,"foot":0.5024,"pad":0.0182,"aspect":1.2606,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_props__bamboo_basket":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.4,"facing":"r","px":[146,181],"ann":{"v":1,"foot":0.4966,"pad":0.0166,"aspect":0.8066,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"ea_props__writing_brush_ink_stone":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.1,"facing":"r","px":[170,183],"ann":{"v":1,"foot":0.5794,"pad":0.0164,"aspect":0.929,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"ea_props__chinese_sword_jian":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.9,"facing":"r","px":[248,48],"ann":{"v":1,"foot":0.2661,"pad":0.0625,"aspect":5.1667,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"ea_props__jian_scabbard":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.9,"facing":"r","px":[191,44],"ann":{"v":1,"foot":0.4162,"pad":0.0682,"aspect":4.3409,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"ea_props__war_banner_sashimono_blank":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":1.5,"facing":"r","px":[115,229],"ann":{"v":1,"foot":0.187,"pad":0.0131,"aspect":0.5022,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"ea_props__wooden_bucket":{"sheet":"ea_props","era":"eastasia","kind":"prop","heightM":0.4,"facing":"r","px":[127,180],"ann":{"v":1,"foot":0.5039,"pad":0.0167,"aspect":0.7056,"place":"ground","facing":"r","text":false,"double":false,"cut":false}}},"backgrounds":{"bg_japan_castle":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[960,960,960],"person":[300,300,300],"spots":[[320,960,300],[640,960,300],[960,960,300],[1280,960,300],[1600,960,300]],"walls":[[100,280,750],[1050,1850,760]],"table":null,"water":null,"free":[[0,0,480,180],[480,0,960,180],[0,180,480,360]],"seats":[],"rails":null,"boats":null},"ground":820},"bg_japan_village":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[820,760,720],"person":[250,210,180],"spots":[[250,830,260],[550,790,230],[1450,730,185]],"walls":[[250,480,520],[1120,1280,450]],"table":null,"water":680,"free":[[720,0,1200,180],[1200,0,1680,180],[240,0,720,180]],"seats":[{"k":"bench","x0":520,"x1":640,"y":615}],"rails":null,"boats":null},"ground":760},"bg_japan_temple_courtyard":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[820,780,820],"person":[260,220,240],"spots":[[260,830,270],[600,790,230],[960,780,220],[1300,795,225],[1620,820,240]],"walls":[[100,280,620],[980,1250,550]],"table":null,"water":null,"free":[[0,480,480,660],[840,480,1320,660],[1080,240,1560,420]],"seats":[],"rails":null,"boats":null},"ground":780},"bg_china_palace":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[760,740,750],"person":[250,210,215],"spots":[[250,770,260],[550,750,230],[960,740,210],[1350,745,210],[1650,755,220]],"walls":[[150,520,480],[680,1220,450]],"table":null,"water":null,"free":[[1200,0,1680,180],[0,0,480,180],[480,0,960,180]],"seats":[],"rails":null,"boats":null},"ground":740},"bg_china_market":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[820,760,840],"person":[270,210,250],"spots":[[260,830,280],[580,780,230],[860,765,215],[1150,785,225],[1520,835,245]],"walls":[[50,220,450],[1050,1350,420]],"table":[1080,1280,690],"water":null,"free":[[600,0,1080,180],[480,180,960,360],[480,360,960,540]],"seats":[],"rails":null,"boats":null},"ground":760},"bg_china_mountains":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[840,780,820],"person":[260,210,230],"spots":[[260,850,270],[580,800,230],[920,780,210],[1260,795,220],[1580,820,230]],"walls":[],"table":null,"water":750,"free":[[120,0,600,180],[600,0,1080,180],[360,180,840,360]],"seats":[],"rails":null,"boats":[120,460,750]},"ground":780},"bg_mongol_steppe":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[740,680,720],"person":[240,180,210],"spots":[[250,750,250],[550,710,205],[880,685,185],[1200,695,190],[1550,715,205]],"walls":[],"table":null,"water":null,"free":[[600,120,1080,300],[240,360,720,540],[0,60,480,240]],"seats":[],"rails":null,"boats":null},"ground":680},"bg_korea_village":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[780,730,780],"person":[250,200,230],"spots":[[260,790,260],[620,745,210],[960,730,200],[1280,750,210],[1620,780,230]],"walls":[[250,550,620],[1380,1680,620]],"table":null,"water":null,"free":[[600,0,1080,180],[1080,0,1560,180],[120,0,600,180]],"seats":[{"k":"bench","x0":310,"x1":520,"y":615},{"k":"bench","x0":1410,"x1":1560,"y":675}],"rails":null,"boats":null},"ground":730},"bg_ea_battlefield":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[780,760,770],"person":[240,190,210],"spots":[[320,780,240],[640,765,205],[960,760,190],[1280,765,195],[1600,770,210]],"walls":[],"table":null,"water":null,"free":[[720,0,1200,180],[720,180,1200,360],[1200,60,1680,240]],"seats":[],"rails":null,"boats":null},"ground":760},"bg_ea_sea_coast":{"era":"eastasia","px":[1376,768],"ann":{"v":5,"ground":[960,970,965],"person":[250,230,220],"spots":[[320,960,250],[640,965,240],[960,970,230],[1240,970,225]],"walls":[],"table":null,"water":470,"free":[[0,300,480,480],[120,120,600,300],[600,0,1080,180]],"seats":[],"rails":null,"boats":null},"ground":970}}}
+{
+ "style": "bold cartoon, thick black outlines, flat cel shading",
+ "items": {
+  "samurai__samurai_full_armor_walking_katana": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    178,
+    334
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5728,
+    "pad": 0.009,
+    "aspect": 0.5329,
+    "face": {
+     "l": 0.4413,
+     "r": 0.5249,
+     "t": 0.015,
+     "b": 0.0689
+    },
+    "mouth": [
+     0.4831,
+     0.057
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "samurai",
+    "is": "samurai in armor walking"
+   }
+  },
+  "samurai__samurai_drawing_katana": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    190,
+    314
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4917,
+    "pad": 0.0096,
+    "aspect": 0.6051,
+    "face": {
+     "l": 0.6745,
+     "r": 0.7202,
+     "t": 0.0159,
+     "b": 0.121
+    },
+    "mouth": [
+     0.6973,
+     0.0979
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "samurai",
+    "is": "samurai drawing katana"
+   }
+  },
+  "samurai__samurai_attacking_katana": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    232,
+    325
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4704,
+    "pad": 0.0092,
+    "aspect": 0.7138,
+    "face": {
+     "l": 0.5217,
+     "r": 0.5645,
+     "t": 0.1477,
+     "b": 0.2031
+    },
+    "mouth": [
+     0.5431,
+     0.1909
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "samurai",
+    "is": "samurai attacking with katana"
+   }
+  },
+  "samurai__samurai_archer_long_yumi_bow": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    231,
+    374
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3873,
+    "pad": 0.008,
+    "aspect": 0.6176,
+    "face": {
+     "l": 0.3586,
+     "r": 0.4552,
+     "t": 0.262,
+     "b": 0.369
+    },
+    "mouth": [
+     0.4069,
+     0.3455
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "samurai archer",
+    "is": "samurai archer with yumi bow"
+   }
+  },
+  "samurai__samurai_naginata": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    264,
+    322
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4346,
+    "pad": 0.0124,
+    "aspect": 0.8199,
+    "face": {
+     "l": 0.4,
+     "r": 0.4939,
+     "t": 0.1242,
+     "b": 0.2609
+    },
+    "mouth": [
+     0.447,
+     0.2308
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "samurai",
+    "is": "samurai with naginata"
+   }
+  },
+  "samurai__ashigaru_foot_soldier_yari_spear": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    342,
+    315
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3939,
+    "pad": 0.0095,
+    "aspect": 1.0857,
+    "face": {
+     "l": 0.3483,
+     "r": 0.4353,
+     "t": 0.0127,
+     "b": 0.2095
+    },
+    "mouth": [
+     0.3918,
+     0.1662
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "ashigaru soldier",
+    "is": "ashigaru foot soldier with spear"
+   }
+  },
+  "samurai__ashigaru_arquebus_matchlock_gun": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    244,
+    312
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3361,
+    "pad": 0.0128,
+    "aspect": 0.7821,
+    "face": {
+     "l": 0.2961,
+     "r": 0.413,
+     "t": 0.0705,
+     "b": 0.1859
+    },
+    "mouth": [
+     0.3546,
+     0.1605
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "ashigaru soldier",
+    "is": "ashigaru aiming matchlock gun"
+   }
+  },
+  "samurai__ninja_black_crouching": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.2,
+   "facing": "r",
+   "px": [
+    235,
+    273
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.2371,
+    "pad": 0.011,
+    "aspect": 0.8608,
+    "face": {
+     "l": 0.6999,
+     "r": 0.8107,
+     "t": 0.0806,
+     "b": 0.1538
+    },
+    "mouth": [
+     0.7553,
+     0.1377
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "kneel",
+    "flat": false,
+    "group": "ninja",
+    "is": "ninja crouching"
+   }
+  },
+  "samurai__ronin_kimono_straw_hat": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    201,
+    314
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4817,
+    "pad": 0.0096,
+    "aspect": 0.6401,
+    "face": {
+     "l": 0.43,
+     "r": 0.6645,
+     "t": 0.0127,
+     "b": 0.1242
+    },
+    "mouth": [
+     0.5473,
+     0.0997
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "ronin",
+    "is": "ronin with straw hat and sword"
+   }
+  },
+  "samurai__samurai_general_daimyo_war_fan": {
+   "sheet": "samurai",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    237,
+    328
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3884,
+    "pad": 0.0091,
+    "aspect": 0.7226,
+    "face": {
+     "l": 0.3143,
+     "r": 0.4241,
+     "t": 0.1006,
+     "b": 0.2104
+    },
+    "mouth": [
+     0.3692,
+     0.1862
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "samurai general",
+    "is": "samurai general with war fan"
+   }
+  },
+  "japan_civ__japanese_shogun_court_robes": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.65,
+   "facing": "r",
+   "px": [
+    226,
+    359
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6154,
+    "pad": 0.0084,
+    "aspect": 0.6295,
+    "face": {
+     "l": 0.515,
+     "r": 0.6796,
+     "t": 0.0111,
+     "b": 0.2674
+    },
+    "mouth": [
+     0.5973,
+     0.211
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese shogun",
+    "is": "japanese shogun in court robes"
+   }
+  },
+  "japan_civ__japanese_noble_lady_layered_kimono": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.65,
+   "facing": "r",
+   "px": [
+    271,
+    321
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4502,
+    "pad": 0.0093,
+    "aspect": 0.8442,
+    "face": {
+     "l": 0.6316,
+     "r": 0.6636,
+     "t": 0.2866,
+     "b": 0.3551
+    },
+    "mouth": [
+     0.6476,
+     0.34
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese noble lady",
+    "is": "japanese noble lady in kimono"
+   }
+  },
+  "japan_civ__japanese_geisha_umbrella": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.65,
+   "facing": "r",
+   "px": [
+    193,
+    362
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5135,
+    "pad": 0.0083,
+    "aspect": 0.5331,
+    "face": {
+     "l": 0.4114,
+     "r": 0.6041,
+     "t": 0.0166,
+     "b": 0.1243
+    },
+    "mouth": [
+     0.5077,
+     0.1006
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese geisha",
+    "is": "japanese geisha with umbrella"
+   }
+  },
+  "japan_civ__japanese_peasant_farmer_straw_hat": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.65,
+   "facing": "r",
+   "px": [
+    207,
+    341
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4623,
+    "pad": 0.0088,
+    "aspect": 0.607,
+    "face": {
+     "l": 0.2417,
+     "r": 0.5892,
+     "t": 0.0147,
+     "b": 0.1144
+    },
+    "mouth": [
+     0.4155,
+     0.0925
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese farmer",
+    "is": "japanese farmer with straw hat and hoe"
+   }
+  },
+  "japan_civ__japanese_merchant": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.65,
+   "facing": "r",
+   "px": [
+    143,
+    339
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6013,
+    "pad": 0.0088,
+    "aspect": 0.4218,
+    "face": {
+     "l": 0.374,
+     "r": 0.7729,
+     "t": 0.0147,
+     "b": 0.2153
+    },
+    "mouth": [
+     0.5735,
+     0.1712
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese merchant",
+    "is": "japanese merchant"
+   }
+  },
+  "japan_civ__buddhist_monk_shaved_head": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.65,
+   "facing": "r",
+   "px": [
+    165,
+    341
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5152,
+    "pad": 0.0088,
+    "aspect": 0.4839,
+    "face": {
+     "l": 0.2402,
+     "r": 0.6385,
+     "t": 0.0147,
+     "b": 0.2141
+    },
+    "mouth": [
+     0.4394,
+     0.1702
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "buddhist monk",
+    "is": "buddhist monk with staff"
+   }
+  },
+  "japan_civ__japanese_fisherman": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.65,
+   "facing": "r",
+   "px": [
+    239,
+    361
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5826,
+    "pad": 0.0083,
+    "aspect": 0.662,
+    "face": {
+     "l": 0.4591,
+     "r": 0.6874,
+     "t": 0.0831,
+     "b": 0.277
+    },
+    "mouth": [
+     0.5733,
+     0.2343
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese fisherman",
+    "is": "japanese fisherman with basket"
+   }
+  },
+  "japan_civ__japanese_child_kimono": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.2,
+   "facing": "r",
+   "px": [
+    122,
+    288
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5656,
+    "pad": 0.0139,
+    "aspect": 0.4236,
+    "face": {
+     "l": 0.2259,
+     "r": 0.8561,
+     "t": 0.0139,
+     "b": 0.2917
+    },
+    "mouth": [
+     0.541,
+     0.2306
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese child",
+    "is": "japanese child in kimono"
+   }
+  },
+  "japan_civ__japanese_tea_master_kneeling": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1,
+   "facing": "r",
+   "px": [
+    163,
+    279
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5337,
+    "pad": 0.0108,
+    "aspect": 0.5842,
+    "face": {
+     "l": 0.3367,
+     "r": 0.7247,
+     "t": 0.0179,
+     "b": 0.2939
+    },
+    "mouth": [
+     0.5307,
+     0.2332
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "kneel",
+    "flat": false,
+    "group": "japanese tea master",
+    "is": "japanese tea master kneeling"
+   }
+  },
+  "japan_civ__japanese_craftsman_carpenter": {
+   "sheet": "japan_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.65,
+   "facing": "r",
+   "px": [
+    153,
+    345
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4153,
+    "pad": 0.0087,
+    "aspect": 0.4435,
+    "face": {
+     "l": 0.2549,
+     "r": 0.6601,
+     "t": 0.0145,
+     "b": 0.2319
+    },
+    "mouth": [
+     0.4575,
+     0.1841
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese carpenter",
+    "is": "japanese carpenter with mallet"
+   }
+  },
+  "china_imperial__tang_dynasty_soldier_armor_spear": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    194,
+    369
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.489,
+    "pad": 0.0081,
+    "aspect": 0.5257,
+    "face": {
+     "l": 0.3493,
+     "r": 0.5219,
+     "t": 0.1003,
+     "b": 0.3089
+    },
+    "mouth": [
+     0.4356,
+     0.263
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "tang soldier",
+    "is": "tang dynasty soldier with spear"
+   }
+  },
+  "china_imperial__song_dynasty_archer": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    243,
+    344
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4113,
+    "pad": 0.0087,
+    "aspect": 0.7064,
+    "face": {
+     "l": 0.3523,
+     "r": 0.4543,
+     "t": 0.1279,
+     "b": 0.2762
+    },
+    "mouth": [
+     0.4033,
+     0.2436
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "song archer",
+    "is": "song dynasty archer"
+   }
+  },
+  "china_imperial__ming_dynasty_soldier_musket": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    249,
+    347
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.405,
+    "pad": 0.0086,
+    "aspect": 0.7176,
+    "face": {
+     "l": 0.2957,
+     "r": 0.4352,
+     "t": 0.0432,
+     "b": 0.2651
+    },
+    "mouth": [
+     0.3655,
+     0.2163
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "ming soldier",
+    "is": "ming dynasty soldier with musket"
+   }
+  },
+  "china_imperial__ming_dynasty_general_armor": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    212,
+    362
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5855,
+    "pad": 0.0083,
+    "aspect": 0.5856,
+    "face": {
+     "l": 0.4387,
+     "r": 0.5849,
+     "t": 0.058,
+     "b": 0.2707
+    },
+    "mouth": [
+     0.5118,
+     0.2239
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "ming general",
+    "is": "ming dynasty general in armor"
+   }
+  },
+  "china_imperial__qing_dynasty_bannerman_soldier_queue": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    236,
+    342
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5646,
+    "pad": 0.0088,
+    "aspect": 0.6901,
+    "face": {
+     "l": 0.4198,
+     "r": 0.6353,
+     "t": 0.0117,
+     "b": 0.2456
+    },
+    "mouth": [
+     0.5276,
+     0.1941
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "qing soldier",
+    "is": "qing dynasty bannerman soldier"
+   }
+  },
+  "china_imperial__chinese_emperor_yellow_dragon_robe": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    154,
+    364
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5909,
+    "pad": 0.0082,
+    "aspect": 0.4231,
+    "face": {
+     "l": 0.3584,
+     "r": 0.6805,
+     "t": 0.011,
+     "b": 0.2555
+    },
+    "mouth": [
+     0.5195,
+     0.2017
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese emperor",
+    "is": "chinese emperor in yellow dragon robe"
+   }
+  },
+  "china_imperial__chinese_mandarin_official_robe_rank": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    132,
+    354
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5483,
+    "pad": 0.0085,
+    "aspect": 0.3729,
+    "face": {
+     "l": 0.3045,
+     "r": 0.6803,
+     "t": 0.0113,
+     "b": 0.2316
+    },
+    "mouth": [
+     0.4924,
+     0.1831
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese official",
+    "is": "chinese mandarin official"
+   }
+  },
+  "china_imperial__chinese_court_lady_hanfu": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    162,
+    350
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5062,
+    "pad": 0.0086,
+    "aspect": 0.4629,
+    "face": {
+     "l": 0.5696,
+     "r": 0.8069,
+     "t": 0.0114,
+     "b": 0.2571
+    },
+    "mouth": [
+     0.6883,
+     0.203
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese court lady",
+    "is": "chinese court lady in hanfu"
+   }
+  },
+  "china_imperial__chinese_eunuch_official": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    120,
+    355
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5374,
+    "pad": 0.0085,
+    "aspect": 0.338,
+    "face": {
+     "l": 0.281,
+     "r": 0.7357,
+     "t": 0.0141,
+     "b": 0.2789
+    },
+    "mouth": [
+     0.5084,
+     0.2206
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese official",
+    "is": "chinese eunuch official"
+   }
+  },
+  "china_imperial__chinese_imperial_guard_halberd": {
+   "sheet": "china_imperial",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    190,
+    373
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5021,
+    "pad": 0.008,
+    "aspect": 0.5094,
+    "face": {
+     "l": 0.356,
+     "r": 0.5387,
+     "t": 0.1046,
+     "b": 0.3056
+    },
+    "mouth": [
+     0.4474,
+     0.2614
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese guard",
+    "is": "chinese imperial guard with halberd"
+   }
+  },
+  "china_civ__chinese_peasant_straw_hat_hoe": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    242,
+    348
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4621,
+    "pad": 0.0086,
+    "aspect": 0.6954,
+    "face": {
+     "l": 0.3268,
+     "r": 0.665,
+     "t": 0.0115,
+     "b": 0.1092
+    },
+    "mouth": [
+     0.4959,
+     0.0877
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese peasant",
+    "is": "chinese peasant with straw hat and hoe"
+   }
+  },
+  "china_civ__chinese_peasant_woman_basket": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    148,
+    336
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3824,
+    "pad": 0.0119,
+    "aspect": 0.4405,
+    "face": {
+     "l": 0.2108,
+     "r": 0.5459,
+     "t": 0.0119,
+     "b": 0.2113
+    },
+    "mouth": [
+     0.3784,
+     0.1674
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese peasant",
+    "is": "chinese peasant woman with basket"
+   }
+  },
+  "china_civ__chinese_scholar_fan": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    170,
+    352
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4147,
+    "pad": 0.0085,
+    "aspect": 0.483,
+    "face": {
+     "l": 0.3372,
+     "r": 0.6216,
+     "t": 0.0114,
+     "b": 0.2188
+    },
+    "mouth": [
+     0.4794,
+     0.1732
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese scholar",
+    "is": "chinese scholar with fan"
+   }
+  },
+  "china_civ__chinese_merchant_goods": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    167,
+    342
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5195,
+    "pad": 0.0088,
+    "aspect": 0.4883,
+    "face": {
+     "l": 0.3104,
+     "r": 0.6297,
+     "t": 0.0117,
+     "b": 0.2135
+    },
+    "mouth": [
+     0.4701,
+     0.1691
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese merchant",
+    "is": "chinese merchant with goods"
+   }
+  },
+  "china_civ__chinese_martial_artist_kung_fu": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    248,
+    325
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5157,
+    "pad": 0.0092,
+    "aspect": 0.7631,
+    "face": {
+     "l": 0.4192,
+     "r": 0.6292,
+     "t": 0.0123,
+     "b": 0.2308
+    },
+    "mouth": [
+     0.5242,
+     0.1827
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese martial artist",
+    "is": "chinese martial artist"
+   }
+  },
+  "china_civ__chinese_old_man_long_beard": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    199,
+    326
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4057,
+    "pad": 0.0092,
+    "aspect": 0.6104,
+    "face": {
+     "l": 0.4653,
+     "r": 0.7457,
+     "t": 0.0123,
+     "b": 0.2239
+    },
+    "mouth": [
+     0.6055,
+     0.1773
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese elder",
+    "is": "chinese old man with long beard"
+   }
+  },
+  "china_civ__chinese_child": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.2,
+   "facing": "r",
+   "px": [
+    107,
+    283
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5848,
+    "pad": 0.0106,
+    "aspect": 0.3781,
+    "face": {
+     "l": 0.2093,
+     "r": 0.8467,
+     "t": 0.0141,
+     "b": 0.3286
+    },
+    "mouth": [
+     0.528,
+     0.2594
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese child",
+    "is": "chinese child"
+   }
+  },
+  "china_civ__chinese_street_vendor_shoulder_pole": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    319,
+    328
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5311,
+    "pad": 0.0091,
+    "aspect": 0.9726,
+    "face": {
+     "l": 0.4251,
+     "r": 0.6,
+     "t": 0.0152,
+     "b": 0.2988
+    },
+    "mouth": [
+     0.5126,
+     0.2364
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese vendor",
+    "is": "chinese street vendor with shoulder pole"
+   }
+  },
+  "china_civ__chinese_doctor_medicine_box": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    139,
+    337
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6291,
+    "pad": 0.0089,
+    "aspect": 0.4125,
+    "face": {
+     "l": 0.4394,
+     "r": 0.8052,
+     "t": 0.0119,
+     "b": 0.2196
+    },
+    "mouth": [
+     0.6223,
+     0.1739
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese doctor",
+    "is": "chinese doctor with medicine box"
+   }
+  },
+  "china_civ__chinese_monk_staff": {
+   "sheet": "china_civ",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.7,
+   "facing": "r",
+   "px": [
+    170,
+    339
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4399,
+    "pad": 0.0088,
+    "aspect": 0.5015,
+    "face": {
+     "l": 0.2066,
+     "r": 0.564,
+     "t": 0.0472,
+     "b": 0.2389
+    },
+    "mouth": [
+     0.3853,
+     0.1967
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese monk",
+    "is": "chinese monk with staff"
+   }
+  },
+  "mongol_korea__mongol_warrior_fur_hat_bow": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    210,
+    358
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4201,
+    "pad": 0.0084,
+    "aspect": 0.5866,
+    "face": {
+     "l": 0.2623,
+     "r": 0.5044,
+     "t": 0.014,
+     "b": 0.1508
+    },
+    "mouth": [
+     0.3833,
+     0.1207
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "mongol warrior",
+    "is": "mongol warrior with fur hat and bow"
+   }
+  },
+  "mongol_korea__mongol_khan_robe_fur_hat": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    163,
+    361
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6426,
+    "pad": 0.0083,
+    "aspect": 0.4515,
+    "face": {
+     "l": 0.4172,
+     "r": 0.7975,
+     "t": 0.0139,
+     "b": 0.1385
+    },
+    "mouth": [
+     0.6074,
+     0.1111
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "mongol khan",
+    "is": "mongol khan in robe and fur hat"
+   }
+  },
+  "mongol_korea__mongol_woman_deel": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    110,
+    358
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6,
+    "pad": 0.0084,
+    "aspect": 0.3073,
+    "face": {
+     "l": 0.5611,
+     "r": 0.7753,
+     "t": 0.0642,
+     "b": 0.2737
+    },
+    "mouth": [
+     0.6682,
+     0.2276
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "mongol woman",
+    "is": "mongol woman in deel"
+   }
+  },
+  "mongol_korea__korean_joseon_soldier_wide_hat": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    179,
+    362
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5024,
+    "pad": 0.0083,
+    "aspect": 0.4945,
+    "face": {
+     "l": 0.4022,
+     "r": 0.5754,
+     "t": 0.0718,
+     "b": 0.279
+    },
+    "mouth": [
+     0.4888,
+     0.2334
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "korean soldier",
+    "is": "korean joseon soldier with wide hat"
+   }
+  },
+  "mongol_korea__korean_joseon_general_armor": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    187,
+    384
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5284,
+    "pad": 0.0078,
+    "aspect": 0.487,
+    "face": {
+     "l": 0.4712,
+     "r": 0.6304,
+     "t": 0.1589,
+     "b": 0.3203
+    },
+    "mouth": [
+     0.5508,
+     0.2848
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "korean general",
+    "is": "korean joseon general in armor"
+   }
+  },
+  "mongol_korea__korean_joseon_scholar_gat_hat": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    141,
+    360
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5816,
+    "pad": 0.0111,
+    "aspect": 0.3917,
+    "face": {
+     "l": 0.4956,
+     "r": 0.7243,
+     "t": 0.0444,
+     "b": 0.2528
+    },
+    "mouth": [
+     0.61,
+     0.207
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "korean scholar",
+    "is": "korean joseon scholar in gat hat"
+   }
+  },
+  "mongol_korea__korean_woman_hanbok": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    169,
+    325
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5118,
+    "pad": 0.0092,
+    "aspect": 0.52,
+    "face": {
+     "l": 0.4175,
+     "r": 0.689,
+     "t": 0.0123,
+     "b": 0.2185
+    },
+    "mouth": [
+     0.5533,
+     0.1731
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "korean woman",
+    "is": "korean woman in hanbok"
+   }
+  },
+  "mongol_korea__korean_king_red_robe": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    140,
+    359
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6281,
+    "pad": 0.0084,
+    "aspect": 0.39,
+    "face": {
+     "l": 0.3943,
+     "r": 0.7486,
+     "t": 0.039,
+     "b": 0.2479
+    },
+    "mouth": [
+     0.5715,
+     0.2019
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "korean king",
+    "is": "korean king in red robe"
+   }
+  },
+  "mongol_korea__korean_peasant": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    179,
+    335
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4423,
+    "pad": 0.0119,
+    "aspect": 0.5343,
+    "face": {
+     "l": 0.3774,
+     "r": 0.6337,
+     "t": 0.0119,
+     "b": 0.2
+    },
+    "mouth": [
+     0.5056,
+     0.1586
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "korean peasant",
+    "is": "korean peasant with hoe"
+   }
+  },
+  "mongol_korea__japanese_pirate_wokou_sword": {
+   "sheet": "mongol_korea",
+   "era": "eastasia",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    201,
+    339
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3071,
+    "pad": 0.0088,
+    "aspect": 0.5929,
+    "face": {
+     "l": 0.3897,
+     "r": 0.6302,
+     "t": 0.0118,
+     "b": 0.2035
+    },
+    "mouth": [
+     0.51,
+     0.1613
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "japanese pirate",
+    "is": "japanese pirate wokou with sword"
+   }
+  },
+  "ea_mounted__samurai_horse_bow": {
+   "sheet": "ea_mounted",
+   "era": "eastasia",
+   "kind": "animal",
+   "heightM": 2.5,
+   "facing": "r",
+   "px": [
+    363,
+    382
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.434,
+    "pad": 0.0079,
+    "aspect": 0.9503,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "ride",
+    "flat": false,
+    "group": "samurai archer",
+    "is": "samurai horse archer"
+   }
+  },
+  "ea_mounted__mongol_horse_archer_galloping": {
+   "sheet": "ea_mounted",
+   "era": "eastasia",
+   "kind": "animal",
+   "heightM": 2.5,
+   "facing": "r",
+   "px": [
+    398,
+    354
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4485,
+    "pad": 0.0113,
+    "aspect": 1.1243,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "ride",
+    "flat": false,
+    "group": "mongol archer",
+    "is": "mongol horse archer galloping"
+   }
+  },
+  "ea_mounted__chinese_cavalry_general_horse_spear": {
+   "sheet": "ea_mounted",
+   "era": "eastasia",
+   "kind": "animal",
+   "heightM": 2.5,
+   "facing": "r",
+   "px": [
+    419,
+    355
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4574,
+    "pad": 0.0085,
+    "aspect": 1.1803,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "ride",
+    "flat": false,
+    "group": "chinese general",
+    "is": "chinese cavalry general on horse with spear"
+   }
+  },
+  "ea_mounted__korean_cavalryman_horse": {
+   "sheet": "ea_mounted",
+   "era": "eastasia",
+   "kind": "animal",
+   "heightM": 2.5,
+   "facing": "r",
+   "px": [
+    355,
+    358
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3349,
+    "pad": 0.0112,
+    "aspect": 0.9916,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "korean cavalryman",
+    "is": "korean cavalryman on horse"
+   }
+  },
+  "ea_mounted__mongol_rider_horse_walking": {
+   "sheet": "ea_mounted",
+   "era": "eastasia",
+   "kind": "animal",
+   "heightM": 2.5,
+   "facing": "r",
+   "px": [
+    364,
+    349
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3496,
+    "pad": 0.0086,
+    "aspect": 1.043,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "mongol rider",
+    "is": "mongol rider on walking horse"
+   }
+  },
+  "ea_mounted__bactrian_camel_packs": {
+   "sheet": "ea_mounted",
+   "era": "eastasia",
+   "kind": "animal",
+   "heightM": 2.3,
+   "facing": "r",
+   "px": [
+    374,
+    306
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3428,
+    "pad": 0.0098,
+    "aspect": 1.2222,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "bactrian camel with packs"
+   }
+  },
+  "ea_vehicles__chinese_junk_ship_batten_sails": {
+   "sheet": "ea_vehicles",
+   "era": "eastasia",
+   "kind": "vehicle",
+   "heightM": 15,
+   "facing": "r",
+   "px": [
+    397,
+    327
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5316,
+    "pad": 0.0092,
+    "aspect": 1.2141,
+    "place": "ground",
+    "facing": "l",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chinese junk ship with batten sails"
+   }
+  },
+  "ea_vehicles__japanese_atakebune_war_ship": {
+   "sheet": "ea_vehicles",
+   "era": "eastasia",
+   "kind": "vehicle",
+   "heightM": 12,
+   "facing": "r",
+   "px": [
+    442,
+    269
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5099,
+    "pad": 0.0112,
+    "aspect": 1.6431,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "japanese atakebune war ship"
+   }
+  },
+  "ea_vehicles__korean_turtle_ship": {
+   "sheet": "ea_vehicles",
+   "era": "eastasia",
+   "kind": "vehicle",
+   "heightM": 10,
+   "facing": "r",
+   "px": [
+    401,
+    335
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4036,
+    "pad": 0.009,
+    "aspect": 1.197,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "korean turtle ship"
+   }
+  },
+  "ea_vehicles__palanquin_carried_by_four_bearers": {
+   "sheet": "ea_vehicles",
+   "era": "eastasia",
+   "kind": "vehicle",
+   "heightM": 2,
+   "facing": "r",
+   "px": [
+    411,
+    230
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4443,
+    "pad": 0.013,
+    "aspect": 1.787,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "palanquin bearers",
+    "is": "palanquin carried by four bearers"
+   }
+  },
+  "ea_vehicles__chinese_ox_cart": {
+   "sheet": "ea_vehicles",
+   "era": "eastasia",
+   "kind": "vehicle",
+   "heightM": 2,
+   "facing": "r",
+   "px": [
+    432,
+    230
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4413,
+    "pad": 0.013,
+    "aspect": 1.8783,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chinese ox cart"
+   }
+  },
+  "ea_vehicles__japanese_fishing_boat": {
+   "sheet": "ea_vehicles",
+   "era": "eastasia",
+   "kind": "vehicle",
+   "heightM": 3,
+   "facing": "r",
+   "px": [
+    373,
+    254
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4611,
+    "pad": 0.0118,
+    "aspect": 1.4685,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "japanese fishing boat with rower"
+   }
+  },
+  "ea_buildings__japanese_castle_tenshu": {
+   "sheet": "ea_buildings",
+   "era": "eastasia",
+   "kind": "building",
+   "heightM": 30,
+   "facing": "r",
+   "px": [
+    419,
+    373
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5274,
+    "pad": 0.008,
+    "aspect": 1.1233,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "japanese castle tenshu"
+   }
+  },
+  "ea_buildings__japanese_wooden_temple": {
+   "sheet": "ea_buildings",
+   "era": "eastasia",
+   "kind": "building",
+   "heightM": 15,
+   "facing": "r",
+   "px": [
+    538,
+    314
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5097,
+    "pad": 0.0096,
+    "aspect": 1.7134,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "japanese wooden temple"
+   }
+  },
+  "ea_buildings__chinese_pagoda": {
+   "sheet": "ea_buildings",
+   "era": "eastasia",
+   "kind": "building",
+   "heightM": 30,
+   "facing": "r",
+   "px": [
+    209,
+    380
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0079,
+    "aspect": 0.55,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chinese pagoda"
+   }
+  },
+  "ea_buildings__chinese_palace_hall_yellow_roof": {
+   "sheet": "ea_buildings",
+   "era": "eastasia",
+   "kind": "building",
+   "heightM": 15,
+   "facing": "r",
+   "px": [
+    536,
+    294
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5056,
+    "pad": 0.0136,
+    "aspect": 1.8231,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chinese palace hall with yellow roof"
+   }
+  },
+  "ea_buildings__chinese_paifang_gate": {
+   "sheet": "ea_buildings",
+   "era": "eastasia",
+   "kind": "building",
+   "heightM": 8,
+   "facing": "r",
+   "px": [
+    365,
+    301
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.1906,
+    "pad": 0.01,
+    "aspect": 1.2126,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chinese paifang gate"
+   }
+  },
+  "ea_buildings__korean_hanok_house": {
+   "sheet": "ea_buildings",
+   "era": "eastasia",
+   "kind": "building",
+   "heightM": 6,
+   "facing": "r",
+   "px": [
+    413,
+    267
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.437,
+    "pad": 0.0112,
+    "aspect": 1.5468,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "korean hanok house"
+   }
+  },
+  "ea_structures__japanese_torii_gate": {
+   "sheet": "ea_structures",
+   "era": "eastasia",
+   "kind": "structure",
+   "heightM": 6,
+   "facing": "r",
+   "px": [
+    297,
+    306
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3309,
+    "pad": 0.0098,
+    "aspect": 0.9706,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "japanese torii gate"
+   }
+  },
+  "ea_structures__chinese_stone_lion_statue": {
+   "sheet": "ea_structures",
+   "era": "eastasia",
+   "kind": "structure",
+   "heightM": 1.5,
+   "facing": "r",
+   "px": [
+    218,
+    303
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5505,
+    "pad": 0.0099,
+    "aspect": 0.7195,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chinese stone lion statue"
+   }
+  },
+  "ea_structures__arched_stone_bridge": {
+   "sheet": "ea_structures",
+   "era": "eastasia",
+   "kind": "structure",
+   "heightM": 4,
+   "facing": "r",
+   "px": [
+    366,
+    210
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.2008,
+    "pad": 0.019,
+    "aspect": 1.7429,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "arched stone bridge"
+   }
+  },
+  "ea_structures__wooden_fence": {
+   "sheet": "ea_structures",
+   "era": "eastasia",
+   "kind": "structure",
+   "heightM": 1.5,
+   "facing": "r",
+   "px": [
+    287,
+    170
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.1498,
+    "pad": 0.0176,
+    "aspect": 1.6882,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden fence"
+   }
+  },
+  "ea_structures__tea_house": {
+   "sheet": "ea_structures",
+   "era": "eastasia",
+   "kind": "structure",
+   "heightM": 5,
+   "facing": "r",
+   "px": [
+    342,
+    277
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.533,
+    "pad": 0.0108,
+    "aspect": 1.2347,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "tea house"
+   }
+  },
+  "ea_structures__rice_paddy_terrace_patch": {
+   "sheet": "ea_structures",
+   "era": "eastasia",
+   "kind": "structure",
+   "heightM": 1,
+   "facing": "r",
+   "px": [
+    366,
+    243
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.571,
+    "pad": 0.0165,
+    "aspect": 1.5062,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "rice paddy terrace patch"
+   }
+  },
+  "ea_structures__stone_lantern": {
+   "sheet": "ea_structures",
+   "era": "eastasia",
+   "kind": "structure",
+   "heightM": 1.5,
+   "facing": "r",
+   "px": [
+    159,
+    322
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5031,
+    "pad": 0.0093,
+    "aspect": 0.4938,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "stone lantern"
+   }
+  },
+  "ea_structures__village_well": {
+   "sheet": "ea_structures",
+   "era": "eastasia",
+   "kind": "structure",
+   "heightM": 1.2,
+   "facing": "r",
+   "px": [
+    240,
+    306
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5125,
+    "pad": 0.0098,
+    "aspect": 0.7843,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "village well"
+   }
+  },
+  "ea_nature__bamboo_grove": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 10,
+   "facing": "r",
+   "px": [
+    180,
+    230
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4689,
+    "pad": 0.013,
+    "aspect": 0.7826,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "bamboo grove"
+   }
+  },
+  "ea_nature__cherry_blossom_tree": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 7,
+   "facing": "r",
+   "px": [
+    242,
+    238
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3939,
+    "pad": 0.0126,
+    "aspect": 1.0168,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "cherry blossom tree"
+   }
+  },
+  "ea_nature__japanese_pine_tree": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 8,
+   "facing": "r",
+   "px": [
+    233,
+    229
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4807,
+    "pad": 0.0131,
+    "aspect": 1.0175,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "japanese pine tree"
+   }
+  },
+  "ea_nature__red_maple_tree": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 8,
+   "facing": "r",
+   "px": [
+    227,
+    233
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5088,
+    "pad": 0.0172,
+    "aspect": 0.9742,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "red maple tree"
+   }
+  },
+  "ea_nature__weeping_willow": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 10,
+   "facing": "r",
+   "px": [
+    205,
+    235
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4488,
+    "pad": 0.0128,
+    "aspect": 0.8723,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "weeping willow"
+   }
+  },
+  "ea_nature__plum_blossom_tree": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 5,
+   "facing": "r",
+   "px": [
+    209,
+    231
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3086,
+    "pad": 0.013,
+    "aspect": 0.9048,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "plum blossom tree"
+   }
+  },
+  "ea_nature__lotus_plants": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 1,
+   "facing": "r",
+   "px": [
+    216,
+    223
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5218,
+    "pad": 0.0179,
+    "aspect": 0.9686,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "lotus plants"
+   }
+  },
+  "ea_nature__reed_grass": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 1.5,
+   "facing": "r",
+   "px": [
+    177,
+    243
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4887,
+    "pad": 0.0123,
+    "aspect": 0.7284,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "reed grass"
+   }
+  },
+  "ea_nature__rocky_outcrop": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 3,
+   "facing": "r",
+   "px": [
+    213,
+    215
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4678,
+    "pad": 0.014,
+    "aspect": 0.9907,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "rocky outcrop"
+   }
+  },
+  "ea_nature__mountain_pine_rock": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 6,
+   "facing": "r",
+   "px": [
+    205,
+    252
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3225,
+    "pad": 0.0119,
+    "aspect": 0.8135,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "mountain pine rock"
+   }
+  },
+  "ea_nature__moss_garden_rock": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 1,
+   "facing": "r",
+   "px": [
+    208,
+    138
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3542,
+    "pad": 0.0217,
+    "aspect": 1.5072,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "moss garden rock"
+   }
+  },
+  "ea_nature__gingko_tree": {
+   "sheet": "ea_nature",
+   "era": "eastasia",
+   "kind": "nature",
+   "heightM": 12,
+   "facing": "r",
+   "px": [
+    212,
+    266
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5024,
+    "pad": 0.0113,
+    "aspect": 0.797,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "gingko tree"
+   }
+  },
+  "ea_props__katana_sheath": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 1,
+   "facing": "r",
+   "px": [
+    233,
+    190
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.0773,
+    "pad": 0.0211,
+    "aspect": 1.2263,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "katana in sheath"
+   }
+  },
+  "ea_props__samurai_helmet_kabuto": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.4,
+   "facing": "r",
+   "px": [
+    165,
+    186
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6333,
+    "pad": 0.0161,
+    "aspect": 0.8871,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "samurai helmet kabuto"
+   }
+  },
+  "ea_props__samurai_armor_stand": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 1.6,
+   "facing": "r",
+   "px": [
+    123,
+    252
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5488,
+    "pad": 0.0159,
+    "aspect": 0.4881,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "samurai armor on stand"
+   }
+  },
+  "ea_props__paper_lantern_red": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.5,
+   "facing": "r",
+   "px": [
+    103,
+    213
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4951,
+    "pad": 0.0141,
+    "aspect": 0.4836,
+    "place": "wall",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "red paper lantern"
+   }
+  },
+  "ea_props__chinese_porcelain_vase": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.6,
+   "facing": "r",
+   "px": [
+    117,
+    196
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0153,
+    "aspect": 0.5969,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chinese blue and white porcelain vase"
+   }
+  },
+  "ea_props__tea_set_tray": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.2,
+   "facing": "r",
+   "px": [
+    200,
+    106
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0283,
+    "aspect": 1.8868,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "tea set on wooden tray"
+   }
+  },
+  "ea_props__folding_fan": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.3,
+   "facing": "r",
+   "px": [
+    205,
+    135
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4951,
+    "pad": 0.0222,
+    "aspect": 1.5185,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "open folding fan"
+   }
+  },
+  "ea_props__bamboo_scroll": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.4,
+   "facing": "r",
+   "px": [
+    205,
+    149
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5976,
+    "pad": 0.0201,
+    "aspect": 1.3758,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "rolled bamboo scroll"
+   }
+  },
+  "ea_props__chinese_war_drum_stand": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 1.5,
+   "facing": "r",
+   "px": [
+    144,
+    187
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5799,
+    "pad": 0.016,
+    "aspect": 0.7701,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "chinese war drum on stand"
+   }
+  },
+  "ea_props__gong": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 1.5,
+   "facing": "r",
+   "px": [
+    199,
+    184
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4623,
+    "pad": 0.0217,
+    "aspect": 1.0815,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "hanging gong on frame with mallet"
+   }
+  },
+  "ea_props__incense_burner": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.6,
+   "facing": "r",
+   "px": [
+    174,
+    159
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5029,
+    "pad": 0.0189,
+    "aspect": 1.0943,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "bronze incense burner"
+   }
+  },
+  "ea_props__bonsai_tree_pot": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.5,
+   "facing": "r",
+   "px": [
+    179,
+    196
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5196,
+    "pad": 0.0204,
+    "aspect": 0.9133,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "bonsai tree in pot"
+   }
+  },
+  "ea_props__rice_straw_bales": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.8,
+   "facing": "r",
+   "px": [
+    208,
+    165
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5048,
+    "pad": 0.0182,
+    "aspect": 1.2606,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "stacked rice straw bales"
+   }
+  },
+  "ea_props__bamboo_basket": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.4,
+   "facing": "r",
+   "px": [
+    146,
+    181
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4966,
+    "pad": 0.0166,
+    "aspect": 0.8066,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "woven bamboo basket"
+   }
+  },
+  "ea_props__writing_brush_ink_stone": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.1,
+   "facing": "r",
+   "px": [
+    170,
+    183
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5794,
+    "pad": 0.0164,
+    "aspect": 0.929,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "writing brush on stand and ink stone"
+   }
+  },
+  "ea_props__chinese_sword_jian": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.9,
+   "facing": "r",
+   "px": [
+    248,
+    48
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.2661,
+    "pad": 0.0833,
+    "aspect": 5.1667,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "chinese jian sword"
+   }
+  },
+  "ea_props__jian_scabbard": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.9,
+   "facing": "r",
+   "px": [
+    191,
+    44
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4107,
+    "pad": 0.0682,
+    "aspect": 4.3409,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "jian sword scabbard"
+   }
+  },
+  "ea_props__war_banner_sashimono_blank": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 1.5,
+   "facing": "r",
+   "px": [
+    115,
+    229
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.187,
+    "pad": 0.0131,
+    "aspect": 0.5022,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "blank sashimono war banner"
+   }
+  },
+  "ea_props__wooden_bucket": {
+   "sheet": "ea_props",
+   "era": "eastasia",
+   "kind": "prop",
+   "heightM": 0.4,
+   "facing": "r",
+   "px": [
+    127,
+    180
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0222,
+    "aspect": 0.7056,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden bucket"
+   }
+  }
+ },
+ "backgrounds": {
+  "bg_japan_castle": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     920,
+     920,
+     920
+    ],
+    "person": [
+     188,
+     188,
+     188
+    ],
+    "horizon": 748,
+    "spots": [
+     [
+      250,
+      920,
+      188
+     ],
+     [
+      600,
+      900,
+      166
+     ],
+     [
+      960,
+      920,
+      188
+     ],
+     [
+      1350,
+      900,
+      166
+     ],
+     [
+      1700,
+      920,
+      188
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      0,
+      0,
+      480,
+      180
+     ],
+     [
+      480,
+      0,
+      960,
+      180
+     ],
+     [
+      0,
+      180,
+      480,
+      360
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 920
+  },
+  "bg_japan_village": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     920,
+     920,
+     920
+    ],
+    "person": [
+     205,
+     205,
+     205
+    ],
+    "horizon": 733,
+    "spots": [
+     [
+      250,
+      900,
+      191
+     ],
+     [
+      600,
+      880,
+      179
+     ],
+     [
+      960,
+      900,
+      191
+     ],
+     [
+      1350,
+      880,
+      179
+     ],
+     [
+      1700,
+      920,
+      205
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": 700,
+    "free": [
+     [
+      720,
+      0,
+      1200,
+      180
+     ],
+     [
+      1200,
+      0,
+      1680,
+      180
+     ],
+     [
+      240,
+      0,
+      720,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 920
+  },
+  "bg_japan_temple_courtyard": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     170,
+     170,
+     170
+    ],
+    "horizon": 695,
+    "spots": [
+     [
+      300,
+      820,
+      151
+     ],
+     [
+      650,
+      800,
+      138
+     ],
+     [
+      960,
+      820,
+      151
+     ],
+     [
+      1300,
+      800,
+      138
+     ],
+     [
+      1600,
+      850,
+      170
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      0,
+      480,
+      480,
+      660
+     ],
+     [
+      840,
+      480,
+      1320,
+      660
+     ],
+     [
+      1080,
+      240,
+      1560,
+      420
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_china_palace": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     427,
+     427,
+     427
+    ],
+    "horizon": 460,
+    "spots": [
+     [
+      200,
+      820,
+      394
+     ],
+     [
+      550,
+      800,
+      372
+     ],
+     [
+      960,
+      850,
+      427
+     ],
+     [
+      1350,
+      820,
+      394
+     ],
+     [
+      1750,
+      850,
+      427
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1200,
+      0,
+      1680,
+      180
+     ],
+     [
+      0,
+      0,
+      480,
+      180
+     ],
+     [
+      480,
+      0,
+      960,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_china_market": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     880,
+     880
+    ],
+    "person": [
+     230,
+     230,
+     230
+    ],
+    "horizon": 670,
+    "spots": [
+     [
+      300,
+      850,
+      205
+     ],
+     [
+      650,
+      800,
+      164
+     ],
+     [
+      960,
+      820,
+      181
+     ]
+    ],
+    "walls": [
+     [
+      1550,
+      1700,
+      450
+     ]
+    ],
+    "table": [
+     1240,
+     1410,
+     670
+    ],
+    "water": null,
+    "free": [
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      480,
+      180,
+      960,
+      360
+     ],
+     [
+      480,
+      360,
+      960,
+      540
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 880
+  },
+  "bg_china_mountains": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     920,
+     920,
+     920
+    ],
+    "person": [
+     203,
+     203,
+     203
+    ],
+    "horizon": 734,
+    "spots": [
+     [
+      600,
+      900,
+      192
+     ],
+     [
+      960,
+      880,
+      181
+     ],
+     [
+      1300,
+      880,
+      181
+     ],
+     [
+      1650,
+      920,
+      203
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": 720,
+    "free": [
+     [
+      120,
+      0,
+      600,
+      180
+     ],
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      360,
+      180,
+      840,
+      360
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": [
+     150,
+     550,
+     700
+    ]
+   },
+   "ground": 920
+  },
+  "bg_mongol_steppe": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     378,
+     378,
+     378
+    ],
+    "horizon": 504,
+    "spots": [
+     [
+      250,
+      820,
+      346
+     ],
+     [
+      600,
+      800,
+      324
+     ],
+     [
+      960,
+      820,
+      346
+     ],
+     [
+      1300,
+      750,
+      269
+     ],
+     [
+      1700,
+      850,
+      378
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      600,
+      120,
+      1080,
+      300
+     ],
+     [
+      240,
+      360,
+      720,
+      540
+     ],
+     [
+      0,
+      60,
+      480,
+      240
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_korea_village": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     223,
+     223,
+     223
+    ],
+    "horizon": 646,
+    "spots": [
+     [
+      350,
+      820,
+      202
+     ],
+     [
+      650,
+      800,
+      188
+     ],
+     [
+      960,
+      820,
+      202
+     ],
+     [
+      1300,
+      800,
+      188
+     ],
+     [
+      1600,
+      850,
+      223
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      1080,
+      0,
+      1560,
+      180
+     ],
+     [
+      120,
+      0,
+      600,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_ea_battlefield": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     289,
+     289,
+     289
+    ],
+    "horizon": 586,
+    "spots": [
+     [
+      250,
+      820,
+      267
+     ],
+     [
+      600,
+      780,
+      236
+     ],
+     [
+      960,
+      820,
+      267
+     ],
+     [
+      1300,
+      780,
+      236
+     ],
+     [
+      1650,
+      850,
+      289
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      720,
+      0,
+      1200,
+      180
+     ],
+     [
+      720,
+      180,
+      1200,
+      360
+     ],
+     [
+      1200,
+      60,
+      1680,
+      240
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_ea_sea_coast": {
+   "era": "eastasia",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     920,
+     920,
+     920
+    ],
+    "person": [
+     357,
+     357,
+     357
+    ],
+    "horizon": 594,
+    "spots": [
+     [
+      300,
+      900,
+      341
+     ],
+     [
+      650,
+      880,
+      324
+     ],
+     [
+      960,
+      900,
+      341
+     ],
+     [
+      1300,
+      880,
+      324
+     ],
+     [
+      1550,
+      920,
+      357
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": 780,
+    "free": [
+     [
+      0,
+      300,
+      480,
+      480
+     ],
+     [
+      120,
+      120,
+      600,
+      300
+     ],
+     [
+      600,
+      0,
+      1080,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": [
+     50,
+     550,
+     600
+    ]
+   },
+   "ground": 920
+  }
+ }
+}

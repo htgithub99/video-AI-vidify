@@ -1,1 +1,3964 @@
-{"style":"bold cartoon, thick black outlines, flat cel shading","items":{"game_heroes__fantasy_knight_hero_sword_shield":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[219,360],"ann":{"v":1,"foot":0.5021,"pad":0.0083,"aspect":0.6083,"face":{"l":0.4195,"r":0.5668,"t":0.0472,"b":0.2444},"mouth":[0.4932,0.201],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes__fantasy_wizard_staff_pointed_hat":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[215,350],"ann":{"v":1,"foot":0.4113,"pad":0.0086,"aspect":0.6143,"face":{"l":0.4419,"r":0.586,"t":0.0686,"b":0.2257},"mouth":[0.514,0.1911],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes__elf_archer_bow":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[210,335],"ann":{"v":1,"foot":0.4407,"pad":0.009,"aspect":0.6269,"face":{"l":0.3234,"r":0.5242,"t":0.0119,"b":0.191},"mouth":[0.4238,0.1516],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes__rogue_thief_daggers_hood":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[234,331],"ann":{"v":1,"foot":0.4249,"pad":0.0091,"aspect":0.7069,"face":{"l":0.5139,"r":0.6461,"t":0.005,"b":0.115},"mouth":[0.58,0.0908],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"game_heroes__cleric_priestess_holy_mace":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[204,331],"ann":{"v":1,"foot":0.4831,"pad":0.0091,"aspect":0.6163,"face":{"l":0.3,"r":0.5431,"t":0.0121,"b":0.1934},"mouth":[0.4216,0.1535],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes__barbarian_big_axe":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[282,354],"ann":{"v":1,"foot":0.385,"pad":0.0085,"aspect":0.7966,"face":{"l":0.3126,"r":0.4533,"t":0.0113,"b":0.1525},"mouth":[0.383,0.1214],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes__paladin_golden_armor":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[250,368],"ann":{"v":1,"foot":0.4409,"pad":0.0082,"aspect":0.6793,"face":{"l":0.2338,"r":0.2982,"t":0.2853,"b":0.3288},"mouth":[0.266,0.3192],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes__druid_wooden_staff_leaves":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[214,364],"ann":{"v":1,"foot":0.497,"pad":0.0082,"aspect":0.5879,"face":{"l":0.3664,"r":0.5402,"t":0.0165,"b":0.2527},"mouth":[0.4533,0.2007],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes__necromancer_dark_robes_skull_staff":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[240,342],"ann":{"v":1,"foot":0.4057,"pad":0.0088,"aspect":0.7018,"face":{"l":0.5895,"r":0.7605,"t":0,"b":0.16},"mouth":[0.675,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes__bard_lute":{"sheet":"game_heroes","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[181,344],"ann":{"v":1,"foot":0.4672,"pad":0.0087,"aspect":0.5262,"face":{"l":0.3074,"r":0.4992,"t":0.0116,"b":0.1977},"mouth":[0.4033,0.1568],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes_act__fantasy_knight_attacking_sword":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[227,297],"ann":{"v":1,"foot":0.4679,"pad":0.0101,"aspect":0.7643,"face":{"l":0.3974,"r":0.5806,"t":0,"b":0.16},"mouth":[0.489,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes_act__wizard_casting_fireball_hands":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[289,280],"ann":{"v":1,"foot":0.3124,"pad":0.0107,"aspect":1.0321,"face":{"l":0.352,"r":0.4335,"t":0.1143,"b":0.225},"mouth":[0.3928,0.2006],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes_act__elf_archer_shooting_arrow":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[213,317],"ann":{"v":1,"foot":0.3772,"pad":0.0095,"aspect":0.6719,"face":{"l":0.2911,"r":0.4366,"t":0.1609,"b":0.2902},"mouth":[0.3639,0.2618],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes_act__rogue_sneaking_crouched":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.2,"facing":"r","px":[215,238],"ann":{"v":1,"foot":0.4631,"pad":0.0126,"aspect":0.9034,"face":{"l":0.2077,"r":0.2923,"t":0.345,"b":0.435},"mouth":[0.25,0.4152],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes_act__barbarian_jumping_axe":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[209,325],"ann":{"v":1,"foot":0.2249,"pad":0.0092,"aspect":0.6431,"face":{"l":0.4465,"r":0.6779,"t":0.0308,"b":0.4646},"mouth":[0.5622,0.3692],"place":"ground","facing":"l","text":false,"double":false,"cut":true}},"game_heroes_act__cleric_healing_glowing_hands":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[241,258],"ann":{"v":1,"foot":0.4154,"pad":0.0116,"aspect":0.9341,"face":{"l":0.5509,"r":0.6898,"t":0.0155,"b":0.1744},"mouth":[0.6204,0.1394],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes_act__fantasy_hero_running":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[215,265],"ann":{"v":1,"foot":0.7767,"pad":0.0113,"aspect":0.8113,"face":{"l":0.5927,"r":0.8119,"t":0.0151,"b":0.117},"mouth":[0.7023,0.0946],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes_act__fantasy_hero_defeated_lying":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":0.6,"facing":"r","px":[306,101],"ann":{"v":1,"foot":0.416,"pad":0.0297,"aspect":3.0297,"face":{"l":0.1156,"r":0.2047,"t":0.3861,"b":0.4851},"mouth":[0.1602,0.4633],"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"game_heroes_act__fantasy_hero_raising_sword_victory":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[170,374],"ann":{"v":1,"foot":0.5371,"pad":0.008,"aspect":0.4545,"face":{"l":0.356,"r":0.5675,"t":0.2193,"b":0.4332},"mouth":[0.4618,0.3861],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_heroes_act__fantasy_hero_blocking_shield":{"sheet":"game_heroes_act","era":"game","kind":"person","heightM":1.75,"facing":"r","px":[262,230],"ann":{"v":1,"foot":0.3683,"pad":0.013,"aspect":1.1391,"face":{"l":0.4376,"r":0.5701,"t":0.0174,"b":0.2435},"mouth":[0.5039,0.1938],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__green_goblin_dagger":{"sheet":"game_monsters","era":"game","kind":"person","heightM":1.1,"facing":"r","px":[213,237],"ann":{"v":1,"foot":0.3923,"pad":0.0127,"aspect":0.8987,"face":{"l":0.4379,"r":0.5715,"t":0,"b":0.16},"mouth":[0.5047,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__orc_warrior_axe":{"sheet":"game_monsters","era":"game","kind":"person","heightM":2,"facing":"r","px":[285,324],"ann":{"v":1,"foot":0.38,"pad":0.0093,"aspect":0.8796,"face":{"l":0.2818,"r":0.441,"t":0,"b":0.16},"mouth":[0.3614,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__cave_troll_club":{"sheet":"game_monsters","era":"game","kind":"person","heightM":3,"facing":"r","px":[291,322],"ann":{"v":1,"foot":0.353,"pad":0.0093,"aspect":0.9037,"face":{"l":0.3443,"r":0.477,"t":0,"b":0.16},"mouth":[0.4107,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__skeleton_warrior_sword":{"sheet":"game_monsters","era":"game","kind":"person","heightM":1.6,"facing":"r","px":[232,317],"ann":{"v":1,"foot":0.4147,"pad":0.0095,"aspect":0.7319,"face":{"l":0.418,"r":0.582,"t":0,"b":0.16},"mouth":[0.5,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__zombie_walking":{"sheet":"game_monsters","era":"game","kind":"person","heightM":1.6,"facing":"r","px":[207,325],"ann":{"v":1,"foot":0.3845,"pad":0.0092,"aspect":0.6369,"face":{"l":0.2766,"r":0.4964,"t":0,"b":0.16},"mouth":[0.3865,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__blue_slime_monster":{"sheet":"game_monsters","era":"game","kind":"person","heightM":0.6,"facing":"r","px":[227,206],"ann":{"v":1,"foot":0.5264,"pad":0.0146,"aspect":1.1019,"face":{"l":0.5224,"r":0.6494,"t":0,"b":0.16},"mouth":[0.5859,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__giant_spider":{"sheet":"game_monsters","era":"game","kind":"person","heightM":1.2,"facing":"r","px":[280,224],"ann":{"v":1,"foot":0.5179,"pad":0.0134,"aspect":1.25,"face":{"l":0.3529,"r":0.4649,"t":0,"b":0.16},"mouth":[0.4089,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__werewolf":{"sheet":"game_monsters","era":"game","kind":"person","heightM":2,"facing":"r","px":[280,311],"ann":{"v":1,"foot":0.2482,"pad":0.0096,"aspect":0.9003,"face":{"l":0.5526,"r":0.7081,"t":0,"b":0.16},"mouth":[0.6304,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__vampire_cloak":{"sheet":"game_monsters","era":"game","kind":"person","heightM":1.6,"facing":"r","px":[217,330],"ann":{"v":1,"foot":0.4309,"pad":0.0091,"aspect":0.6576,"face":{"l":0.3143,"r":0.4968,"t":0,"b":0.16},"mouth":[0.4056,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_monsters__ghost_floating":{"sheet":"game_monsters","era":"game","kind":"person","heightM":1.6,"facing":"r","px":[233,267],"ann":{"v":1,"foot":0.1073,"pad":0.0112,"aspect":0.8727,"face":{"l":0.5357,"r":0.6961,"t":0,"b":0.16},"mouth":[0.6159,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_big_monsters__red_dragon_breathing_fire":{"sheet":"game_big_monsters","era":"game","kind":"animal","heightM":10,"facing":"r","px":[559,349],"ann":{"v":1,"foot":0.2755,"pad":0.0086,"aspect":1.6017,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_big_monsters__giant_ogre":{"sheet":"game_big_monsters","era":"game","kind":"animal","heightM":5,"facing":"r","px":[283,363],"ann":{"v":1,"foot":0.4191,"pad":0.0083,"aspect":0.7796,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_big_monsters__stone_golem":{"sheet":"game_big_monsters","era":"game","kind":"animal","heightM":4,"facing":"r","px":[313,325],"ann":{"v":1,"foot":0.5473,"pad":0.0092,"aspect":0.9631,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_big_monsters__minotaur_axe":{"sheet":"game_big_monsters","era":"game","kind":"animal","heightM":3,"facing":"r","px":[346,348],"ann":{"v":1,"foot":0.3325,"pad":0.0086,"aspect":0.9943,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_big_monsters__threeheaded_hydra":{"sheet":"game_big_monsters","era":"game","kind":"animal","heightM":8,"facing":"r","px":[522,349],"ann":{"v":1,"foot":0.48,"pad":0.0086,"aspect":1.4957,"place":"ground","facing":"r","text":false,"double":true,"cut":false}},"game_big_monsters__griffin":{"sheet":"game_big_monsters","era":"game","kind":"animal","heightM":3,"facing":"r","px":[335,335],"ann":{"v":1,"foot":0.6024,"pad":0.009,"aspect":1,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__space_marine_power_armor":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":1.8,"facing":"r","px":[193,372],"ann":{"v":1,"foot":0.5474,"pad":0.0081,"aspect":0.5188,"face":{"l":0.2899,"r":0.5598,"t":0,"b":0.16},"mouth":[0.4248,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__astronaut_spacesuit":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":1.8,"facing":"r","px":[184,371],"ann":{"v":1,"foot":0.5944,"pad":0.0081,"aspect":0.496,"face":{"l":0.3262,"r":0.6085,"t":0,"b":0.16},"mouth":[0.4674,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__humanoid_robot":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":2,"facing":"r","px":[153,372],"ann":{"v":1,"foot":0.5392,"pad":0.0081,"aspect":0.4113,"face":{"l":0.369,"r":0.7094,"t":0,"b":0.16},"mouth":[0.5392,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__female_android":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":1.8,"facing":"r","px":[124,361],"ann":{"v":1,"foot":0.5726,"pad":0.0083,"aspect":0.3435,"face":{"l":0.3164,"r":0.724,"t":0,"b":0.16},"mouth":[0.5202,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__grey_alien":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":1.3,"facing":"r","px":[121,350],"ann":{"v":1,"foot":0.5679,"pad":0.0086,"aspect":0.3457,"face":{"l":0.2893,"r":0.6942,"t":0,"b":0.16},"mouth":[0.4918,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__alien_warrior_plasma_rifle":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":2.2,"facing":"r","px":[231,352],"ann":{"v":1,"foot":0.1966,"pad":0.0085,"aspect":0.6562,"face":{"l":0.3306,"r":0.5439,"t":0,"b":0.16},"mouth":[0.4373,0.1248],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__cyborg_soldier":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":1.8,"facing":"r","px":[161,356],"ann":{"v":1,"foot":0.5545,"pad":0.0084,"aspect":0.4522,"face":{"l":0.6301,"r":0.7302,"t":0.0112,"b":0.1152},"mouth":[0.6802,0.0923],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__starship_pilot":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":1.8,"facing":"r","px":[139,357],"ann":{"v":1,"foot":0.5653,"pad":0.0084,"aspect":0.3894,"face":{"l":0.522,"r":0.6291,"t":0.2325,"b":0.2717},"mouth":[0.5756,0.2631],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__scifi_scientist_lab_coat":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":1.8,"facing":"r","px":[186,356],"ann":{"v":1,"foot":0.4091,"pad":0.0084,"aspect":0.5225,"face":{"l":0.3047,"r":0.5447,"t":0.0337,"b":0.1096},"mouth":[0.4247,0.0929],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_chars__mech_suit_pilot_exo_suit":{"sheet":"game_scifi_chars","era":"game","kind":"person","heightM":2.5,"facing":"r","px":[162,355],"ann":{"v":1,"foot":0.5823,"pad":0.0085,"aspect":0.4563,"face":{"l":0.3827,"r":0.7654,"t":0.0113,"b":0.2225},"mouth":[0.5741,0.176],"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_veh__scifi_space_fighter_ship":{"sheet":"game_scifi_veh","era":"game","kind":"vehicle","heightM":4,"facing":"r","px":[364,221],"ann":{"v":1,"foot":0.7321,"pad":0.0136,"aspect":1.6471,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_veh__space_cruiser_battleship":{"sheet":"game_scifi_veh","era":"game","kind":"vehicle","heightM":40,"facing":"r","px":[531,244],"ann":{"v":1,"foot":0.7429,"pad":0.0123,"aspect":2.1762,"place":"ground","facing":"l","text":false,"double":false,"cut":false}},"game_scifi_veh__planetary_rover":{"sheet":"game_scifi_veh","era":"game","kind":"vehicle","heightM":2.5,"facing":"r","px":[366,269],"ann":{"v":1,"foot":0.4768,"pad":0.0112,"aspect":1.3606,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_veh__twolegged_combat_mech_walker":{"sheet":"game_scifi_veh","era":"game","kind":"vehicle","heightM":8,"facing":"r","px":[352,372],"ann":{"v":1,"foot":0.2827,"pad":0.0081,"aspect":0.9462,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_veh__hover_bike_rider":{"sheet":"game_scifi_veh","era":"game","kind":"vehicle","heightM":1.8,"facing":"r","px":[371,298],"ann":{"v":1,"foot":0.7547,"pad":0.0101,"aspect":1.245,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_scifi_veh__flying_saucer_ufo":{"sheet":"game_scifi_veh","era":"game","kind":"vehicle","heightM":4,"facing":"r","px":[361,223],"ann":{"v":1,"foot":0.6371,"pad":0.0135,"aspect":1.6188,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_items__treasure_chest_open_gold":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.7,"facing":"r","px":[207,204],"ann":{"v":1,"foot":0.4372,"pad":0.0147,"aspect":1.0147,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_items__red_health_potion_bottle":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.25,"facing":"r","px":[147,206],"ann":{"v":1,"foot":0.5,"pad":0.0146,"aspect":0.7136,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"game_items__blue_mana_potion_bottle":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.25,"facing":"r","px":[123,212],"ann":{"v":1,"foot":0.5,"pad":0.0142,"aspect":0.5802,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"game_items__pile_gold_coins":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.3,"facing":"r","px":[217,148],"ann":{"v":1,"foot":0.7189,"pad":0.0203,"aspect":1.4662,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"game_items__large_gemstone":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.2,"facing":"r","px":[194,162],"ann":{"v":1,"foot":0.4974,"pad":0.0185,"aspect":1.1975,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"game_items__golden_key":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.15,"facing":"r","px":[190,186],"ann":{"v":1,"foot":0.1553,"pad":0.0161,"aspect":1.0215,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"game_items__magic_staff_crystal":{"sheet":"game_items","era":"game","kind":"prop","heightM":1.8,"facing":"r","px":[187,234],"ann":{"v":1,"foot":0.0668,"pad":0.0128,"aspect":0.7991,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"game_items__glowing_magic_sword":{"sheet":"game_items","era":"game","kind":"prop","heightM":1.1,"facing":"r","px":[207,238],"ann":{"v":1,"foot":0.0797,"pad":0.0126,"aspect":0.8697,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"game_items__round_shield_emblem_letters":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.9,"facing":"r","px":[198,199],"ann":{"v":1,"foot":0.5025,"pad":0.0151,"aspect":0.995,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_items__fantasy_bow":{"sheet":"game_items","era":"game","kind":"prop","heightM":1.3,"facing":"r","px":[147,270],"ann":{"v":1,"foot":0.6463,"pad":0.0111,"aspect":0.5444,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"game_items__magic_scroll":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.4,"facing":"r","px":[188,215],"ann":{"v":1,"foot":0.5027,"pad":0.014,"aspect":0.8744,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"game_items__red_heart_icon":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.3,"facing":"r","px":[184,163],"ann":{"v":1,"foot":0.5,"pad":0.0184,"aspect":1.1288,"place":"icon","facing":"r","text":false,"double":false,"cut":false}},"game_items__gold_star_icon":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.3,"facing":"r","px":[189,182],"ann":{"v":1,"foot":0.4957,"pad":0.0165,"aspect":1.0385,"place":"icon","facing":"r","text":false,"double":false,"cut":false}},"game_items__round_bomb_fuse":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.4,"facing":"r","px":[176,222],"ann":{"v":1,"foot":0.4318,"pad":0.0135,"aspect":0.7928,"place":"hand","facing":"r","text":false,"double":false,"cut":false}},"game_items__wooden_crate":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.8,"facing":"r","px":[206,202],"ann":{"v":1,"foot":0.4757,"pad":0.0149,"aspect":1.0198,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_items__spellbook":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.3,"facing":"r","px":[194,211],"ann":{"v":1,"foot":0.4871,"pad":0.0142,"aspect":0.9194,"place":"table","facing":"r","text":false,"double":false,"cut":false}},"game_items__glowing_mushroom":{"sheet":"game_items","era":"game","kind":"prop","heightM":0.4,"facing":"r","px":[188,227],"ann":{"v":1,"foot":0.484,"pad":0.0132,"aspect":0.8282,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_items__magic_portal_arch":{"sheet":"game_items","era":"game","kind":"prop","heightM":3,"facing":"r","px":[207,234],"ann":{"v":1,"foot":0.4976,"pad":0.0128,"aspect":0.8846,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_buildings__wizard_tower":{"sheet":"game_buildings","era":"game","kind":"building","heightM":25,"facing":"r","px":[190,422],"ann":{"v":1,"foot":0.5342,"pad":0.0071,"aspect":0.4502,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_buildings__fantasy_tavern":{"sheet":"game_buildings","era":"game","kind":"building","heightM":8,"facing":"r","px":[447,358],"ann":{"v":1,"foot":0.5056,"pad":0.0084,"aspect":1.2486,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_buildings__dungeon_entrance_rock":{"sheet":"game_buildings","era":"game","kind":"building","heightM":5,"facing":"r","px":[398,337],"ann":{"v":1,"foot":0.5289,"pad":0.0089,"aspect":1.181,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_buildings__ancient_ruined_temple":{"sheet":"game_buildings","era":"game","kind":"building","heightM":10,"facing":"r","px":[482,306],"ann":{"v":1,"foot":0.5477,"pad":0.0098,"aspect":1.5752,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_buildings__fairy_tale_cottage":{"sheet":"game_buildings","era":"game","kind":"building","heightM":6,"facing":"r","px":[370,314],"ann":{"v":1,"foot":0.5095,"pad":0.0096,"aspect":1.1783,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_buildings__giant_crystal_formation":{"sheet":"game_buildings","era":"game","kind":"building","heightM":6,"facing":"r","px":[309,344],"ann":{"v":1,"foot":0.5518,"pad":0.0087,"aspect":0.8983,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__magic_glowing_tree":{"sheet":"game_nature","era":"game","kind":"nature","heightM":10,"facing":"r","px":[253,314],"ann":{"v":1,"foot":0.4537,"pad":0.0096,"aspect":0.8057,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__giant_mushroom":{"sheet":"game_nature","era":"game","kind":"nature","heightM":5,"facing":"r","px":[221,274],"ann":{"v":1,"foot":0.5181,"pad":0.0109,"aspect":0.8066,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__crystal_cluster":{"sheet":"game_nature","era":"game","kind":"nature","heightM":2,"facing":"r","px":[189,217],"ann":{"v":1,"foot":0.4979,"pad":0.0138,"aspect":0.871,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__glowing_flower_plant":{"sheet":"game_nature","era":"game","kind":"nature","heightM":1,"facing":"r","px":[216,286],"ann":{"v":1,"foot":0.549,"pad":0.0105,"aspect":0.7552,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__twisted_dead_tree":{"sheet":"game_nature","era":"game","kind":"nature","heightM":8,"facing":"r","px":[217,303],"ann":{"v":1,"foot":0.4249,"pad":0.0099,"aspect":0.7162,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__fantasy_pine_tree":{"sheet":"game_nature","era":"game","kind":"nature","heightM":12,"facing":"r","px":[213,311],"ann":{"v":1,"foot":0.4953,"pad":0.0096,"aspect":0.6849,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__floating_rock_island":{"sheet":"game_nature","era":"game","kind":"nature","heightM":6,"facing":"r","px":[243,218],"ann":{"v":1,"foot":0.6193,"pad":0.0138,"aspect":1.1147,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__lava_rock":{"sheet":"game_nature","era":"game","kind":"nature","heightM":1.5,"facing":"r","px":[207,212],"ann":{"v":1,"foot":0.4837,"pad":0.0142,"aspect":0.9764,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__ice_crystal_rock":{"sheet":"game_nature","era":"game","kind":"nature","heightM":2,"facing":"r","px":[208,226],"ann":{"v":1,"foot":0.5348,"pad":0.0133,"aspect":0.9204,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__alien_plant":{"sheet":"game_nature","era":"game","kind":"nature","heightM":3,"facing":"r","px":[189,277],"ann":{"v":1,"foot":0.3519,"pad":0.0108,"aspect":0.6823,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__vinecovered_pillar_ruin":{"sheet":"game_nature","era":"game","kind":"nature","heightM":4,"facing":"r","px":[143,296],"ann":{"v":1,"foot":0.507,"pad":0.0101,"aspect":0.4831,"place":"ground","facing":"r","text":false,"double":false,"cut":false}},"game_nature__cartoon_bush":{"sheet":"game_nature","era":"game","kind":"nature","heightM":1.2,"facing":"r","px":[236,180],"ann":{"v":1,"foot":0.5285,"pad":0.0167,"aspect":1.3111,"place":"ground","facing":"r","text":false,"double":false,"cut":false}}},"backgrounds":{"bg_game_fantasy_forest":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[850,820,860],"person":[220,170,210],"spots":[[320,850,220],[640,810,180],[960,820,170],[1280,815,175],[1600,860,210]],"walls":[],"table":null,"water":null,"free":[[360,120,840,300],[720,480,1200,660],[1320,240,1800,420]],"seats":[],"rails":null,"boats":null},"ground":820},"bg_game_dungeon":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[920,880,850],"person":[250,190,150],"spots":[[320,920,250],[650,890,200],[960,880,190],[1300,840,160],[1600,850,150]],"walls":[[250,550,650],[820,1120,620]],"table":null,"water":null,"free":[[1320,0,1800,180],[1320,180,1800,360],[720,0,1200,180]],"seats":[],"rails":null,"boats":null},"ground":880},"bg_game_castle_hall":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[930,820,830],"person":[240,160,170],"spots":[[320,930,240],[620,830,170],[960,820,160],[1250,760,140],[1600,830,170]],"walls":[[580,920,550],[1050,1320,580]],"table":[100,480,740],"water":null,"free":[[1320,0,1800,180],[600,420,1080,600],[1320,240,1800,420]],"seats":[{"k":"bench","x0":260,"x1":460,"y":810},{"k":"chair","x0":660,"x1":780,"y":600},{"k":"bench","x0":1050,"x1":1260,"y":670},{"k":"bench","x0":1500,"x1":1780,"y":760}],"rails":null,"boats":null},"ground":820},"bg_game_lava_cave":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[880,830,860],"person":[230,160,200],"spots":[[320,880,230],[640,820,170],[960,830,160],[1280,810,165],[1600,860,200]],"walls":[],"table":null,"water":680,"free":[[1320,240,1800,420],[1080,0,1560,180],[1200,420,1680,600]],"seats":[],"rails":null,"boats":null},"ground":830},"bg_game_ice_land":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[860,760,850],"person":[230,130,210],"spots":[[320,860,230],[640,760,140],[960,760,130],[1280,770,145],[1600,850,210]],"walls":[],"table":null,"water":null,"free":[[240,0,720,180],[1200,0,1680,180],[120,180,600,360]],"seats":[],"rails":null,"boats":null},"ground":760},"bg_game_space_station":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[950,860,920],"person":[250,160,210],"spots":[[320,950,250],[640,880,180],[960,860,160],[1280,860,170],[1600,920,210]],"walls":[[820,1260,560]],"table":null,"water":null,"free":[[360,0,840,180],[1080,60,1560,240],[1320,360,1800,540]],"seats":[],"rails":null,"boats":null},"ground":860},"bg_game_alien_planet":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[860,780,840],"person":[230,140,190],"spots":[[320,860,230],[640,780,150],[960,780,140],[1280,780,145],[1600,840,190]],"walls":[],"table":null,"water":null,"free":[[600,0,1080,180],[600,180,1080,360],[1320,0,1800,180]],"seats":[],"rails":null,"boats":null},"ground":780},"bg_game_scifi_city":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[960,840,940],"person":[250,150,220],"spots":[[320,960,250],[640,860,170],[960,840,150],[1280,850,160],[1600,940,220]],"walls":[],"table":null,"water":null,"free":[[600,0,1080,180],[840,180,1320,360],[1080,0,1560,180]],"seats":[],"rails":null,"boats":null},"ground":840},"bg_game_desert_ruins":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[860,840,850],"person":[230,150,190],"spots":[[320,860,230],[640,830,175],[960,840,150],[1280,820,160],[1600,850,190]],"walls":[],"table":null,"water":null,"free":[[720,0,1200,180],[600,180,1080,360],[1200,60,1680,240]],"seats":[],"rails":null,"boats":null},"ground":840},"bg_game_sky_islands":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[960,960,960],"person":[240,240,240],"spots":[[320,960,240],[640,960,240],[960,960,240],[1280,960,240],[1420,960,240]],"walls":[],"table":null,"water":null,"free":[[600,0,1080,180],[720,180,1200,360],[720,360,1200,540]],"seats":[],"rails":null,"boats":null},"ground":960},"bg_game_village":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[920,860,900],"person":[240,160,200],"spots":[[320,920,240],[640,880,180],[960,860,160],[1280,850,165],[1600,900,200]],"walls":[],"table":null,"water":null,"free":[[720,0,1200,180],[840,180,1320,360],[240,0,720,180]],"seats":[],"rails":null,"boats":null},"ground":860},"bg_game_graveyard":{"era":"game","px":[1376,768],"ann":{"v":5,"ground":[880,840,870],"person":[230,150,190],"spots":[[320,880,230],[640,840,170],[960,840,150],[1280,830,160],[1600,870,190]],"walls":[],"table":null,"water":null,"free":[[1320,0,1800,180],[1080,180,1560,360],[0,180,480,360]],"seats":[],"rails":null,"boats":null},"ground":840}}}
+{
+ "style": "bold cartoon, thick black outlines, flat cel shading",
+ "items": {
+  "game_heroes__fantasy_knight_hero_sword_shield": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    219,
+    360
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4996,
+    "pad": 0.0083,
+    "aspect": 0.6083,
+    "face": {
+     "l": 0.4195,
+     "r": 0.5668,
+     "t": 0.0472,
+     "b": 0.2444
+    },
+    "mouth": [
+     0.4932,
+     0.201
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy knight",
+    "is": "fantasy knight with sword and shield"
+   }
+  },
+  "game_heroes__fantasy_wizard_staff_pointed_hat": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    215,
+    350
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4113,
+    "pad": 0.0086,
+    "aspect": 0.6143,
+    "face": {
+     "l": 0.4419,
+     "r": 0.586,
+     "t": 0.0686,
+     "b": 0.2257
+    },
+    "mouth": [
+     0.514,
+     0.1911
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy wizard",
+    "is": "fantasy wizard with staff"
+   }
+  },
+  "game_heroes__elf_archer_bow": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    210,
+    335
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4236,
+    "pad": 0.009,
+    "aspect": 0.6269,
+    "face": {
+     "l": 0.3234,
+     "r": 0.5242,
+     "t": 0.0149,
+     "b": 0.191
+    },
+    "mouth": [
+     0.4238,
+     0.1523
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "elf archer",
+    "is": "elf archer with bow"
+   }
+  },
+  "game_heroes__rogue_thief_daggers_hood": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    234,
+    331
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4098,
+    "pad": 0.0091,
+    "aspect": 0.7069,
+    "face": {
+     "l": 0.5139,
+     "r": 0.6461,
+     "t": -0.025,
+     "b": 0.085
+    },
+    "mouth": [
+     0.58,
+     0.0608
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy rogue",
+    "is": "hooded rogue with daggers"
+   }
+  },
+  "game_heroes__cleric_priestess_holy_mace": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    204,
+    331
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4872,
+    "pad": 0.0091,
+    "aspect": 0.6163,
+    "face": {
+     "l": 0.3,
+     "r": 0.5431,
+     "t": 0.0121,
+     "b": 0.1934
+    },
+    "mouth": [
+     0.4216,
+     0.1535
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy cleric",
+    "is": "cleric priestess with mace"
+   }
+  },
+  "game_heroes__barbarian_big_axe": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    282,
+    354
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3878,
+    "pad": 0.0085,
+    "aspect": 0.7966,
+    "face": {
+     "l": 0.3126,
+     "r": 0.4533,
+     "t": 0.0113,
+     "b": 0.1525
+    },
+    "mouth": [
+     0.383,
+     0.1214
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy barbarian",
+    "is": "barbarian with big axe"
+   }
+  },
+  "game_heroes__paladin_golden_armor": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    250,
+    368
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4429,
+    "pad": 0.0082,
+    "aspect": 0.6793,
+    "face": {
+     "l": 0.0012,
+     "r": 0.1388,
+     "t": 0.175,
+     "b": 0.285
+    },
+    "mouth": [
+     0.07,
+     0.2608
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy paladin",
+    "is": "paladin in golden armor"
+   }
+  },
+  "game_heroes__druid_wooden_staff_leaves": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    214,
+    364
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4957,
+    "pad": 0.0082,
+    "aspect": 0.5879,
+    "face": {
+     "l": 0.3664,
+     "r": 0.5402,
+     "t": 0.0165,
+     "b": 0.2527
+    },
+    "mouth": [
+     0.4533,
+     0.2007
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy druid",
+    "is": "druid with wooden staff"
+   }
+  },
+  "game_heroes__necromancer_dark_robes_skull_staff": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    240,
+    342
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4034,
+    "pad": 0.0088,
+    "aspect": 0.7018,
+    "face": {
+     "l": 0.5895,
+     "r": 0.7605,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.675,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy necromancer",
+    "is": "necromancer with skull staff"
+   }
+  },
+  "game_heroes__bard_lute": {
+   "sheet": "game_heroes",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    181,
+    344
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4676,
+    "pad": 0.0116,
+    "aspect": 0.5262,
+    "face": {
+     "l": 0.3074,
+     "r": 0.4992,
+     "t": 0.0116,
+     "b": 0.1977
+    },
+    "mouth": [
+     0.4033,
+     0.1568
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy bard",
+    "is": "bard playing lute"
+   }
+  },
+  "game_heroes_act__fantasy_knight_attacking_sword": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    227,
+    297
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4626,
+    "pad": 0.0101,
+    "aspect": 0.7643,
+    "face": {
+     "l": 0.7088,
+     "r": 0.8312,
+     "t": 0.175,
+     "b": 0.285
+    },
+    "mouth": [
+     0.77,
+     0.2608
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy knight",
+    "is": "knight attacking with sword"
+   }
+  },
+  "game_heroes_act__wizard_casting_fireball_hands": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    289,
+    280
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3161,
+    "pad": 0.0107,
+    "aspect": 1.0321,
+    "face": {
+     "l": 0.352,
+     "r": 0.4335,
+     "t": 0.1143,
+     "b": 0.225
+    },
+    "mouth": [
+     0.3928,
+     0.2006
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy wizard",
+    "is": "wizard casting fireball"
+   }
+  },
+  "game_heroes_act__elf_archer_shooting_arrow": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    213,
+    317
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3779,
+    "pad": 0.0095,
+    "aspect": 0.6719,
+    "face": {
+     "l": 0.2911,
+     "r": 0.4366,
+     "t": 0.1609,
+     "b": 0.2902
+    },
+    "mouth": [
+     0.3639,
+     0.2618
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "elf archer",
+    "is": "elf archer shooting arrow"
+   }
+  },
+  "game_heroes_act__rogue_sneaking_crouched": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.2,
+   "facing": "r",
+   "px": [
+    215,
+    238
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4631,
+    "pad": 0.0126,
+    "aspect": 0.9034,
+    "face": {
+     "l": 0.5685,
+     "r": 0.7013,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.6349,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "kneel",
+    "flat": false,
+    "group": "fantasy rogue",
+    "is": "rogue sneaking crouched"
+   }
+  },
+  "game_heroes_act__barbarian_jumping_axe": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    209,
+    325
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.2249,
+    "pad": 0.0092,
+    "aspect": 0.6431,
+    "face": {
+     "l": 0.3673,
+     "r": 0.5127,
+     "t": 0.385,
+     "b": 0.495
+    },
+    "mouth": [
+     0.44,
+     0.4708
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy barbarian",
+    "is": "barbarian jumping with axe"
+   }
+  },
+  "game_heroes_act__cleric_healing_glowing_hands": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    241,
+    258
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4154,
+    "pad": 0.0116,
+    "aspect": 0.9341,
+    "face": {
+     "l": 0.5509,
+     "r": 0.6898,
+     "t": 0.0155,
+     "b": 0.1744
+    },
+    "mouth": [
+     0.6204,
+     0.1394
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy cleric",
+    "is": "cleric with glowing hands"
+   }
+  },
+  "game_heroes_act__fantasy_hero_running": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    215,
+    265
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.7767,
+    "pad": 0.0113,
+    "aspect": 0.8113,
+    "face": {
+     "l": 0.5927,
+     "r": 0.8119,
+     "t": 0.0151,
+     "b": 0.117
+    },
+    "mouth": [
+     0.7023,
+     0.0946
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy hero",
+    "is": "fantasy hero running"
+   }
+  },
+  "game_heroes_act__fantasy_hero_defeated_lying": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 0.6,
+   "facing": "r",
+   "px": [
+    306,
+    101
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4189,
+    "pad": 0.0297,
+    "aspect": 3.0297,
+    "face": {
+     "l": 0.1156,
+     "r": 0.2047,
+     "t": 0.3861,
+     "b": 0.4851
+    },
+    "mouth": [
+     0.1602,
+     0.4633
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "lie",
+    "flat": true,
+    "group": "fantasy hero",
+    "is": "fantasy hero lying down"
+   }
+  },
+  "game_heroes_act__fantasy_hero_raising_sword_victory": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    170,
+    374
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5391,
+    "pad": 0.008,
+    "aspect": 0.4545,
+    "face": {
+     "l": -0.0229,
+     "r": 0.1829,
+     "t": 0.615,
+     "b": 0.725
+    },
+    "mouth": [
+     0.08,
+     0.7008
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy hero",
+    "is": "hero raising sword"
+   }
+  },
+  "game_heroes_act__fantasy_hero_blocking_shield": {
+   "sheet": "game_heroes_act",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.75,
+   "facing": "r",
+   "px": [
+    262,
+    230
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3754,
+    "pad": 0.0174,
+    "aspect": 1.1391,
+    "face": {
+     "l": 0.4376,
+     "r": 0.5701,
+     "t": 0.0174,
+     "b": 0.2435
+    },
+    "mouth": [
+     0.5039,
+     0.1938
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "fantasy hero",
+    "is": "hero blocking with shield"
+   }
+  },
+  "game_monsters__green_goblin_dagger": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.1,
+   "facing": "r",
+   "px": [
+    213,
+    237
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3885,
+    "pad": 0.0127,
+    "aspect": 0.8987,
+    "face": {
+     "l": 0.4379,
+     "r": 0.5715,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.5047,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "goblin warrior",
+    "is": "green goblin with dagger"
+   }
+  },
+  "game_monsters__orc_warrior_axe": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 2,
+   "facing": "r",
+   "px": [
+    285,
+    324
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3806,
+    "pad": 0.0093,
+    "aspect": 0.8796,
+    "face": {
+     "l": 0.2818,
+     "r": 0.441,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.3614,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "orc warrior",
+    "is": "orc warrior with axe"
+   }
+  },
+  "game_monsters__cave_troll_club": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 3,
+   "facing": "r",
+   "px": [
+    291,
+    322
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3504,
+    "pad": 0.0093,
+    "aspect": 0.9037,
+    "face": {
+     "l": 0.3425,
+     "r": 0.4753,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.4089,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "cave troll",
+    "is": "cave troll with club"
+   }
+  },
+  "game_monsters__skeleton_warrior_sword": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.6,
+   "facing": "r",
+   "px": [
+    232,
+    317
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4109,
+    "pad": 0.0095,
+    "aspect": 0.7319,
+    "face": {
+     "l": 0.418,
+     "r": 0.582,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.5,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "skeleton warrior",
+    "is": "skeleton warrior with sword"
+   }
+  },
+  "game_monsters__zombie_walking": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.6,
+   "facing": "r",
+   "px": [
+    207,
+    325
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3834,
+    "pad": 0.0092,
+    "aspect": 0.6369,
+    "face": {
+     "l": 0.2766,
+     "r": 0.4964,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.3865,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "undead zombie",
+    "is": "zombie walking"
+   }
+  },
+  "game_monsters__blue_slime_monster": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 0.6,
+   "facing": "r",
+   "px": [
+    227,
+    206
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5264,
+    "pad": 0.0146,
+    "aspect": 1.1019,
+    "face": {
+     "l": 0.2253,
+     "r": 0.2947,
+     "t": 0.785,
+     "b": 0.875
+    },
+    "mouth": [
+     0.26,
+     0.8552
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "slime monster",
+    "is": "blue slime monster"
+   }
+  },
+  "game_monsters__giant_spider": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.2,
+   "facing": "r",
+   "px": [
+    280,
+    224
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5179,
+    "pad": 0.0179,
+    "aspect": 1.25,
+    "face": {
+     "l": 0.4094,
+     "r": 0.4706,
+     "t": 0.825,
+     "b": 0.915
+    },
+    "mouth": [
+     0.44,
+     0.8952
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "giant spider"
+   }
+  },
+  "game_monsters__werewolf": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 2,
+   "facing": "r",
+   "px": [
+    280,
+    311
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.2482,
+    "pad": 0.0096,
+    "aspect": 0.9003,
+    "face": {
+     "l": 0.5526,
+     "r": 0.7081,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.6304,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "werewolf",
+    "is": "werewolf"
+   }
+  },
+  "game_monsters__vampire_cloak": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.6,
+   "facing": "r",
+   "px": [
+    217,
+    330
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4309,
+    "pad": 0.0091,
+    "aspect": 0.6576,
+    "face": {
+     "l": 0.312,
+     "r": 0.4945,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.4033,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "vampire",
+    "is": "vampire in cloak"
+   }
+  },
+  "game_monsters__ghost_floating": {
+   "sheet": "game_monsters",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.6,
+   "facing": "r",
+   "px": [
+    233,
+    267
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.1052,
+    "pad": 0.015,
+    "aspect": 0.8727,
+    "face": {
+     "l": 0.5357,
+     "r": 0.6961,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.6159,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "ghost",
+    "is": "floating ghost"
+   }
+  },
+  "game_big_monsters__red_dragon_breathing_fire": {
+   "sheet": "game_big_monsters",
+   "era": "game",
+   "kind": "animal",
+   "heightM": 10,
+   "facing": "r",
+   "px": [
+    559,
+    349
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.2771,
+    "pad": 0.0086,
+    "aspect": 1.6017,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "red dragon breathing fire"
+   }
+  },
+  "game_big_monsters__giant_ogre": {
+   "sheet": "game_big_monsters",
+   "era": "game",
+   "kind": "animal",
+   "heightM": 5,
+   "facing": "r",
+   "px": [
+    283,
+    363
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4189,
+    "pad": 0.0083,
+    "aspect": 0.7796,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "ogre",
+    "is": "giant ogre with club"
+   }
+  },
+  "game_big_monsters__stone_golem": {
+   "sheet": "game_big_monsters",
+   "era": "game",
+   "kind": "animal",
+   "heightM": 4,
+   "facing": "r",
+   "px": [
+    313,
+    325
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5516,
+    "pad": 0.0123,
+    "aspect": 0.9631,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "stone golem",
+    "is": "stone golem"
+   }
+  },
+  "game_big_monsters__minotaur_axe": {
+   "sheet": "game_big_monsters",
+   "era": "game",
+   "kind": "animal",
+   "heightM": 3,
+   "facing": "r",
+   "px": [
+    346,
+    348
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3326,
+    "pad": 0.0086,
+    "aspect": 0.9943,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "minotaur",
+    "is": "minotaur with axe"
+   }
+  },
+  "game_big_monsters__threeheaded_hydra": {
+   "sheet": "game_big_monsters",
+   "era": "game",
+   "kind": "animal",
+   "heightM": 8,
+   "facing": "r",
+   "px": [
+    522,
+    349
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4794,
+    "pad": 0.0086,
+    "aspect": 1.4957,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "threeheaded hydra"
+   }
+  },
+  "game_big_monsters__griffin": {
+   "sheet": "game_big_monsters",
+   "era": "game",
+   "kind": "animal",
+   "heightM": 3,
+   "facing": "r",
+   "px": [
+    335,
+    335
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6054,
+    "pad": 0.0119,
+    "aspect": 1,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "griffin"
+   }
+  },
+  "game_scifi_chars__space_marine_power_armor": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    193,
+    372
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.547,
+    "pad": 0.0081,
+    "aspect": 0.5188,
+    "face": {
+     "l": -0.0001,
+     "r": 0.1801,
+     "t": 0.165,
+     "b": 0.275
+    },
+    "mouth": [
+     0.09,
+     0.2508
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "space marine",
+    "is": "space marine in armor"
+   }
+  },
+  "game_scifi_chars__astronaut_spacesuit": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    184,
+    371
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.59,
+    "pad": 0.0081,
+    "aspect": 0.496,
+    "face": {
+     "l": 0.3262,
+     "r": 0.6085,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.4674,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "astronaut",
+    "is": "astronaut in spacesuit"
+   }
+  },
+  "game_scifi_chars__humanoid_robot": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 2,
+   "facing": "r",
+   "px": [
+    153,
+    372
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5402,
+    "pad": 0.0081,
+    "aspect": 0.4113,
+    "face": {
+     "l": 0.369,
+     "r": 0.7094,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.5392,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "robot",
+    "is": "humanoid robot"
+   }
+  },
+  "game_scifi_chars__female_android": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    124,
+    361
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5622,
+    "pad": 0.0083,
+    "aspect": 0.3435,
+    "face": {
+     "l": 0.3204,
+     "r": 0.728,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.5242,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "android",
+    "is": "female android"
+   }
+  },
+  "game_scifi_chars__grey_alien": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.3,
+   "facing": "r",
+   "px": [
+    121,
+    350
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5661,
+    "pad": 0.0086,
+    "aspect": 0.3457,
+    "face": {
+     "l": 0.2934,
+     "r": 0.6983,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.4959,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "grey alien",
+    "is": "grey alien"
+   }
+  },
+  "game_scifi_chars__alien_warrior_plasma_rifle": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 2.2,
+   "facing": "r",
+   "px": [
+    231,
+    352
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.2165,
+    "pad": 0.0114,
+    "aspect": 0.6562,
+    "face": {
+     "l": 0.3306,
+     "r": 0.5439,
+     "t": 0,
+     "b": 0.16
+    },
+    "mouth": [
+     0.4373,
+     0.1248
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "alien warrior",
+    "is": "alien warrior with rifle"
+   }
+  },
+  "game_scifi_chars__cyborg_soldier": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    161,
+    356
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5542,
+    "pad": 0.0084,
+    "aspect": 0.4522,
+    "face": {
+     "l": 0.6301,
+     "r": 0.7302,
+     "t": 0.0112,
+     "b": 0.1152
+    },
+    "mouth": [
+     0.6802,
+     0.0923
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "cyborg soldier",
+    "is": "cyborg soldier"
+   }
+  },
+  "game_scifi_chars__starship_pilot": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    139,
+    357
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5843,
+    "pad": 0.0112,
+    "aspect": 0.3894,
+    "face": {
+     "l": 0.522,
+     "r": 0.6291,
+     "t": 0.2325,
+     "b": 0.2717
+    },
+    "mouth": [
+     0.5756,
+     0.2631
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "starship pilot",
+    "is": "starship pilot"
+   }
+  },
+  "game_scifi_chars__scifi_scientist_lab_coat": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    186,
+    356
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4134,
+    "pad": 0.0084,
+    "aspect": 0.5225,
+    "face": {
+     "l": 0.3047,
+     "r": 0.5447,
+     "t": 0.0337,
+     "b": 0.1096
+    },
+    "mouth": [
+     0.4247,
+     0.0929
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "scifi scientist",
+    "is": "scifi scientist in lab coat"
+   }
+  },
+  "game_scifi_chars__mech_suit_pilot_exo_suit": {
+   "sheet": "game_scifi_chars",
+   "era": "game",
+   "kind": "person",
+   "heightM": 2.5,
+   "facing": "r",
+   "px": [
+    162,
+    355
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5741,
+    "pad": 0.0085,
+    "aspect": 0.4563,
+    "face": {
+     "l": 0.3827,
+     "r": 0.7654,
+     "t": 0.0113,
+     "b": 0.2225
+    },
+    "mouth": [
+     0.5741,
+     0.176
+    ],
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "mech pilot",
+    "is": "mech suit pilot"
+   }
+  },
+  "game_scifi_veh__scifi_space_fighter_ship": {
+   "sheet": "game_scifi_veh",
+   "era": "game",
+   "kind": "vehicle",
+   "heightM": 4,
+   "facing": "r",
+   "px": [
+    364,
+    221
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.7335,
+    "pad": 0.0136,
+    "aspect": 1.6471,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "scifi space fighter ship"
+   }
+  },
+  "game_scifi_veh__space_cruiser_battleship": {
+   "sheet": "game_scifi_veh",
+   "era": "game",
+   "kind": "vehicle",
+   "heightM": 40,
+   "facing": "r",
+   "px": [
+    531,
+    244
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.742,
+    "pad": 0.0123,
+    "aspect": 2.1762,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "space cruiser battleship"
+   }
+  },
+  "game_scifi_veh__planetary_rover": {
+   "sheet": "game_scifi_veh",
+   "era": "game",
+   "kind": "vehicle",
+   "heightM": 2.5,
+   "facing": "r",
+   "px": [
+    366,
+    269
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4768,
+    "pad": 0.0149,
+    "aspect": 1.3606,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "planetary rover"
+   }
+  },
+  "game_scifi_veh__twolegged_combat_mech_walker": {
+   "sheet": "game_scifi_veh",
+   "era": "game",
+   "kind": "vehicle",
+   "heightM": 8,
+   "facing": "r",
+   "px": [
+    352,
+    372
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.2827,
+    "pad": 0.0108,
+    "aspect": 0.9462,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "combat mech walker"
+   }
+  },
+  "game_scifi_veh__hover_bike_rider": {
+   "sheet": "game_scifi_veh",
+   "era": "game",
+   "kind": "vehicle",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    371,
+    298
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.7547,
+    "pad": 0.0134,
+    "aspect": 1.245,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "hoverbike rider",
+    "is": "hover bike rider"
+   }
+  },
+  "game_scifi_veh__flying_saucer_ufo": {
+   "sheet": "game_scifi_veh",
+   "era": "game",
+   "kind": "vehicle",
+   "heightM": 4,
+   "facing": "r",
+   "px": [
+    361,
+    223
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6385,
+    "pad": 0.0135,
+    "aspect": 1.6188,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "flying saucer ufo"
+   }
+  },
+  "game_items__treasure_chest_open_gold": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.7,
+   "facing": "r",
+   "px": [
+    207,
+    204
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4348,
+    "pad": 0.0147,
+    "aspect": 1.0147,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "open treasure chest with gold"
+   }
+  },
+  "game_items__red_health_potion_bottle": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.25,
+   "facing": "r",
+   "px": [
+    147,
+    206
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5034,
+    "pad": 0.0146,
+    "aspect": 0.7136,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "red potion bottle"
+   }
+  },
+  "game_items__blue_mana_potion_bottle": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.25,
+   "facing": "r",
+   "px": [
+    123,
+    212
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0189,
+    "aspect": 0.5802,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "blue potion bottle"
+   }
+  },
+  "game_items__pile_gold_coins": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.3,
+   "facing": "r",
+   "px": [
+    217,
+    148
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.7189,
+    "pad": 0.0203,
+    "aspect": 1.4662,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pile of gold coins"
+   }
+  },
+  "game_items__large_gemstone": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.2,
+   "facing": "r",
+   "px": [
+    194,
+    162
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0185,
+    "aspect": 1.1975,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "large purple and green gemstone"
+   }
+  },
+  "game_items__golden_key": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.15,
+   "facing": "r",
+   "px": [
+    190,
+    186
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.1553,
+    "pad": 0.0161,
+    "aspect": 1.0215,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "golden key"
+   }
+  },
+  "game_items__magic_staff_crystal": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 1.8,
+   "facing": "r",
+   "px": [
+    187,
+    234
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.0642,
+    "pad": 0.0128,
+    "aspect": 0.7991,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden magic staff with crystal"
+   }
+  },
+  "game_items__glowing_magic_sword": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 1.1,
+   "facing": "r",
+   "px": [
+    207,
+    238
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.0797,
+    "pad": 0.0168,
+    "aspect": 0.8697,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "glowing magic sword"
+   }
+  },
+  "game_items__round_shield_emblem_letters": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.9,
+   "facing": "r",
+   "px": [
+    198,
+    199
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0151,
+    "aspect": 0.995,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "round wooden shield with emblem"
+   }
+  },
+  "game_items__fantasy_bow": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 1.3,
+   "facing": "r",
+   "px": [
+    147,
+    270
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6463,
+    "pad": 0.0111,
+    "aspect": 0.5444,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "fantasy bow"
+   }
+  },
+  "game_items__magic_scroll": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.4,
+   "facing": "r",
+   "px": [
+    188,
+    215
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5612,
+    "pad": 0.0279,
+    "aspect": 0.8744,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "magic scroll"
+   }
+  },
+  "game_items__red_heart_icon": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.3,
+   "facing": "r",
+   "px": [
+    184,
+    163
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0184,
+    "aspect": 1.1288,
+    "place": "icon",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "red heart icon"
+   }
+  },
+  "game_items__gold_star_icon": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.3,
+   "facing": "r",
+   "px": [
+    189,
+    182
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5,
+    "pad": 0.0165,
+    "aspect": 1.0385,
+    "place": "icon",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "gold star icon"
+   }
+  },
+  "game_items__round_bomb_fuse": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.4,
+   "facing": "r",
+   "px": [
+    176,
+    222
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4318,
+    "pad": 0.0135,
+    "aspect": 0.7928,
+    "place": "hand",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "round black bomb with fuse"
+   }
+  },
+  "game_items__wooden_crate": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.8,
+   "facing": "r",
+   "px": [
+    206,
+    202
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4806,
+    "pad": 0.0198,
+    "aspect": 1.0198,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden crate"
+   }
+  },
+  "game_items__spellbook": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.3,
+   "facing": "r",
+   "px": [
+    194,
+    211
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4871,
+    "pad": 0.0142,
+    "aspect": 0.9194,
+    "place": "table",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "closed spellbook"
+   }
+  },
+  "game_items__glowing_mushroom": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 0.4,
+   "facing": "r",
+   "px": [
+    188,
+    227
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.484,
+    "pad": 0.0264,
+    "aspect": 0.8282,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "glowing blue mushroom"
+   }
+  },
+  "game_items__magic_portal_arch": {
+   "sheet": "game_items",
+   "era": "game",
+   "kind": "prop",
+   "heightM": 3,
+   "facing": "r",
+   "px": [
+    207,
+    234
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4976,
+    "pad": 0.0171,
+    "aspect": 0.8846,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "stone magic portal arch"
+   }
+  },
+  "game_buildings__wizard_tower": {
+   "sheet": "game_buildings",
+   "era": "game",
+   "kind": "building",
+   "heightM": 25,
+   "facing": "r",
+   "px": [
+    190,
+    422
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5342,
+    "pad": 0.0071,
+    "aspect": 0.4502,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "stone wizard tower"
+   }
+  },
+  "game_buildings__fantasy_tavern": {
+   "sheet": "game_buildings",
+   "era": "game",
+   "kind": "building",
+   "heightM": 8,
+   "facing": "r",
+   "px": [
+    447,
+    358
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5045,
+    "pad": 0.0084,
+    "aspect": 1.2486,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "fantasy tavern building"
+   }
+  },
+  "game_buildings__dungeon_entrance_rock": {
+   "sheet": "game_buildings",
+   "era": "game",
+   "kind": "building",
+   "heightM": 5,
+   "facing": "r",
+   "px": [
+    398,
+    337
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5302,
+    "pad": 0.0089,
+    "aspect": 1.181,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "rock dungeon entrance"
+   }
+  },
+  "game_buildings__ancient_ruined_temple": {
+   "sheet": "game_buildings",
+   "era": "game",
+   "kind": "building",
+   "heightM": 10,
+   "facing": "r",
+   "px": [
+    482,
+    306
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5482,
+    "pad": 0.0098,
+    "aspect": 1.5752,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "ancient ruined temple"
+   }
+  },
+  "game_buildings__fairy_tale_cottage": {
+   "sheet": "game_buildings",
+   "era": "game",
+   "kind": "building",
+   "heightM": 6,
+   "facing": "r",
+   "px": [
+    370,
+    314
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5081,
+    "pad": 0.0096,
+    "aspect": 1.1783,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "fairy tale cottage"
+   }
+  },
+  "game_buildings__giant_crystal_formation": {
+   "sheet": "game_buildings",
+   "era": "game",
+   "kind": "building",
+   "heightM": 6,
+   "facing": "r",
+   "px": [
+    309,
+    344
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5518,
+    "pad": 0.0087,
+    "aspect": 0.8983,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "giant crystal formation"
+   }
+  },
+  "game_nature__magic_glowing_tree": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 10,
+   "facing": "r",
+   "px": [
+    253,
+    314
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4219,
+    "pad": 0.0127,
+    "aspect": 0.8057,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "magic glowing tree"
+   }
+  },
+  "game_nature__giant_mushroom": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 5,
+   "facing": "r",
+   "px": [
+    221,
+    274
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5181,
+    "pad": 0.0109,
+    "aspect": 0.8066,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "giant brown mushroom"
+   }
+  },
+  "game_nature__crystal_cluster": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 2,
+   "facing": "r",
+   "px": [
+    189,
+    217
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4794,
+    "pad": 0.0138,
+    "aspect": 0.871,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "purple and blue crystal cluster"
+   }
+  },
+  "game_nature__glowing_flower_plant": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 1,
+   "facing": "r",
+   "px": [
+    216,
+    286
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5414,
+    "pad": 0.0245,
+    "aspect": 0.7552,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "glowing flower plant"
+   }
+  },
+  "game_nature__twisted_dead_tree": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 8,
+   "facing": "r",
+   "px": [
+    217,
+    303
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4232,
+    "pad": 0.0099,
+    "aspect": 0.7162,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "twisted dead tree"
+   }
+  },
+  "game_nature__fantasy_pine_tree": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 12,
+   "facing": "r",
+   "px": [
+    213,
+    311
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.4953,
+    "pad": 0.0096,
+    "aspect": 0.6849,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "fantasy pine tree"
+   }
+  },
+  "game_nature__floating_rock_island": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 6,
+   "facing": "r",
+   "px": [
+    243,
+    218
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.6193,
+    "pad": 0.0183,
+    "aspect": 1.1147,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "floating rock island"
+   }
+  },
+  "game_nature__lava_rock": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 1.5,
+   "facing": "r",
+   "px": [
+    207,
+    212
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5266,
+    "pad": 0.0142,
+    "aspect": 0.9764,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "volcanic lava rock"
+   }
+  },
+  "game_nature__ice_crystal_rock": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 2,
+   "facing": "r",
+   "px": [
+    208,
+    226
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5462,
+    "pad": 0.0133,
+    "aspect": 0.9204,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "ice crystal rock"
+   }
+  },
+  "game_nature__alien_plant": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 3,
+   "facing": "r",
+   "px": [
+    189,
+    277
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.3049,
+    "pad": 0.0108,
+    "aspect": 0.6823,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "alien plant"
+   }
+  },
+  "game_nature__vinecovered_pillar_ruin": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 4,
+   "facing": "r",
+   "px": [
+    143,
+    296
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5105,
+    "pad": 0.0101,
+    "aspect": 0.4831,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "vinecovered ruined pillar"
+   }
+  },
+  "game_nature__cartoon_bush": {
+   "sheet": "game_nature",
+   "era": "game",
+   "kind": "nature",
+   "heightM": 1.2,
+   "facing": "r",
+   "px": [
+    236,
+    180
+   ],
+   "ann": {
+    "v": 3,
+    "foot": 0.5273,
+    "pad": 0.0167,
+    "aspect": 1.3111,
+    "place": "ground",
+    "facing": "r",
+    "text": false,
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "cartoon green bush"
+   }
+  }
+ },
+ "backgrounds": {
+  "bg_game_fantasy_forest": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     860,
+     850
+    ],
+    "person": [
+     153,
+     161,
+     153
+    ],
+    "horizon": 713,
+    "spots": [
+     [
+      420,
+      860,
+      161
+     ],
+     [
+      650,
+      850,
+      153
+     ],
+     [
+      960,
+      860,
+      161
+     ],
+     [
+      1250,
+      850,
+      153
+     ],
+     [
+      1520,
+      860,
+      161
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      360,
+      120,
+      840,
+      300
+     ],
+     [
+      720,
+      480,
+      1200,
+      660
+     ],
+     [
+      1320,
+      240,
+      1800,
+      420
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 860
+  },
+  "bg_game_dungeon": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     960,
+     920,
+     860
+    ],
+    "person": [
+     462,
+     409,
+     331
+    ],
+    "horizon": 546,
+    "spots": [
+     [
+      300,
+      960,
+      462
+     ],
+     [
+      650,
+      940,
+      436
+     ],
+     [
+      1000,
+      920,
+      409
+     ],
+     [
+      1350,
+      890,
+      370
+     ],
+     [
+      1650,
+      850,
+      318
+     ]
+    ],
+    "walls": [
+     [
+      250,
+      550,
+      620
+     ],
+     [
+      800,
+      1050,
+      650
+     ],
+     [
+      1150,
+      1350,
+      620
+     ]
+    ],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1320,
+      0,
+      1800,
+      180
+     ],
+     [
+      1320,
+      180,
+      1800,
+      360
+     ],
+     [
+      720,
+      0,
+      1200,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 920
+  },
+  "bg_game_castle_hall": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     940,
+     860,
+     940
+    ],
+    "person": [
+     346,
+     258,
+     346
+    ],
+    "horizon": 624,
+    "spots": [
+     [
+      450,
+      920,
+      324
+     ],
+     [
+      750,
+      840,
+      236
+     ],
+     [
+      1050,
+      840,
+      236
+     ],
+     [
+      1350,
+      900,
+      302
+     ]
+    ],
+    "walls": [
+     [
+      550,
+      860,
+      550
+     ],
+     [
+      1120,
+      1240,
+      580
+     ],
+     [
+      1820,
+      1920,
+      560
+     ]
+    ],
+    "table": [
+     10,
+     430,
+     740
+    ],
+    "water": null,
+    "free": [
+     [
+      1320,
+      0,
+      1800,
+      180
+     ],
+     [
+      600,
+      420,
+      1080,
+      600
+     ],
+     [
+      1320,
+      240,
+      1800,
+      420
+     ]
+    ],
+    "seats": [
+     {
+      "k": "chair",
+      "x0": 670,
+      "x1": 780,
+      "y": 620
+     },
+     {
+      "k": "bench",
+      "x0": 270,
+      "x1": 520,
+      "y": 710
+     },
+     {
+      "k": "bench",
+      "x0": 1000,
+      "x1": 1380,
+      "y": 655
+     },
+     {
+      "k": "bench",
+      "x0": 1520,
+      "x1": 1920,
+      "y": 730
+     }
+    ],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 860
+  },
+  "bg_game_lava_cave": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     860,
+     860
+    ],
+    "person": [
+     230,
+     237,
+     237
+    ],
+    "horizon": 643,
+    "spots": [
+     [
+      320,
+      860,
+      237
+     ],
+     [
+      650,
+      850,
+      230
+     ],
+     [
+      960,
+      860,
+      237
+     ],
+     [
+      1300,
+      860,
+      237
+     ],
+     [
+      1600,
+      860,
+      237
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1320,
+      240,
+      1800,
+      420
+     ],
+     [
+      1080,
+      0,
+      1560,
+      180
+     ],
+     [
+      1200,
+      420,
+      1680,
+      600
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 860
+  },
+  "bg_game_ice_land": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     850,
+     850
+    ],
+    "person": [
+     207,
+     207,
+     207
+    ],
+    "horizon": 661,
+    "spots": [
+     [
+      320,
+      850,
+      207
+     ],
+     [
+      640,
+      830,
+      191
+     ],
+     [
+      960,
+      840,
+      199
+     ],
+     [
+      1280,
+      830,
+      191
+     ],
+     [
+      1600,
+      850,
+      207
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      240,
+      0,
+      720,
+      180
+     ],
+     [
+      1200,
+      0,
+      1680,
+      180
+     ],
+     [
+      120,
+      180,
+      600,
+      360
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 850
+  },
+  "bg_game_space_station": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     920,
+     900,
+     920
+    ],
+    "person": [
+     624,
+     599,
+     624
+    ],
+    "horizon": 352,
+    "spots": [
+     [
+      350,
+      910,
+      612
+     ],
+     [
+      650,
+      860,
+      549
+     ],
+     [
+      960,
+      860,
+      549
+     ],
+     [
+      1300,
+      880,
+      574
+     ],
+     [
+      1580,
+      910,
+      612
+     ]
+    ],
+    "walls": [
+     [
+      380,
+      440,
+      560
+     ],
+     [
+      630,
+      870,
+      630
+     ]
+    ],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      360,
+      0,
+      840,
+      180
+     ],
+     [
+      1080,
+      60,
+      1560,
+      240
+     ],
+     [
+      1320,
+      360,
+      1800,
+      540
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 900
+  },
+  "bg_game_alien_planet": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     880,
+     880
+    ],
+    "person": [
+     217,
+     217,
+     217
+    ],
+    "horizon": 682,
+    "spots": [
+     [
+      320,
+      880,
+      217
+     ],
+     [
+      640,
+      870,
+      209
+     ],
+     [
+      960,
+      870,
+      209
+     ],
+     [
+      1280,
+      870,
+      209
+     ],
+     [
+      1600,
+      880,
+      217
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      600,
+      180,
+      1080,
+      360
+     ],
+     [
+      1320,
+      0,
+      1800,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 880
+  },
+  "bg_game_scifi_city": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     920,
+     900,
+     910
+    ],
+    "person": [
+     210,
+     188,
+     199
+    ],
+    "horizon": 728,
+    "spots": [
+     [
+      350,
+      910,
+      199
+     ],
+     [
+      620,
+      900,
+      188
+     ],
+     [
+      960,
+      900,
+      188
+     ],
+     [
+      1250,
+      900,
+      188
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      840,
+      180,
+      1320,
+      360
+     ],
+     [
+      1080,
+      0,
+      1560,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": [
+     120,
+     380,
+     620,
+     570
+    ],
+    "boats": null
+   },
+   "ground": 900
+  },
+  "bg_game_desert_ruins": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     850,
+     860,
+     850
+    ],
+    "person": [
+     277,
+     285,
+     277
+    ],
+    "horizon": 599,
+    "spots": [
+     [
+      320,
+      850,
+      277
+     ],
+     [
+      650,
+      840,
+      270
+     ],
+     [
+      960,
+      860,
+      285
+     ],
+     [
+      1300,
+      840,
+      270
+     ],
+     [
+      1600,
+      850,
+      277
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      720,
+      0,
+      1200,
+      180
+     ],
+     [
+      600,
+      180,
+      1080,
+      360
+     ],
+     [
+      1200,
+      60,
+      1680,
+      240
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 860
+  },
+  "bg_game_sky_islands": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     920,
+     900,
+     910
+    ],
+    "person": [
+     207,
+     191,
+     199
+    ],
+    "horizon": 725,
+    "spots": [
+     [
+      350,
+      910,
+      199
+     ],
+     [
+      650,
+      890,
+      184
+     ],
+     [
+      950,
+      900,
+      191
+     ],
+     [
+      1250,
+      910,
+      199
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      600,
+      0,
+      1080,
+      180
+     ],
+     [
+      720,
+      180,
+      1200,
+      360
+     ],
+     [
+      720,
+      360,
+      1200,
+      540
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 900
+  },
+  "bg_game_village": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     880,
+     860,
+     870
+    ],
+    "person": [
+     189,
+     176,
+     182
+    ],
+    "horizon": 699,
+    "spots": [
+     [
+      350,
+      870,
+      182
+     ],
+     [
+      650,
+      850,
+      169
+     ],
+     [
+      950,
+      860,
+      176
+     ],
+     [
+      1250,
+      840,
+      163
+     ],
+     [
+      1550,
+      860,
+      176
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      720,
+      0,
+      1200,
+      180
+     ],
+     [
+      840,
+      180,
+      1320,
+      360
+     ],
+     [
+      240,
+      0,
+      720,
+      180
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 860
+  },
+  "bg_game_graveyard": {
+   "era": "game",
+   "px": [
+    1376,
+    768
+   ],
+   "ann": {
+    "v": 6,
+    "ground": [
+     870,
+     860,
+     870
+    ],
+    "person": [
+     255,
+     248,
+     255
+    ],
+    "horizon": 633,
+    "spots": [
+     [
+      350,
+      860,
+      248
+     ],
+     [
+      650,
+      850,
+      240
+     ],
+     [
+      960,
+      860,
+      248
+     ],
+     [
+      1280,
+      850,
+      240
+     ],
+     [
+      1550,
+      860,
+      248
+     ]
+    ],
+    "walls": [],
+    "table": null,
+    "water": null,
+    "free": [
+     [
+      1320,
+      0,
+      1800,
+      180
+     ],
+     [
+      1080,
+      180,
+      1560,
+      360
+     ],
+     [
+      0,
+      180,
+      480,
+      360
+     ]
+    ],
+    "seats": [],
+    "rails": null,
+    "boats": null
+   },
+   "ground": 860
+  }
+ }
+}

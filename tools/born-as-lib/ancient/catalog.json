@@ -12,8 +12,8 @@
     311
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4804,
+    "v": 3,
+    "foot": 0.4824,
     "pad": 0.0096,
     "aspect": 0.9357,
     "face": {
@@ -30,7 +30,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary marching"
    }
   },
   "rome_legion__legionary_stand": {
@@ -44,8 +52,8 @@
     349
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.485,
+    "v": 3,
+    "foot": 0.4809,
     "pad": 0.0086,
     "aspect": 0.447,
     "face": {
@@ -62,7 +70,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary standing"
    }
   },
   "rome_legion__legionary_attack": {
@@ -76,25 +92,33 @@
     284
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4783,
-    "pad": 0.0106,
+    "v": 3,
+    "foot": 0.4844,
+    "pad": 0.0141,
     "aspect": 0.8063,
     "face": {
-     "l": 0.1565,
-     "r": 0.3893,
-     "t": 0.1831,
-     "b": 0.4965
+     "l": 0.3826,
+     "r": 0.4774,
+     "t": -0.005,
+     "b": 0.085
     },
     "mouth": [
-     0.2729,
-     0.4276
+     0.43,
+     0.0652
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary attacking"
    }
   },
   "rome_legion__legionary_throw_pilum": {
@@ -108,25 +132,33 @@
     308
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5936,
     "pad": 0.0097,
     "aspect": 1.0325,
     "face": {
-     "l": 0.2169,
-     "r": 0.3806,
-     "t": 0.0942,
-     "b": 0.3409
+     "l": 0.543,
+     "r": 0.617,
+     "t": -0.005,
+     "b": 0.085
     },
     "mouth": [
-     0.2988,
-     0.2866
+     0.58,
+     0.0652
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary throwing pilum"
    }
   },
   "rome_legion__centurion_stand": {
@@ -140,7 +172,7 @@
     339
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4572,
     "pad": 0.0088,
     "aspect": 0.5074,
@@ -158,7 +190,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman centurion",
+    "is": "roman centurion standing"
    }
   },
   "rome_legion__signifer_stand": {
@@ -172,8 +212,8 @@
     372
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.488,
+    "v": 3,
+    "foot": 0.4917,
     "pad": 0.0081,
     "aspect": 0.4731,
     "face": {
@@ -190,7 +230,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman signifer",
+    "is": "roman signifer standing"
    }
   },
   "rome_legion__aquilifer_stand": {
@@ -204,25 +252,33 @@
     377
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.432,
+    "v": 3,
+    "foot": 0.4323,
     "pad": 0.008,
     "aspect": 0.4536,
     "face": {
-     "l": 0.0019,
-     "r": 0.2081,
-     "t": 0.18,
-     "b": 0.29
+     "l": -0.0331,
+     "r": 0.1731,
+     "t": 0.205,
+     "b": 0.315
     },
     "mouth": [
-     0.105,
-     0.2658
+     0.07,
+     0.2908
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman aquilifer",
+    "is": "roman aquilifer standing"
    }
   },
   "rome_legion__legate_cape": {
@@ -236,7 +292,7 @@
     348
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.6089,
     "pad": 0.0086,
     "aspect": 0.4339,
@@ -254,7 +310,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legate",
+    "is": "roman legate in cape"
    }
   },
   "rome_legion__praetorian_stand": {
@@ -268,8 +332,8 @@
     350
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4878,
+    "v": 3,
+    "foot": 0.4953,
     "pad": 0.0086,
     "aspect": 0.52,
     "face": {
@@ -286,7 +350,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "praetorian guard",
+    "is": "praetorian guard standing"
    }
   },
   "rome_legion__roman_archer": {
@@ -300,25 +372,33 @@
     339
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4197,
+    "v": 3,
+    "foot": 0.4157,
     "pad": 0.0088,
     "aspect": 0.6549,
     "face": {
-     "l": -0.0052,
-     "r": 0.3746,
-     "t": 0.2094,
-     "b": 0.3392
+     "l": 0.4986,
+     "r": 0.6414,
+     "t": 0.195,
+     "b": 0.305
     },
     "mouth": [
-     0.1847,
-     0.3106
+     0.57,
+     0.2808
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman archer",
+    "is": "roman archer shooting"
    }
   },
   "rome_legion_act__legionary_charge": {
@@ -332,7 +412,7 @@
     320
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4513,
     "pad": 0.0094,
     "aspect": 0.7281,
@@ -350,7 +430,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary charging"
    }
   },
   "rome_legion_act__legionary_shield_up": {
@@ -364,8 +452,8 @@
     275
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3937,
+    "v": 3,
+    "foot": 0.3927,
     "pad": 0.0109,
     "aspect": 0.8,
     "face": {
@@ -382,7 +470,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "kneel",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary holding shield up"
    }
   },
   "rome_legion_act__legionary_wounded": {
@@ -396,25 +492,33 @@
     162
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3811,
+    "v": 3,
+    "foot": 0.3721,
     "pad": 0.0185,
     "aspect": 1.7716,
     "face": {
-     "l": 0.3837,
-     "r": 0.4874,
-     "t": 0.1975,
-     "b": 0.4938
+     "l": -0.0472,
+     "r": 0.0872,
+     "t": 0.33,
+     "b": 0.61
     },
     "mouth": [
-     0.4356,
-     0.4286
+     0.02,
+     0.5484
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "lie",
+    "flat": true,
+    "group": "roman legionary",
+    "is": "wounded roman legionary lying"
    }
   },
   "rome_legion_act__legionary_rest": {
@@ -428,8 +532,8 @@
     217
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.2953,
+    "v": 3,
+    "foot": 0.2916,
     "pad": 0.0138,
     "aspect": 1.0737,
     "face": {
@@ -446,7 +550,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary sitting resting"
    }
   },
   "rome_legion_act__legionary_dig": {
@@ -460,25 +572,33 @@
     263
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5331,
+    "v": 3,
+    "foot": 0.5296,
     "pad": 0.0114,
     "aspect": 0.8061,
     "face": {
-     "l": 0.3396,
-     "r": 0.4858,
-     "t": 0.1901,
-     "b": 0.4943
+     "l": 0.3925,
+     "r": 0.4875,
+     "t": 0.395,
+     "b": 0.485
     },
     "mouth": [
-     0.4127,
-     0.4274
+     0.44,
+     0.4652
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary digging"
    }
   },
   "rome_legion_act__legionary_carry_pack": {
@@ -492,8 +612,8 @@
     322
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5295,
+    "v": 3,
+    "foot": 0.5221,
     "pad": 0.0093,
     "aspect": 0.7236,
     "face": {
@@ -510,7 +630,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary carrying pack"
    }
   },
   "rome_legion_act__cornicen_horn": {
@@ -524,8 +652,8 @@
     328
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5044,
+    "v": 3,
+    "foot": 0.5099,
     "pad": 0.0091,
     "aspect": 0.5427,
     "face": {
@@ -542,7 +670,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman cornicen",
+    "is": "roman cornicen blowing horn"
    }
   },
   "rome_legion_act__roman_medic": {
@@ -556,25 +692,33 @@
     252
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4298,
+    "v": 3,
+    "foot": 0.4323,
     "pad": 0.0119,
     "aspect": 0.8214,
     "face": {
      "l": 0.405,
      "r": 0.6626,
-     "t": 0.0159,
+     "t": 0.0198,
      "b": 0.2698
     },
     "mouth": [
      0.5338,
-     0.2139
+     0.2148
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "kneel",
+    "flat": false,
+    "group": "roman medic",
+    "is": "roman medic kneeling"
    }
   },
   "rome_legion_act__legionary_surrender": {
@@ -588,9 +732,9 @@
     265
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.6033,
-    "pad": 0.0113,
+    "pad": 0.0151,
     "aspect": 1.0415,
     "face": {
      "l": 0.5026,
@@ -606,7 +750,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "kneel",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary kneeling surrendering"
    }
   },
   "rome_legion_act__general_pointing": {
@@ -620,25 +772,33 @@
     326
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4197,
-    "pad": 0.0092,
+    "v": 3,
+    "foot": 0.4202,
+    "pad": 0.0123,
     "aspect": 0.7423,
     "face": {
      "l": 0.2726,
      "r": 0.4878,
-     "t": 0.0123,
+     "t": 0.0153,
      "b": 0.2055
     },
     "mouth": [
      0.3802,
-     0.163
+     0.1637
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman general",
+    "is": "roman general pointing"
    }
   },
   "rome_civ__senator_toga_stand": {
@@ -652,8 +812,8 @@
     362
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5212,
+    "v": 3,
+    "foot": 0.5239,
     "pad": 0.0083,
     "aspect": 0.3923,
     "face": {
@@ -670,7 +830,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman senator",
+    "is": "roman senator standing"
    }
   },
   "rome_civ__senator_toga_speech": {
@@ -684,7 +852,7 @@
     353
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.3225,
     "pad": 0.0085,
     "aspect": 0.5949,
@@ -702,7 +870,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman senator",
+    "is": "roman senator giving speech"
    }
   },
   "rome_civ__emperor_laurel": {
@@ -716,7 +892,7 @@
     364
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5796,
     "pad": 0.0082,
     "aspect": 0.4286,
@@ -734,7 +910,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman emperor",
+    "is": "roman emperor wearing laurel"
    }
   },
   "rome_civ__patrician_woman": {
@@ -748,8 +932,8 @@
     360
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.457,
+    "v": 3,
+    "foot": 0.4536,
     "pad": 0.0083,
     "aspect": 0.4194,
     "face": {
@@ -766,7 +950,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman patrician woman",
+    "is": "roman patrician woman"
    }
   },
   "rome_civ__plebeian_man_walk": {
@@ -780,7 +972,7 @@
     356
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.541,
     "pad": 0.0084,
     "aspect": 0.5,
@@ -798,7 +990,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman plebeian",
+    "is": "roman plebeian man walking"
    }
   },
   "rome_civ__plebeian_woman_basket": {
@@ -812,8 +1012,8 @@
     343
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4109,
+    "v": 3,
+    "foot": 0.4114,
     "pad": 0.0087,
     "aspect": 0.4402,
     "face": {
@@ -830,7 +1030,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman plebeian",
+    "is": "roman plebeian woman with basket"
    }
   },
   "rome_civ__slave_carry_amphora": {
@@ -844,25 +1052,33 @@
     360
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5461,
+    "v": 3,
+    "foot": 0.5454,
     "pad": 0.0083,
     "aspect": 0.3944,
     "face": {
      "l": 0.262,
      "r": 0.6113,
-     "t": 0.0111,
+     "t": 0.0139,
      "b": 0.2722
     },
     "mouth": [
      0.4367,
-     0.2148
+     0.2154
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman slave",
+    "is": "slave carrying amphora"
    }
   },
   "rome_civ__merchant_stand": {
@@ -876,9 +1092,9 @@
     355
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.6028,
-    "pad": 0.0085,
+    "pad": 0.0113,
     "aspect": 0.3606,
     "face": {
      "l": 0.2969,
@@ -894,7 +1110,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman merchant",
+    "is": "roman merchant standing"
    }
   },
   "rome_civ__roman_child": {
@@ -908,8 +1132,8 @@
     257
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5878,
+    "v": 3,
+    "foot": 0.5883,
     "pad": 0.0117,
     "aspect": 0.3191,
     "face": {
@@ -926,7 +1150,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman child",
+    "is": "roman child standing"
    }
   },
   "rome_civ__vestal_priestess": {
@@ -940,9 +1172,9 @@
     352
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4914,
-    "pad": 0.0085,
+    "v": 3,
+    "foot": 0.4957,
+    "pad": 0.0114,
     "aspect": 0.3295,
     "face": {
      "l": 0.3976,
@@ -958,7 +1190,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "vestal priestess",
+    "is": "vestal virgin priestess"
    }
   },
   "rome_arena__gladiator_murmillo": {
@@ -972,25 +1212,33 @@
     336
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5216,
+    "v": 3,
+    "foot": 0.5262,
     "pad": 0.0089,
     "aspect": 0.4821,
     "face": {
-     "l": 0.2363,
-     "r": 0.6649,
-     "t": 0.1786,
-     "b": 0.4554
+     "l": -0.017,
+     "r": 0.177,
+     "t": -0.015,
+     "b": 0.095
     },
     "mouth": [
-     0.4506,
-     0.3945
+     0.08,
+     0.0708
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "gladiator",
+    "is": "murmillo gladiator"
    }
   },
   "rome_arena__gladiator_retiarius": {
@@ -1004,25 +1252,33 @@
     323
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3392,
-    "pad": 0.0093,
+    "v": 3,
+    "foot": 0.3624,
+    "pad": 0.0124,
     "aspect": 0.7709,
     "face": {
      "l": 0.4214,
      "r": 0.5907,
-     "t": 0.0495,
+     "t": 0.0526,
      "b": 0.2167
     },
     "mouth": [
      0.5061,
-     0.1799
+     0.1806
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "gladiator",
+    "is": "retiarius gladiator"
    }
   },
   "rome_arena__gladiator_thraex": {
@@ -1036,25 +1292,33 @@
     350
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5288,
+    "v": 3,
+    "foot": 0.5315,
     "pad": 0.0086,
     "aspect": 0.44,
     "face": {
-     "l": -0.0275,
-     "r": 0.7938,
-     "t": 0.0171,
-     "b": 0.4971
+     "l": 0.3037,
+     "r": 0.5163,
+     "t": -0.015,
+     "b": 0.095
     },
     "mouth": [
-     0.3832,
-     0.3915
+     0.41,
+     0.0708
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "gladiator",
+    "is": "thraex gladiator"
    }
   },
   "rome_arena__gladiator_fallen": {
@@ -1068,25 +1332,33 @@
     193
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5524,
-    "pad": 0.0155,
+    "v": 3,
+    "foot": 0.5482,
+    "pad": 0.0259,
     "aspect": 1.829,
     "face": {
-     "l": 0.3642,
-     "r": 0.582,
-     "t": 0.1658,
-     "b": 0.3886
+     "l": 0.4849,
+     "r": 0.6151,
+     "t": -0.08,
+     "b": 0.2
     },
     "mouth": [
-     0.4731,
-     0.3396
+     0.55,
+     0.1384
     ],
     "place": "ground",
-    "facing": "l",
+    "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "lie",
+    "flat": true,
+    "group": "gladiator",
+    "is": "fallen gladiator"
    }
   },
   "rome_arena__charioteer": {
@@ -1100,8 +1372,8 @@
     322
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5245,
+    "v": 3,
+    "foot": 0.5136,
     "pad": 0.0093,
     "aspect": 0.413,
     "face": {
@@ -1118,7 +1390,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman charioteer",
+    "is": "roman charioteer"
    }
   },
   "rome_arena__lanista_trainer": {
@@ -1132,7 +1412,7 @@
     307
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4076,
     "pad": 0.0098,
     "aspect": 0.5147,
@@ -1150,7 +1430,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman lanista",
+    "is": "lanista gladiator trainer"
    }
   },
   "rome_arena__arena_lion": {
@@ -1164,25 +1452,32 @@
     225
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.7914,
+    "v": 3,
+    "foot": 0.7898,
     "pad": 0.0133,
     "aspect": 1.3956,
     "face": {
-     "l": 0.0497,
-     "r": 0.2203,
-     "t": 0.105,
-     "b": 0.385
+     "l": -0.0853,
+     "r": 0.0853,
+     "t": -0.14,
+     "b": 0.14
     },
     "mouth": [
-     0.135,
-     0.3234
+     0,
+     0.0784
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "lion"
    }
   },
   "rome_arena__war_elephant": {
@@ -1196,8 +1491,8 @@
     355
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4371,
+    "v": 3,
+    "foot": 0.4359,
     "pad": 0.0085,
     "aspect": 0.7831,
     "face": {
@@ -1214,7 +1509,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "war elephant rider",
+    "is": "war elephant with rider"
    }
   },
   "rome_arena__roman_horse_saddled": {
@@ -1228,25 +1531,32 @@
     272
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6503,
+    "v": 3,
+    "foot": 0.6498,
     "pad": 0.011,
     "aspect": 0.8787,
     "face": {
-     "l": 0.4115,
-     "r": 0.4985,
-     "t": 0.2,
-     "b": 0.29
+     "l": -0.0435,
+     "r": 0.0435,
+     "t": -0.045,
+     "b": 0.045
     },
     "mouth": [
-     0.455,
-     0.2702
+     0,
+     0.0252
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "saddled horse"
    }
   },
   "rome_arena__ox_pair": {
@@ -1260,25 +1570,32 @@
     198
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4767,
+    "v": 3,
+    "foot": 0.4692,
     "pad": 0.0152,
     "aspect": 1.4495,
     "face": {
-     "l": 0.5329,
-     "r": 0.6971,
-     "t": 0.115,
-     "b": 0.395
+     "l": -0.0821,
+     "r": 0.0821,
+     "t": -0.14,
+     "b": 0.14
     },
     "mouth": [
-     0.615,
-     0.3334
+     0,
+     0.0784
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": true,
-    "cut": false
+    "double": false,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pair of oxen"
    }
   },
   "ancient_enemies__gaul_warrior": {
@@ -1292,25 +1609,33 @@
     332
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4845,
+    "v": 3,
+    "foot": 0.484,
     "pad": 0.009,
     "aspect": 0.5452,
     "face": {
-     "l": 0.0789,
-     "r": 0.6338,
-     "t": 0.012,
-     "b": 0.4608
+     "l": 0.6643,
+     "r": 0.8357,
+     "t": 0.185,
+     "b": 0.295
     },
     "mouth": [
-     0.3564,
-     0.3621
+     0.75,
+     0.2708
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "gaul warrior",
+    "is": "gaul warrior"
    }
   },
   "ancient_enemies__gaul_chieftain": {
@@ -1324,8 +1649,8 @@
     368
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6248,
+    "v": 3,
+    "foot": 0.6255,
     "pad": 0.0082,
     "aspect": 0.4158,
     "face": {
@@ -1342,7 +1667,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "gaul chieftain",
+    "is": "gaul chieftain"
    }
   },
   "ancient_enemies__germanic_warrior": {
@@ -1356,7 +1689,7 @@
     332
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5486,
     "pad": 0.009,
     "aspect": 0.6506,
@@ -1374,7 +1707,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "germanic warrior",
+    "is": "germanic warrior"
    }
   },
   "ancient_enemies__carthaginian_soldier": {
@@ -1388,25 +1729,33 @@
     343
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5608,
-    "pad": 0.0087,
+    "v": 3,
+    "foot": 0.5621,
+    "pad": 0.0117,
     "aspect": 0.7376,
     "face": {
-     "l": 0.2754,
-     "r": 0.4519,
-     "t": 0.0583,
-     "b": 0.4956
+     "l": 0.1866,
+     "r": 0.3134,
+     "t": 0.385,
+     "b": 0.495
     },
     "mouth": [
-     0.3637,
-     0.3994
+     0.25,
+     0.4708
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "carthaginian soldier",
+    "is": "carthaginian soldier"
    }
   },
   "ancient_enemies__hannibal_general": {
@@ -1420,25 +1769,33 @@
     364
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6093,
-    "pad": 0.0082,
+    "v": 3,
+    "foot": 0.616,
+    "pad": 0.011,
     "aspect": 0.4313,
     "face": {
      "l": 0.3921,
      "r": 0.4869,
-     "t": 0.0165,
+     "t": 0.0192,
      "b": 0.0769
     },
     "mouth": [
      0.4395,
-     0.0636
+     0.0642
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "carthaginian general",
+    "is": "hannibal general"
    }
   },
   "ancient_enemies__greek_hoplite": {
@@ -1452,25 +1809,33 @@
     352
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4961,
     "pad": 0.0085,
     "aspect": 0.7699,
     "face": {
-     "l": 0.2046,
-     "r": 0.3785,
-     "t": 0.0881,
-     "b": 0.4972
+     "l": 0.5093,
+     "r": 0.6307,
+     "t": 0.385,
+     "b": 0.495
     },
     "mouth": [
-     0.2916,
-     0.4072
+     0.57,
+     0.4708
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek hoplite",
+    "is": "greek hoplite"
    }
   },
   "ancient_enemies__spartan_warrior": {
@@ -1484,8 +1849,8 @@
     368
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5089,
+    "v": 3,
+    "foot": 0.5075,
     "pad": 0.0082,
     "aspect": 0.5543,
     "face": {
@@ -1502,7 +1867,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "spartan warrior",
+    "is": "spartan warrior"
    }
   },
   "ancient_enemies__macedonian_phalangite": {
@@ -1516,8 +1889,8 @@
     358
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4234,
+    "v": 3,
+    "foot": 0.4233,
     "pad": 0.0084,
     "aspect": 1.1564,
     "face": {
@@ -1534,7 +1907,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "macedonian phalangite",
+    "is": "macedonian phalangite"
    }
   },
   "ancient_enemies__persian_immortal": {
@@ -1548,8 +1929,8 @@
     341
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5281,
+    "v": 3,
+    "foot": 0.528,
     "pad": 0.0088,
     "aspect": 0.6921,
     "face": {
@@ -1566,7 +1947,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "persian immortal",
+    "is": "persian immortal"
    }
   },
   "ancient_enemies__egyptian_soldier": {
@@ -1580,8 +1969,8 @@
     331
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4759,
+    "v": 3,
+    "foot": 0.472,
     "pad": 0.0091,
     "aspect": 0.5378,
     "face": {
@@ -1598,7 +1987,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": true,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian soldier",
+    "is": "egyptian soldier"
    }
   },
   "ancient_civ__pharaoh": {
@@ -1612,7 +2009,7 @@
     362
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5188,
     "pad": 0.0083,
     "aspect": 0.4116,
@@ -1630,7 +2027,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian pharaoh",
+    "is": "egyptian pharaoh"
    }
   },
   "ancient_civ__egyptian_priest": {
@@ -1644,25 +2049,33 @@
     353
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5805,
+    "v": 3,
+    "foot": 0.5864,
     "pad": 0.0085,
     "aspect": 0.3796,
     "face": {
      "l": 0.2854,
      "r": 0.7296,
-     "t": 0.0113,
+     "t": 0.0142,
      "b": 0.1955
     },
     "mouth": [
      0.5075,
-     0.155
+     0.1556
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian priest",
+    "is": "egyptian priest"
    }
   },
   "ancient_civ__egyptian_worker": {
@@ -1676,8 +2089,8 @@
     361
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4688,
+    "v": 3,
+    "foot": 0.4678,
     "pad": 0.0083,
     "aspect": 0.5596,
     "face": {
@@ -1694,7 +2107,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian worker",
+    "is": "egyptian worker carrying stone"
    }
   },
   "ancient_civ__egyptian_woman": {
@@ -1708,7 +2129,7 @@
     349
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.6107,
     "pad": 0.0086,
     "aspect": 0.3295,
@@ -1726,7 +2147,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian woman",
+    "is": "egyptian woman"
    }
   },
   "ancient_civ__greek_philosopher": {
@@ -1740,8 +2169,8 @@
     357
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4848,
+    "v": 3,
+    "foot": 0.4813,
     "pad": 0.0084,
     "aspect": 0.4986,
     "face": {
@@ -1758,7 +2187,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek philosopher",
+    "is": "greek philosopher"
    }
   },
   "ancient_civ__persian_king": {
@@ -1772,7 +2209,7 @@
     362
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4495,
     "pad": 0.0083,
     "aspect": 0.4365,
@@ -1790,7 +2227,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "persian king",
+    "is": "persian king"
    }
   },
   "ancient_civ__qin_soldier": {
@@ -1804,8 +2249,8 @@
     372
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4442,
+    "v": 3,
+    "foot": 0.4438,
     "pad": 0.0081,
     "aspect": 0.5188,
     "face": {
@@ -1822,7 +2267,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese qin soldier",
+    "is": "qin soldier"
    }
   },
   "ancient_civ__qin_general": {
@@ -1836,7 +2289,7 @@
     374
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4846,
     "pad": 0.008,
     "aspect": 0.5214,
@@ -1854,7 +2307,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese qin general",
+    "is": "qin general"
    }
   },
   "ancient_civ__chinese_scholar": {
@@ -1868,7 +2329,7 @@
     347
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.3579,
     "pad": 0.0086,
     "aspect": 0.5476,
@@ -1886,7 +2347,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese scholar",
+    "is": "chinese scholar"
    }
   },
   "ancient_civ__farmer_ancient": {
@@ -1900,8 +2369,8 @@
     352
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5158,
+    "v": 3,
+    "foot": 0.514,
     "pad": 0.0085,
     "aspect": 0.5966,
     "face": {
@@ -1918,7 +2387,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "ancient farmer",
+    "is": "ancient farmer"
    }
   },
   "ancient_mounted__roman_cavalry_walk": {
@@ -1932,15 +2409,23 @@
     361
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4915,
+    "v": 3,
+    "foot": 0.4892,
     "pad": 0.0083,
     "aspect": 0.9418,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "roman cavalry",
+    "is": "roman cavalry walking"
    }
   },
   "ancient_mounted__roman_cavalry_gallop": {
@@ -1954,15 +2439,23 @@
     374
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.502,
-    "pad": 0.008,
+    "v": 3,
+    "foot": 0.5076,
+    "pad": 0.0107,
     "aspect": 1.1578,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "roman cavalry",
+    "is": "roman cavalry galloping"
    }
   },
   "ancient_mounted__gaul_cavalry_gallop": {
@@ -1976,15 +2469,23 @@
     345
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4729,
+    "v": 3,
+    "foot": 0.4639,
     "pad": 0.0087,
     "aspect": 1.0841,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "gaul cavalry",
+    "is": "gaul cavalry galloping"
    }
   },
   "ancient_mounted__numidian_rider": {
@@ -1998,15 +2499,23 @@
     336
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3567,
+    "v": 3,
+    "foot": 0.3581,
     "pad": 0.0089,
     "aspect": 1.0595,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "numidian cavalry",
+    "is": "numidian rider"
    }
   },
   "ancient_mounted__persian_horse_archer": {
@@ -2020,15 +2529,23 @@
     356
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5181,
+    "v": 3,
+    "foot": 0.5193,
     "pad": 0.0084,
     "aspect": 1.1629,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "ride",
+    "flat": false,
+    "group": "persian horse archer",
+    "is": "persian horse archer"
    }
   },
   "ancient_mounted__camel_rider": {
@@ -2042,15 +2559,23 @@
     362
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4909,
+    "v": 3,
+    "foot": 0.4922,
     "pad": 0.0083,
     "aspect": 1,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "ride",
+    "flat": false,
+    "group": "camel rider",
+    "is": "camel rider"
    }
   },
   "ancient_vehicles__quadriga_race": {
@@ -2064,15 +2589,23 @@
     231
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3649,
-    "pad": 0.013,
+    "v": 3,
+    "foot": 0.3566,
+    "pad": 0.0173,
     "aspect": 1.9654,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman charioteer",
+    "is": "quadriga racing chariot"
    }
   },
   "ancient_vehicles__war_chariot_egypt": {
@@ -2086,15 +2619,23 @@
     265
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.572,
-    "pad": 0.0113,
+    "v": 3,
+    "foot": 0.5758,
+    "pad": 0.0151,
     "aspect": 1.3849,
     "place": "ground",
-    "facing": "r",
+    "facing": "l",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian charioteer",
+    "is": "egyptian war chariot"
    }
   },
   "ancient_vehicles__ox_cart": {
@@ -2108,15 +2649,22 @@
     214
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5146,
+    "v": 3,
+    "foot": 0.5171,
     "pad": 0.014,
     "aspect": 1.8505,
     "place": "ground",
-    "facing": "r",
+    "facing": "l",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "ox cart"
    }
   },
   "ancient_vehicles__litter_carried": {
@@ -2130,15 +2678,23 @@
     263
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5874,
-    "pad": 0.0114,
+    "v": 3,
+    "foot": 0.482,
+    "pad": 0.0152,
     "aspect": 1.5589,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman litter bearer",
+    "is": "carried litter"
    }
   },
   "ancient_vehicles__handcart": {
@@ -2152,15 +2708,23 @@
     181
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4085,
-    "pad": 0.0166,
+    "v": 3,
+    "foot": 0.5103,
+    "pad": 0.0221,
     "aspect": 1.6354,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "ancient laborer",
+    "is": "person pulling handcart"
    }
   },
   "ancient_ships__roman_trireme": {
@@ -2174,15 +2738,22 @@
     338
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.395,
+    "v": 3,
+    "foot": 0.3969,
     "pad": 0.0089,
     "aspect": 1.7485,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman trireme ship"
    }
   },
   "ancient_ships__roman_merchant_ship": {
@@ -2196,15 +2767,22 @@
     337
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5217,
+    "v": 3,
+    "foot": 0.5216,
     "pad": 0.0089,
     "aspect": 1.5401,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman merchant ship"
    }
   },
   "ancient_ships__greek_trireme": {
@@ -2218,15 +2796,22 @@
     352
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.387,
+    "v": 3,
+    "foot": 0.3876,
     "pad": 0.0085,
     "aspect": 1.6335,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "greek trireme ship"
    }
   },
   "ancient_ships__egyptian_reed_boat": {
@@ -2240,15 +2825,22 @@
     340
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4658,
+    "v": 3,
+    "foot": 0.4649,
     "pad": 0.0088,
     "aspect": 1.6676,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "egyptian reed boat"
    }
   },
   "ancient_siege__ballista": {
@@ -2262,15 +2854,22 @@
     301
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5622,
+    "v": 3,
+    "foot": 0.5665,
     "pad": 0.01,
     "aspect": 1.3953,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "ballista siege weapon"
    }
   },
   "ancient_siege__onager": {
@@ -2284,15 +2883,22 @@
     326
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4807,
+    "v": 3,
+    "foot": 0.4842,
     "pad": 0.0092,
     "aspect": 1.2699,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "onager catapult"
    }
   },
   "ancient_siege__scorpio": {
@@ -2306,15 +2912,22 @@
     279
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6197,
+    "v": 3,
+    "foot": 0.6138,
     "pad": 0.0108,
     "aspect": 1.2724,
     "place": "ground",
-    "facing": "r",
+    "facing": "l",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "scorpio siege crossbow"
    }
   },
   "ancient_siege__siege_tower": {
@@ -2328,15 +2941,22 @@
     394
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4574,
-    "pad": 0.0076,
+    "v": 3,
+    "foot": 0.4622,
+    "pad": 0.0102,
     "aspect": 0.7944,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden siege tower"
    }
   },
   "ancient_siege__battering_ram": {
@@ -2350,15 +2970,22 @@
     293
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3573,
+    "v": 3,
+    "foot": 0.3593,
     "pad": 0.0102,
     "aspect": 1.5119,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "covered battering ram"
    }
   },
   "ancient_siege__trebuchet_like_catapult": {
@@ -2372,15 +2999,22 @@
     292
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4548,
-    "pad": 0.0103,
+    "v": 3,
+    "foot": 0.4527,
+    "pad": 0.0137,
     "aspect": 1.3459,
     "place": "ground",
-    "facing": "r",
+    "facing": "l",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "trebuchet catapult"
    }
   },
   "ancient_vehicles__roman_wagons_pair": {
@@ -2394,15 +3028,23 @@
     427
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4751,
+    "v": 2,
+    "foot": 0.4745,
     "pad": 0.007,
     "aspect": 1.0703,
     "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "roman wagon driver",
+    "is": "pair of roman horse wagons"
    }
   },
   "ancient_vehicles__ox_cart_b": {
@@ -2416,15 +3058,22 @@
     182
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5335,
-    "pad": 0.0165,
+    "v": 3,
+    "foot": 0.5336,
+    "pad": 0.022,
     "aspect": 2.1264,
     "place": "ground",
-    "facing": "r",
+    "facing": "l",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "ox cart"
    }
   },
   "ancient_props__amphora": {
@@ -2438,15 +3087,22 @@
     200
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5,
+    "v": 3,
+    "foot": 0.5052,
     "pad": 0.015,
     "aspect": 0.48,
-    "place": "table",
+    "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "clay amphora"
    }
   },
   "ancient_props__amphora_row": {
@@ -2460,15 +3116,22 @@
     187
    ],
    "ann": {
-    "v": 1,
+    "v": 2,
     "foot": 0.5046,
     "pad": 0.016,
     "aspect": 1.1604,
-    "place": "table",
+    "place": "ground",
     "facing": "r",
     "text": false,
-    "double": false,
-    "cut": false
+    "double": true,
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "group of clay amphorae"
    }
   },
   "ancient_props__wine_krater": {
@@ -2482,15 +3145,22 @@
     189
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5,
+    "v": 3,
+    "foot": 0.5027,
     "pad": 0.0159,
     "aspect": 0.9788,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "decorated wine krater"
    }
   },
   "ancient_props__scroll": {
@@ -2504,15 +3174,22 @@
     160
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.7088,
+    "v": 3,
+    "foot": 0.7113,
     "pad": 0.0187,
     "aspect": 1.2125,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "papyrus scroll"
    }
   },
   "ancient_props__wax_tablet": {
@@ -2526,15 +3203,22 @@
     173
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3737,
-    "pad": 0.0173,
+    "v": 3,
+    "foot": 0.384,
+    "pad": 0.0231,
     "aspect": 1.1214,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "wax tablet and stylus"
    }
   },
   "ancient_props__coin_chest": {
@@ -2548,15 +3232,22 @@
     187
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.6172,
     "pad": 0.016,
     "aspect": 1.0267,
-    "place": "table",
+    "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "open chest of gold coins"
    }
   },
   "ancient_props__brazier_fire": {
@@ -2570,7 +3261,7 @@
     215
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4971,
     "pad": 0.014,
     "aspect": 0.7953,
@@ -2578,7 +3269,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "lit fire brazier"
    }
   },
   "ancient_props__wall_torch": {
@@ -2592,15 +3290,22 @@
     253
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.1176,
-    "pad": 0.0119,
+    "pad": 0.0158,
     "aspect": 0.4032,
     "place": "wall",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "burning wall torch"
    }
   },
   "ancient_props__scutum_shield": {
@@ -2614,15 +3319,22 @@
     240
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0125,
     "aspect": 0.625,
-    "place": "wall",
+    "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman scutum shield"
    }
   },
   "ancient_props__weapon_rack": {
@@ -2636,15 +3348,22 @@
     265
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4603,
+    "v": 3,
+    "foot": 0.4628,
     "pad": 0.0113,
     "aspect": 0.8,
-    "place": "wall",
+    "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden weapon rack"
    }
   },
   "ancient_props__legion_eagle_standard": {
@@ -2658,7 +3377,7 @@
     293
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0102,
     "aspect": 0.5768,
@@ -2666,7 +3385,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman eagle standard"
    }
   },
   "ancient_props__vexillum_banner": {
@@ -2680,15 +3406,22 @@
     275
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4971,
+    "v": 3,
+    "foot": 0.5,
     "pad": 0.0109,
     "aspect": 0.6291,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman vexillum banner"
    }
   },
   "ancient_props__grain_sacks": {
@@ -2702,15 +3435,22 @@
     165
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4302,
+    "v": 3,
+    "foot": 0.4324,
     "pad": 0.0182,
     "aspect": 1.3455,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "grain sacks"
    }
   },
   "ancient_props__wicker_basket_fruit": {
@@ -2724,7 +3464,7 @@
     169
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5229,
     "pad": 0.0178,
     "aspect": 1.0355,
@@ -2732,7 +3472,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wicker basket of fruit"
    }
   },
   "ancient_props__bread_loaves": {
@@ -2746,7 +3493,7 @@
     131
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.7081,
     "pad": 0.0229,
     "aspect": 1.5954,
@@ -2754,7 +3501,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "loaves of bread"
    }
   },
   "ancient_props__marble_bust": {
@@ -2768,15 +3522,22 @@
     221
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.584,
+    "v": 3,
+    "foot": 0.58,
     "pad": 0.0136,
     "aspect": 0.5656,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "marble bust statue"
    }
   },
   "ancient_props__campfire_pot": {
@@ -2790,15 +3551,22 @@
     191
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5045,
+    "v": 3,
+    "foot": 0.5077,
     "pad": 0.0157,
     "aspect": 1.0576,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "cooking pot over campfire"
    }
   },
   "ancient_props__wooden_stool": {
@@ -2812,7 +3580,7 @@
     168
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.439,
     "pad": 0.0179,
     "aspect": 1.0238,
@@ -2820,7 +3588,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden folding stool"
    }
   },
   "ancient_structures__legion_tent": {
@@ -2834,15 +3609,22 @@
     245
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.386,
+    "v": 3,
+    "foot": 0.3846,
     "pad": 0.0122,
     "aspect": 1.4327,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman legionary tent"
    }
   },
   "ancient_structures__commander_tent": {
@@ -2856,15 +3638,22 @@
     308
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3096,
+    "v": 3,
+    "foot": 0.3216,
     "pad": 0.0097,
     "aspect": 1.1981,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman commander tent"
    }
   },
   "ancient_structures__palisade_wall": {
@@ -2878,15 +3667,22 @@
     238
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3349,
+    "v": 3,
+    "foot": 0.336,
     "pad": 0.0126,
     "aspect": 1.3739,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden palisade wall"
    }
   },
   "ancient_structures__watchtower_wood": {
@@ -2900,15 +3696,22 @@
     362
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4414,
+    "v": 3,
+    "foot": 0.4448,
     "pad": 0.0083,
     "aspect": 0.453,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden watchtower"
    }
   },
   "ancient_structures__market_stall": {
@@ -2922,15 +3725,22 @@
     277
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4197,
+    "v": 3,
+    "foot": 0.4188,
     "pad": 0.0108,
     "aspect": 1.1444,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "market stall with awning"
    }
   },
   "ancient_structures__stone_well": {
@@ -2944,7 +3754,7 @@
     299
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4256,
     "pad": 0.01,
     "aspect": 0.8094,
@@ -2952,7 +3762,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "stone water well"
    }
   },
   "ancient_structures__marble_column": {
@@ -2966,7 +3783,7 @@
     337
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0089,
     "aspect": 0.4125,
@@ -2974,7 +3791,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "fluted marble column"
    }
   },
   "ancient_structures__marble_statue": {
@@ -2988,7 +3812,7 @@
     348
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5732,
     "pad": 0.0086,
     "aspect": 0.4511,
@@ -2996,7 +3820,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "marble statue on pedestal"
    }
   },
   "ancient_buildings__roman_temple": {
@@ -3010,15 +3841,22 @@
     339
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5517,
-    "pad": 0.0088,
+    "v": 3,
+    "foot": 0.5554,
+    "pad": 0.0118,
     "aspect": 1.1976,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman temple"
    }
   },
   "ancient_buildings__roman_villa": {
@@ -3032,15 +3870,22 @@
     260
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5186,
+    "v": 3,
+    "foot": 0.5197,
     "pad": 0.0115,
     "aspect": 1.7615,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman villa"
    }
   },
   "ancient_buildings__roman_insula": {
@@ -3054,15 +3899,22 @@
     305
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3552,
+    "v": 3,
+    "foot": 0.3567,
     "pad": 0.0098,
     "aspect": 1.0984,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman insula apartment building"
    }
   },
   "ancient_buildings__triumphal_arch": {
@@ -3076,7 +3928,7 @@
     346
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.2956,
     "pad": 0.0087,
     "aspect": 0.9827,
@@ -3084,7 +3936,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman triumphal arch"
    }
   },
   "ancient_buildings__aqueduct_section": {
@@ -3098,15 +3957,22 @@
     330
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.7881,
-    "pad": 0.0091,
+    "v": 3,
+    "foot": 0.785,
+    "pad": 0.0121,
     "aspect": 1.1182,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman aqueduct section"
    }
   },
   "ancient_buildings__city_gate_wall": {
@@ -3120,15 +3986,22 @@
     281
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.2029,
-    "pad": 0.0107,
+    "v": 3,
+    "foot": 0.2076,
+    "pad": 0.0142,
     "aspect": 1.4911,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "walled city gate"
    }
   },
   "ancient_buildings2__greek_temple": {
@@ -3142,15 +4015,22 @@
     280
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.491,
+    "v": 3,
+    "foot": 0.4898,
     "pad": 0.0107,
     "aspect": 1.5786,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "greek temple"
    }
   },
   "ancient_buildings2__egyptian_pyramid": {
@@ -3164,15 +4044,22 @@
     283
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3939,
+    "v": 3,
+    "foot": 0.3915,
     "pad": 0.0106,
     "aspect": 1.4982,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "egyptian pyramid"
    }
   },
   "ancient_buildings2__egyptian_temple_gate": {
@@ -3186,15 +4073,22 @@
     325
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.45,
+    "v": 3,
+    "foot": 0.4573,
     "pad": 0.0092,
     "aspect": 1.2031,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "egyptian temple pylon gate"
    }
   },
   "ancient_buildings2__gaul_roundhouse": {
@@ -3208,7 +4102,7 @@
     334
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4373,
     "pad": 0.009,
     "aspect": 1.1856,
@@ -3216,7 +4110,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "thatched gaul roundhouse"
    }
   },
   "ancient_buildings2__persian_palace": {
@@ -3230,15 +4131,22 @@
     339
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5258,
-    "pad": 0.0088,
+    "pad": 0.0118,
     "aspect": 1.3156,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "persian palace"
    }
   },
   "ancient_buildings2__mud_brick_house": {
@@ -3252,15 +4160,22 @@
     240
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4356,
+    "v": 3,
+    "foot": 0.437,
     "pad": 0.0125,
     "aspect": 1.5208,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "mud brick house"
    }
   },
   "ancient_nature__cypress": {
@@ -3274,7 +4189,7 @@
     344
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5167,
     "pad": 0.0087,
     "aspect": 0.2616,
@@ -3282,7 +4197,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "cypress tree"
    }
   },
   "ancient_nature__olive_tree": {
@@ -3296,15 +4218,22 @@
     292
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5777,
+    "v": 3,
+    "foot": 0.5773,
     "pad": 0.0103,
     "aspect": 0.9041,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "olive tree"
    }
   },
   "ancient_nature__umbrella_pine": {
@@ -3318,15 +4247,22 @@
     330
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4554,
+    "v": 3,
+    "foot": 0.4572,
     "pad": 0.0091,
     "aspect": 0.8152,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "umbrella pine tree"
    }
   },
   "ancient_nature__oak_tree": {
@@ -3340,7 +4276,7 @@
     302
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5104,
     "pad": 0.0099,
     "aspect": 1.1093,
@@ -3348,7 +4284,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "oak tree"
    }
   },
   "ancient_nature__date_palm": {
@@ -3362,7 +4305,7 @@
     341
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4977,
     "pad": 0.0088,
     "aspect": 0.6246,
@@ -3370,7 +4313,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "date palm tree"
    }
   },
   "ancient_nature__papyrus_reeds": {
@@ -3384,15 +4334,22 @@
     249
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4818,
-    "pad": 0.012,
+    "pad": 0.0161,
     "aspect": 0.7711,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "papyrus reeds"
    }
   },
   "ancient_nature__grape_vine": {
@@ -3406,7 +4363,7 @@
     261
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4991,
     "pad": 0.0115,
     "aspect": 0.8659,
@@ -3414,7 +4371,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "grape vine on trellis"
    }
   },
   "ancient_nature__mediterranean_bush": {
@@ -3428,15 +4392,22 @@
     205
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4816,
-    "pad": 0.0146,
+    "pad": 0.0195,
     "aspect": 1.0049,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "mediterranean bush"
    }
   },
   "ancient_nature__fern_bush": {
@@ -3450,15 +4421,22 @@
     198
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4403,
+    "v": 3,
+    "foot": 0.4444,
     "pad": 0.0152,
     "aspect": 1.2222,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "fern bush"
    }
   },
   "ancient_nature__boulder": {
@@ -3472,15 +4450,22 @@
     181
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5153,
-    "pad": 0.0166,
+    "v": 3,
+    "foot": 0.4932,
+    "pad": 0.0221,
     "aspect": 1.1547,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "large boulder"
    }
   },
   "ancient_nature__rock_pile": {
@@ -3494,15 +4479,22 @@
     140
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6941,
+    "v": 3,
+    "foot": 0.6963,
     "pad": 0.0214,
     "aspect": 1.5643,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pile of rocks"
    }
   },
   "ancient_nature__broken_column": {
@@ -3516,15 +4508,22 @@
     132
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.1533,
-    "pad": 0.0227,
+    "v": 3,
+    "foot": 0.1583,
+    "pad": 0.0303,
     "aspect": 1.5076,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "fallen broken column"
    }
   },
   "greek_more__greek_hoplite_charging_spear_shield": {
@@ -3538,25 +4537,33 @@
     339
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.422,
+    "v": 3,
+    "foot": 0.426,
     "pad": 0.0088,
     "aspect": 0.9971,
     "face": {
-     "l": 0.2135,
-     "r": 0.4226,
-     "t": 0.0678,
-     "b": 0.3363
+     "l": 0.2116,
+     "r": 0.2884,
+     "t": 0.395,
+     "b": 0.485
     },
     "mouth": [
-     0.3181,
-     0.2772
+     0.25,
+     0.4652
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek hoplite",
+    "is": "greek hoplite charging"
    }
   },
   "greek_more__greek_archer_shooting_bow": {
@@ -3570,8 +4577,8 @@
     361
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4073,
+    "v": 3,
+    "foot": 0.4108,
     "pad": 0.0083,
     "aspect": 0.6427,
     "face": {
@@ -3588,7 +4595,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek archer",
+    "is": "greek archer shooting bow"
    }
   },
   "greek_more__greek_peltast_throwing_javelin": {
@@ -3602,8 +4617,8 @@
     334
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4947,
+    "v": 3,
+    "foot": 0.4996,
     "pad": 0.009,
     "aspect": 0.8832,
     "face": {
@@ -3620,7 +4635,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek peltast",
+    "is": "greek peltast throwing javelin"
    }
   },
   "greek_more__athenian_citizen_himation_walking": {
@@ -3634,7 +4657,7 @@
     333
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4374,
     "pad": 0.009,
     "aspect": 0.5195,
@@ -3652,7 +4675,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "athenian citizen",
+    "is": "athenian citizen walking"
    }
   },
   "greek_more__greek_woman_chiton_carrying_water": {
@@ -3666,8 +4697,8 @@
     335
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5652,
+    "v": 3,
+    "foot": 0.5643,
     "pad": 0.009,
     "aspect": 0.4328,
     "face": {
@@ -3684,7 +4715,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek woman",
+    "is": "greek woman carrying water jar"
    }
   },
   "greek_more__greek_olympic_runner_athlete_running": {
@@ -3698,25 +4737,33 @@
     310
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.0735,
-    "pad": 0.0097,
+    "pad": 0.0129,
     "aspect": 0.7677,
     "face": {
-     "l": 0.1462,
-     "r": 0.8496,
-     "t": 0.0129,
-     "b": 0.4355
+     "l": 0.0491,
+     "r": 0.1709,
+     "t": 0.575,
+     "b": 0.685
     },
     "mouth": [
-     0.4979,
-     0.3425
+     0.11,
+     0.6608
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek athlete",
+    "is": "greek athlete running"
    }
   },
   "greek_more__macedonian_king_gold_armor_cloak": {
@@ -3730,8 +4777,8 @@
     342
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4712,
+    "v": 3,
+    "foot": 0.468,
     "pad": 0.0088,
     "aspect": 0.6082,
     "face": {
@@ -3748,7 +4795,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "macedonian king",
+    "is": "macedonian king"
    }
   },
   "greek_more__greek_rower_sailor_pulling_oar": {
@@ -3762,25 +4817,33 @@
     309
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.0736,
+    "v": 3,
+    "foot": 0.0753,
     "pad": 0.0097,
     "aspect": 0.945,
     "face": {
-     "l": 0.2042,
-     "r": 0.7478,
-     "t": 0.0356,
-     "b": 0.3786
+     "l": 0.3495,
+     "r": 0.4305,
+     "t": 0.585,
+     "b": 0.675
     },
     "mouth": [
-     0.476,
-     0.3031
+     0.39,
+     0.6552
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "greek sailor",
+    "is": "greek sailor pulling oar"
    }
   },
   "greek_more__greek_priestess_laurel_wreath": {
@@ -3794,8 +4857,8 @@
     329
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4184,
+    "v": 3,
+    "foot": 0.4214,
     "pad": 0.0091,
     "aspect": 0.4833,
     "face": {
@@ -3812,7 +4875,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek priestess",
+    "is": "greek priestess"
    }
   },
   "egypt_more__egyptian_archer_shooting_bow": {
@@ -3826,9 +4897,9 @@
     359
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4605,
-    "pad": 0.0084,
+    "v": 3,
+    "foot": 0.4561,
+    "pad": 0.0111,
     "aspect": 0.6825,
     "face": {
      "l": 0.319,
@@ -3844,7 +4915,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian archer",
+    "is": "egyptian archer shooting bow"
    }
   },
   "egypt_more__egyptian_scribe_sitting_crosslegged_papyrus": {
@@ -3858,25 +4937,33 @@
     281
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5228,
+    "v": 3,
+    "foot": 0.5236,
     "pad": 0.0107,
     "aspect": 0.8399,
     "face": {
-     "l": 0.7019,
-     "r": 0.9803,
-     "t": 0.363,
-     "b": 0.4947
+     "l": 0.8645,
+     "r": 0.9555,
+     "t": 0.585,
+     "b": 0.675
     },
     "mouth": [
-     0.8411,
-     0.4657
+     0.91,
+     0.6552
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "egyptian scribe",
+    "is": "egyptian scribe sitting writing"
    }
   },
   "egypt_more__egyptian_workers_pulling_rope_group": {
@@ -3890,25 +4977,33 @@
     282
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5752,
-    "pad": 0.0106,
+    "v": 3,
+    "foot": 0.555,
+    "pad": 0.0142,
     "aspect": 1.4149,
     "face": {
-     "l": 0.6114,
-     "r": 0.6643,
-     "t": 0.4362,
-     "b": 0.4752
+     "l": -0.0541,
+     "r": 0.1141,
+     "t": 0.69,
+     "b": 0.97
     },
     "mouth": [
-     0.6379,
-     0.4666
+     0.03,
+     0.9084
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian worker",
+    "is": "egyptian workers pulling rope"
    }
   },
   "egypt_more__egyptian_queen_vulture_crown": {
@@ -3922,25 +5017,33 @@
     340
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5001,
     "pad": 0.0088,
     "aspect": 0.4353,
     "face": {
-     "l": 0.1565,
-     "r": 0.2151,
-     "t": 0.3265,
-     "b": 0.3853
+     "l": 0.1426,
+     "r": 0.3574,
+     "t": 0.765,
+     "b": 0.875
     },
     "mouth": [
-     0.1858,
-     0.3724
+     0.25,
+     0.8508
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian queen",
+    "is": "egyptian queen"
    }
   },
   "egypt_more__egyptian_farmer_cutting_wheat_sickle": {
@@ -3954,25 +5057,33 @@
     314
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4984,
+    "v": 3,
+    "foot": 0.495,
     "pad": 0.0096,
     "aspect": 0.7229,
     "face": {
-     "l": 0.1988,
-     "r": 0.3299,
-     "t": 0.3439,
-     "b": 0.4586
+     "l": 0.3553,
+     "r": 0.4847,
+     "t": 0.775,
+     "b": 0.885
     },
     "mouth": [
-     0.2644,
-     0.4334
+     0.42,
+     0.8608
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian farmer",
+    "is": "egyptian farmer harvesting wheat"
    }
   },
   "egypt_more__egyptian_fisherman_net": {
@@ -3986,25 +5097,33 @@
     329
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3748,
-    "pad": 0.0091,
+    "v": 3,
+    "foot": 0.3704,
+    "pad": 0.0122,
     "aspect": 0.7082,
     "face": {
-     "l": 0.2402,
-     "r": 0.3306,
-     "t": 0.3708,
-     "b": 0.4711
+     "l": 0.514,
+     "r": 0.646,
+     "t": 0.775,
+     "b": 0.885
     },
     "mouth": [
-     0.2854,
-     0.449
+     0.58,
+     0.8608
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian fisherman",
+    "is": "egyptian fisherman with net"
    }
   },
   "egypt_more__egyptian_musician_woman_playing_harp": {
@@ -4018,25 +5137,33 @@
     344
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5126,
+    "v": 3,
+    "foot": 0.5116,
     "pad": 0.0087,
     "aspect": 0.6366,
     "face": {
-     "l": 0.2634,
-     "r": 0.3257,
-     "t": 0.2442,
-     "b": 0.3227
+     "l": 0.6466,
+     "r": 0.7934,
+     "t": 0.775,
+     "b": 0.885
     },
     "mouth": [
-     0.2946,
-     0.3054
+     0.72,
+     0.8608
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "egyptian musician",
+    "is": "egyptian woman playing harp"
    }
   },
   "egypt_more__egyptian_vizier_staff": {
@@ -4050,25 +5177,33 @@
     344
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5233,
+    "v": 3,
+    "foot": 0.5236,
     "pad": 0.0087,
     "aspect": 0.5494,
     "face": {
-     "l": 0.411,
-     "r": 0.4832,
-     "t": 0.3285,
-     "b": 0.4971
+     "l": 0.8249,
+     "r": 0.9951,
+     "t": 0.775,
+     "b": 0.885
     },
     "mouth": [
-     0.4471,
-     0.46
+     0.91,
+     0.8608
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian vizier",
+    "is": "egyptian vizier with staff"
    }
   },
   "egypt_more__egyptian_child_side_lock": {
@@ -4082,8 +5217,8 @@
     317
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.585,
+    "v": 3,
+    "foot": 0.5827,
     "pad": 0.0095,
     "aspect": 0.3722,
     "face": {
@@ -4100,7 +5235,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian child",
+    "is": "egyptian child"
    }
   },
   "egypt_more__egyptian_guard_spear_standing": {
@@ -4114,7 +5257,7 @@
     374
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5283,
     "pad": 0.008,
     "aspect": 0.4545,
@@ -4132,7 +5275,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "egyptian guard",
+    "is": "egyptian guard with spear"
    }
   },
   "near_east_more__persian_archer_shooting": {
@@ -4146,25 +5297,33 @@
     367
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4359,
+    "v": 3,
+    "foot": 0.4395,
     "pad": 0.0082,
     "aspect": 0.6948,
     "face": {
      "l": 0.2638,
      "r": 0.4146,
-     "t": 0.0763,
+     "t": 0.079,
      "b": 0.1662
     },
     "mouth": [
      0.3392,
-     0.1464
+     0.147
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "persian archer",
+    "is": "persian archer shooting"
    }
   },
   "near_east_more__assyrian_soldier_pointed_helmet_spear": {
@@ -4178,25 +5337,33 @@
     360
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5182,
     "pad": 0.0083,
     "aspect": 0.7583,
     "face": {
-     "l": 0.4185,
-     "r": 0.5229,
-     "t": 0.0139,
-     "b": 0.1278
+     "l": 0.5183,
+     "r": 0.6417,
+     "t": -0.015,
+     "b": 0.095
     },
     "mouth": [
-     0.4707,
-     0.1027
+     0.58,
+     0.0708
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "assyrian soldier",
+    "is": "assyrian soldier"
    }
   },
   "near_east_more__babylonian_king_curled_beard_tall": {
@@ -4210,9 +5377,9 @@
     370
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4532,
-    "pad": 0.0081,
+    "v": 3,
+    "foot": 0.4565,
+    "pad": 0.0108,
     "aspect": 0.4541,
     "face": {
      "l": 0.3862,
@@ -4228,7 +5395,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "babylonian king",
+    "is": "babylonian king"
    }
   },
   "near_east_more__hun_warrior_foot_bow": {
@@ -4242,8 +5417,8 @@
     362
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4316,
+    "v": 3,
+    "foot": 0.4348,
     "pad": 0.0083,
     "aspect": 0.6823,
     "face": {
@@ -4260,7 +5435,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "hun warrior",
+    "is": "hun archer shooting bow"
    }
   },
   "near_east_more__celtic_druid_white_robe_staff": {
@@ -4274,8 +5457,8 @@
     330
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4116,
+    "v": 3,
+    "foot": 0.4092,
     "pad": 0.0091,
     "aspect": 0.5848,
     "face": {
@@ -4292,7 +5475,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "celtic druid",
+    "is": "celtic druid with staff"
    }
   },
   "near_east_more__germanic_chieftain_fur_axe": {
@@ -4306,9 +5497,9 @@
     343
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5288,
-    "pad": 0.0087,
+    "v": 3,
+    "foot": 0.5293,
+    "pad": 0.0117,
     "aspect": 0.6939,
     "face": {
      "l": 0.4533,
@@ -4324,7 +5515,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "germanic chieftain",
+    "is": "germanic chieftain with axe"
    }
   },
   "near_east_more__iberian_warrior_falcata_sword": {
@@ -4338,8 +5537,8 @@
     342
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.541,
+    "v": 3,
+    "foot": 0.5419,
     "pad": 0.0088,
     "aspect": 0.5819,
     "face": {
@@ -4356,7 +5555,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "iberian warrior",
+    "is": "iberian warrior with falcata"
    }
   },
   "near_east_more__thracian_warrior_rhomphaia": {
@@ -4370,9 +5577,9 @@
     363
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4922,
-    "pad": 0.0083,
+    "v": 3,
+    "foot": 0.4928,
+    "pad": 0.011,
     "aspect": 0.6226,
     "face": {
      "l": 0.4391,
@@ -4388,7 +5595,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "thracian warrior",
+    "is": "thracian warrior"
    }
   },
   "near_east_more__scythian_warrior_bow_pointed_cap": {
@@ -4402,7 +5617,7 @@
     360
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.438,
     "pad": 0.0083,
     "aspect": 0.6972,
@@ -4420,7 +5635,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "scythian warrior",
+    "is": "scythian archer shooting"
    }
   },
   "near_east_more__phoenician_merchant_robes": {
@@ -4434,7 +5657,7 @@
     345
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4337,
     "pad": 0.0087,
     "aspect": 0.4754,
@@ -4452,7 +5675,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "phoenician merchant",
+    "is": "phoenician merchant"
    }
   },
   "rome_more__group_six_roman_legionaries_testudo": {
@@ -4466,25 +5697,33 @@
     258
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4898,
     "pad": 0.0116,
     "aspect": 1.0853,
     "face": {
-     "l": 0.2087,
-     "r": 0.377,
-     "t": 0.3372,
-     "b": 0.4845
+     "l": 0.0748,
+     "r": 0.1452,
+     "t": 0.395,
+     "b": 0.485
     },
     "mouth": [
-     0.2929,
-     0.4521
+     0.11,
+     0.4652
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionaries in testudo"
    }
   },
   "rome_more__column_five_roman_legionaries_marching": {
@@ -4498,7 +5737,7 @@
     258
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4298,
     "pad": 0.0116,
     "aspect": 1.1124,
@@ -4516,7 +5755,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "column of roman legionaries"
    }
   },
   "rome_more__roman_surveyor_groma_tool": {
@@ -4530,25 +5777,33 @@
     282
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5285,
-    "pad": 0.0106,
+    "v": 3,
+    "foot": 0.5218,
+    "pad": 0.0142,
     "aspect": 0.5922,
     "face": {
      "l": 0.3384,
      "r": 0.5538,
-     "t": 0.1028,
+     "t": 0.1064,
      "b": 0.273
     },
     "mouth": [
      0.4461,
-     0.2356
+     0.2363
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman surveyor",
+    "is": "roman surveyor with groma"
    }
   },
   "rome_more__roman_soldiers_building_wall_stones": {
@@ -4562,25 +5817,33 @@
     253
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4402,
+    "v": 3,
+    "foot": 0.4372,
     "pad": 0.0119,
     "aspect": 1.1937,
     "face": {
-     "l": 0.536,
-     "r": 0.6428,
-     "t": 0.2767,
-     "b": 0.4941
+     "l": 0.528,
+     "r": 0.592,
+     "t": 0.415,
+     "b": 0.505
     },
     "mouth": [
-     0.5894,
-     0.4463
+     0.56,
+     0.4852
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman soldier",
+    "is": "roman soldiers building wall"
    }
   },
   "rome_more__roman_slave_chains_walking": {
@@ -4594,9 +5857,9 @@
     268
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5146,
-    "pad": 0.0112,
+    "v": 3,
+    "foot": 0.5156,
+    "pad": 0.0149,
     "aspect": 0.4366,
     "face": {
      "l": 0.5415,
@@ -4612,7 +5875,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman slave",
+    "is": "roman slave in chains"
    }
   },
   "rome_more__roman_cook_stirring_pot": {
@@ -4626,8 +5897,8 @@
     300
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4825,
+    "v": 3,
+    "foot": 0.4769,
     "pad": 0.01,
     "aspect": 0.74,
     "face": {
@@ -4644,7 +5915,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman cook",
+    "is": "roman cook stirring pot"
    }
   },
   "rome_more__roman_blacksmith_hammering_anvil": {
@@ -4658,7 +5937,7 @@
     332
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4121,
     "pad": 0.009,
     "aspect": 0.6777,
@@ -4676,7 +5955,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman blacksmith",
+    "is": "roman blacksmith hammering"
    }
   },
   "rome_more__roman_scribe_writing_tablet_sitting": {
@@ -4690,25 +5977,33 @@
     273
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5519,
     "pad": 0.011,
     "aspect": 0.5641,
     "face": {
      "l": 0.3932,
      "r": 0.6912,
-     "t": 0.0147,
+     "t": 0.0183,
      "b": 0.2454
     },
     "mouth": [
      0.5422,
-     0.1946
+     0.1954
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "sit",
+    "flat": false,
+    "group": "roman scribe",
+    "is": "roman scribe sitting writing"
    }
   },
   "rome_more__roman_fisherman_carrying_net": {
@@ -4722,8 +6017,8 @@
     306
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6066,
+    "v": 3,
+    "foot": 0.6122,
     "pad": 0.0098,
     "aspect": 0.5523,
     "face": {
@@ -4740,7 +6035,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": true
+    "cut": true,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman fisherman",
+    "is": "roman fisherman with net"
    }
   },
   "rome_more__roman_legionary_standing_guard_attention": {
@@ -4754,7 +6057,7 @@
     346
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4712,
     "pad": 0.0087,
     "aspect": 0.4017,
@@ -4772,7 +6075,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman legionary",
+    "is": "roman legionary at attention"
    }
   },
   "china_ancient__han_dynasty_crossbowman_aiming_crossbow": {
@@ -4786,9 +6097,9 @@
     281
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.386,
-    "pad": 0.0107,
+    "v": 3,
+    "foot": 0.3818,
+    "pad": 0.0142,
     "aspect": 0.9288,
     "face": {
      "l": 0.3281,
@@ -4804,7 +6115,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "kneel",
+    "flat": false,
+    "group": "chinese han soldier",
+    "is": "han crossbowman aiming"
    }
   },
   "china_ancient__han_dynasty_general_armor_sword": {
@@ -4818,8 +6137,8 @@
     359
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5844,
+    "v": 3,
+    "foot": 0.5847,
     "pad": 0.0084,
     "aspect": 0.5404,
     "face": {
@@ -4836,7 +6155,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese han general",
+    "is": "han dynasty general"
    }
   },
   "china_ancient__ancient_chinese_emperor_black_red": {
@@ -4850,7 +6177,7 @@
     357
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4881,
     "pad": 0.0084,
     "aspect": 0.4706,
@@ -4868,7 +6195,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese emperor",
+    "is": "ancient chinese emperor"
    }
   },
   "china_ancient__ancient_chinese_empress_long_robes": {
@@ -4882,9 +6217,9 @@
     357
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4745,
-    "pad": 0.0084,
+    "v": 3,
+    "foot": 0.4681,
+    "pad": 0.0112,
     "aspect": 0.6583,
     "face": {
      "l": 0.5151,
@@ -4900,7 +6235,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese empress",
+    "is": "ancient chinese empress"
    }
   },
   "china_ancient__ancient_chinese_peasant_woman_carrying": {
@@ -4914,8 +6257,8 @@
     327
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4577,
+    "v": 3,
+    "foot": 0.4574,
     "pad": 0.0092,
     "aspect": 0.4557,
     "face": {
@@ -4932,7 +6275,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese peasant woman",
+    "is": "chinese peasant woman"
    }
   },
   "china_ancient__ancient_chinese_archer_shooting": {
@@ -4946,7 +6297,7 @@
     349
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4563,
     "pad": 0.0086,
     "aspect": 0.6791,
@@ -4964,7 +6315,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": true,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese archer",
+    "is": "chinese archer shooting"
    }
   },
   "china_ancient__ancient_chinese_merchant_abacus": {
@@ -4978,8 +6337,8 @@
     324
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.442,
+    "v": 3,
+    "foot": 0.4417,
     "pad": 0.0093,
     "aspect": 0.5185,
     "face": {
@@ -4996,7 +6355,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese merchant",
+    "is": "chinese merchant with abacus"
    }
   },
   "china_ancient__ancient_chinese_spearman_shield": {
@@ -5010,8 +6377,8 @@
     331
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.431,
+    "v": 3,
+    "foot": 0.4301,
     "pad": 0.0091,
     "aspect": 1.0453,
     "face": {
@@ -5028,7 +6395,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese soldier",
+    "is": "chinese spearman with shield"
    }
   },
   "china_ancient__ancient_chinese_court_official_holding": {
@@ -5042,8 +6417,8 @@
     336
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4513,
+    "v": 3,
+    "foot": 0.4481,
     "pad": 0.0089,
     "aspect": 0.4583,
     "face": {
@@ -5060,7 +6435,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese court official",
+    "is": "chinese court official"
    }
   },
   "china_ancient__ancient_chinese_laborer_carrying_earth": {
@@ -5074,8 +6457,8 @@
     321
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5531,
+    "v": 3,
+    "foot": 0.5559,
     "pad": 0.0093,
     "aspect": 0.8193,
     "face": {
@@ -5092,7 +6475,15 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "chinese laborer",
+    "is": "chinese laborer carrying earth"
    }
   },
   "ancient_animals__brown_horse_standing_saddle": {
@@ -5106,15 +6497,22 @@
     255
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4327,
-    "pad": 0.0118,
+    "v": 3,
+    "foot": 0.4286,
+    "pad": 0.0157,
     "aspect": 1.0627,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": true,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "brown horse without saddle"
    }
   },
   "ancient_animals__white_horse_galloping_rider": {
@@ -5128,15 +6526,22 @@
     229
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5721,
+    "v": 3,
+    "foot": 0.5705,
     "pad": 0.0131,
     "aspect": 1.3013,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": true,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "white horse without rider"
    }
   },
   "ancient_animals__donkey": {
@@ -5150,15 +6555,22 @@
     243
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4666,
+    "v": 3,
+    "foot": 0.4716,
     "pad": 0.0123,
     "aspect": 0.9753,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "donkey"
    }
   },
   "ancient_animals__goat": {
@@ -5172,15 +6584,22 @@
     213
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.449,
+    "v": 3,
+    "foot": 0.4495,
     "pad": 0.0141,
     "aspect": 0.9718,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "goat"
    }
   },
   "ancient_animals__sheep": {
@@ -5194,15 +6613,22 @@
     188
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4565,
+    "v": 3,
+    "foot": 0.454,
     "pad": 0.016,
     "aspect": 1.1543,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "sheep"
    }
   },
   "ancient_animals__cow": {
@@ -5216,15 +6642,22 @@
     208
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4477,
+    "v": 3,
+    "foot": 0.4446,
     "pad": 0.0144,
     "aspect": 1.375,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "cow"
    }
   },
   "ancient_animals__hunting_dog": {
@@ -5238,15 +6671,22 @@
     183
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4361,
+    "v": 3,
+    "foot": 0.4226,
     "pad": 0.0164,
     "aspect": 1.1366,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "hunting dog"
    }
   },
   "ancient_animals__eagle_flying": {
@@ -5260,15 +6700,22 @@
     169
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3813,
-    "pad": 0.0178,
+    "v": 3,
+    "foot": 0.3699,
+    "pad": 0.0237,
     "aspect": 1.2959,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "flying eagle"
    }
   },
   "ancient_animals__crocodile": {
@@ -5282,7 +6729,7 @@
     138
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.6041,
     "pad": 0.0217,
     "aspect": 2.1232,
@@ -5290,7 +6737,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "crocodile"
    }
   },
   "ancient_animals__wolf": {
@@ -5304,15 +6758,22 @@
     194
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.459,
+    "v": 3,
+    "foot": 0.4507,
     "pad": 0.0155,
     "aspect": 1.1186,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wolf"
    }
   },
   "ancient_props2__painted_clay_pottery_jar": {
@@ -5326,7 +6787,7 @@
     209
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0144,
     "aspect": 0.6411,
@@ -5334,7 +6795,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "painted greek pottery jar"
    }
   },
   "ancient_props2__clay_oil_lamp": {
@@ -5348,7 +6816,7 @@
     110
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4791,
     "pad": 0.0273,
     "aspect": 1.7364,
@@ -5356,7 +6824,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "clay oil lamp"
    }
   },
   "ancient_props2__chariot_wheel": {
@@ -5370,7 +6845,7 @@
     198
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.4974,
     "pad": 0.0152,
     "aspect": 0.9798,
@@ -5378,7 +6853,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden chariot wheel"
    }
   },
   "ancient_props2__ship_anchor": {
@@ -5392,7 +6874,7 @@
     204
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0147,
     "aspect": 0.75,
@@ -5400,7 +6882,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "iron ship anchor"
    }
   },
   "ancient_props2__coil_rope": {
@@ -5414,15 +6903,22 @@
     132
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4579,
+    "v": 3,
+    "foot": 0.4553,
     "pad": 0.0227,
     "aspect": 1.4394,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "coiled rope"
    }
   },
   "ancient_props2__bow_quiver_arrows": {
@@ -5436,15 +6932,22 @@
     225
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.1914,
+    "v": 3,
+    "foot": 0.1742,
     "pad": 0.0133,
     "aspect": 0.84,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "bow and quiver of arrows"
    }
   },
   "ancient_props2__gladius_sword": {
@@ -5458,15 +6961,22 @@
     214
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.2264,
+    "v": 3,
+    "foot": 0.2194,
     "pad": 0.014,
     "aspect": 0.9065,
     "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman gladius sword"
    }
   },
   "ancient_props2__long_spear": {
@@ -5480,7 +6990,7 @@
     216
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.0588,
     "pad": 0.0139,
     "aspect": 0.9444,
@@ -5488,7 +6998,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "long spear"
    }
   },
   "ancient_props2__greek_corinthian_helmet": {
@@ -5502,7 +7019,7 @@
     216
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.766,
     "pad": 0.0139,
     "aspect": 0.7361,
@@ -5510,7 +7027,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "greek corinthian helmet"
    }
   },
   "ancient_props2__roman_legionary_helmet": {
@@ -5524,15 +7048,22 @@
     215
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6638,
+    "v": 3,
+    "foot": 0.6644,
     "pad": 0.014,
     "aspect": 0.7535,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman legionary helmet"
    }
   },
   "ancient_props2__laurel_wreath": {
@@ -5546,15 +7077,22 @@
     185
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5,
+    "v": 3,
+    "foot": 0.5041,
     "pad": 0.0162,
     "aspect": 1.0703,
-    "place": "table",
+    "place": "icon",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "laurel wreath"
    }
   },
   "ancient_props2__lyre": {
@@ -5568,15 +7106,22 @@
     213
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
     "pad": 0.0141,
     "aspect": 0.6854,
-    "place": "table",
+    "place": "hand",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "ancient lyre"
    }
   },
   "ancient_props2__blank_papyrus_sheet": {
@@ -5590,15 +7135,22 @@
     211
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5085,
-    "pad": 0.0142,
+    "pad": 0.019,
     "aspect": 0.8389,
     "place": "table",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "blank papyrus scroll"
    }
   },
   "ancient_props2__golden_throne": {
@@ -5612,15 +7164,22 @@
     235
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.3882,
+    "v": 3,
+    "foot": 0.3913,
     "pad": 0.0128,
     "aspect": 0.6851,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "golden throne chair"
    }
   },
   "ancient_props2__roman_banquet_couch_cushions": {
@@ -5634,7 +7193,7 @@
     162
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.7756,
     "pad": 0.0185,
     "aspect": 1.3889,
@@ -5642,7 +7201,14 @@
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman banquet couch with cushions"
    }
   },
   "ancient_props2__low_table_food_wine": {
@@ -5656,15 +7222,22 @@
     175
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4932,
+    "v": 3,
+    "foot": 0.5095,
     "pad": 0.0171,
     "aspect": 1.2457,
-    "place": "table",
+    "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "low table with food and wine"
    }
   },
   "ancient_props2__bronze_cauldron": {
@@ -5678,15 +7251,22 @@
     176
    ],
    "ann": {
-    "v": 1,
+    "v": 3,
     "foot": 0.5,
-    "pad": 0.017,
+    "pad": 0.0227,
     "aspect": 1.1307,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "bronze cauldron"
    }
   },
   "ancient_props2__wooden_cage": {
@@ -5700,15 +7280,22 @@
     207
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6288,
+    "v": 3,
+    "foot": 0.6263,
     "pad": 0.0145,
     "aspect": 0.9565,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden cage"
    }
   },
   "ancient_buildings3__roman_bathhouse_domes": {
@@ -5722,15 +7309,22 @@
     258
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5133,
+    "v": 3,
+    "foot": 0.5157,
     "pad": 0.0116,
     "aspect": 1.6008,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman bathhouse with domes"
    }
   },
   "ancient_buildings3__colosseum_exterior": {
@@ -5744,15 +7338,22 @@
     301
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.4839,
+    "v": 3,
+    "foot": 0.4877,
     "pad": 0.01,
     "aspect": 1.3555,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman colosseum"
    }
   },
   "ancient_buildings3__pharos_lighthouse_alexandria": {
@@ -5766,15 +7367,22 @@
     347
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5,
+    "v": 3,
+    "foot": 0.5018,
     "pad": 0.0086,
     "aspect": 0.7867,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "pharos lighthouse of alexandria"
    }
   },
   "ancient_buildings3__section_ancient_chinese_great_wall": {
@@ -5788,15 +7396,22 @@
     261
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.2324,
-    "pad": 0.0115,
+    "v": 3,
+    "foot": 0.2372,
+    "pad": 0.0153,
     "aspect": 1.5747,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "section of great wall of china"
    }
   },
   "ancient_buildings3__mesopotamian_ziggurat": {
@@ -5810,15 +7425,22 @@
     238
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.6627,
+    "v": 3,
+    "foot": 0.6634,
     "pad": 0.0126,
     "aspect": 1.8151,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "mesopotamian ziggurat"
    }
   },
   "ancient_buildings3__greek_openair_theater": {
@@ -5832,15 +7454,22 @@
     208
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5928,
-    "pad": 0.0144,
+    "v": 3,
+    "foot": 0.5641,
+    "pad": 0.0192,
     "aspect": 1.8029,
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "greek open-air theater"
    }
   },
   "greek_more__greek_discus_thrower_athlete_wearing": {
@@ -5854,25 +7483,33 @@
     309
    ],
    "ann": {
-    "v": 1,
-    "foot": 0.5651,
+    "v": 3,
+    "foot": 0.5658,
     "pad": 0.0097,
     "aspect": 0.6828,
     "face": {
-     "l": -0.0226,
-     "r": 0.7003,
-     "t": 0.0129,
-     "b": 0.2621
+     "l": 0.0515,
+     "r": 0.1885,
+     "t": 0.355,
+     "b": 0.465
     },
     "mouth": [
-     0.3389,
-     0.2073
+     0.12,
+     0.4408
     ],
     "place": "ground",
     "facing": "r",
     "text": false,
     "double": false,
-    "cut": false
+    "cut": false,
+    "mismatch": false,
+    "partial": false,
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "greek athlete",
+    "is": "greek discus thrower athlete"
    }
   },
   "hand_spartacus__cleaver": {
@@ -5887,19 +7524,22 @@
    ],
    "note": "cleaver",
    "ann": {
-    "facing": "r",
-    "aspect": 3.157,
+    "v": 3,
     "foot": 0.7,
     "pad": 0.0331,
-    "v": 2,
-    "place": "table",
-    "is": "cleaver",
+    "aspect": 3.157,
+    "place": "hand",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "meat cleaver"
    }
   },
   "hand_spartacus__dead_horse": {
@@ -5914,19 +7554,22 @@
    ],
    "note": "dead horse",
    "ann": {
-    "facing": "r",
-    "aspect": 2.9829,
+    "v": 3,
     "foot": 0.3326,
     "pad": 0.0171,
-    "v": 2,
+    "aspect": 2.9829,
     "place": "ground",
-    "is": "lying flat dead horse",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "horse lying down"
    }
   },
   "hand_spartacus__snake": {
@@ -5941,26 +7584,29 @@
    ],
    "note": "snake",
    "ann": {
-    "facing": "r",
-    "aspect": 1.5533,
+    "v": 3,
     "foot": 0.5327,
     "pad": 0.0203,
-    "v": 2,
+    "aspect": 1.5533,
     "place": "ground",
-    "is": "snake",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": true,
+    "is": "coiled snake"
    }
   },
   "hand_spartacus__vine_ladder": {
    "sheet": "hand_spartacus",
    "era": "ancient",
    "kind": "prop",
-   "heightM": 4.0,
+   "heightM": 4,
    "facing": "r",
    "px": [
     176,
@@ -5968,19 +7614,22 @@
    ],
    "note": "vine ladder",
    "ann": {
-    "facing": "r",
-    "aspect": 0.352,
+    "v": 3,
     "foot": 0.3485,
     "pad": 0.006,
-    "v": 2,
+    "aspect": 0.352,
     "place": "ground",
-    "is": "vine ladder",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "rope vine ladder"
    }
   },
   "hand_spartacus__weapon_wagon": {
@@ -5995,26 +7644,29 @@
    ],
    "note": "weapon wagon",
    "ann": {
-    "facing": "r",
-    "aspect": 1.4833,
+    "v": 3,
     "foot": 0.2532,
     "pad": 0.0063,
-    "v": 2,
+    "aspect": 1.4833,
     "place": "ground",
-    "is": "weapon wagon",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden cart full of weapons"
    }
   },
   "hand_caesar__cross": {
    "sheet": "hand_caesar",
    "era": "ancient",
    "kind": "prop",
-   "heightM": 3.0,
+   "heightM": 3,
    "facing": "r",
    "px": [
     259,
@@ -6022,19 +7674,22 @@
    ],
    "note": "cross",
    "ann": {
-    "facing": "r",
-    "aspect": 0.7896,
+    "v": 3,
     "foot": 0.4537,
     "pad": 0.0122,
-    "v": 2,
+    "aspect": 0.7896,
     "place": "ground",
-    "is": "cross",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden cross"
    }
   },
   "hand_caesar__list": {
@@ -6049,19 +7704,22 @@
    ],
    "note": "list",
    "ann": {
-    "facing": "r",
-    "aspect": 0.6114,
+    "v": 3,
     "foot": 0.5493,
     "pad": 0.009,
-    "v": 2,
+    "aspect": 0.6114,
     "place": "table",
-    "is": "list",
-    "text": false,
+    "facing": "r",
+    "text": true,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "written papyrus scroll list"
    }
   },
   "hand_caesar__senators": {
@@ -6076,36 +7734,40 @@
    ],
    "note": "senators",
    "ann": {
-    "facing": "r",
-    "aspect": 1.1607,
+    "v": 3,
     "foot": 0.5078,
     "pad": 0.0098,
+    "aspect": 1.1607,
     "face": {
-     "l": 0.4661,
-     "r": 0.5763,
-     "t": 0.0164,
-     "b": 0.1639
+     "l": 0.3263,
+     "r": 0.5155,
+     "t": 0.0131,
+     "b": 0.2918
     },
     "mouth": [
-     0.5212,
-     0.1246
+     0.4209,
+     0.2305
     ],
-    "v": 2,
     "place": "ground",
-    "is": "senators",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "group": "roman senator",
+    "is": "group of roman senators"
    }
   },
   "hand_caesar__ship": {
    "sheet": "hand_caesar",
    "era": "ancient",
    "kind": "vehicle",
-   "heightM": 4.0,
+   "heightM": 4,
    "facing": "r",
    "px": [
     414,
@@ -6113,19 +7775,22 @@
    ],
    "note": "ship",
    "ann": {
-    "facing": "r",
-    "aspect": 1.306,
+    "v": 3,
     "foot": 0.4444,
     "pad": 0.0095,
-    "v": 2,
+    "aspect": 1.306,
     "place": "ground",
-    "is": "ship",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman galley ship"
    }
   },
   "hand_caesar__statue": {
@@ -6140,26 +7805,29 @@
    ],
    "note": "statue",
    "ann": {
-    "facing": "r",
-    "aspect": 0.4885,
+    "v": 3,
     "foot": 0.5118,
     "pad": 0.0086,
-    "v": 2,
+    "aspect": 0.4885,
     "place": "ground",
-    "is": "statue",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "roman marble statue"
    }
   },
   "hand_caesar__wall": {
    "sheet": "hand_caesar",
    "era": "ancient",
    "kind": "structure",
-   "heightM": 4.0,
+   "heightM": 4,
    "facing": "r",
    "px": [
     632,
@@ -6167,19 +7835,22 @@
    ],
    "note": "wall",
    "ann": {
-    "facing": "r",
-    "aspect": 1.9094,
+    "v": 3,
     "foot": 0.0744,
     "pad": 0.0121,
-    "v": 2,
+    "aspect": 1.9094,
     "place": "ground",
-    "is": "wall",
+    "facing": "r",
     "text": false,
     "double": false,
     "cut": false,
     "mismatch": false,
     "partial": false,
-    "aims": false
+    "furniture": false,
+    "aims": false,
+    "posture": "stand",
+    "flat": false,
+    "is": "wooden palisade wall with tower"
    }
   }
  },
@@ -6191,56 +7862,51 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     850,
-     820,
-     860
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     260,
-     185,
-     250
+     496,
+     496,
+     496
     ],
+    "horizon": 597,
     "spots": [
      [
-      320,
-      850,
-      260
-     ],
-     [
-      620,
-      760,
-      205
-     ],
-     [
-      960,
+      280,
       820,
-      185
+      308
      ],
      [
-      1280,
-      770,
-      195
-     ],
-     [
-      1600,
-      860,
+      520,
+      750,
       250
-     ]
-    ],
-    "walls": [
-     [
-      50,
-      260,
-      380
      ],
      [
-      1240,
-      1520,
-      380
+      780,
+      720,
+      226
+     ],
+     [
+      1050,
+      700,
+      209
+     ],
+     [
+      1320,
+      760,
+      258
+     ],
+     [
+      1620,
+      840,
+      324
      ]
     ],
+    "walls": [],
     "table": null,
     "water": null,
     "free": [
@@ -6267,7 +7933,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 820
+   "ground": 1050
   },
   "bg_rome_colosseum_arena": {
    "era": "rome",
@@ -6276,56 +7942,46 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     900,
-     920
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     240,
-     165,
-     235
+     244,
+     244,
+     244
     ],
+    "horizon": 827,
     "spots": [
      [
-      320,
-      920,
-      240
+      550,
+      810,
+      86
      ],
      [
-      640,
-      860,
-      185
+      880,
+      790,
+      73
      ],
      [
-      960,
-      900,
-      165
+      1180,
+      800,
+      79
      ],
      [
-      1280,
-      870,
-      180
+      1460,
+      830,
+      99
      ],
      [
-      1600,
-      920,
-      235
+      1720,
+      880,
+      132
      ]
     ],
-    "walls": [
-     [
-      20,
-      360,
-      720
-     ],
-     [
-      1400,
-      1900,
-      720
-     ]
-    ],
+    "walls": [],
     "table": null,
     "water": null,
     "free": [
@@ -6348,30 +8004,11 @@
       600
      ]
     ],
-    "seats": [
-     {
-      "k": "bench",
-      "x0": 100,
-      "x1": 520,
-      "y": 560
-     },
-     {
-      "k": "bench",
-      "x0": 600,
-      "x1": 1320,
-      "y": 540
-     },
-     {
-      "k": "bench",
-      "x0": 1400,
-      "x1": 1820,
-      "y": 560
-     }
-    ],
+    "seats": [],
     "rails": null,
     "boats": null
    },
-   "ground": 900
+   "ground": 1050
   },
   "bg_rome_street": {
    "era": "rome",
@@ -6380,67 +8017,48 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     880,
-     830,
-     850
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     280,
-     170,
-     260
+     527,
+     527,
+     527
     ],
+    "horizon": 568,
     "spots": [
      [
-      320,
-      880,
-      280
+      240,
+      860,
+      319
      ],
      [
-      580,
-      760,
-      205
+      540,
+      790,
+      243
      ],
      [
-      960,
-      830,
-      170
+      840,
+      740,
+      188
      ],
      [
-      1180,
-      730,
-      135
+      1120,
+      690,
+      133
      ],
      [
-      1600,
-      850,
-      260
+      1350,
+      640,
+      79
      ]
     ],
-    "walls": [
-     [
-      120,
-      420,
-      240
-     ],
-     [
-      560,
-      820,
-      240
-     ],
-     [
-      1520,
-      1760,
-      360
-     ]
-    ],
-    "table": [
-     120,
-     220,
-     560
-    ],
-    "water": 630,
+    "walls": [],
+    "table": null,
+    "water": null,
     "free": [
      [
       1080,
@@ -6465,7 +8083,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 830
+   "ground": 1050
   },
   "bg_rome_senate": {
    "era": "rome",
@@ -6474,60 +8092,66 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     840,
-     940
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     265,
-     165,
-     260
+     515,
+     515,
+     515
     ],
+    "horizon": 579,
     "spots": [
      [
-      320,
+      360,
       920,
-      265
+      423
      ],
      [
-      760,
-      740,
-      175
-     ],
-     [
-      960,
+      620,
       840,
-      165
+      365
      ],
      [
-      1180,
-      730,
-      160
+      880,
+      780,
+      323
      ],
      [
-      1600,
-      940,
-      260
+      1120,
+      720,
+      280
+     ],
+     [
+      1360,
+      660,
+      237
+     ],
+     [
+      1560,
+      860,
+      380
      ]
     ],
     "walls": [
      [
-      120,
-      560,
-      320
+      1220,
+      1340,
+      360
      ],
      [
-      1080,
-      1480,
+      1560,
+      1680,
       360
      ]
     ],
     "table": [
-     1160,
-     1360,
-     460
+     1365,
+     1475,
+     455
     ],
     "water": null,
     "free": [
@@ -6553,33 +8177,33 @@
     "seats": [
      {
       "k": "bench",
-      "x0": 140,
-      "x1": 640,
-      "y": 620
+      "x0": 230,
+      "x1": 720,
+      "y": 650
      },
      {
       "k": "bench",
-      "x0": 680,
-      "x1": 1160,
-      "y": 550
+      "x0": 160,
+      "x1": 580,
+      "y": 565
      },
      {
       "k": "bench",
-      "x0": 1420,
-      "x1": 1860,
-      "y": 620
+      "x0": 80,
+      "x1": 460,
+      "y": 485
      },
      {
-      "k": "chair",
-      "x0": 1230,
-      "x1": 1290,
-      "y": 410
+      "k": "bench",
+      "x0": 1620,
+      "x1": 1920,
+      "y": 760
      }
     ],
     "rails": null,
     "boats": null
    },
-   "ground": 840
+   "ground": 1050
   },
   "bg_rome_villa_interior": {
    "era": "rome",
@@ -6588,57 +8212,59 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     940,
-     860,
-     940
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     275,
-     160,
-     275
+     402,
+     402,
+     402
     ],
+    "horizon": 682,
     "spots": [
      [
-      320,
-      940,
-      275
+      260,
+      920,
+      296
      ],
      [
-      560,
-      830,
-      190
+      480,
+      840,
+      230
      ],
      [
-      1360,
-      830,
-      190
+      960,
+      900,
+      279
      ],
      [
-      1600,
-      940,
-      275
+      1440,
+      840,
+      230
+     ],
+     [
+      1660,
+      920,
+      296
      ]
     ],
     "walls": [
      [
-      140,
-      320,
-      540
+      160,
+      290,
+      565
      ],
      [
-      1600,
-      1860,
-      540
+      1760,
+      1900,
+      565
      ]
     ],
-    "table": [
-     440,
-     510,
-     720
-    ],
-    "water": 740,
+    "table": null,
+    "water": 755,
     "free": [
      [
       600,
@@ -6662,21 +8288,21 @@
     "seats": [
      {
       "k": "bench",
-      "x0": 520,
-      "x1": 660,
-      "y": 680
+      "x0": 500,
+      "x1": 625,
+      "y": 690
      },
      {
       "k": "bench",
-      "x0": 1260,
-      "x1": 1400,
-      "y": 680
+      "x0": 1305,
+      "x1": 1430,
+      "y": 690
      }
     ],
     "rails": null,
     "boats": null
    },
-   "ground": 860
+   "ground": 1050
   },
   "bg_rome_circus": {
    "era": "rome",
@@ -6685,51 +8311,46 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     860,
-     920
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     250,
-     150,
-     245
+     357,
+     357,
+     357
     ],
+    "horizon": 724,
     "spots": [
      [
-      320,
-      920,
+      260,
+      900,
       250
      ],
      [
-      640,
-      830,
-      175
+      580,
+      860,
+      222
      ],
      [
       960,
+      840,
+      207
+     ],
+     [
+      1340,
       860,
-      150
+      222
      ],
      [
-      1280,
-      830,
-      175
-     ],
-     [
-      1600,
-      920,
-      245
+      1680,
+      900,
+      250
      ]
     ],
-    "walls": [
-     [
-      40,
-      260,
-      340
-     ]
-    ],
+    "walls": [],
     "table": null,
     "water": null,
     "free": [
@@ -6752,18 +8373,11 @@
       600
      ]
     ],
-    "seats": [
-     {
-      "k": "bench",
-      "x0": 340,
-      "x1": 1600,
-      "y": 420
-     }
-    ],
+    "seats": [],
     "rails": null,
     "boats": null
    },
-   "ground": 860
+   "ground": 1050
   },
   "bg_rome_camp": {
    "era": "rome",
@@ -6772,42 +8386,38 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     850,
-     900
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     255,
-     155,
-     240
+     728,
+     728,
+     728
     ],
+    "horizon": 384,
     "spots": [
      [
-      320,
-      920,
-      255
+      160,
+      940,
+      608
      ],
      [
-      640,
-      820,
-      180
-     ],
-     [
-      960,
-      850,
-      155
-     ],
-     [
-      1280,
-      820,
-      175
-     ],
-     [
-      1600,
+      480,
       900,
-      240
+      564
+     ],
+     [
+      1180,
+      880,
+      543
+     ],
+     [
+      1520,
+      920,
+      586
      ]
     ],
     "walls": [],
@@ -6837,7 +8447,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 850
+   "ground": 1050
   },
   "bg_ancient_battlefield": {
    "era": "ancient",
@@ -6846,42 +8456,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     900,
-     820,
-     880
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     260,
-     155,
-     250
+     603,
+     603,
+     603
     ],
+    "horizon": 499,
     "spots": [
      [
-      320,
+      240,
       900,
-      260
+      480
      ],
      [
-      640,
-      780,
-      185
+      560,
+      820,
+      414
      ],
      [
       960,
-      820,
-      155
+      760,
+      365
      ],
      [
-      1280,
-      790,
-      180
+      1320,
+      800,
+      398
      ],
      [
-      1600,
+      1640,
       880,
-      250
+      464
      ]
     ],
     "walls": [],
@@ -6911,7 +8522,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 820
+   "ground": 1050
   },
   "bg_gaul_forest": {
    "era": "ancient",
@@ -6920,42 +8531,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     860,
-     910
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     255,
-     155,
-     245
+     228,
+     228,
+     228
     ],
+    "horizon": 842,
     "spots": [
      [
-      320,
-      920,
-      255
+      450,
+      950,
+      152
      ],
      [
-      640,
-      830,
-      175
+      680,
+      920,
+      129
      ],
      [
       960,
-      860,
-      155
+      900,
+      113
      ],
      [
-      1280,
-      840,
-      170
-     ],
-     [
-      1600,
+      1240,
       910,
-      245
+      121
+     ],
+     [
+      1460,
+      940,
+      144
      ]
     ],
     "walls": [],
@@ -6985,7 +8597,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 860
+   "ground": 1050
   },
   "bg_alps_pass": {
    "era": "ancient",
@@ -6994,42 +8606,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     960,
-     880,
-     940
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     265,
-     150,
-     250
+     575,
+     575,
+     575
     ],
+    "horizon": 524,
     "spots": [
      [
-      320,
+      260,
       960,
-      265
+      500
      ],
      [
-      680,
-      850,
-      175
+      520,
+      900,
+      452
      ],
      [
-      960,
-      880,
-      150
+      820,
+      820,
+      386
      ],
      [
-      1240,
-      840,
-      170
+      1120,
+      690,
+      279
      ],
      [
-      1600,
-      940,
-      250
+      1360,
+      550,
+      164
      ]
     ],
     "walls": [],
@@ -7059,7 +8672,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 880
+   "ground": 1050
   },
   "bg_mediterranean_harbor": {
    "era": "ancient",
@@ -7068,53 +8681,48 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     940,
-     860,
-     940
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     270,
-     165,
-     260
+     456,
+     456,
+     456
     ],
+    "horizon": 633,
     "spots": [
      [
-      320,
-      940,
-      270
+      360,
+      880,
+      335
      ],
      [
       640,
-      820,
-      185
+      830,
+      300
      ],
      [
       960,
-      860,
-      165
+      800,
+      279
      ],
      [
       1280,
       820,
-      180
+      293
      ],
      [
-      1600,
-      940,
-      260
-     ]
-    ],
-    "walls": [
-     [
-      1220,
       1560,
-      360
+      860,
+      321
      ]
     ],
+    "walls": [],
     "table": null,
-    "water": 580,
+    "water": 520,
     "free": [
      [
       840,
@@ -7138,12 +8746,12 @@
     "seats": [],
     "rails": null,
     "boats": [
-     520,
-     1180,
-     580
+     340,
+     1520,
+     635
     ]
    },
-   "ground": 860
+   "ground": 1050
   },
   "bg_egypt_pyramids": {
    "era": "ancient",
@@ -7152,42 +8760,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     840,
-     900
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     255,
-     145,
-     240
+     537,
+     537,
+     537
     ],
+    "horizon": 559,
     "spots": [
      [
-      320,
+      280,
       920,
-      255
+      431
      ],
      [
-      640,
-      810,
-      170
+      580,
+      860,
+      382
      ],
      [
       960,
+      820,
+      349
+     ],
+     [
+      1320,
       840,
-      145
+      365
      ],
      [
-      1280,
-      810,
-      165
-     ],
-     [
-      1600,
+      1620,
       900,
-      240
+      414
      ]
     ],
     "walls": [],
@@ -7215,9 +8824,13 @@
     ],
     "seats": [],
     "rails": null,
-    "boats": null
+    "boats": [
+     400,
+     1450,
+     575
+    ]
    },
-   "ground": 840
+   "ground": 1050
   },
   "bg_greek_acropolis": {
    "era": "ancient",
@@ -7226,42 +8839,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     940,
-     850,
-     920
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     260,
-     150,
-     245
+     214,
+     214,
+     214
     ],
+    "horizon": 854,
     "spots": [
      [
       320,
-      940,
-      260
+      950,
+      148
      ],
      [
-      640,
-      820,
-      175
-     ],
-     [
-      960,
-      850,
-      150
-     ],
-     [
-      1280,
-      820,
-      170
-     ],
-     [
-      1600,
+      600,
       920,
-      245
+      129
+     ],
+     [
+      920,
+      890,
+      109
+     ],
+     [
+      1240,
+      910,
+      122
+     ],
+     [
+      1520,
+      940,
+      142
      ]
     ],
     "walls": [],
@@ -7291,7 +8905,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 850
+   "ground": 1050
   },
   "bg_carthage_city": {
    "era": "ancient",
@@ -7300,37 +8914,48 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     1010,
-     1010,
-     1010
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     300,
-     300,
-     300
+     576,
+     576,
+     576
     ],
+    "horizon": 524,
     "spots": [
      [
-      700,
-      1010,
-      300
+      720,
+      950,
+      466
      ],
      [
       960,
-      1010,
-      300
+      920,
+      433
      ],
      [
-      1220,
-      1010,
-      300
+      1180,
+      900,
+      411
+     ],
+     [
+      1400,
+      930,
+      444
+     ],
+     [
+      1620,
+      960,
+      477
      ]
     ],
     "walls": [],
     "table": null,
-    "water": 620,
+    "water": 420,
     "free": [
      [
       0,
@@ -7354,12 +8979,12 @@
     "seats": [],
     "rails": null,
     "boats": [
-     340,
-     840,
-     560
+     1620,
+     1900,
+     610
     ]
    },
-   "ground": 880
+   "ground": 1050
   },
   "bg_qin_palace": {
    "era": "ancient",
@@ -7368,51 +8993,46 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     940,
-     850,
-     940
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     265,
-     160,
-     255
+     389,
+     389,
+     389
     ],
+    "horizon": 694,
     "spots": [
      [
-      320,
+      240,
       940,
-      265
+      299
      ],
      [
-      640,
-      820,
-      180
+      560,
+      910,
+      274
      ],
      [
-      960,
-      850,
-      160
+      880,
+      880,
+      250
      ],
      [
-      1280,
-      820,
-      175
+      1200,
+      900,
+      266
      ],
      [
-      1600,
+      1520,
       940,
-      255
+      299
      ]
     ],
-    "walls": [
-     [
-      200,
-      960,
-      550
-     ]
-    ],
+    "walls": [],
     "table": null,
     "water": null,
     "free": [
@@ -7439,7 +9059,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 850
+   "ground": 1050
   },
   "bg_ancient_village": {
    "era": "ancient",
@@ -7448,42 +9068,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     940,
-     850,
-     920
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     260,
-     150,
-     245
+     375,
+     375,
+     375
     ],
+    "horizon": 707,
     "spots": [
      [
       320,
-      940,
-      260
+      920,
+      276
      ],
      [
       640,
-      820,
-      175
+      880,
+      245
      ],
      [
       960,
-      850,
-      150
+      840,
+      214
      ],
      [
       1280,
-      820,
-      170
+      860,
+      230
      ],
      [
-      1600,
-      920,
-      245
+      1580,
+      900,
+      260
      ]
     ],
     "walls": [],
@@ -7513,7 +9134,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 850
+   "ground": 1050
   },
   "bg_thermopylae": {
    "era": "ancient",
@@ -7522,37 +9143,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     960,
-     860,
-     720
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     270,
-     175,
-     115
+     566,
+     566,
+     566
     ],
+    "horizon": 533,
     "spots": [
      [
-      680,
-      900,
-      210
-     ],
-     [
-      960,
       860,
-      175
+      940,
+      482
      ],
      [
-      1220,
-      760,
-      130
+      980,
+      530,
+      169
+     ],
+     [
+      1120,
+      910,
+      459
+     ],
+     [
+      1360,
+      920,
+      467
      ]
     ],
     "walls": [],
     "table": null,
-    "water": 880,
+    "water": 310,
     "free": [
      [
       0,
@@ -7575,9 +9202,13 @@
     ],
     "seats": [],
     "rails": null,
-    "boats": null
+    "boats": [
+     120,
+     580,
+     520
+    ]
    },
-   "ground": 860
+   "ground": 1050
   },
   "bg_babylon_gate": {
    "era": "ancient",
@@ -7586,56 +9217,46 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     860,
-     900
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     260,
-     175,
-     240
+     395,
+     395,
+     395
     ],
+    "horizon": 689,
     "spots": [
      [
-      320,
-      920,
-      260
+      240,
+      940,
+      323
      ],
      [
-      640,
-      840,
-      190
+      620,
+      880,
+      284
      ],
      [
-      960,
-      860,
-      175
-     ],
-     [
-      1280,
+      980,
       820,
-      185
+      245
      ],
      [
-      1600,
-      900,
-      240
-     ]
-    ],
-    "walls": [
-     [
-      560,
+      1240,
       860,
-      540
+      271
      ],
      [
-      1460,
-      1900,
-      540
+      1620,
+      940,
+      323
      ]
     ],
+    "walls": [],
     "table": null,
     "water": null,
     "free": [
@@ -7662,7 +9283,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 860
+   "ground": 1050
   },
   "bg_nile_village": {
    "era": "ancient",
@@ -7671,47 +9292,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     860,
-     920
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     260,
-     165,
-     245
+     466,
+     466,
+     466
     ],
+    "horizon": 624,
     "spots": [
      [
       320,
+      940,
+      382
+     ],
+     [
+      680,
+      910,
+      359
+     ],
+     [
+      1040,
+      900,
+      351
+     ],
+     [
+      1380,
       920,
-      260
-     ],
-     [
-      640,
-      840,
-      180
-     ],
-     [
-      960,
-      860,
-      165
-     ],
-     [
-      1280,
-      840,
-      175
-     ],
-     [
-      1600,
-      920,
-      245
+      367
      ]
     ],
     "walls": [],
     "table": null,
-    "water": 680,
+    "water": 590,
     "free": [
      [
       0,
@@ -7734,9 +9351,13 @@
     ],
     "seats": [],
     "rails": null,
-    "boats": null
+    "boats": [
+     240,
+     1640,
+     670
+    ]
    },
-   "ground": 860
+   "ground": 1050
   },
   "bg_great_wall": {
    "era": "ancient",
@@ -7745,42 +9366,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     940,
-     880,
-     920
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     255,
-     155,
-     235
+     367,
+     367,
+     367
     ],
+    "horizon": 714,
     "spots": [
      [
-      320,
-      940,
-      255
+      280,
+      960,
+      313
      ],
      [
       640,
-      850,
-      170
+      940,
+      301
      ],
      [
+      1020,
+      930,
+      295
+     ],
+     [
+      1380,
+      940,
+      301
+     ],
+     [
+      1720,
       960,
-      880,
-      155
-     ],
-     [
-      1280,
-      850,
-      165
-     ],
-     [
-      1600,
-      920,
-      235
+      313
      ]
     ],
     "walls": [],
@@ -7810,7 +9432,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 880
+   "ground": 1050
   },
   "bg_persepolis": {
    "era": "ancient",
@@ -7819,56 +9441,46 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     920,
-     880,
-     900
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     265,
-     175,
-     245
+     531,
+     531,
+     531
     ],
+    "horizon": 565,
     "spots": [
      [
-      320,
+      240,
       920,
-      265
+      425
      ],
      [
-      640,
-      850,
-      190
+      560,
+      890,
+      400
      ],
      [
-      960,
-      880,
-      175
-     ],
-     [
-      1280,
-      850,
-      185
-     ],
-     [
-      1600,
-      900,
-      245
-     ]
-    ],
-    "walls": [
-     [
-      960,
-      1260,
-      680
+      920,
+      870,
+      384
      ],
      [
       1320,
-      1600,
-      680
+      890,
+      400
+     ],
+     [
+      1680,
+      920,
+      425
      ]
     ],
+    "walls": [],
     "table": null,
     "water": null,
     "free": [
@@ -7895,7 +9507,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 880
+   "ground": 1050
   },
   "bg_roman_countryside": {
    "era": "rome",
@@ -7904,42 +9516,43 @@
     768
    ],
    "ann": {
-    "v": 5,
+    "v": 6,
     "ground": [
-     940,
-     860,
-     920
+     1050,
+     1050,
+     1050
     ],
     "person": [
-     255,
-     160,
-     240
+     369,
+     369,
+     369
     ],
+    "horizon": 713,
     "spots": [
      [
-      320,
-      940,
-      255
+      280,
+      920,
+      270
      ],
      [
       640,
-      830,
-      175
+      890,
+      246
      ],
      [
-      960,
-      860,
-      160
+      980,
+      870,
+      231
      ],
      [
-      1280,
-      830,
-      170
+      1340,
+      890,
+      246
      ],
      [
-      1600,
+      1680,
       920,
-      240
+      270
      ]
     ],
     "walls": [],
@@ -7969,7 +9582,7 @@
     "rails": null,
     "boats": null
    },
-   "ground": 860
+   "ground": 1050
   },
   "bg_sp_appian": {
    "era": "ancient",
