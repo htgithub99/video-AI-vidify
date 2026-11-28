@@ -25,6 +25,10 @@ SLIVER_MIN = 8
 SLIVER_LEVEL = 14
 SLIVER_CHROMA = 8
 INK = 40
+# Busts: a closed white pocket below the mouth line (between a braid and the neck, under the chin) is background,
+# even when the matting model calls it foreground; eye whites and teeth sit higher in the figure and stay.
+POCKET_MIN = 150
+POCKET_Y = 0.45
 
 PAD = 4
 
@@ -63,6 +67,11 @@ def key(src, dst, session, objects, edge_only):
     edge_lab = ndimage.grey_dilation(lab, size=2 * INK_RING + 1) * edge_ring
     ink_share = ndimage.mean(mx < INK_LEVEL, edge_lab, idx)
     sizes = ndimage.sum(white, lab, idx)
+    if edge_only:
+        fig, _nf = ndimage.label(ndimage.binary_dilation(~white, iterations=3))
+        boxes = ndimage.find_objects(fig)
+        cy = ndimage.center_of_mass(white, lab, idx)
+        fig_at = ndimage.maximum(fig, edge_lab, idx)
     kill = np.zeros(n + 1, bool)
     for i in idx:
         k = i - 1
@@ -71,7 +80,12 @@ def key(src, dst, session, objects, edge_only):
         flat = level[k] >= bgv - THIN_LEVEL and tone[k] <= THIN_CHROMA
         thin = flat and sizes[k] >= THIN_MIN and (model[k] < MODEL_HOLE or open_hole)
         sliver = objects and open_hole and sizes[k] >= SLIVER_MIN and level[k] >= bgv - SLIVER_LEVEL and tone[k] <= SLIVER_CHROMA
-        kill[i] = (i in edge or (hole and model[k] < MODEL_HOLE)) if edge_only else i in edge or hole or thin or sliver or (model[k] < MODEL_BG and level[k] >= bgv - 10)
+        pocket = False
+        if edge_only and hole and sizes[k] >= POCKET_MIN and int(fig_at[k]) > 0:
+            box = boxes[int(fig_at[k]) - 1]
+            y0, y1 = box[0].start, box[0].stop
+            pocket = (cy[k][0] - y0) / max(1, y1 - y0) >= POCKET_Y
+        kill[i] = (i in edge or (hole and (model[k] < MODEL_HOLE or pocket))) if edge_only else i in edge or hole or thin or sliver or (model[k] < MODEL_BG and level[k] >= bgv - 10)
     bg = ndimage.binary_dilation(kill[lab], iterations=1) & (mn >= 200)
     alpha = np.where(bg, 0.0, 1.0)
     near = ~bg & (ndimage.distance_transform_edt(~bg) <= EDGE_PX)

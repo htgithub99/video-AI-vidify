@@ -1,7 +1,7 @@
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import { encodeClaudeChatModel } from "../../../constants/claudeChatModels.js";
 import type { ReupAiChoice } from "../../reup/types/reup.js";
-import type { BornasAiField, BornasAiSettings, BornasDrawProvider, BornasChannel, BornasLine, BornasGenre, BornasLanguage, BornasMusicChoice, BornasStepId, BornasTopic } from "../types/bornas.js";
+import type { BornasPosture, BornasAiField, BornasAiSettings, BornasDrawProvider, BornasChannel, BornasLine, BornasGenre, BornasLanguage, BornasMusicChoice, BornasStepId, BornasTopic } from "../types/bornas.js";
 export const BORNAS_STEPS: readonly BornasStepId[] = ["sample", "script", "voice", "assets", "shots", "build", "package", "render"];
 export const BORNAS_VIDEO_STEPS: readonly BornasStepId[] = ["voice", "assets", "shots", "build", "package", "render"];
 export const BORNAS_API = { SOURCE: "/source", START: "/start", APPROVE: "/approve", RERUN: "/rerun", CANCEL: "/cancel", STATUS: "/status/:jobId", STATE: "/state", JOBS: "/jobs", DELETE: "/delete", SAVE_VIDEO: "/save-video", ANNOTATE: "/annotate", DELETE_VIDEOS: "/delete-videos" } as const;
@@ -22,7 +22,7 @@ export const BORNAS_STORAGE = { STATE: "bornas_state_v1" } as const;
 export const BORNAS_STATE = { FILE: "bornas-state.json", CHANNELS_MAX: 40, DONE_MAX: 300, DONE_CHARS: 120, DONE_JOIN: ", ", DONE_SPLIT: /[,\n]/ } as const;
 export const bornasHeroName = (hero: string): string => hero.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim().slice(0, BORNAS_STATE.DONE_CHARS);
 export const bornasDoneList = (raw: unknown): string[] => [...new Map((Array.isArray(raw) ? raw : []).map((x) => String(x ?? "").trim().slice(0, BORNAS_STATE.DONE_CHARS)).filter(Boolean).map((x) => [x.toLowerCase(), x] as const)).values()].slice(0, BORNAS_STATE.DONE_MAX);
-export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", SHORT: "short", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4" } as const;
+export const BORNAS_DIR = { OUTPUT: "output", ROOT: "bornas", SAMPLES: "_samples", SHEETS: "sheets", JOB_FILE: "job.json", ASSETS_URL: "/assets/bornas/", PYENV: "pyenv", KIT: ["tools", "born-as-kit"], LIB: ["tools", "born-as-lib"], VIDEO: "video", ASSETS: "assets", RAW: "raw", RENDER: "render", SHORT: "short", VOICE: "voice", SHOTS: "shots", PREVIEW: "preview_720p.mp4", PARTS: "parts" } as const;
 export const BORNAS_TOPIC_LIBS: Record<BornasTopic, string[]> = { world: ["ancient", "medieval", "eastasia", "ww", "modern"], ww: ["ww"], ancient: ["ancient"], medieval: ["medieval"], eastasia: ["eastasia"], vietnam: ["vietnam"], modern: ["modern"], game: ["game"], wildwest: ["wildwest"], anime: ["anime"] };
 export const BORNAS_SIZES: { re: RegExp; min: number; max: number; std: number }[] = [
   { re: /\b(?:mounted|galloping|riding|rider|horseman|cavalryman)\b/, min: 1.8, max: 2.8, std: 2.4 },
@@ -75,7 +75,16 @@ export const BORNAS_AI_CACHE = { KEY_LEN: 12, SHOTS_PREFIX: "", PLAN_PREFIX: "pl
 export const BORNAS_ROTATION = { ORDER: ["wide", "act", "prop", "two", "act", "bust"], RECENT: 8, BUST_SHARE: 0.18, BUST_GAP: 6, REPEAT_GAP: 30, BUST_WARN: 0.25, PROP_KINDS: ["prop", "weapon"] } as const;
 export const BORNAS_BUSTS = { SHEETS: [{ file: "", views: ["r", "talk", "l"] }, { file: "_moods", views: ["fierce", "shock", "smile"] }], NEUTRAL: ["r", "l", "talk"], FACING: { r: "r", talk: "r", l: "l", fierce: "r", shock: "l", smile: "r" } as Record<string, "l" | "r">, SUFFIX: "_b_", SKIP: /baby|bust/, MIN_TALL: 0.7, MIN_WIDE: 0.4, TRIES: 2 } as const;
 export const BORNAS_SIZE_RANGE: Record<string, [number, number]> = { person: [0.5, 2.3], bust: [0.5, 2.3], animal: [0.08, 4.5], vehicle: [0.8, 7], prop: [0.02, 3], weapon: [0.1, 2.6], structure: [0.8, 60], building: [2, 80], nature: [0.1, 45] };
-export const BORNAS_ANN = { VERSION: 2, BG_VERSION: 6, BUST_FACE: 0.33, LIE_ASPECT: 1.25, SEATS: ["bed", "bench", "sofa", "chair"], TMP_PREFIX: "bornas_ann_", CAST_FILE: "ann.json", GROUND_MIN: 420, GROUND_MAX: 1075, PERSON_MIN: 80, PERSON_MAX: 820, PERSON_DEFAULT: 420, LIB_BATCH: 240 } as const;
+// Posture of a cast pose from its own name and description (never from the character's name).
+export const BORNAS_POSTURE: [BornasPosture, RegExp][] = [
+  ["ride", /\b(?:ride|rides|riding|mounted|horseback|gallop|galloping)\b/i],
+  ["lie", /\b(?:lie|lies|lying|asleep|sleeping|dead|dying|bedridden)\b/i],
+  ["sit", /\b(?:sit|sits|sitting|seated|cross[ -]?legged)\b/i],
+  ["kneel", /\b(?:kneel|kneels|kneeling|crouch|crouching|squat|squatting)\b/i],
+];
+export const BORNAS_POSTURES: BornasPosture[] = ["stand", "sit", "kneel", "lie", "ride"];
+export const BORNAS_AGE_WORDS = /^(?:\d+|baby|infant|child|kid|boy|girl|teen|teenager|young|youth|adult|old|elder|aged|middle)$/;
+export const BORNAS_ANN = { VERSION: 3, BG_VERSION: 6, BUST_FACE: 0.33, LIE_ASPECT: 1.25, SEATS: ["bed", "bench", "sofa", "chair"], TMP_PREFIX: "bornas_ann_", CAST_FILE: "ann.json", GROUND_MIN: 420, GROUND_MAX: 1075, PERSON_MIN: 80, PERSON_MAX: 820, PERSON_DEFAULT: 420, LIB_BATCH: 240 } as const;
 export const BORNAS_REVIEW = { TEXT_DELAY: 0.7, SNAP_BATCH: 40, FIXES: ["wide", "tag", "drop_text", "apart"], TARGET_FIXES: ["drop", "flip"] } as const;
 export const BORNAS_TOPICS = Object.keys(BORNAS_TOPIC_LIBS) as BornasTopic[];
 export const BORNAS_LENGTHS = [60, 120, 180, 300, 480, 600] as const;

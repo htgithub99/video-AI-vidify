@@ -4,10 +4,10 @@ import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
 import { reupFfmpeg } from "../../../reup/server/services/reupFfmpeg.js";
-import { BORNAS_AI_CACHE, BORNAS_ANN, BORNAS_LIB_KEEP, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, bornasStyleLine, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
+import { BORNAS_AGE_WORDS, BORNAS_AI_CACHE, BORNAS_ANN, BORNAS_LIB_KEEP, BORNAS_POSTURE, BORNAS_BUSTS, BORNAS_DIR, BORNAS_KIND_SIZES, BORNAS_LIMITS, BORNAS_OBJECT_KINDS, BORNAS_RENDER, BORNAS_SIZES, bornasStyleLine, BORNAS_TOPIC_LIBS, BORNAS_SIZE_RANGE } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_BUST_LOOKS, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_ERROR, BORNAS_LOG } from "../../constants/bornasServerText.js";
-import type { BornasAiSettings, BornasDrawChoice, BornasAssetPlan, BornasBackground, BornasBgAnn, BornasJob, BornasScript, BornasSprite, BornasSpriteAnn, BornasVideo } from "../../types/bornas.js";
+import type { BornasPosture, BornasAiSettings, BornasDrawChoice, BornasAssetPlan, BornasBackground, BornasBgAnn, BornasJob, BornasScript, BornasSprite, BornasSpriteAnn, BornasVideo } from "../../types/bornas.js";
 import { annotateBackgrounds, annotateSprites, bornasBadAnn } from "./bornasAnnotate.js";
 import { bornasVideoDir } from "./bornasVoice.js";
 import { bornasAiCached } from "./bornasAiCache.js";
@@ -80,7 +80,17 @@ const matchCrops = async (job: BornasJob, files: string[], wanted: Wanted[], pre
     return files[n - 1];
   });
 };
-const keyedSplit = async (job: BornasJob, raw: string, prefix: string, wanted: Wanted[], log: Log, signal?: AbortSignal): Promise<(string | undefined)[]> => {
+// Every split writes its pieces into its own empty folder (raw/parts/<sheet>/p_0.png …), so a piece can never share a
+// name with another sheet (the mood bust sheet busts_X_2.png was the third piece of busts_X) and pieces left from an
+// earlier run are never picked up again.
+const partsPrefix = (prefix: string): string => {
+  const dir = path.join(path.dirname(prefix), BORNAS_DIR.PARTS, path.basename(prefix));
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, "p");
+};
+const keyedSplit = async (job: BornasJob, raw: string, sheetPrefix: string, wanted: Wanted[], log: Log, signal?: AbortSignal): Promise<(string | undefined)[]> => {
+  const prefix = partsPrefix(sheetPrefix);
   const keyed = `${prefix}_key.png`;
   await runKitPy("alpha_key.py", [raw, keyed], log, signal);
   const out = JSON.parse(_.last((await runKitPy("sheet_split.py", [keyed, prefix, String(wanted.length)], log, signal)).trim().split(/\r?\n/)) || "{}") as { files?: string[]; edges?: boolean[] };
@@ -106,12 +116,24 @@ const keyedSplit = async (job: BornasJob, raw: string, prefix: string, wanted: W
   if (objects.length) await runKitPy("alpha_key.py", ["--objects", ...objects], log, signal);
   return matched;
 };
+// Gemini often returns JPEG bytes; every drawn sheet is stored as a real PNG so all readers see one format.
+const realPng = async (file: string, signal?: AbortSignal): Promise<void> => {
+  const head = Buffer.alloc(2);
+  const fd = fs.openSync(file, "r");
+  fs.readSync(fd, head, 0, 2, 0);
+  fs.closeSync(fd);
+  if (head[0] !== 0xff || head[1] !== 0xd8) return;
+  const tmp = `${file}.tmp.png`;
+  await reupFfmpeg(["-y", "-i", file, tmp], { signal });
+  fs.renameSync(tmp, file);
+};
 const drawSheet = async (prompt: string, file: string, what: string, draw: BornasDrawChoice, log: Log, misses: { count: number }, signal?: AbortSignal, refs: string[] = []): Promise<boolean> => {
   for (let attempt = 0; attempt <= BORNAS_LIMITS.DRAW_RETRIES; attempt++) {
     signal?.throwIfAborted();
     try {
       log(BORNAS_LOG.DRAW(what));
       const used = await bornasDraw(prompt, file, draw, refs);
+      await realPng(file, signal);
       if (used !== draw.provider) log(BORNAS_LOG.DRAW_FALLBACK(what, used), "warn");
       misses.count = 0;
       return true;
@@ -203,17 +225,24 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
   fs.mkdirSync(raws, { recursive: true });
   const sprites: BornasSprite[] = [];
   const misses = { count: 0 };
-  const add = (name: string, file: string, kind: string, heightM: number, facing: "l" | "r", desc: string, pool?: string) => {
+  const add = (name: string, file: string, kind: string, heightM: number, facing: "l" | "r", desc: string, pool?: string, who?: { char: string; person: string; posture?: BornasPosture }) => {
     const dst = path.join(png, `${name}.png`);
     if (path.resolve(file) !== path.resolve(dst)) copyCrop(file, dst);
     const [w, h] = pngSize(dst);
     const [lo, hi] = BORNAS_SIZE_RANGE[kind] || BORNAS_SIZE_RANGE.prop;
     const size = heightM >= lo && heightM <= hi ? heightM : _.clamp(sizeOf(name, kind, NaN), lo, hi);
     if (size !== heightM) log(BORNAS_LOG.SIZE_CLAMPED(name, heightM, size), "warn");
-    sprites.push({ name, kind, heightM: size, facing, aspect: w / Math.max(1, h), desc, ...(pool ? { pool } : {}) });
+    sprites.push({ name, kind, heightM: size, facing, aspect: w / Math.max(1, h), desc, ...(pool ? { pool } : {}), ...(who || {}) });
   };
   const castRef: Record<string, string> = {};
-  const personOf = (id: string): string => id.split("_")[0];
+  // The same person across ages: the cast id without its trailing age words (sitting_bull_boy → sitting_bull).
+  // Before, only the first word was kept, so "sitting_bull_father" shared the hero's reference picture.
+  const personOf = (id: string): string => {
+    const w = id.split("_");
+    while (w.length > 1 && BORNAS_AGE_WORDS.test(w[w.length - 1])) w.pop();
+    return w.join("_");
+  };
+  const postureOf = (text: string): BornasPosture => BORNAS_POSTURE.find(([, re]) => re.test(text.replace(/_/g, " ")))?.[0] || "stand";
   for (const c of _.sortBy(plan.cast, (c) => (c.poses.some((p) => /bust/.test(p.name)) ? 0 : 1))) {
     const files: (string | undefined)[] = [];
     for (const [k, group] of _.chunk(c.poses, BORNAS_LIMITS.CAST_ROW).entries()) {
@@ -248,7 +277,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
       const [file] = drawn ? await keyedSplit(job, single, path.join(raws, `bust_${c.id}`), [pose], log, signal) : [];
       if (file) copyCrop(file, path.join(png, `${names[i]}.png`));
     }
-    names.forEach((name, i) => add(name, path.join(png, `${name}.png`), /bust/.test(poses[i].name) ? "bust" : "person", c.heightM, "r", `${c.desc}; ${poses[i].desc}`));
+    names.forEach((name, i) => add(name, path.join(png, `${name}.png`), /bust/.test(poses[i].name) ? "bust" : "person", c.heightM, "r", `${c.desc}; ${poses[i].desc}`, undefined, { char: c.id, person: personOf(c.id), ...(/bust/.test(poses[i].name) ? {} : { posture: postureOf(`${poses[i].name} ${poses[i].desc}`) }) }));
     if (BORNAS_BUSTS.SKIP.test(c.id) || !poses.length) continue;
     for (const sheet of BORNAS_BUSTS.SHEETS) {
       const triple = path.join(raws, `busts_${c.id}${sheet.file}.png`);
@@ -258,7 +287,7 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
         if (!drew) break;
         const keyed = path.join(raws, `busts_${c.id}${sheet.file}_key.png`);
         await runKitPy("alpha_key.py", ["--edge", triple, keyed], log, signal);
-        parts = (JSON.parse(_.last((await runKitPy("bust_split.py", [keyed, path.join(raws, `busts_${c.id}${sheet.file}`)], log, signal)).trim().split(/\r?\n/)) || "{}").files || []) as string[];
+        parts = (JSON.parse(_.last((await runKitPy("bust_split.py", [keyed, partsPrefix(path.join(raws, `busts_${c.id}${sheet.file}`))], log, signal)).trim().split(/\r?\n/)) || "{}").files || []) as string[];
         fs.rmSync(keyed, { force: true });
         // a part narrower than MIN_WIDE of its height is a sliver (an arm, a feather), not a bust
         const whole = parts.length === sheet.views.length && parts.every((f) => pngSize(f)[0] >= pngSize(f)[1] * BORNAS_BUSTS.MIN_WIDE);
@@ -267,11 +296,12 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
         log(BORNAS_LOG.BUST_SMALL(c.id, Math.round(tall * 100)), "warn");
         fs.rmSync(triple, { force: true });
       }
-      if (!parts.length) continue;
       log(BORNAS_LOG.SPLIT(parts.length, sheet.views.length), parts.length === sheet.views.length ? "info" : "warn");
+      // never label pieces by position when the sheet did not split into exactly one bust per view
+      if (parts.length !== sheet.views.length || parts.some((f) => pngSize(f)[0] < pngSize(f)[1] * BORNAS_BUSTS.MIN_WIDE)) continue;
       parts.slice(0, sheet.views.length).forEach((file, i) => {
         const view = sheet.views[i];
-        add(`${c.id}${BORNAS_BUSTS.SUFFIX}${view}`, file, "bust", c.heightM, BORNAS_BUSTS.FACING[view], `${c.desc}; bust, ${BORNAS_BUST_LOOKS[view]}`);
+        add(`${c.id}${BORNAS_BUSTS.SUFFIX}${view}`, file, "bust", c.heightM, BORNAS_BUSTS.FACING[view], `${c.desc}; bust, ${BORNAS_BUST_LOOKS[view]}`, undefined, { char: c.id, person: personOf(c.id) });
       });
     }
   }

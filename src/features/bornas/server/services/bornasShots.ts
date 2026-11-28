@@ -53,7 +53,7 @@ export interface BornasPlan {
   recapT: number;
   pxPerM: number;
   ground: Record<string, number>;
-  sprites: Record<string, { kind: string; heightM: number; ann?: BornasSpriteAnn }>;
+  sprites: Record<string, { kind: string; heightM: number; ann?: BornasSpriteAnn; char?: string; person?: string; posture?: string; pool?: string }>;
   bgAnn: Record<string, BornasBgAnn>;
   bgDesc: Record<string, string>;
   onsets: number[];
@@ -259,7 +259,7 @@ export const planBornasShots = async (job: BornasJob, video: BornasVideo, script
     pxPerM: BORNAS_LIMITS.PX_PER_M,
     ground: Object.fromEntries(video.backgrounds!.map((b) => [b.name, b.ground])),
     bgDesc: Object.fromEntries(video.backgrounds!.map((b) => [b.name, b.desc || ""])),
-    sprites: Object.fromEntries(video.sprites!.map((s) => [s.name, { kind: s.kind, heightM: s.heightM, ...(s.ann ? { ann: s.ann } : {}), ...(s.pool ? { pool: s.pool } : {}) }])),
+    sprites: Object.fromEntries(video.sprites!.map((s) => [s.name, { kind: s.kind, heightM: s.heightM, ...(s.ann ? { ann: s.ann } : {}), ...(s.pool ? { pool: s.pool } : {}), ...(s.char ? { char: s.char, person: s.person } : {}), ...(s.posture ? { posture: s.posture } : {}) }])),
     bgAnn: Object.fromEntries(video.backgrounds!.filter((b) => b.ann).map((b) => [b.name, b.ann!])),
     onsets: _.sortBy(words.flatMap((w) => w.map((x) => x[0]))),
     beats,

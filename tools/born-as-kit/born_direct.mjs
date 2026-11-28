@@ -145,11 +145,10 @@ const r3 = (v) => Math.round(v * 1000) / 1000;
 const TURNS = new Set(["person", "animal", "vehicle"]);
 
 const POSE = { ride: /ride|riding|horse|mounted|gallop/i, low: /sit|kneel|crouch|squat/i, seat: /sit|seated|cross_?leg/i, seatK: 0.58, lowK: 0.72 };
-const poseOf = (n) => (n.includes("__") ? n : n.slice(charId(n).length));
+const poseOf = (n) => (n.includes("__") ? n.split("__").pop() : n.slice(charId(n).length));
 const poseHeight = (n, base) => {
-  const q = poseOf(n);
-  if (POSE.ride.test(q) && !n.includes("__")) return base * 1.35;
-  if (POSE.low.test(q) && !n.includes("__")) return base * (POSE.seat.test(q) ? POSE.seatK : POSE.lowK);
+  if (isRide(n) && !n.includes("__")) return base * 1.35;
+  if (isLow(n)) return base * (postureOf(n) === "sit" ? POSE.seatK : POSE.lowK);
   return base;
 };
 const BACK = new Set(["building", "structure", "nature"]);
@@ -180,9 +179,24 @@ const depthOf = (pts) => {
   if (k < 0.15) return null;
   return { k, hz: my - mh / k };
 };
-const charId = (n) => (n.includes("__") ? null : n.split("_").slice(0, 2).join("_"));
+// Sprite facts written by the app (char = cast id for one age, person = the person across ages, posture).
+// Names are only a fallback for hand plans; regexes never run on a character's name (Sitting Bull is not seated).
+let SPR = {};
+const charId = (n) => (n.includes("__") ? null : SPR[n]?.char && n.startsWith(SPR[n].char) ? SPR[n].char : n.split("_").slice(0, 2).join("_"));
+const postureOf = (n) => {
+  const s = SPR[n], q = poseOf(n), is = s?.ann?.is || "";
+  if (s?.ann?.posture) return s.ann.posture;
+  if (s?.posture) return s.posture;
+  if (POSE.ride.test(`${q} ${is}`)) return "ride";
+  if (n.includes("__")) return RULE.sitText.test(`${q.replace(/_/g, " ")} ${is}`) ? "sit" : "stand";
+  return POSE.seat.test(q) ? "sit" : POSE.low.test(q) ? "kneel" : "stand";
+};
+const isLow = (n) => !n.includes("__") && (postureOf(n) === "sit" || postureOf(n) === "kneel");
+const isRide = (n) => postureOf(n) === "ride";
+const nameWords = (n) => ` ${n.toLowerCase().replace(/[^a-z0-9]+/g, " ")} `;
 const AGE_WORD = /^(?:\d+|baby|child|kid|boy|girl|teen|young|youth|adult|old|elder|aged)$/;
 const personOf = (n) => {
+  if (SPR[n]?.person) return SPR[n].person;
   const id = charId(n);
   if (!id) return n;
   const [first, second] = id.split("_");
@@ -192,25 +206,25 @@ const refFaces = (plan) => {
   const by = {};
   for (const [n, s] of Object.entries(plan.sprites)) {
     const id = charId(n), f = s.ann?.face;
-    if (!id || s.kind !== "person" || !f || (s.ann.aspect ?? 1) >= 0.8 || POSE.low.test(poseOf(n)) || POSE.ride.test(`${poseOf(n)} ${s.ann?.is || ""}`)) continue;
+    if (!id || s.kind !== "person" || !f || (s.ann.aspect ?? 1) >= 0.8 || isLow(n) || isRide(n)) continue;
     (by[id] = by[id] || []).push(f.b - f.t);
   }
   return Object.fromEntries(Object.entries(by).map(([id, v]) => [id, v.sort((a, b) => a - b)[Math.floor(v.length / 2)]]));
 };
 const personHeight = (plan, refs, n, base, pxm) => {
   const s = plan.sprites[n], id = charId(n), f = s?.ann?.face, ref = id && refs[id];
-  const m = meta(n), aspect = m.w / m.h, ride = POSE.ride.test(`${poseOf(n)} ${s?.ann?.is || ""}`);
+  const m = meta(n), aspect = m.w / m.h, ride = isRide(n);
   const len = id || ride || aspect <= RULE.lieAspect ? base : RULE.bodyM * pxm;
   if (RULE.groupRe.test(n)) return base;
   if (aspect > RULE.lieAspect && !ride) return (len * RULE.lieFit) / aspect;
-  const h = ref && f && f.b - f.t > 0.02 && !ride && !POSE.low.test(poseOf(n)) ? clamp((base * ref) / (f.b - f.t), base * 0.3, base * 1.8) : ride ? base * RULE.rideM / 1.75 : poseHeight(n, base);
+  const h = ref && f && f.b - f.t > 0.02 && !ride && !isLow(n) ? clamp((base * ref) / (f.b - f.t), base * 0.3, base * 1.8) : ride ? base * RULE.rideM / 1.75 : poseHeight(n, base);
   const cap = ride && id ? RULE.rideM * pxm : len * RULE.capFit;
   return Math.min(h, cap / Math.max(1, aspect));
 };
 const readableHeight = (kind, n, h, per) => {
   const m = meta(n), aspect = m.w / m.h, lying = aspect > RULE.lieAspect && !RULE.groupRe.test(n);
   let out = h;
-  if (kind === "person" && !lying) out = clamp(h, 1080 * RULE.personMin * (POSE.low.test(poseOf(n)) && !n.includes("__") ? (POSE.seat.test(poseOf(n)) ? POSE.seatK : POSE.lowK) : 1), 1080 * RULE.personMax);
+  if (kind === "person" && !lying) out = clamp(h, 1080 * RULE.personMin * (isLow(n) ? (postureOf(n) === "sit" ? POSE.seatK : POSE.lowK) : 1), 1080 * RULE.personMax);
   else if (kind === "vehicle" || kind === "ship" || kind === "aircraft") out = Math.min(h, per * RULE.vehicleMax, 1080 * RULE.vehicleFrame, (1920 * RULE.vehicleWidth) / aspect);
   else if (kind === "animal") out = clamp(h, per * RULE.animalMin, per * RULE.animalMax);
   else if (kind === "prop") out = clamp(h, per * RULE.propMin, per * RULE.propMax);
@@ -218,7 +232,7 @@ const readableHeight = (kind, n, h, per) => {
 };
 const standing = (a) => {
   const m = meta(a.sprite);
-  return a.kind === "person" && !a.back && a.onGround && m.w / m.h <= RULE.lieAspect && !POSE.ride.test(poseOf(a.sprite)) && !POSE.low.test(poseOf(a.sprite)) && !RULE.groupRe.test(a.sprite) && !RULE.babyRe.test(a.sprite);
+  return a.kind === "person" && !a.back && a.onGround && m.w / m.h <= RULE.lieAspect && !isRide(a.sprite) && !isLow(a.sprite) && !RULE.groupRe.test(a.sprite) && !RULE.babyRe.test(a.sprite);
 };
 const matchPeople = (plan, main) => {
   const people = main.filter((a) => a && standing(a));
@@ -289,7 +303,7 @@ const poseWords = (n) => {
 };
 const sameWord = (a, b) => a.some((w) => b.some((v) => v === w || (w.length >= 4 && v.endsWith(w)) || (v.length >= 4 && w.endsWith(v))));
 const WEAPON = /aim|shoot|firing|fire_|bow|rifle|musket|revolver|pistol|gun|spear_thrust|archer|sniper/i;
-const CHILD = /child|boy|girl|kid|baby|toddler|teen/i;
+const CHILD = / (?:child|children|boy|girl|kid|kids|baby|toddler|teen)s? /i;
 const boxOf = (a) => {
   const m = meta(a.sprite), w = (m.w / m.h) * a.h, l = a.x - w * (a.anchorX ?? 0.5);
   return { l, r: l + w, t: a.y - a.h, b: a.y, w, h: a.h };
@@ -313,7 +327,7 @@ const gateLayout = (list, A, subject, plan, report, id) => {
     const sgn = a.dir === "l" ? -1 : 1;
     const target = keep.filter((o) => o !== a && solid(o) && (o.kind === "person" || o.kind === "animal") && Math.sign(o.x - a.x) === sgn).sort((u, v) => Math.abs(u.x - a.x) - Math.abs(v.x - a.x))[0];
     if (!target) continue;
-    if (CHILD.test(target.sprite) || (plan.sprites[target.sprite]?.heightM ?? 1.75) < 1.45) {
+    if (CHILD.test(nameWords(target.sprite)) || (plan.sprites[target.sprite]?.heightM ?? 1.75) < 1.45) {
       a.dir = a.dir === "l" ? "r" : "l";
       report.push([id, "weapon_turned", a.sprite]);
       continue;
@@ -533,7 +547,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
   for (const a of main) {
     if (!a || a.kind !== "person") continue;
     const m = meta(a.sprite), aspect = m.w / m.h, is = String(plan.sprites[a.sprite]?.ann?.is || "");
-    const bed = (aspect > RULE.lieAspect || RULE.lyingText.test(is)) && !POSE.ride.test(`${poseOf(a.sprite)} ${is}`) ? A.seats.filter((x) => RULE.lieOn.test(x.k)).sort((u, v) => v.x1 - v.x0 - (u.x1 - u.x0))[0] : null;
+    const bed = (aspect > RULE.lieAspect || RULE.lyingText.test(is)) && !isRide(a.sprite) ? A.seats.filter((x) => RULE.lieOn.test(x.k)).sort((u, v) => v.x1 - v.x0 - (u.x1 - u.x0))[0] : null;
     if (bed) {
       a.h = ((bed.x1 - bed.x0) * RULE.lieBedFill) / aspect;
       a.x = (bed.x0 + bed.x1) / 2;
@@ -545,7 +559,7 @@ const layout = (beat, plan, refs, report = [], id = "") => {
     }
     const w = poseWords(a.sprite).find((v) => RULE.furniture.test(v));
     const f = w && main.find((b) => b && b !== a && b.kind !== "person" && poseWords(b.sprite).some((v) => v.endsWith(w)));
-    const sits = !w && !a.sprite.includes("__") && RULE.sitText.test(`${poseOf(a.sprite).replace(/_/g, " ")} ${is}`) && !POSE.ride.test(`${poseOf(a.sprite)} ${is}`);
+    const sits = !w && !a.sprite.includes("__") && postureOf(a.sprite) === "sit";
     const bs = (w && !f && A.seats.find((x) => x.k === seatKind(w))) || (sits ? A.seats.filter((x) => !RULE.lieOn.test(x.k) || x.k === "bench" || x.k === "sofa").sort((u, v) => Math.abs((u.x0 + u.x1) / 2 - a.x) - Math.abs((v.x0 + v.x1) / 2 - a.x))[0] : null);
     if (bs) {
       a.x = (bs.x0 + bs.x1) / 2;
@@ -681,6 +695,7 @@ const EVENTS = { insetX: 1380, insetY: 470, insetH: 380, insetW: 620, insetTwo: 
 const shortName = (t) => { const w = String(t).trim().split(/\s+/), two = w.length > 2 ? `${w[0]} ${w[w.length - 1]}` : w.join(" "); return t.length <= EVENTS.labelChars ? t : two.length <= EVENTS.labelChars ? two : w[w.length - 1]; };
 const iconOf = (plan, text) => { const hit = RULE.icons.find(([w]) => w.test(text)); const sprite = hit && Object.keys(plan.sprites || {}).find((n) => hit[1].test(n)); return sprite ? { sprite, cross: /^NO\b/i.test(String(text).trim()) } : null; };
 export const direct = (plan) => {
+  SPR = plan.sprites || {};
   const kindOf = (c) => plan.sprites[c?.sprite]?.kind, pre = [], isWho = (c) => ["person", "bust"].includes(kindOf(c));
   plan = { ...plan, beats: plan.beats.map((b0, bi) => {
     const all = b0.cast || [], keep = all.map((c, i) => (RULE.builtKinds.has(kindOf(c)) ? -1 : i)).filter((i) => i >= 0);
@@ -718,8 +733,8 @@ export const direct = (plan) => {
   let motionN = 0;
   let lastBust = { sprite: "", t1: -1 };
   const report = [...pre];
-  const heroId = Object.entries(plan.sprites).map(([n, s]) => (s.kind === "bust" ? charId(n) : null)).find(Boolean) || null;
-  const heroBust = Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust" && charId(n) === heroId) || null;
+  const heroId = Object.entries(plan.sprites).map(([n, s]) => (s.kind === "bust" ? personOf(n) : null)).find(Boolean) || null;
+  const heroBust = Object.keys(plan.sprites).find((n) => plan.sprites[n].kind === "bust" && personOf(n) === heroId) || null;
   const inserts = {};
   const hookShots = [];
   const living = (b) => (b.cast || []).find((c) => ["person", "animal"].includes(plan.sprites[c.sprite]?.kind) && !(c.crowd > 1));
@@ -841,7 +856,7 @@ export const direct = (plan) => {
     const subj0 = actors.find((a) => a.cast === subject && !a.crowd);
     const personFor = subj0 && subj0.kind === "prop" ? actors.filter((a) => !a.crowd && a.kind === "person").sort((u, v) => v.h - u.h)[0] : null;
     const subjA0 = personFor || subj0;
-    const heroA = heroId ? actors.find((a) => !a.crowd && a.kind === "person" && charId(a.sprite) === heroId) : null;
+    const heroA = heroId ? actors.find((a) => !a.crowd && a.kind === "person" && personOf(a.sprite) === heroId) : null;
     cuts.forEach((c0, ci) => {
       const subjA = ci === 0 ? subjA0 : people[(people.indexOf(subjA0) + ci) % people.length];
       const c1 = ci + 1 < cuts.length ? cuts[ci + 1] : t1, d = c1 - c0;

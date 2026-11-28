@@ -132,7 +132,11 @@ export interface BornasSpriteAnn {
   furniture?: boolean;
   aims?: boolean;
   is?: string;
+  posture?: BornasPosture;
+  flat?: boolean;
+  group?: string;
 }
+export type BornasPosture = "stand" | "sit" | "kneel" | "lie" | "ride";
 export interface BornasSeat {
   k: string;
   x0: number;
@@ -162,6 +166,9 @@ export interface BornasSprite {
   desc: string;
   ann?: BornasSpriteAnn;
   pool?: string;
+  char?: string;
+  person?: string;
+  posture?: BornasPosture;
 }
 export interface BornasBackground {
   name: string;

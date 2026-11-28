@@ -4,10 +4,10 @@ import path from "path";
 import _ from "lodash";
 import { runMotionAi } from "../../../motion/server/services/motionStoryService.js";
 import { reupExec } from "../../../reup/server/services/reupAiService.js";
-import { BORNAS_ANN, BORNAS_LIMITS, BORNAS_SCALE, BORNAS_SCALE_CHECK } from "../../constants/bornasConfig.js";
+import { BORNAS_ANN, BORNAS_LIMITS, BORNAS_POSTURES, BORNAS_SCALE, BORNAS_SCALE_CHECK } from "../../constants/bornasConfig.js";
 import { BORNAS_ARTIFACT, BORNAS_PROMPT } from "../../constants/bornasPrompts.js";
 import { BORNAS_LOG } from "../../constants/bornasServerText.js";
-import type { BornasAiSettings, BornasBgAnn, BornasFace, BornasSeat, BornasSpriteAnn } from "../../types/bornas.js";
+import type { BornasAiSettings, BornasBgAnn, BornasFace, BornasPosture, BornasSeat, BornasSpriteAnn } from "../../types/bornas.js";
 import { readJson, runKitPy, writeJson } from "./bornasTools.js";
 type Log = (text: string, level?: "info" | "warn" | "error") => void;
 type Obj = Record<string, unknown>;
@@ -105,6 +105,9 @@ export const annotateSprites = async (list: AnnSprite[], ai: BornasAiSettings, l
         partial: s.kind === "person" && a.whole === false && !WHOLE_EXEMPT.test(s.name),
         furniture: s.kind === "person" && !s.name.includes("__") && a.furniture === true,
         aims: a.aims === true,
+        ...(BORNAS_POSTURES.includes(a.posture as BornasPosture) ? { posture: a.posture as BornasPosture } : {}),
+        flat: a.flat === true,
+        ...(typeof a.group === "string" && a.group.trim() ? { group: String(a.group).trim().toLowerCase().slice(0, 40) } : {}),
         ...(typeof a.is === "string" ? { is: String(a.is).slice(0, 80) } : {}),
       };
     }
