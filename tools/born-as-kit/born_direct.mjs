@@ -114,6 +114,8 @@ const RULE = {
   animalMin: 0.3,
   propMax: 0.6,
   propMin: 0.2,
+  longAspect: 2,
+  propLongMax: 0.75,
   adultM: 1.6,
   childMin: 0.45,
   headTopMax: 0.4,
@@ -227,6 +229,7 @@ const readableHeight = (kind, n, h, per) => {
   if (kind === "person" && !lying) out = clamp(h, 1080 * RULE.personMin * (isLow(n) ? (postureOf(n) === "sit" ? POSE.seatK : POSE.lowK) : 1), 1080 * RULE.personMax);
   else if (kind === "vehicle" || kind === "ship" || kind === "aircraft") out = Math.min(h, per * RULE.vehicleMax, 1080 * RULE.vehicleFrame, (1920 * RULE.vehicleWidth) / aspect);
   else if (kind === "animal") out = clamp(h, per * RULE.animalMin, per * RULE.animalMax);
+  else if ((kind === "prop" || kind === "weapon") && aspect > RULE.longAspect) out = clamp(h * aspect, per * RULE.propMin, per * RULE.propLongMax) / aspect; // long thin things: limits on the length
   else if (kind === "prop") out = clamp(h, per * RULE.propMin, per * RULE.propMax);
   return Math.min(out, m.h * RULE.nativeMax);
 };
