@@ -93,7 +93,7 @@ export const BORNAS_LOG = {
   RENDER_ONE_WORKER: "Ổ đĩa không đủ chỗ cho khung hình tạm, render lại với 1 worker (chậm hơn)",
   SHORT_BUILT: (cut: number) => `Đã dựng Short 9:16 từ đoạn mở đầu ${cut.toFixed(1)} giây`,
   SHORT_RENDER: "Đang render Short 9:16",
-  AI_FALLBACK_NO_CACHE: (who: string) => `AI đã chọn không trả lời, dùng tạm câu trả lời của ${who} (không lưu cache để lần sau hỏi lại AI đã chọn)`,
+  AI_FALLBACK_NO_CACHE: (who: string) => `AI đã chọn không trả lời, dùng tạm câu trả lời của ${who} (chỉ giữ 6 giờ cho lần chạy tiếp; sau đó hỏi lại AI đã chọn)`,
   ROTATION: (stats: string) => `Bố cục theo câu: ${stats}`,
   BUSTS: (b: { share: number; inRow: number; repeats: number }) => `Cảnh chân dung: ${Math.round(b.share * 100)}% thời lượng, liền nhau tối đa ${b.inRow}, một hình dùng nhiều nhất ${b.repeats} lần`,
   RENDER_DONE: (seconds: number) => `Render xong: ${clock(seconds)}`,

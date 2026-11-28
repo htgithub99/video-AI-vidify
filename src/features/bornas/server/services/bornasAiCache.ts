@@ -17,16 +17,23 @@ export const bornasAiCached = async <T>(opts: { dir: string; prefix: string; ai:
   const file = path.join(opts.dir, `${opts.prefix}${bornasAiKey(opts.ai, opts.prompt)}.json`);
   const hit = readJson<T | null>(file, null);
   if (hit !== null && opts.ok(hit)) return hit;
+  // A fallback answer is kept only for a short while (a resume after an app restart uses the same plan),
+  // then the chosen AI is asked again.
+  const fbFile = file.replace(/\.json$/, BORNAS_AI_CACHE.FALLBACK_EXT);
+  const fb = readJson<{ at: number; res: T } | null>(fbFile, null);
+  if (fb && Date.now() - fb.at < BORNAS_AI_CACHE.FALLBACK_TTL_MS && opts.ok(fb.res)) return fb.res;
   const exec = reupExec(opts.ai);
   let used: { provider: string; model: string } | null = null;
   const res = (await runMotionAi(opts.prompt, opts.artifact, { ...exec, routeUsed: (r) => (used = r) }, opts.signal, (line) => line && opts.log(line), opts.images)) as T;
   const u = used as { provider: string; model: string } | null;
   const api = exec.mode === AiPlanningExecutionMode.ApiOnly;
   const primary = !!u && u.model === String(exec.model || "") && (api || u.provider === String(exec.provider));
-  if (!primary) opts.log(BORNAS_LOG.AI_FALLBACK_NO_CACHE(u ? `${u.provider}/${u.model}` : "?"), "warn");
-  else if (opts.ok(res)) {
-    fs.mkdirSync(opts.dir, { recursive: true });
-    writeJson(file, res);
+  if (!opts.ok(res)) return res;
+  fs.mkdirSync(opts.dir, { recursive: true });
+  if (primary) writeJson(file, res);
+  else {
+    opts.log(BORNAS_LOG.AI_FALLBACK_NO_CACHE(u ? `${u.provider}/${u.model}` : "?"), "warn");
+    writeJson(fbFile, { at: Date.now(), res });
   }
   return res;
 };
