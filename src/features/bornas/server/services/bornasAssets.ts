@@ -257,12 +257,20 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
   const postureOf = (text: string): BornasPosture => BORNAS_POSTURE.find(([, re]) => re.test(text.replace(/_/g, " ")))?.[0] || "stand";
   for (const c of _.sortBy(plan.cast, (c) => (c.poses.some((p) => /bust/.test(p.name)) ? 0 : 1))) {
     const files: (string | undefined)[] = [];
-    for (const [k, group] of _.chunk(c.poses, BORNAS_LIMITS.CAST_ROW).entries()) {
+    // A bust is never a pose inside a full-body sheet (it came out as a small half figure in the row): body poses go
+    // on the sheets, each bust pose is its own single large drawing.
+    c.poses = [...c.poses.filter((p) => !/bust/.test(p.name)), ...c.poses.filter((p) => /bust/.test(p.name))];
+    for (const [k, group] of _.chunk(c.poses.filter((p) => !/bust/.test(p.name)), BORNAS_LIMITS.CAST_ROW).entries()) {
       const raw = path.join(raws, `cast_${c.id}_${k}.png`);
       const ref = castRef[personOf(c.id)];
       const ok = fs.existsSync(raw) || (await drawSheet(BORNAS_PROMPT.CAST_SHEET(bornasStyleLine(job.channel.topic), c.desc, group, !!ref), raw, c.id, job.ai.drawAi, log, misses, signal, ref ? [ref] : [], room("cast")));
       if (ok && !ref) castRef[personOf(c.id)] = raw;
       files.push(...(ok ? await keyedSplit(job, raw, path.join(raws, `cast_${c.id}_${k}`), group, log, signal) : group.map(() => undefined)));
+    }
+    for (const pose of c.poses.filter((p) => /bust/.test(p.name))) {
+      const single = path.join(raws, `bust_${c.id}.png`);
+      const drawn = fs.existsSync(single) || (await drawSheet(BORNAS_PROMPT.BUST_SINGLE(bornasStyleLine(job.channel.topic), c.desc, pose.desc), single, `${c.id} ${pose.name}`, job.ai.drawAi, log, misses, signal, [], room("cast")));
+      files.push(drawn ? (await keyedSplit(job, single, path.join(raws, `bust_${c.id}`), [pose], log, signal))[0] : undefined);
     }
     // Poses Gemini left out of the sheet are drawn once more on their own sheet; without this a hero could end up
     // with only a sitting pose and every shot of that age reused it.
@@ -392,6 +400,34 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
     const it = cats[itemLib[name]].items[name];
     const file = bornasLib(itemLib[name], "sprites", `${name}.png`);
     if (fs.existsSync(file)) add(name, file, it.kind, it.kind === "person" ? it.heightM : sizeOf(name.split("__").pop() || name, it.kind, it.heightM), it.facing === "l" ? "l" : "r", it.note || words(name));
+  }
+  // Crowd variants are chosen by each picture's group, so the plan's people and animals and their same-sheet
+  // siblings that still lack the current annotation are annotated first: pictures drawn in this very video
+  // (and library pictures never annotated before) can then be variants already in this video.
+  const poolAnn = _.uniq(
+    plan.items.flatMap((name) => {
+      const lib = itemLib[name],
+        it = cats[lib]?.items[name];
+      if (!it || !BORNAS_LIMITS.POOL_KINDS.includes(it.kind)) return [];
+      const sheet = name.split("__")[0];
+      return [name, ...Object.keys(cats[lib].items).filter((n) => n.split("__")[0] === sheet && cats[lib].items[n].kind === it.kind)];
+    }),
+  )
+    .filter((n) => cats[itemLib[n]]?.items[n]?.ann?.v !== BORNAS_ANN.VERSION && fs.existsSync(bornasLib(itemLib[n], "sprites", `${n}.png`)))
+    .slice(0, BORNAS_LIMITS.POOL_ANN_MAX);
+  if (poolAnn.length) {
+    const got = await annotateSprites(
+      poolAnn.map((n) => ({ name: n, png: bornasLib(itemLib[n], "sprites", `${n}.png`), kind: cats[itemLib[n]].items[n].kind, want: cats[itemLib[n]].items[n].note || words(n), edge: edgeOf(bornasLib(itemLib[n], "sprites", `${n}.png`)) })),
+      job.ai,
+      log,
+      signal,
+    );
+    for (const lib of _.uniq(Object.keys(got).map((n) => itemLib[n]))) {
+      const cat = readCatalog(lib);
+      for (const [n, ann] of Object.entries(got)) if (itemLib[n] === lib && cat.items[n]) cat.items[n].ann = ann;
+      cats[lib].items = cat.items;
+      writeJson(catalogFile(lib), cat);
+    }
   }
   const pooled = new Set(plan.items);
   let poolCount = 0;

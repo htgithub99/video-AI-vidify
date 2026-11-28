@@ -76,9 +76,9 @@ export const rotateBornasBeats = (beats: BornasBeat[], kinds: Map<string, string
         _.range(BORNAS_ROTATION.ORDER.length)
           .map((s) => BORNAS_ROTATION.ORDER[(k + s) % BORNAS_ROTATION.ORDER.length])
           .find((want) => want !== last && fits(want)) || "wide";
-    // the same place with the same figures at most REPEAT_SAME times in a row as a wide shot (four identical wides at
-    // Little Bighorn): then frame the first person medium, or show the object
-    const sig = `${b.bg}|${b.cast.map((c) => c.sprite).sort().join(",")}`;
+    // the same place at most REPEAT_SAME wide shots in a row (four near-identical wides at Little Bighorn): then frame a
+    // person medium or show the object. Beats with the same figures merge into one shot anyway, so only the place counts.
+    const sig = b.bg;
     sigRun = sig === lastSig ? sigRun + 1 : 1;
     lastSig = sig;
     if (comp === "wide" && sigRun > BORNAS_ROTATION.REPEAT_SAME) {
