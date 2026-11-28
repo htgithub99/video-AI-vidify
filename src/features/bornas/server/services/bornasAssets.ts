@@ -240,7 +240,9 @@ export const prepareBornasAssets = async (job: BornasJob, video: BornasVideo, sc
         await runKitPy("alpha_key.py", ["--edge", triple, keyed], log, signal);
         parts = (JSON.parse(_.last((await runKitPy("bust_split.py", [keyed, path.join(raws, `busts_${c.id}${sheet.file}`)], log, signal)).trim().split(/\r?\n/)) || "{}").files || []) as string[];
         fs.rmSync(keyed, { force: true });
-        const tall = parts.length ? Math.min(...parts.map((f) => pngSize(f)[1])) / pngSize(triple)[1] : 0;
+        // a part narrower than MIN_WIDE of its height is a sliver (an arm, a feather), not a bust
+        const whole = parts.length === sheet.views.length && parts.every((f) => pngSize(f)[0] >= pngSize(f)[1] * BORNAS_BUSTS.MIN_WIDE);
+        const tall = whole ? Math.min(...parts.map((f) => pngSize(f)[1])) / pngSize(triple)[1] : 0;
         if (tall >= BORNAS_BUSTS.MIN_TALL || tries === BORNAS_BUSTS.TRIES) break;
         log(BORNAS_LOG.BUST_SMALL(c.id, Math.round(tall * 100)), "warn");
         fs.rmSync(triple, { force: true });
