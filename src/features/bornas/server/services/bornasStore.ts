@@ -173,11 +173,12 @@ export const readBornasState = (): BornasState | null => {
   return raw ? writeState(raw, false) : null;
 };
 export const saveBornasState = (raw: unknown): BornasState => writeState((raw || {}) as Partial<BornasState>);
-export const addBornasDone = (channelId: string, hero: string): void => {
+export const addBornasDone = (channelId: string, hero: string, channelName = ""): void => {
   try {
     const state = readBornasState();
     const name = bornasHeroName(hero);
-    const channel = state?.channels.find((c) => c.id === channelId);
+    // jobs started before the channels moved to the server carry an old local id: match by name then
+    const channel = state?.channels.find((c) => c.id === channelId) || state?.channels.find((c) => !!channelName && c.name.trim().toLowerCase() === channelName.trim().toLowerCase());
     if (!state || !channel || !name || channel.done.some((d) => d.toLowerCase() === name.toLowerCase())) return;
     channel.done = bornasDoneList([...channel.done, name]);
     writeState(state);

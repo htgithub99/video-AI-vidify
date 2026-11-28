@@ -72,7 +72,7 @@ const runVideo = async (job: BornasJob, video: BornasVideo, script: BornasScript
   video.status = "done";
   video.stage = undefined;
   const hero = job.scripts?.[video.index]?.hero;
-  if (hero) addBornasDone(job.channel.id, hero);
+  if (hero) addBornasDone(job.channel.id, hero, job.channel.name);
   log(BORNAS_LOG.VIDEO_DONE(video.index + 1));
 };
 const finishSteps = (job: BornasJob): void => {
