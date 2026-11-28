@@ -47,9 +47,17 @@ const readCatalog = (lib: string): LibCatalog => {
   const cat = readJson<LibCatalog>(catalogFile(lib), { items: {}, backgrounds: {} });
   return { ...cat, items: cat.items || {}, backgrounds: cat.backgrounds || {} };
 };
+// Width/height of a PNG or a JPEG (Gemini downloads are often JPEG even when saved as .png).
 const pngSize = (file: string): [number, number] => {
   const b = fs.readFileSync(file);
-  return [b.readUInt32BE(16), b.readUInt32BE(20)];
+  if (b[0] === 0x89 && b[1] === 0x50) return [b.readUInt32BE(16), b.readUInt32BE(20)];
+  for (let i = 2; b[0] === 0xff && b[1] === 0xd8 && i + 9 < b.length; ) {
+    if (b[i] !== 0xff) return [0, 0];
+    const m = b[i + 1];
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return [b.readUInt16BE(i + 7), b.readUInt16BE(i + 5)];
+    i += 2 + b.readUInt16BE(i + 2);
+  }
+  return [0, 0];
 };
 const words = (name: string): string => name.replace(/^[a-z0-9]+__/, "").replace(/_/g, " ");
 type Wanted = { name: string; desc: string; kind?: string };
